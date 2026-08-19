@@ -11,6 +11,16 @@ import { getDictionary } from '@/i18n/dictionary'
 import { I18nProvider } from '@/components/providers/i18n-provider'
 import { ToastProvider } from '@/components/ui/toast'
 
+/**
+ * Enumerating the locales lets Next prerender the `[locale]` segment, which is
+ * what keeps the marketing pages static. Without it every page under this
+ * layout — including the public site search engines index — falls back to
+ * server-rendering on demand.
+ */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }))
+}
+
 export async function generateMetadata({
   params,
 }: {

@@ -22,7 +22,7 @@ import type {
 const PROVIDER_NAME = 'payments.mock'
 
 /**
- * An in-memory Stripe. IDs are deterministic (`cus_mock_1`, `sub_mock_1`, …
+ * An in-memory Stripe. IDs are prefixed and ordered (`cus_mock_1_<rand>`, …
  * incrementing per type) so a test can assert on them directly instead of
  * capturing whatever was generated. `emitMockEvent` + `constructWebhookEvent`
  * round-trip through the SAME HMAC scheme production would verify against a

@@ -57,12 +57,18 @@ describe('MockPaymentAdapter webhook signature verification', () => {
 describe('MockPaymentAdapter deterministic ids', () => {
   beforeEach(() => resetMockPayments())
 
-  it('produces predictable, incrementing mock ids', async () => {
+  it('produces prefixed, ordered, collision-resistant mock ids', async () => {
     const adapter = new MockPaymentAdapter()
     const customerA = await adapter.createCustomer({ tenantId: 't1', email: 'a@example.com', name: 'A' })
     const customerB = await adapter.createCustomer({ tenantId: 't1', email: 'b@example.com', name: 'B' })
-    expect(customerA.customerId).toBe('cus_mock_1')
-    expect(customerB.customerId).toBe('cus_mock_2')
+
+    // The counter gives human-scannable ordering; the random suffix is what
+    // stops the seed process and the app server — which both start counting
+    // at 1 — from minting the same id into a unique column. Asserting the
+    // shape rather than a literal keeps that guarantee testable.
+    expect(customerA.customerId).toMatch(/^cus_mock_1_[0-9a-f]{8}$/)
+    expect(customerB.customerId).toMatch(/^cus_mock_2_[0-9a-f]{8}$/)
+    expect(customerA.customerId).not.toBe(customerB.customerId)
   })
 
   it('supports the full subscription lifecycle', async () => {
