@@ -1,0 +1,187 @@
+{
+  "primary": {
+    "dashboard": "Panel",
+    "loads": "Cargas",
+    "carriers": "Transportistas",
+    "customers": "Clientes",
+    "drivers": "Conductores",
+    "equipment": "Equipos",
+    "trucks": "Camiones",
+    "trailers": "Remolques",
+    "documents": "Documentos",
+    "onboarding": "Incorporación",
+    "signatures": "Firmas",
+    "invoices": "Facturas",
+    "settlements": "Liquidaciones",
+    "expenses": "Gastos",
+    "payments": "Pagos",
+    "factoring": "Factoraje",
+    "reports": "Informes",
+    "tracking": "Rastreo",
+    "permits": "Permisos y escoltas",
+    "messages": "Mensajes",
+    "notifications": "Notificaciones",
+    "assignments": "Asignaciones",
+    "groups": "Grupos",
+    "users": "Usuarios",
+    "settings": "Configuración",
+    "audit": "Pista de auditoría",
+    "leads": "Prospectos",
+    "integrations": "Integraciones",
+    "billing": "Facturación",
+    "tenants": "Organizaciones",
+    "plans": "Planes",
+    "platformHealth": "Salud de la plataforma",
+    "retention": "Retención"
+  },
+  "groups": {
+    "operations": "Operaciones",
+    "compliance": "Cumplimiento",
+    "finance": "Finanzas",
+    "insight": "Análisis",
+    "administration": "Administración",
+    "platform": "Plataforma"
+  },
+  "userMenu": {
+    "profile": "Su perfil",
+    "security": "Seguridad",
+    "preferences": "Preferencias",
+    "language": "Idioma",
+    "signOut": "Cerrar sesión",
+    "impersonating": "Suplantando a {name}",
+    "endImpersonation": "Finalizar suplantación"
+  },
+  "search": {
+    "placeholder": "Buscar cargas, transportistas, clientes, conductores, equipos…",
+    "hint": "Presione / para buscar",
+    "recent": "Reciente",
+    "noResults": "Nada coincidió con «{query}»",
+    "groups": {
+      "loads": "Cargas",
+      "carriers": "Transportistas",
+      "customers": "Clientes",
+      "drivers": "Conductores",
+      "trucks": "Camiones",
+      "trailers": "Remolques",
+      "invoices": "Facturas"
+    }
+  },
+  "breadcrumb": {
+    "home": "Inicio",
+    "nav": "Ruta de navegación"
+  },
+  "impersonation": {
+    "recorded": "Toda la actividad de esta sesión queda registrada"
+  },
+  "status": {
+    "load": {
+      "draft": "Borrador",
+      "available": "Disponible",
+      "assigned": "Asignada",
+      "dispatched": "Despachada",
+      "enRouteToPickup": "En camino a la recogida",
+      "atPickup": "En la recogida",
+      "inTransit": "En tránsito",
+      "atDelivery": "En la entrega",
+      "delivered": "Entregada",
+      "podReceived": "Comprobante de entrega recibido",
+      "invoiced": "Facturada",
+      "paid": "Pagada",
+      "cancelled": "Cancelada"
+    },
+    "onboarding": {
+      "draft": "Borrador",
+      "submitted": "Enviada",
+      "underReview": "En revisión",
+      "correctionsRequired": "Requiere correcciones",
+      "approved": "Aprobada",
+      "rejected": "Rechazada",
+      "suspended": "Suspendida"
+    },
+    "verification": {
+      "notStarted": "No iniciada",
+      "pending": "Pendiente",
+      "verified": "Verificada",
+      "mismatch": "Discrepancia",
+      "failed": "Fallida",
+      "manuallyOverridden": "Anulada manualmente",
+      "expired": "Vencida"
+    },
+    "invoice": {
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "due": "Vencimiento próximo",
+      "paid": "Pagada",
+      "overdue": "Vencida",
+      "disputed": "En disputa",
+      "voided": "Anulada",
+      "uncollectable": "Incobrable"
+    },
+    "payment": {
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "succeeded": "Exitoso",
+      "failed": "Fallido",
+      "refunded": "Reembolsado",
+      "partiallyRefunded": "Reembolsado parcialmente",
+      "disputed": "En disputa",
+      "cancelled": "Cancelado"
+    },
+    "equipment": {
+      "pendingVerification": "Pendiente de verificación",
+      "active": "Activo",
+      "outOfService": "Fuera de servicio",
+      "archived": "Archivado"
+    },
+    "driver": {
+      "available": "Disponible",
+      "onLoad": "En una carga",
+      "offDuty": "Fuera de servicio",
+      "inactive": "Inactivo"
+    },
+    "job": {
+      "queued": "En cola",
+      "running": "En ejecución",
+      "succeeded": "Completado",
+      "failed": "Fallido",
+      "deadLetter": "Descartado",
+      "cancelled": "Cancelado"
+    },
+    "compliance": {
+      "blocked": "Bloqueado",
+      "warning": "Requiere atención",
+      "clear": "Sin observaciones"
+    },
+    "expiry": {
+      "expiresIn": "Vence en {days} días",
+      "expiresToday": "Vence hoy",
+      "expiredAgo": "Venció hace {days} días"
+    }
+  },
+  "skipToContent": "Saltar al contenido principal",
+  "openMenu": "Abrir menú",
+  "mainNav": "Navegación principal",
+  "public": {
+    "home": "Inicio",
+    "services": "Servicios",
+    "heavyHaul": "Carga pesada y sobredimensionada",
+    "forCarriers": "Para transportistas",
+    "forClients": "Para clientes",
+    "about": "Nosotros",
+    "contact": "Contacto",
+    "resources": "Recursos",
+    "carrierSignup": "Registro de transportista",
+    "login": "Iniciar sesión",
+    "privacy": "Política de privacidad",
+    "terms": "Términos y condiciones",
+    "getStarted": "Comenzar",
+    "requestQuote": "Solicitar cotización"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "accounting": "Contabilidad",
+    "dispatcher": "Despachador",
+    "carrier": "Transportista",
+    "driver": "Conductor"
+  }
+}

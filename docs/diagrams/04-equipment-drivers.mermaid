@@ -1,0 +1,63 @@
+erDiagram
+    carriers ||--o{ trucks : owns
+    carriers ||--o{ trailers : owns
+    carriers ||--o{ drivers : "relates via"
+    drivers ||--o{ driver_carrier_relationships : has
+    carriers ||--o{ driver_carrier_relationships : has
+    equipment_types ||--o{ trucks : categorizes
+    equipment_types ||--o{ trailers : categorizes
+    trucks ||--o{ equipment_media : has
+    trailers ||--o{ equipment_media : has
+    trucks ||--o{ equipment_verifications : "COI-verified"
+    trailers ||--o{ equipment_verifications : "COI-verified"
+    users ||--o| drivers : "optional login"
+
+    trucks {
+        uuid id PK
+        uuid tenant_id FK
+        uuid carrier_id FK
+        varchar vin_normalized "UK per tenant"
+        enum status
+        enum coi_verification_status
+        timestamp registration_expires_at
+    }
+    trailers {
+        uuid id PK
+        uuid tenant_id FK
+        uuid carrier_id FK
+        varchar vin_normalized "UK per tenant"
+        integer length_inches
+        integer capacity_pounds
+        enum status
+    }
+    equipment_media {
+        uuid id PK
+        varchar equipment_type "truck|trailer"
+        uuid equipment_id
+        varchar angle
+    }
+    equipment_verifications {
+        uuid id PK
+        varchar equipment_type
+        uuid equipment_id
+        enum status
+        jsonb extracted_vins
+        varchar matched_vin
+    }
+    drivers {
+        uuid id PK
+        uuid tenant_id FK
+        uuid user_id FK "optional"
+        varchar license_number_hash UK "blind index"
+        enum status
+        enum verification_status
+        timestamp license_expires_at
+        timestamp medical_card_expires_at
+    }
+    driver_carrier_relationships {
+        uuid id PK
+        uuid driver_id FK
+        uuid carrier_id FK
+        boolean is_primary
+        timestamp end_date
+    }

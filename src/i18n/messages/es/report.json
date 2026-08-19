@@ -1,0 +1,208 @@
+{
+  "picker": {
+    "title": "Informes",
+    "description": "Cada informe refleja únicamente los transportistas, cargas y datos financieros que usted puede ver.",
+    "empty": "Aún no hay informes disponibles para su rol.",
+    "viewReport": "Ver informe"
+  },
+  "reports": {
+    "revenueMargin": {
+      "title": "Ingresos y margen",
+      "description": "Cargo al cliente, tarifa del transportista y margen bruto por período, cliente, transportista o despachador."
+    },
+    "loadPerformance": {
+      "title": "Desempeño de cargas",
+      "description": "Tasas de recolección y entrega a tiempo, tiempo de tránsito y detención por estado o transportista."
+    },
+    "carrierScorecard": {
+      "title": "Tarjeta de puntuación del transportista",
+      "description": "Volumen, desempeño a tiempo y cumplimiento documental de cada transportista."
+    },
+    "dispatcherPerformance": {
+      "title": "Desempeño del despachador",
+      "description": "Cargas, ingresos, margen y comisión acumulada o pagada por despachador."
+    },
+    "receivablesAging": {
+      "title": "Antigüedad de cuentas por cobrar",
+      "description": "Saldos de facturas abiertas agrupados en categorías de vigente, 30, 60 y 90+ días."
+    },
+    "settlementSummary": {
+      "title": "Resumen de liquidaciones",
+      "description": "Liquidaciones de transportistas del período con tarifa bruta, comisiones, deducciones y monto neto."
+    },
+    "documentCompliance": {
+      "title": "Cumplimiento documental",
+      "description": "Documentos por vencer o ya vencidos, por propietario."
+    },
+    "onboardingPipeline": {
+      "title": "Flujo de incorporación",
+      "description": "Tiempo transcurrido en cada estado de incorporación y dónde se estancan los transportistas."
+    },
+    "equipmentUtilization": {
+      "title": "Utilización de equipo y conductores",
+      "description": "Días asignados frente a días disponibles para camiones, remolques y conductores."
+    },
+    "oversizeActivity": {
+      "title": "Actividad de sobredimensionados",
+      "description": "Permisos emitidos, costos de escolta y estados recorridos en cargas sobredimensionadas."
+    },
+    "auditActivity": {
+      "title": "Actividad de auditoría",
+      "description": "Volumen de eventos de auditoría por actor y tipo de acción."
+    }
+  },
+  "filters": {
+    "dateRange": "Rango de fechas",
+    "presets": {
+      "daily": "Hoy",
+      "weekly": "Últimos 7 días",
+      "monthly": "Este mes",
+      "yearly": "Este año",
+      "custom": "Personalizado"
+    },
+    "start": "Fecha de inicio",
+    "end": "Fecha de fin",
+    "to": "a",
+    "all": "Todos",
+    "reset": "Restablecer filtros",
+    "fields": {
+      "groupBy": "Agrupar por",
+      "carrierId": "Transportista",
+      "customerId": "Cliente",
+      "resourceType": "Tipo de recurso",
+      "ownerType": "Tipo de propietario"
+    },
+    "values": {
+      "period": "Período",
+      "customer": "Cliente",
+      "carrier": "Transportista",
+      "dispatcher": "Despachador",
+      "status": "Estado",
+      "truck": "Camión",
+      "trailer": "Remolque",
+      "driver": "Conductor"
+    }
+  },
+  "columns": {
+    "dimension": "Dimensión",
+    "loadCount": "Cargas",
+    "customerCharge": "Cargo al cliente",
+    "carrierGrossRate": "Tarifa bruta del transportista",
+    "grossMargin": "Margen bruto",
+    "marginPercent": "% de margen",
+    "dispatcherCommission": "Comisión del despachador",
+    "onTimePickupRate": "% de recolección a tiempo",
+    "onTimeDeliveryRate": "% de entrega a tiempo",
+    "avgTransitDays": "Días de tránsito prom.",
+    "detentionMinutes": "Detención (minutos)",
+    "carrierName": "Transportista",
+    "verificationStatus": "Verificación FMCSA",
+    "documentCompliance": "Cumplimiento documental",
+    "dispatcherName": "Despachador",
+    "commissionAccrued": "Comisión acumulada",
+    "commissionPaid": "Comisión pagada",
+    "agingBucket": "Categoría de antigüedad",
+    "amount": "Monto",
+    "settlementNumber": "N.° de liquidación",
+    "periodStart": "Inicio del período",
+    "periodEnd": "Fin del período",
+    "grossRate": "Tarifa bruta",
+    "dispatchFees": "Comisiones de despacho",
+    "deductions": "Deducciones",
+    "netAmount": "Monto neto",
+    "status": "Estado",
+    "ownerType": "Tipo de propietario",
+    "ownerLabel": "Propietario",
+    "documentType": "Tipo de documento",
+    "expirationDate": "Fecha de vencimiento",
+    "daysRemaining": "Días restantes",
+    "onboardingStatus": "Estado de incorporación",
+    "avgDaysInStatus": "Días prom. en el estado",
+    "currentCount": "Actualmente en el estado",
+    "unit": "Unidad",
+    "assignedDays": "Días asignados",
+    "availableDays": "Días disponibles",
+    "utilizationRate": "% de utilización",
+    "loadNumber": "N.° de carga",
+    "permitsIssued": "Permisos emitidos",
+    "permitCost": "Costo de permisos",
+    "escortCost": "Costo de escolta",
+    "statesTraversed": "Estados recorridos",
+    "actor": "Actor",
+    "actionType": "Tipo de acción",
+    "eventCount": "Eventos"
+  },
+  "table": {
+    "empty": "Ninguna fila coincide con los filtros actuales.",
+    "summary": "Totales"
+  },
+  "values": {
+    "empty": "—",
+    "unassigned": "Sin asignar",
+    "expired": "Vencido",
+    "expiring": "Por vencer",
+    "system": "Sistema"
+  },
+  "export": {
+    "title": "Exportar",
+    "formats": {
+      "csv": "CSV",
+      "xlsx": "Excel",
+      "pdf": "PDF"
+    },
+    "history": "Exportaciones recientes",
+    "status": {
+      "queued": "En cola",
+      "running": "Generando",
+      "succeeded": "Lista",
+      "failed": "Fallida"
+    },
+    "rowCount": "{count} filas",
+    "download": "Descargar",
+    "ready": "Su exportación está lista para descargar.",
+    "failed": "No se pudo generar la exportación."
+  },
+  "errors": {
+    "unknownReport": "\"{reportKey}\" no es un informe conocido.",
+    "exportNotFound": "No se pudo encontrar esa exportación.",
+    "exportNotReady": "Esa exportación aún no está lista para descargar.",
+    "exportExpired": "Esa exportación ha vencido. Genere una nueva.",
+    "missingScopeSnapshot": "A esta exportación le falta su instantánea de permisos y no se puede generar."
+  },
+  "audit": {
+    "title": "Registro de auditoría",
+    "description": "Cada acción registrada, de solo lectura: la base de datos misma rechaza cualquier intento de modificar o eliminar un evento de auditoría.",
+    "empty": "Ningún evento de auditoría coincide con los filtros actuales.",
+    "reasonBadge": "Motivo registrado",
+    "before": "Antes",
+    "after": "Después",
+    "impersonated": "Bajo suplantación",
+    "impersonationSessions": "Sesiones de suplantación",
+    "impersonationDescription": "Cada sesión en la que una cuenta actuó bajo la autoridad de otra, y cada evento registrado durante ella.",
+    "impersonationSessionDetail": "Sesión de suplantación",
+    "impersonationSummary": "Sesión de suplantación",
+    "active": "Activa",
+    "ended": "Finalizada",
+    "eventCount": "{count} eventos",
+    "columns": {
+      "occurredAt": "Ocurrió el",
+      "actor": "Actor",
+      "action": "Acción",
+      "entity": "Entidad",
+      "requestId": "Solicitud",
+      "reason": "Motivo"
+    },
+    "filters": {
+      "action": "Acción",
+      "entityType": "Tipo de entidad",
+      "requestId": "ID de solicitud",
+      "reasonPresent": "Solo con motivo registrado",
+      "from": "Desde",
+      "to": "Hasta"
+    },
+    "requestGroup": {
+      "title": "Línea de tiempo de la solicitud",
+      "description": "Cada evento de auditoría registrado bajo la solicitud {requestId}."
+    }
+  }
+}

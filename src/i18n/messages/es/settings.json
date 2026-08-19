@@ -1,0 +1,348 @@
+{
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Su nombre, datos de contacto y preferencias de idioma.",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "phone": "Teléfono",
+    "locale": "Idioma",
+    "timezone": "Zona horaria",
+    "save": "Guardar cambios",
+    "updated": "Perfil actualizado."
+  },
+  "security": {
+    "title": "Seguridad",
+    "subtitle": "Contraseña, autenticación de dos factores y sesiones activas.",
+    "password": {
+      "title": "Contraseña",
+      "current": "Contraseña actual",
+      "new": "Contraseña nueva",
+      "confirm": "Confirme la contraseña nueva",
+      "submit": "Actualizar contraseña",
+      "updated": "Contraseña actualizada. Se cerró la sesión en otros dispositivos."
+    },
+    "mfa": {
+      "title": "Autenticación de dos factores",
+      "requiredNotice": "Su rol requiere autenticación de dos factores antes de poder usar el resto de la aplicación.",
+      "enrolled": "Activada",
+      "notEnrolled": "No configurada",
+      "setup": "Configurar autenticación de dos factores",
+      "disable": "Desactivar autenticación de dos factores",
+      "cannotDisable": "Su rol requiere autenticación de dos factores. No se puede desactivar."
+    },
+    "sessions": {
+      "title": "Sesiones activas",
+      "subtitle": "Dispositivos con sesión iniciada actualmente en su cuenta.",
+      "device": "Dispositivo",
+      "ipAddress": "Dirección IP",
+      "lastSeen": "Última actividad",
+      "current": "Este dispositivo",
+      "revoke": "Cerrar sesión",
+      "revokeAll": "Cerrar sesión en los demás dispositivos",
+      "revoked": "Sesión finalizada.",
+      "revokedAll": "Se cerró la sesión en {count} dispositivo(s) adicional(es)."
+    }
+  },
+  "preferences": {
+    "title": "Preferencias de notificación",
+    "subtitle": "Elija cómo desea enterarse de la actividad en su espacio de trabajo.",
+    "channelInApp": "En la aplicación",
+    "channelEmail": "Correo electrónico",
+    "channelSms": "Mensaje de texto",
+    "saved": "Preferencias guardadas.",
+    "events": {
+      "document": {
+        "expiring": "Un documento está por vencer",
+        "expired": "Un documento ha vencido",
+        "rejected": "Un documento fue rechazado"
+      },
+      "onboarding": {
+        "corrections_required": "La incorporación de un transportista necesita correcciones",
+        "approved": "La incorporación de un transportista fue aprobada",
+        "rejected": "La incorporación de un transportista fue rechazada"
+      },
+      "signature": {
+        "requested": "Se solicitó una firma",
+        "signed": "Se firmó un documento"
+      },
+      "load": {
+        "assigned": "Se asignó una carga",
+        "rate_confirmation_requested": "Una confirmación de tarifa necesita su respuesta"
+      },
+      "invoice": {
+        "sent": "Se envió una factura",
+        "overdue": "Una factura está vencida"
+      },
+      "expense": {
+        "rejected": "Se rechazó un gasto"
+      },
+      "lead": {
+        "received": "Llegó un nuevo prospecto"
+      },
+      "export": {
+        "ready": "Una exportación está lista para descargar"
+      }
+    }
+  },
+  "notificationsPage": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todas como leídas",
+    "markRead": "Marcar como leída",
+    "empty": "Todo al día",
+    "emptyHint": "La nueva actividad en su espacio de trabajo aparecerá aquí.",
+    "unreadCount": "{count} sin leer"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Resumen",
+      "activeCarriers": "Transportistas activos",
+      "pendingOnboarding": "Incorporaciones en revisión",
+      "documentsExpiring": "Documentos por vencer",
+      "documentsExpired": "Documentos vencidos",
+      "teamMembers": "Miembros del equipo",
+      "subscriptionStatus": "Suscripción",
+      "activeLoads": "Cargas activas",
+      "openReceivables": "Cuentas por cobrar abiertas",
+      "pendingSettlements": "Liquidaciones pendientes",
+      "monthToDateMargin": "Margen del mes hasta la fecha"
+    },
+    "accounting": {
+      "title": "Resumen financiero",
+      "subscriptionStatus": "Suscripción",
+      "documentsExpiring": "Documentos por vencer",
+      "pendingOnboarding": "Incorporaciones pendientes de revisión",
+      "activeLoads": "Cargas activas",
+      "openReceivables": "Cuentas por cobrar abiertas",
+      "pendingSettlements": "Liquidaciones pendientes",
+      "monthToDateMargin": "Margen del mes hasta la fecha"
+    },
+    "dispatcher": {
+      "title": "Mi tablero",
+      "assignedCarriers": "Transportistas asignados a mí",
+      "documentsExpiring": "Documentos por vencer de mis transportistas",
+      "activeLoads": "Mis cargas activas",
+      "monthToDateMargin": "Margen del mes hasta la fecha"
+    },
+    "carrierPortal": {
+      "title": "Su cuenta",
+      "onboardingStatus": "Estado de incorporación",
+      "documentsExpiring": "Sus documentos por vencer",
+      "activeLoads": "Cargas activas",
+      "amountOwedToUs": "Usted debe",
+      "amountOwedToYou": "Se le debe"
+    },
+    "comingSoon": "Esto depende de un módulo que aún no está disponible."
+  },
+  "actions": {
+    "save": "Guardar cambios"
+  },
+  "hub": {
+    "title": "Configuración de la empresa",
+    "description": "Identidad de la empresa, marca, políticas y retención para todo su espacio de trabajo.",
+    "readOnly": "Solo lectura — su rol no puede modificar esto.",
+    "sections": {
+      "company": {
+        "title": "Identidad de la empresa",
+        "description": "Nombre legal, nombre visible, idioma predeterminado, zona horaria y dominio personalizado."
+      },
+      "contact": {
+        "title": "Contacto y horario comercial",
+        "description": "Datos de contacto públicos, dirección postal, horario comercial y enlaces sociales."
+      },
+      "branding": {
+        "title": "Marca",
+        "description": "Colores del logotipo, tipografías y la verificación de contraste de accesibilidad."
+      },
+      "operational": {
+        "title": "Política operativa",
+        "description": "Avisos de vencimiento de documentos, numeración de cargas/facturas y permisos de despachadores."
+      },
+      "financial": {
+        "title": "Política financiera",
+        "description": "Comisión de despacho del transportista y comisión del despachador predeterminadas."
+      },
+      "retention": {
+        "title": "Retención y retenciones legales",
+        "description": "Cuánto tiempo se conservan los registros y qué está actualmente bajo retención legal."
+      },
+      "integrations": {
+        "title": "Integraciones",
+        "description": "Proveedores de rastreo, mapas, peajes, FMCSA, OCR, correo, SMS y pagos."
+      }
+    }
+  },
+  "company": {
+    "title": "Identidad de la empresa",
+    "description": "Cómo se identifica su empresa en toda la aplicación, las facturas y el portal del transportista.",
+    "legalName": "Nombre legal",
+    "displayName": "Nombre visible",
+    "defaultLocale": "Idioma predeterminado",
+    "defaultTimezone": "Zona horaria predeterminada",
+    "customDomain": "Dominio personalizado",
+    "customDomainHint": "Opcional. Requiere verificación de DNS antes de entrar en vigor.",
+    "saved": "Identidad de la empresa actualizada."
+  },
+  "contact": {
+    "title": "Contacto y horario comercial",
+    "description": "Se muestra en los portales de clientes y transportistas, y en el correo saliente.",
+    "contactTitle": "Información de contacto",
+    "phone": "Teléfono",
+    "email": "Correo de contacto público",
+    "supportEmail": "Correo de soporte",
+    "addressTitle": "Dirección postal",
+    "line1": "Dirección línea 1",
+    "line2": "Dirección línea 2",
+    "city": "Ciudad",
+    "state": "Estado",
+    "postalCode": "Código postal",
+    "businessHoursTitle": "Horario comercial",
+    "closed": "Cerrado",
+    "days": {
+      "sunday": "Domingo",
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado"
+    },
+    "socialLinksTitle": "Enlaces sociales",
+    "socialLinksLabel": "Enlaces",
+    "socialLinksHint": "Uno por línea, como nombre=url — por ejemplo: linkedin=https://linkedin.com/company/example",
+    "saved": "Información de contacto actualizada."
+  },
+  "branding": {
+    "title": "Marca",
+    "description": "Se aplica en toda la aplicación, el portal del transportista y el correo saliente.",
+    "primaryColor": "Color primario",
+    "accentColor": "Color de acento",
+    "neutralColor": "Color neutro",
+    "surfaceColor": "Color de superficie",
+    "inkColor": "Color de texto",
+    "headingFont": "Fuente de títulos",
+    "bodyFont": "Fuente de texto",
+    "contrastRatio": "{ratio}:1 contra blanco",
+    "contrastUnknown": "Ingrese un color válido para verificar el contraste",
+    "contrastPass": "Cumple con WCAG AA",
+    "contrastFail": "Por debajo de WCAG AA (4.5:1)",
+    "previewTitle": "Vista previa en vivo",
+    "previewHeading": "Goliath Dispatch",
+    "previewBody": "Así se verá el texto del cuerpo sobre su color de superficie.",
+    "previewButton": "Acción principal",
+    "saved": "Marca actualizada."
+  },
+  "operational": {
+    "title": "Política operativa",
+    "description": "Numeración, avisos de vencimiento y permisos de despachadores.",
+    "documentExpirationWarningDays": "Aviso de vencimiento de documentos (días)",
+    "documentExpirationWarningDaysHint": "Cuántos días antes de que un documento venza comienza a mostrarse como \"por vencer\".",
+    "fmcsaReverificationDays": "Intervalo de reverificación de FMCSA (días)",
+    "loadNumberPrefix": "Prefijo de número de carga",
+    "invoiceNumberPrefix": "Prefijo de número de factura",
+    "defaultPaymentTermsDays": "Plazo de pago predeterminado (días)",
+    "publicTrackingEnabled": "Habilitar enlaces públicos de rastreo",
+    "publicTrackingTokenTtlHours": "Vencimiento del enlace público de rastreo (horas)",
+    "allowDispatcherResourceAssignment": "Permitir que los despachadores asignen camiones, remolques y conductores",
+    "allowDispatcherResourceAssignmentHint": "Si está desactivado, solo el Administrador puede asignar equipo y conductores a una carga.",
+    "requireOversizeAdminValidation": "Requerir validación del Administrador para cargas sobredimensionadas",
+    "requireOversizeAdminValidationHint": "Si está activado, los permisos y la ruta de una carga sobredimensionada deben ser validados por un Administrador antes del despacho.",
+    "saved": "Política operativa actualizada."
+  },
+  "financial": {
+    "title": "Política financiera",
+    "description": "Valores predeterminados aplicados a las nuevas cargas; cada carga puede modificarlos individualmente.",
+    "defaultCarrierDispatchFeeBps": "Comisión de despacho del transportista predeterminada",
+    "defaultCarrierDispatchFeeBpsHint": "Porcentaje de la tarifa bruta del transportista retenido como comisión de despacho.",
+    "defaultDispatcherCommissionBps": "Comisión del despachador predeterminada",
+    "defaultDispatcherCommissionBpsHint": "Porcentaje pagado al despachador asignado, calculado según la base a continuación.",
+    "dispatcherCommissionBasis": "Base de la comisión del despachador",
+    "basis": {
+      "dispatchFeeAmount": "Monto de la comisión de despacho",
+      "carrierGrossRate": "Tarifa bruta del transportista",
+      "commissionableBase": "Base comisionable"
+    },
+    "saved": "Política financiera actualizada."
+  },
+  "retention": {
+    "title": "Retención y retenciones legales",
+    "description": "Cuánto tiempo se conservan los registros antes del archivado y la eliminación permanente, y qué está actualmente exento por una retención legal.",
+    "policyTitle": "Política de retención",
+    "operationalActiveMonths": "Ventana activa operativa (meses)",
+    "operationalActiveMonthsHint": "Cuánto tiempo permanece activo un registro operativo (cargas, documentos) antes del archivado.",
+    "operationalPurgeYearsAfterArchive": "Eliminar tras archivado (años)",
+    "operationalPurgeYearsAfterArchiveHint": "Cuánto tiempo después del archivado se elimina permanentemente un registro operativo.",
+    "financialRetentionYears": "Retención de registros financieros (años)",
+    "financialRetentionYearsHint": "Las facturas, pagos, liquidaciones, acuerdos firmados y eventos de auditoría nunca se eliminan antes de este plazo — mínimo 7 años.",
+    "saved": "Política de retención actualizada.",
+    "eligibilityTitle": "Elegibilidad de retención",
+    "columns": {
+      "entityType": "Tipo de registro",
+      "classification": "Clasificación",
+      "total": "Total",
+      "held": "Bajo retención",
+      "archiveEligible": "Elegible para archivar",
+      "purgeEligible": "Elegible para eliminar"
+    },
+    "classification": {
+      "operational": "Operativo",
+      "financial": "Financiero"
+    },
+    "legalHold": {
+      "title": "Retenciones legales",
+      "name": "Nombre de la retención",
+      "scopeType": "Alcance",
+      "scopeTenant": "Todo el inquilino",
+      "scopeEntityType": "Un tipo de registro",
+      "scopeRecord": "Un registro específico",
+      "scope": {
+        "tenant": "Todo el inquilino",
+        "entity_type": "Tipo de registro",
+        "record": "Registro único"
+      },
+      "entityType": "Tipo de registro",
+      "entityId": "ID del registro",
+      "reason": "Motivo",
+      "reasonHint": "Obligatorio. Explique el asunto para el cual esta retención conserva registros — esto se registra en el historial de auditoría.",
+      "apply": "Aplicar retención legal",
+      "applied": "Retención legal aplicada.",
+      "active": "Retenciones activas",
+      "noneActive": "No hay retenciones legales activas.",
+      "released": "Retenciones liberadas",
+      "release": "Liberar",
+      "releaseTitle": "Liberar retención legal",
+      "releaseDescription": "Esto libera \"{name}\". Los registros que cubre exclusivamente vuelven a ser elegibles para retención, a menos que otra retención aún los cubra.",
+      "releaseReason": "Motivo de liberación"
+    }
+  },
+  "team": {
+    "title": "Usuarios",
+    "description": "Cuentas de Administrador, Despachador y Contabilidad para su empresa.",
+    "inviteButton": "Invitar usuario",
+    "columns": {
+      "name": "Nombre",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "status": "Estado",
+      "invited": "Invitado"
+    },
+    "empty": "Aún no hay miembros del equipo.",
+    "status": {
+      "invited": "Invitado",
+      "pending_verification": "Verificación pendiente",
+      "active": "Activo",
+      "suspended": "Suspendido",
+      "deactivated": "Desactivado"
+    },
+    "inviteDialog": {
+      "title": "Invitar a un usuario",
+      "description": "Recibirán un correo con un enlace para configurar su cuenta.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "rolePlaceholder": "Elija un rol",
+      "submit": "Enviar invitación",
+      "success": "Invitación enviada."
+    }
+  }
+}

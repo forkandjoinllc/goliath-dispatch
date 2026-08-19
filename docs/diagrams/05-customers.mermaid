@@ -1,0 +1,34 @@
+erDiagram
+    tenants ||--o{ customers : owns
+    customers ||--o{ customer_locations : has
+    customers ||--o{ customer_contacts : has
+    customer_contacts ||--o{ customer_contact_locations : "reachable at"
+    customer_locations ||--o{ customer_contact_locations : "reachable via"
+
+    customers {
+        uuid id PK
+        uuid tenant_id FK
+        varchar company_name_normalized "dup detection"
+        varchar dot_number
+        boolean credit_approved
+        integer payment_terms_days
+        varchar status "active|on_hold|inactive"
+    }
+    customer_locations {
+        uuid id PK
+        uuid customer_id FK
+        varchar name
+        varchar state
+        varchar place_id
+        boolean is_primary
+    }
+    customer_contacts {
+        uuid id PK
+        uuid customer_id FK
+        varchar first_name
+        boolean is_primary "at most one per customer, partial UK"
+    }
+    customer_contact_locations {
+        uuid contact_id FK
+        uuid location_id FK
+    }

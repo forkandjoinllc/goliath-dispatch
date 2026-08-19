@@ -1,0 +1,176 @@
+{
+  "title": "Drivers",
+  "list": {
+    "new": "Add driver",
+    "empty": "No drivers yet. Add the first driver to get started.",
+    "searchPlaceholder": "Search by name"
+  },
+  "detail": {
+    "title": "{name}",
+    "edit": "Edit driver"
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "dateOfBirth": "Date of birth",
+    "age": "Age {age}",
+    "email": "Email",
+    "phone": "Phone",
+    "preferredLocale": "Preferred language",
+    "licenseState": "Licence state",
+    "licenseNumber": "CDL number",
+    "licenseNumberMasked": "CDL ending in {last4}",
+    "licenseNumberMaskedHelp": "Masked for privacy. Enter a new number only to replace it.",
+    "cdlClass": "CDL class",
+    "endorsements": "Endorsements",
+    "restrictions": "Restrictions",
+    "licenseExpiresAt": "Licence expires",
+    "medicalCardExpiresAt": "Medical card expires",
+    "status": "Status",
+    "verificationStatus": "Licence review status",
+    "notes": "Notes"
+  },
+  "cdlClass": {
+    "A": "Class A",
+    "B": "Class B",
+    "C": "Class C"
+  },
+  "endorsements": {
+    "H": "H — Hazardous materials",
+    "N": "N — Tank vehicles",
+    "P": "P — Passengers",
+    "S": "S — School bus",
+    "T": "T — Double/triple trailers",
+    "X": "X — Combination of tank vehicle and hazardous materials"
+  },
+  "restrictions": {
+    "L": "L — No air brake equipped vehicle",
+    "Z": "Z — No full air brake equipped vehicle",
+    "E": "E — No manual transmission",
+    "O": "O — No tractor-trailer",
+    "M": "M — No Class A bus",
+    "V": "V — Medical variance documentation required"
+  },
+  "status": {
+    "available": "Available",
+    "on_load": "On load",
+    "off_duty": "Off duty",
+    "inactive": "Inactive"
+  },
+  "verificationStatus": {
+    "not_started": "Not reviewed",
+    "pending": "Pending review",
+    "verified": "Approved",
+    "mismatch": "Mismatch",
+    "failed": "Rejected",
+    "manually_overridden": "Manually overridden",
+    "expired": "Expired"
+  },
+  "documents": {
+    "cdl_front": "CDL — front",
+    "cdl_back": "CDL — back",
+    "medical_card": "Medical card",
+    "driver_other": "Other driver document"
+  },
+  "approval": {
+    "title": "Licence review",
+    "description": "Review the licence and medical card, then approve or reject. This is a manual review — there is no automated licence OCR check.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "notes": "Reviewer notes",
+    "notesPlaceholder": "What did you check? Required when rejecting.",
+    "reviewedBy": "Reviewed by {reviewer} on {date}",
+    "notReviewed": "This driver has not been reviewed yet.",
+    "confirmApprove": "Approve {name} after licence review?",
+    "confirmReject": "Reject {name}'s licence review?"
+  },
+  "carrierRelationships": {
+    "title": "Carriers",
+    "description": "The carriers this driver runs for. A driver may run for several carriers at once.",
+    "add": "Add carrier relationship",
+    "end": "End relationship",
+    "setPrimary": "Set as primary carrier",
+    "primaryBadge": "Primary",
+    "startDate": "Since",
+    "endDate": "Ended",
+    "approvedBy": "Approved by {approver}",
+    "current": "Current",
+    "ended": "Ended",
+    "empty": "This driver is not linked to any carrier yet.",
+    "confirmEnd": "End {name}'s relationship with {carrierName}?",
+    "alreadyActive": "This driver already has an active relationship with this carrier."
+  },
+  "compliance": {
+    "title": "Compliance",
+    "description": "The same checks a dispatcher sees when assigning this driver to a load, evaluated per carrier relationship.",
+    "ok": "Ready for assignment to loads for this carrier.",
+    "blocked": "{count} reason(s) blocking assignment."
+  },
+  "currentLoad": {
+    "title": "Current & upcoming loads",
+    "empty": "No current or upcoming load commitments."
+  },
+  "tabs": {
+    "overview": "Overview",
+    "carriers": "Carriers",
+    "documents": "Documents",
+    "compliance": "Compliance",
+    "approval": "Approval",
+    "portal": "Portal access",
+    "history": "History"
+  },
+  "portal": {
+    "title": "Portal access",
+    "description": "Whether this driver can sign in to their own portal, and its status.",
+    "emailLabel": "Email address",
+    "invite": "Invite to portal",
+    "invited": "Invitation sent.",
+    "resendInvite": "Resend invitation",
+    "resent": "Invitation resent.",
+    "revokeInvite": "Revoke invitation",
+    "invitationRevoked": "Invitation revoked.",
+    "confirmRevokeInvite": "Revoke this pending invitation?",
+    "revokeAccess": "Revoke portal access",
+    "accessRevoked": "Portal access revoked.",
+    "confirmRevokeAccess": "Revoke this driver's portal access? They will no longer be able to sign in.",
+    "invitedOn": "Invited {email} on {date}. Awaiting acceptance.",
+    "noAccess": "This driver does not have portal access.",
+    "membershipStatus": {
+      "invited": "Invited",
+      "pending_verification": "Pending verification",
+      "active": "Active",
+      "suspended": "Suspended",
+      "deactivated": "Deactivated"
+    }
+  },
+  "columns": {
+    "name": "Name",
+    "status": "Status",
+    "verificationStatus": "Review",
+    "licenseExpiresAt": "Licence expires",
+    "medicalCardExpiresAt": "Medical card expires",
+    "carriers": "Carriers"
+  },
+  "filters": {
+    "allStatuses": "All statuses",
+    "allVerificationStates": "All review states",
+    "expiringSoon": "Expiring soon"
+  },
+  "expiring": {
+    "license": "Licences expiring soon",
+    "medicalCard": "Medical cards expiring soon",
+    "empty": "Nothing expiring in the selected window."
+  },
+  "actions": {
+    "create": "Add driver",
+    "edit": "Edit"
+  },
+  "errors": {
+    "duplicateLicense": "A driver with this CDL number already exists in this organization.",
+    "relationshipAlreadyActive": "This driver already has an active relationship with this carrier.",
+    "portalAlreadyLinked": "This driver already has a portal login.",
+    "portalNotLinked": "This driver does not have a portal login.",
+    "userNotDriverMember": "That user is not a driver-role member of this organization.",
+    "userAlreadyLinkedToDriver": "That user is already linked to a different driver."
+  }
+}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" role="img" aria-labelledby="goliathLogoTitle">
+  <title id="goliathLogoTitle">Goliath Dispatch</title>
+  <g transform="translate(0,0)">
+    <rect x="0" y="0" width="64" height="64" rx="14" fill="#062B5C" />
+    <path
+      d="M8 40 H17 L21 46 H43 L47 40 H56"
+      fill="none"
+      stroke="#F7F7F8"
+      stroke-width="3.2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle cx="24" cy="49.5" r="3.4" fill="#111827" stroke="#F7F7F8" stroke-width="1.4" />
+    <circle cx="40" cy="49.5" r="3.4" fill="#111827" stroke="#F7F7F8" stroke-width="1.4" />
+    <rect x="19" y="26" width="26" height="16" rx="2" fill="#FF5A00" />
+    <g clip-path="url(#goliathLoadClipFull)">
+      <path d="M15 30 L25 44 M23 30 L33 44 M31 30 L41 44" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3" />
+    </g>
+    <defs>
+      <clipPath id="goliathLoadClipFull">
+        <rect x="19" y="26" width="26" height="16" rx="2" />
+      </clipPath>
+    </defs>
+    <path d="M45 26 V19" stroke="#F7F7F8" stroke-width="1.6" stroke-linecap="round" />
+    <path d="M45 19 L52 21.5 L45 24 Z" fill="#FF5A00" />
+  </g>
+  <text x="78" y="30" font-family="'Roboto Condensed','Arial Narrow',sans-serif" font-weight="700" font-size="26" letter-spacing="0.5" fill="#062B5C">
+    GOLIATH
+  </text>
+  <text x="78" y="50" font-family="'Roboto Condensed','Arial Narrow',sans-serif" font-weight="700" font-size="18" letter-spacing="3" fill="#7C7C80">
+    DISPATCH
+  </text>
+</svg>

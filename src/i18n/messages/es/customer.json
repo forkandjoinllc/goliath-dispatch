@@ -1,0 +1,166 @@
+{
+  "title": "Clientes",
+  "list": {
+    "title": "Clientes",
+    "searchPlaceholder": "Buscar por empresa, DOT, MC o correo electrónico",
+    "new": "Nuevo cliente",
+    "empty": "Todavía no hay clientes. Cree su primer cliente para comenzar a crear cargas.",
+    "noResults": "Ningún cliente coincide con su búsqueda.",
+    "filters": {
+      "allStatuses": "Todos los estados"
+    }
+  },
+  "columns": {
+    "companyName": "Empresa",
+    "dotNumber": "DOT",
+    "mcNumber": "MC",
+    "phone": "Teléfono",
+    "email": "Correo electrónico",
+    "status": "Estado",
+    "primaryContact": "Contacto principal",
+    "city": "Ciudad",
+    "state": "Estado (US)"
+  },
+  "status": {
+    "active": "Activo",
+    "on_hold": "En espera",
+    "inactive": "Inactivo"
+  },
+  "fields": {
+    "companyName": "Nombre de la empresa",
+    "dotNumber": "Número DOT",
+    "mcNumber": "Número MC",
+    "website": "Sitio web",
+    "phone": "Teléfono",
+    "email": "Correo electrónico",
+    "physicalAddress": "Dirección física",
+    "billingAddress": "Dirección de facturación",
+    "billingSameAsPhysical": "La dirección de facturación es la misma que la dirección física",
+    "taxId": "Identificación fiscal (EIN)",
+    "taxIdReplace": "Reemplazar",
+    "taxIdCancel": "Cancelar",
+    "creditLimit": "Límite de crédito",
+    "creditApproved": "Crédito aprobado",
+    "creditNotes": "Notas de crédito",
+    "paymentTermsDays": "Plazo de pago (días)",
+    "usesFactoring": "Utiliza factoraje",
+    "factoringCompanyName": "Empresa de factoraje",
+    "notes": "Notas",
+    "status": "Estado"
+  },
+  "sections": {
+    "overview": "Resumen",
+    "contacts": "Contactos",
+    "locations": "Ubicaciones",
+    "loads": "Cargas",
+    "receivables": "Cuentas por cobrar",
+    "credit": "Crédito y facturación"
+  },
+  "contacts": {
+    "title": "Contactos",
+    "add": "Agregar contacto",
+    "edit": "Editar contacto",
+    "empty": "Todavía no hay contactos.",
+    "primary": "Principal",
+    "setPrimary": "Marcar como principal",
+    "delete": "Eliminar contacto",
+    "deleteConfirm": "¿Eliminar este contacto? Un administrador puede deshacer esta acción.",
+    "fields": {
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "phone": "Teléfono",
+      "phoneExtension": "Ext.",
+      "position": "Cargo",
+      "notes": "Notas",
+      "isPrimary": "Contacto principal"
+    }
+  },
+  "locations": {
+    "title": "Ubicaciones",
+    "add": "Agregar ubicación",
+    "edit": "Editar ubicación",
+    "empty": "Todavía no hay ubicaciones.",
+    "primary": "Predeterminada",
+    "setPrimary": "Marcar como predeterminada",
+    "delete": "Eliminar ubicación",
+    "deleteConfirm": "¿Eliminar esta ubicación? Las cargas que ya la referencian no se ven afectadas.",
+    "fields": {
+      "name": "Nombre de la ubicación",
+      "address": "Dirección",
+      "line1": "Dirección (calle y número)",
+      "line2": "Suite / unidad",
+      "phone": "Teléfono",
+      "hours": "Horario de operación",
+      "instructions": "Instrucciones de entrega",
+      "isPrimary": "Ubicación predeterminada",
+      "timezone": "Zona horaria"
+    }
+  },
+  "receivables": {
+    "title": "Cuentas por cobrar",
+    "openInvoiceCount": "Facturas abiertas",
+    "openBalance": "Saldo abierto",
+    "overdueInvoiceCount": "Facturas vencidas",
+    "overdueBalance": "Saldo vencido",
+    "empty": "Este cliente no tiene facturas abiertas."
+  },
+  "recentLoads": {
+    "title": "Cargas recientes",
+    "empty": "Este cliente todavía no tiene cargas.",
+    "viewAll": "Ver todas las cargas"
+  },
+  "duplicates": {
+    "title": "Esto se parece a una empresa con la que ya trabaja",
+    "description": "Encontramos {count, plural, one {un cliente existente} other {# clientes existentes}} que podría ser la misma empresa.",
+    "matchedOn": {
+      "dot": "Mismo número DOT",
+      "mc": "Mismo número MC",
+      "phone": "Mismo número de teléfono",
+      "email": "Mismo correo electrónico",
+      "name_address": "Mismo nombre de empresa y dirección"
+    },
+    "confidence": {
+      "exact": "Coincidencia exacta",
+      "likely": "Posible coincidencia"
+    },
+    "reviewPrompt": "Revise las coincidencias a continuación antes de continuar.",
+    "useExisting": "Usar cliente existente",
+    "differentCompany": "Esta es una empresa diferente",
+    "reasonLabel": "¿Por qué es una empresa diferente?",
+    "reasonPlaceholder": "p. ej. Misma empresa matriz, división operativa diferente en una dirección distinta",
+    "reasonRequired": "Se requiere una razón para crear un cliente que coincide con uno existente.",
+    "proceed": "Crear de todos modos",
+    "cancel": "Cancelar"
+  },
+  "new": {
+    "title": "Nuevo cliente",
+    "steps": {
+      "company": "Empresa",
+      "address": "Dirección",
+      "billing": "Facturación"
+    },
+    "submit": "Crear cliente",
+    "saveDraft": "Guardar borrador"
+  },
+  "edit": {
+    "title": "Editar cliente",
+    "submit": "Guardar cambios"
+  },
+  "actions": {
+    "edit": "Editar cliente",
+    "delete": "Eliminar cliente",
+    "deleteConfirm": "¿Eliminar este cliente? Las cargas existentes conservan su historial; no se podrán crear nuevas cargas para un cliente eliminado.",
+    "viewLoads": "Ver cargas"
+  },
+  "states": {
+    "loading": "Cargando clientes…",
+    "error": "No pudimos cargar los clientes.",
+    "permissionDenied": "No tiene permiso para ver los clientes."
+  },
+  "autocomplete": {
+    "placeholder": "Buscar clientes…",
+    "noResults": "No se encontraron clientes",
+    "createNew": "Crear \"{query}\" como nuevo cliente"
+  }
+}

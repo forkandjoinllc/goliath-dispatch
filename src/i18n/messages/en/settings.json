@@ -1,0 +1,348 @@
+{
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your name, contact details and locale preferences.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "locale": "Language",
+    "timezone": "Time zone",
+    "save": "Save changes",
+    "updated": "Profile updated."
+  },
+  "security": {
+    "title": "Security",
+    "subtitle": "Password, two-factor authentication and active sessions.",
+    "password": {
+      "title": "Password",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Update password",
+      "updated": "Password updated. Other devices have been signed out."
+    },
+    "mfa": {
+      "title": "Two-factor authentication",
+      "requiredNotice": "Your role requires two-factor authentication before you can use the rest of the app.",
+      "enrolled": "Enabled",
+      "notEnrolled": "Not set up",
+      "setup": "Set up two-factor authentication",
+      "disable": "Turn off two-factor authentication",
+      "cannotDisable": "Your role requires two-factor authentication. It cannot be turned off."
+    },
+    "sessions": {
+      "title": "Active sessions",
+      "subtitle": "Devices currently signed in to your account.",
+      "device": "Device",
+      "ipAddress": "IP address",
+      "lastSeen": "Last active",
+      "current": "This device",
+      "revoke": "Sign out",
+      "revokeAll": "Sign out of all other devices",
+      "revoked": "Session ended.",
+      "revokedAll": "Signed out of {count} other device(s)."
+    }
+  },
+  "preferences": {
+    "title": "Notification preferences",
+    "subtitle": "Choose how you want to hear about activity in your workspace.",
+    "channelInApp": "In-app",
+    "channelEmail": "Email",
+    "channelSms": "Text message",
+    "saved": "Preferences saved.",
+    "events": {
+      "document": {
+        "expiring": "A document is expiring soon",
+        "expired": "A document has expired",
+        "rejected": "A document was rejected"
+      },
+      "onboarding": {
+        "corrections_required": "A carrier's onboarding needs corrections",
+        "approved": "A carrier's onboarding was approved",
+        "rejected": "A carrier's onboarding was rejected"
+      },
+      "signature": {
+        "requested": "A signature was requested",
+        "signed": "A document was signed"
+      },
+      "load": {
+        "assigned": "A load was assigned",
+        "rate_confirmation_requested": "A rate confirmation needs your response"
+      },
+      "invoice": {
+        "sent": "An invoice was sent",
+        "overdue": "An invoice is overdue"
+      },
+      "expense": {
+        "rejected": "An expense was rejected"
+      },
+      "lead": {
+        "received": "A new lead arrived"
+      },
+      "export": {
+        "ready": "An export is ready to download"
+      }
+    }
+  },
+  "notificationsPage": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "empty": "You're all caught up",
+    "emptyHint": "New activity in your workspace will show up here.",
+    "unreadCount": "{count} unread"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Overview",
+      "activeCarriers": "Active carriers",
+      "pendingOnboarding": "Onboarding in review",
+      "documentsExpiring": "Documents expiring soon",
+      "documentsExpired": "Documents expired",
+      "teamMembers": "Team members",
+      "subscriptionStatus": "Subscription",
+      "activeLoads": "Active loads",
+      "openReceivables": "Open receivables",
+      "pendingSettlements": "Pending settlements",
+      "monthToDateMargin": "Month-to-date margin"
+    },
+    "accounting": {
+      "title": "Finance overview",
+      "subscriptionStatus": "Subscription",
+      "documentsExpiring": "Documents expiring soon",
+      "pendingOnboarding": "Onboarding awaiting review",
+      "activeLoads": "Active loads",
+      "openReceivables": "Open receivables",
+      "pendingSettlements": "Pending settlements",
+      "monthToDateMargin": "Month-to-date margin"
+    },
+    "dispatcher": {
+      "title": "My board",
+      "assignedCarriers": "Carriers assigned to me",
+      "documentsExpiring": "Documents expiring soon for my carriers",
+      "activeLoads": "My active loads",
+      "monthToDateMargin": "Month-to-date margin"
+    },
+    "carrierPortal": {
+      "title": "Your account",
+      "onboardingStatus": "Onboarding status",
+      "documentsExpiring": "Your documents expiring soon",
+      "activeLoads": "Active loads",
+      "amountOwedToUs": "You owe",
+      "amountOwedToYou": "Owed to you"
+    },
+    "comingSoon": "This depends on a module that has not shipped yet."
+  },
+  "actions": {
+    "save": "Save changes"
+  },
+  "hub": {
+    "title": "Company settings",
+    "description": "Company identity, branding, policy and retention for your whole workspace.",
+    "readOnly": "View only — your role cannot change this.",
+    "sections": {
+      "company": {
+        "title": "Company identity",
+        "description": "Legal name, display name, default locale, time zone and custom domain."
+      },
+      "contact": {
+        "title": "Contact & business hours",
+        "description": "Public contact details, mailing address, business hours and social links."
+      },
+      "branding": {
+        "title": "Branding",
+        "description": "Logo colors, fonts and the accessibility contrast check."
+      },
+      "operational": {
+        "title": "Operational policy",
+        "description": "Document expiration warnings, load/invoice numbering, and dispatcher permissions."
+      },
+      "financial": {
+        "title": "Financial policy",
+        "description": "Default carrier dispatch fee and dispatcher commission."
+      },
+      "retention": {
+        "title": "Retention & legal holds",
+        "description": "How long records are kept, and what is currently under legal hold."
+      },
+      "integrations": {
+        "title": "Integrations",
+        "description": "Tracking, maps, tolls, FMCSA, OCR, email, SMS and payment providers."
+      }
+    }
+  },
+  "company": {
+    "title": "Company identity",
+    "description": "How your company is identified across the app, invoices and the carrier portal.",
+    "legalName": "Legal name",
+    "displayName": "Display name",
+    "defaultLocale": "Default language",
+    "defaultTimezone": "Default time zone",
+    "customDomain": "Custom domain",
+    "customDomainHint": "Optional. Requires DNS verification before it takes effect.",
+    "saved": "Company identity updated."
+  },
+  "contact": {
+    "title": "Contact & business hours",
+    "description": "Shown on the customer and carrier portals and in outbound email.",
+    "contactTitle": "Contact information",
+    "phone": "Phone",
+    "email": "Public contact email",
+    "supportEmail": "Support email",
+    "addressTitle": "Mailing address",
+    "line1": "Address line 1",
+    "line2": "Address line 2",
+    "city": "City",
+    "state": "State",
+    "postalCode": "ZIP code",
+    "businessHoursTitle": "Business hours",
+    "closed": "Closed",
+    "days": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    },
+    "socialLinksTitle": "Social links",
+    "socialLinksLabel": "Links",
+    "socialLinksHint": "One per line, as name=url — for example: linkedin=https://linkedin.com/company/example",
+    "saved": "Contact information updated."
+  },
+  "branding": {
+    "title": "Branding",
+    "description": "Applied across the app shell, the carrier portal and outbound email.",
+    "primaryColor": "Primary color",
+    "accentColor": "Accent color",
+    "neutralColor": "Neutral color",
+    "surfaceColor": "Surface color",
+    "inkColor": "Text color",
+    "headingFont": "Heading font",
+    "bodyFont": "Body font",
+    "contrastRatio": "{ratio}:1 against white",
+    "contrastUnknown": "Enter a valid color to check contrast",
+    "contrastPass": "Meets WCAG AA",
+    "contrastFail": "Below WCAG AA (4.5:1)",
+    "previewTitle": "Live preview",
+    "previewHeading": "Goliath Dispatch",
+    "previewBody": "This is how body text will look against your surface color.",
+    "previewButton": "Primary action",
+    "saved": "Branding updated."
+  },
+  "operational": {
+    "title": "Operational policy",
+    "description": "Numbering, expiration warnings and dispatcher permissions.",
+    "documentExpirationWarningDays": "Document expiration warning (days)",
+    "documentExpirationWarningDaysHint": "How many days before a document expires it starts showing as \"expiring soon\".",
+    "fmcsaReverificationDays": "FMCSA re-verification interval (days)",
+    "loadNumberPrefix": "Load number prefix",
+    "invoiceNumberPrefix": "Invoice number prefix",
+    "defaultPaymentTermsDays": "Default payment terms (days)",
+    "publicTrackingEnabled": "Enable public tracking links",
+    "publicTrackingTokenTtlHours": "Public tracking link expiration (hours)",
+    "allowDispatcherResourceAssignment": "Allow dispatchers to assign trucks, trailers and drivers",
+    "allowDispatcherResourceAssignmentHint": "When off, only Admin may assign equipment and drivers to a load.",
+    "requireOversizeAdminValidation": "Require Admin validation for oversize loads",
+    "requireOversizeAdminValidationHint": "When on, an oversize load's permits and route must be validated by an Admin before dispatch.",
+    "saved": "Operational policy updated."
+  },
+  "financial": {
+    "title": "Financial policy",
+    "description": "Defaults applied to new loads; each load may still override them individually.",
+    "defaultCarrierDispatchFeeBps": "Default carrier dispatch fee",
+    "defaultCarrierDispatchFeeBpsHint": "Percentage of the carrier's gross rate retained as the dispatch fee.",
+    "defaultDispatcherCommissionBps": "Default dispatcher commission",
+    "defaultDispatcherCommissionBpsHint": "Percentage paid to the assigned dispatcher, computed from the basis below.",
+    "dispatcherCommissionBasis": "Dispatcher commission basis",
+    "basis": {
+      "dispatchFeeAmount": "Dispatch fee amount",
+      "carrierGrossRate": "Carrier gross rate",
+      "commissionableBase": "Commissionable base"
+    },
+    "saved": "Financial policy updated."
+  },
+  "retention": {
+    "title": "Retention & legal holds",
+    "description": "How long records are kept before archival and permanent deletion, and what is currently exempted by a legal hold.",
+    "policyTitle": "Retention policy",
+    "operationalActiveMonths": "Operational active window (months)",
+    "operationalActiveMonthsHint": "How long an operational record (loads, documents) stays active before archival.",
+    "operationalPurgeYearsAfterArchive": "Purge after archive (years)",
+    "operationalPurgeYearsAfterArchiveHint": "How long after archival an operational record is permanently deleted.",
+    "financialRetentionYears": "Financial record retention (years)",
+    "financialRetentionYearsHint": "Invoices, payments, settlements, signed agreements and audit events are never purged before this — minimum 7 years.",
+    "saved": "Retention policy updated.",
+    "eligibilityTitle": "Retention eligibility",
+    "columns": {
+      "entityType": "Record type",
+      "classification": "Classification",
+      "total": "Total",
+      "held": "Under hold",
+      "archiveEligible": "Archive-eligible",
+      "purgeEligible": "Purge-eligible"
+    },
+    "classification": {
+      "operational": "Operational",
+      "financial": "Financial"
+    },
+    "legalHold": {
+      "title": "Legal holds",
+      "name": "Hold name",
+      "scopeType": "Scope",
+      "scopeTenant": "Entire tenant",
+      "scopeEntityType": "One record type",
+      "scopeRecord": "One specific record",
+      "scope": {
+        "tenant": "Entire tenant",
+        "entity_type": "Record type",
+        "record": "Single record"
+      },
+      "entityType": "Record type",
+      "entityId": "Record ID",
+      "reason": "Reason",
+      "reasonHint": "Required. Explain the matter this hold preserves records for — this is recorded on the audit trail.",
+      "apply": "Apply legal hold",
+      "applied": "Legal hold applied.",
+      "active": "Active holds",
+      "noneActive": "No active legal holds.",
+      "released": "Released holds",
+      "release": "Release",
+      "releaseTitle": "Release legal hold",
+      "releaseDescription": "This releases \"{name}\". Records it uniquely covers become eligible for retention again unless another hold still covers them.",
+      "releaseReason": "Release reason"
+    }
+  },
+  "team": {
+    "title": "Users",
+    "description": "Admin, Dispatcher and Accounting accounts for your workspace.",
+    "inviteButton": "Invite user",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "invited": "Invited"
+    },
+    "empty": "No team members yet.",
+    "status": {
+      "invited": "Invited",
+      "pending_verification": "Pending verification",
+      "active": "Active",
+      "suspended": "Suspended",
+      "deactivated": "Deactivated"
+    },
+    "inviteDialog": {
+      "title": "Invite a user",
+      "description": "They will receive an email with a link to set up their account.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "role": "Role",
+      "rolePlaceholder": "Choose a role",
+      "submit": "Send invitation",
+      "success": "Invitation sent."
+    }
+  }
+}

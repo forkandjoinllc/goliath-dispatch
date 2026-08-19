@@ -1,0 +1,166 @@
+{
+  "title": "Customers",
+  "list": {
+    "title": "Customers",
+    "searchPlaceholder": "Search by company, DOT, MC or email",
+    "new": "New customer",
+    "empty": "No customers yet. Create your first customer to start building loads.",
+    "noResults": "No customers match your search.",
+    "filters": {
+      "allStatuses": "All statuses"
+    }
+  },
+  "columns": {
+    "companyName": "Company",
+    "dotNumber": "DOT",
+    "mcNumber": "MC",
+    "phone": "Phone",
+    "email": "Email",
+    "status": "Status",
+    "primaryContact": "Primary contact",
+    "city": "City",
+    "state": "State"
+  },
+  "status": {
+    "active": "Active",
+    "on_hold": "On hold",
+    "inactive": "Inactive"
+  },
+  "fields": {
+    "companyName": "Company name",
+    "dotNumber": "DOT number",
+    "mcNumber": "MC number",
+    "website": "Website",
+    "phone": "Phone",
+    "email": "Email",
+    "physicalAddress": "Physical address",
+    "billingAddress": "Billing address",
+    "billingSameAsPhysical": "Billing address is the same as the physical address",
+    "taxId": "Tax ID (EIN)",
+    "taxIdReplace": "Replace",
+    "taxIdCancel": "Cancel",
+    "creditLimit": "Credit limit",
+    "creditApproved": "Credit approved",
+    "creditNotes": "Credit notes",
+    "paymentTermsDays": "Payment terms (days)",
+    "usesFactoring": "Uses factoring",
+    "factoringCompanyName": "Factoring company",
+    "notes": "Notes",
+    "status": "Status"
+  },
+  "sections": {
+    "overview": "Overview",
+    "contacts": "Contacts",
+    "locations": "Locations",
+    "loads": "Loads",
+    "receivables": "Receivables",
+    "credit": "Credit & billing"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "add": "Add contact",
+    "edit": "Edit contact",
+    "empty": "No contacts yet.",
+    "primary": "Primary",
+    "setPrimary": "Make primary",
+    "delete": "Remove contact",
+    "deleteConfirm": "Remove this contact? This can be undone by an administrator.",
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "phoneExtension": "Ext.",
+      "position": "Title",
+      "notes": "Notes",
+      "isPrimary": "Primary contact"
+    }
+  },
+  "locations": {
+    "title": "Locations",
+    "add": "Add location",
+    "edit": "Edit location",
+    "empty": "No locations yet.",
+    "primary": "Default",
+    "setPrimary": "Make default",
+    "delete": "Remove location",
+    "deleteConfirm": "Remove this location? Loads that already reference it are not affected.",
+    "fields": {
+      "name": "Location name",
+      "address": "Address",
+      "line1": "Street address",
+      "line2": "Suite / unit",
+      "phone": "Phone",
+      "hours": "Hours of operation",
+      "instructions": "Delivery instructions",
+      "isPrimary": "Default location",
+      "timezone": "Time zone"
+    }
+  },
+  "receivables": {
+    "title": "Receivables",
+    "openInvoiceCount": "Open invoices",
+    "openBalance": "Open balance",
+    "overdueInvoiceCount": "Overdue invoices",
+    "overdueBalance": "Overdue balance",
+    "empty": "No open invoices for this customer."
+  },
+  "recentLoads": {
+    "title": "Recent loads",
+    "empty": "No loads for this customer yet.",
+    "viewAll": "View all loads"
+  },
+  "duplicates": {
+    "title": "This looks like a company you already work with",
+    "description": "We found {count, plural, one {one existing customer} other {# existing customers}} that may be the same company.",
+    "matchedOn": {
+      "dot": "Same DOT number",
+      "mc": "Same MC number",
+      "phone": "Same phone number",
+      "email": "Same email address",
+      "name_address": "Same company name and address"
+    },
+    "confidence": {
+      "exact": "Exact match",
+      "likely": "Likely match"
+    },
+    "reviewPrompt": "Review the matches below before continuing.",
+    "useExisting": "Use existing customer",
+    "differentCompany": "This is a different company",
+    "reasonLabel": "Why is this a different company?",
+    "reasonPlaceholder": "e.g. Same parent company, different operating division at a different address",
+    "reasonRequired": "A reason is required to create a customer that matches an existing one.",
+    "proceed": "Create anyway",
+    "cancel": "Cancel"
+  },
+  "new": {
+    "title": "New customer",
+    "steps": {
+      "company": "Company",
+      "address": "Address",
+      "billing": "Billing"
+    },
+    "submit": "Create customer",
+    "saveDraft": "Save draft"
+  },
+  "edit": {
+    "title": "Edit customer",
+    "submit": "Save changes"
+  },
+  "actions": {
+    "edit": "Edit customer",
+    "delete": "Delete customer",
+    "deleteConfirm": "Delete this customer? Existing loads keep their history; new loads cannot be created for a deleted customer.",
+    "viewLoads": "View loads"
+  },
+  "states": {
+    "loading": "Loading customers…",
+    "error": "We could not load customers.",
+    "permissionDenied": "You do not have permission to view customers."
+  },
+  "autocomplete": {
+    "placeholder": "Search customers…",
+    "noResults": "No matching customers",
+    "createNew": "Create \"{query}\" as a new customer"
+  }
+}

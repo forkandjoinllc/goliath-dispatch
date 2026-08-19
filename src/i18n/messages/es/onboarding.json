@@ -1,0 +1,85 @@
+{
+  "status": {
+    "draft": "Borrador",
+    "submitted": "Enviado",
+    "under_review": "En revisión",
+    "corrections_required": "Requiere correcciones",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "suspended": "Suspendido"
+  },
+  "statusDescription": {
+    "draft": "El perfil del transportista todavía se está completando y no ha sido enviado.",
+    "submitted": "Enviado y a la espera de revisión.",
+    "under_review": "Un administrador está revisando los documentos enviados.",
+    "corrections_required": "El transportista debe corregir o reenviar algo antes de continuar la revisión.",
+    "approved": "Aprobado. El transportista podrá ser asignado a cargas una vez que apruebe sus demás verificaciones de cumplimiento.",
+    "rejected": "La incorporación fue rechazada y no continuará.",
+    "suspended": "Aprobado, pero actualmente suspendido para recibir nuevas asignaciones de carga."
+  },
+  "checklist": {
+    "title": "Documentos requeridos",
+    "complete": "Completo",
+    "incomplete": "Incompleto",
+    "certificate_of_authority": "Certificado de autoridad",
+    "certificate_of_insurance": "Certificado de seguro (COI)",
+    "w9": "Formulario W-9",
+    "notice_of_assignment": "Aviso de cesión (Notice of Assignment)",
+    "change_of_payee": "Cambio de beneficiario (Change of Payee)"
+  },
+  "transitions": {
+    "submit": {
+      "action": "Enviar para revisión",
+      "confirm": "¿Enviar la incorporación de este transportista para revisión?",
+      "success": "Incorporación enviada para revisión."
+    },
+    "startReview": {
+      "action": "Iniciar revisión",
+      "confirm": "¿Iniciar la revisión de la incorporación de este transportista?"
+    },
+    "requestCorrections": {
+      "action": "Solicitar correcciones",
+      "confirm": "¿Devolver este transportista para que realice correcciones?",
+      "reasonLabel": "¿Qué se debe corregir?",
+      "reasonPlaceholder": "Describa exactamente qué debe corregir o reenviar el transportista."
+    },
+    "approve": {
+      "action": "Aprobar",
+      "confirm": "¿Aprobar la incorporación de este transportista?",
+      "success": "Incorporación aprobada."
+    },
+    "reject": {
+      "action": "Rechazar",
+      "confirm": "¿Rechazar la incorporación de este transportista?",
+      "reasonLabel": "Motivo del rechazo",
+      "reasonPlaceholder": "Explique por qué se rechaza esta incorporación."
+    },
+    "suspend": {
+      "action": "Suspender",
+      "confirm": "¿Suspender a este transportista?",
+      "reasonLabel": "Motivo de la suspensión",
+      "reasonPlaceholder": "Explique por qué se suspende a este transportista."
+    },
+    "reactivate": {
+      "action": "Reactivar",
+      "confirm": "¿Reactivar a este transportista?",
+      "reasonLabel": "Motivo de la reactivación",
+      "reasonPlaceholder": "Explique por qué se reactiva a este transportista."
+    }
+  },
+  "errors": {
+    "invalidTransition": "La incorporación no puede pasar de {from} a {to}.",
+    "missingDocuments": "Para enviar primero se requieren los siguientes documentos: {documents}.",
+    "blockedByCompliance": "Este transportista no puede aprobarse mientras queden {count} problema(s) de cumplimiento sin resolver."
+  },
+  "board": {
+    "title": "Tablero de incorporación",
+    "assignedDispatcher": "Despachador asignado",
+    "unassigned": "Sin asignar",
+    "missingDocuments": "Documentos faltantes",
+    "verificationProblems": "Problemas de verificación",
+    "expiringSoon": "Por vencer",
+    "lastActivity": "Última actividad",
+    "noCards": "No hay transportistas en este estado."
+  }
+}

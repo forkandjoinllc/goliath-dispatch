@@ -1,0 +1,493 @@
+{
+  "nav": {
+    "invoices": "Invoices",
+    "settlements": "Settlements",
+    "expenses": "Expenses",
+    "factoring": "Factoring"
+  },
+  "errors": {
+    "categoryCodeTaken": "A category with code \"{code}\" already exists.",
+    "categoryNotFound": "That expense category could not be found.",
+    "categoryInUse": "This category is used by at least one expense and cannot be deleted.",
+    "systemCategoryImmutable": "\"{code}\" is a system category and cannot be deleted.",
+    "systemCategoryTreatmentLocked": "\"{code}\" is a system category — its commission treatment cannot be changed.",
+    "expenseNotFound": "That expense could not be found.",
+    "expenseAlreadyRejected": "This expense was already rejected.",
+    "cannotRejectApprovedExpense": "An approved expense cannot be rejected directly. Contact an administrator to reverse it.",
+    "loadNotFound": "That load could not be found.",
+    "snapshotVersionConflict": "Another update to this load's financials happened at the same moment. Please try again.",
+    "invoiceNotFound": "That invoice could not be found.",
+    "invalidInvoiceTransition": "An invoice cannot move from \"{from}\" to \"{to}\".",
+    "invoiceNotPayable": "This invoice cannot accept a payment while it is \"{status}\".",
+    "invoiceAlreadyPaid": "This invoice is already paid in full.",
+    "paymentNotFound": "That payment could not be found.",
+    "paymentAlreadyRefunded": "This payment has already been fully refunded.",
+    "settlementNotFound": "That settlement could not be found.",
+    "invalidSettlementTransition": "A settlement cannot move from \"{from}\" to \"{to}\".",
+    "commissionNotFound": "That commission record could not be found.",
+    "invalidCommissionTransition": "A commission cannot move from \"{from}\" to \"{to}\".",
+    "factoringCompanyNotFound": "That factoring company could not be found.",
+    "factoringCompanyNameTaken": "A factoring company named \"{name}\" already exists.",
+    "factoringCompanyInUse": "This factoring company has at least one carrier assignment and cannot be deleted.",
+    "factoringAssignmentNotFound": "That factoring assignment could not be found."
+  },
+  "validation": {
+    "amountPositive": "Enter an amount greater than zero.",
+    "categoryInactive": "This expense category is inactive and cannot accept new expenses.",
+    "receiptRequired": "This category requires a receipt to be attached.",
+    "expenseNeedsLoadOrCarrier": "Select the load or the carrier this expense belongs to.",
+    "rejectionReasonRequired": "Enter a reason for rejecting this expense.",
+    "reasonRequired": "Enter a reason.",
+    "endAfterStart": "The period end date must be after the start date.",
+    "loadMissingCarrier": "This load has no carrier assigned yet, so an invoice cannot be created.",
+    "noLoadsInPeriod": "No eligible loads were found for this carrier in the selected period.",
+    "overpayment": "This payment cannot exceed the remaining balance of ${maxAmount}.",
+    "refundExceedsAvailable": "This refund cannot exceed the refundable amount of ${maxAmount}.",
+    "selectAtLeastOne": "Select at least one item."
+  },
+  "email": {
+    "invoiceSubject": "Invoice {invoiceNumber} from {tenant}",
+    "invoiceBody": "Your invoice {invoiceNumber} from {tenant} is attached. Please remit payment by the due date shown."
+  },
+  "formulas": {
+    "title": "How this load's numbers are calculated",
+    "commissionableBase": {
+      "label": "Commissionable base",
+      "explanation": "The carrier's gross rate minus any approved expenses marked \"excluded from commission\" (permits and escorts, by default). This is the amount the dispatch fee is calculated on — money that only passed through the load, like a permit fee, is never used to compute the fee."
+    },
+    "dispatchFee": {
+      "label": "Dispatch fee",
+      "explanation": "The commissionable base multiplied by the carrier's dispatch fee percentage. This is what the carrier is invoiced for — Goliath Dispatch's charge for booking and managing the load."
+    },
+    "netSettlement": {
+      "label": "Net carrier settlement",
+      "explanation": "The carrier's gross rate, plus any approved reimbursable expenses, minus the dispatch fee, minus any carrier deductions. This is what the carrier is owed for the load."
+    },
+    "grossMargin": {
+      "label": "Gross margin",
+      "explanation": "The customer's charge minus the carrier's gross rate minus any expenses the dispatch company absorbed itself. This is the load's profit before dispatcher commission."
+    },
+    "dispatcherCommission": {
+      "label": "Dispatcher commission",
+      "explanation": "The dispatcher's commission percentage applied to the chosen basis (the dispatch fee, the carrier's gross rate, or the commissionable base). This is a cost to the dispatch company — it never reduces what the carrier is paid."
+    }
+  },
+  "commissionBasis": {
+    "dispatch_fee_amount": "Dispatch fee amount",
+    "carrier_gross_rate": "Carrier gross rate",
+    "commissionable_base": "Commissionable base"
+  },
+  "expenseTreatment": {
+    "excluded_from_commission": "Excluded from commission",
+    "reimbursable_to_carrier": "Reimbursable to carrier",
+    "tenant_absorbed": "Absorbed by dispatch company",
+    "carrier_deduction": "Carrier deduction",
+    "excluded_from_commission_hint": "Removed from the commissionable base before the dispatch fee is calculated.",
+    "reimbursable_to_carrier_hint": "Added back to the carrier's settlement.",
+    "tenant_absorbed_hint": "Paid by the dispatch company; reduces gross margin.",
+    "carrier_deduction_hint": "Deducted from the carrier's settlement and billed on the carrier's invoice."
+  },
+  "expense": {
+    "title": "Expenses",
+    "fields": {
+      "load": "Load",
+      "carrier": "Carrier",
+      "category": "Category",
+      "amount": "Amount",
+      "description": "Description",
+      "incurredOn": "Date incurred",
+      "receipt": "Receipt",
+      "status": "Status",
+      "submittedBy": "Submitted by",
+      "submittedAt": "Submitted on",
+      "reviewedBy": "Reviewed by",
+      "reviewedAt": "Reviewed on",
+      "rejectionReason": "Rejection reason",
+      "treatmentSnapshot": "Treatment at submission"
+    },
+    "status": {
+      "submitted": "Submitted",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "reimbursed": "Reimbursed"
+    },
+    "list": {
+      "new": "Submit expense",
+      "empty": "No expenses yet.",
+      "searchPlaceholder": "Search descriptions…",
+      "allStatuses": "All statuses"
+    },
+    "submit": {
+      "title": "Submit an expense",
+      "description": "Attach a receipt when the category requires one — the reviewer cannot approve an expense with a missing required receipt.",
+      "submitAction": "Submit expense",
+      "success": "Expense submitted for review.",
+      "searchLoadPlaceholder": "Search by load number…",
+      "searchCarrierPlaceholder": "Search carriers…",
+      "receiptDropHint": "Drag a receipt here, or",
+      "receiptAcceptedTypes": "JPEG, PNG or PDF",
+      "receiptMaxSize": "Up to 10 MB"
+    },
+    "approvalQueue": {
+      "title": "Expense approvals",
+      "empty": "Nothing is waiting for review.",
+      "approve": "Approve",
+      "approveSelected": "Approve selected",
+      "reject": "Reject",
+      "rejectTitle": "Reject expense",
+      "rejectReasonLabel": "Reason for rejection",
+      "confirmApprove": "Approve this expense? It will be included in the load's next financial snapshot.",
+      "approvedToast": "Expense approved.",
+      "rejectedToast": "Expense rejected.",
+      "bulkApprovedToast": "{count} expense(s) approved."
+    },
+    "category": {
+      "title": "Expense categories",
+      "new": "New category",
+      "edit": "Edit category",
+      "code": "Code",
+      "labelEn": "English label",
+      "labelEs": "Spanish label",
+      "treatment": "Commission treatment",
+      "requiresReceipt": "Requires a receipt",
+      "active": "Active",
+      "sortOrder": "Sort order",
+      "systemBadge": "System category",
+      "systemLockedHint": "System categories cannot be deleted, and their commission treatment cannot be changed — this is required so already-settled math can never be rewritten.",
+      "deleteConfirmTitle": "Delete category",
+      "deleteConfirmBody": "This category will no longer be available for new expenses. Existing expenses keep the treatment they were submitted with.",
+      "createSuccess": "Category created.",
+      "updateSuccess": "Category updated.",
+      "deleteSuccess": "Category removed."
+    }
+  },
+  "invoice": {
+    "title": "Invoices",
+    "detail": {
+      "title": "Invoice {invoiceNumber}",
+      "billTo": "Bill to",
+      "lineItems": "Line items",
+      "paymentHistory": "Payment history",
+      "paymentAttempts": "Payment attempts",
+      "auditHistory": "History"
+    },
+    "fields": {
+      "invoiceNumber": "Invoice number",
+      "carrier": "Carrier",
+      "load": "Load",
+      "status": "Status",
+      "subtotal": "Subtotal",
+      "adjustments": "Adjustments",
+      "total": "Total",
+      "amountPaid": "Amount paid",
+      "balance": "Balance",
+      "issueDate": "Issue date",
+      "dueDate": "Due date",
+      "paymentTerms": "Payment terms",
+      "paymentTermsDays": "Net {days}",
+      "sentAt": "Sent on",
+      "paidAt": "Paid on",
+      "voidedAt": "Voided on",
+      "voidReason": "Void reason",
+      "disputedAt": "Disputed on",
+      "disputeReason": "Dispute reason",
+      "uncollectableAt": "Marked uncollectable on",
+      "notes": "Notes"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "due": "Due",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "disputed": "Disputed",
+      "voided": "Voided",
+      "uncollectable": "Uncollectable"
+    },
+    "lineItemKind": {
+      "dispatch_fee": "Dispatch fee",
+      "expense": "Expense",
+      "adjustment": "Adjustment",
+      "credit": "Credit"
+    },
+    "aging": {
+      "title": "Aging",
+      "current": "Current",
+      "0-30": "0–30 days",
+      "31-60": "31–60 days",
+      "61-90": "61–90 days",
+      "90+": "90+ days"
+    },
+    "list": {
+      "empty": "No invoices yet.",
+      "searchPlaceholder": "Search invoice number or carrier…",
+      "allStatuses": "All statuses",
+      "overdueOnly": "Overdue only",
+      "newInvoice": "Create invoice"
+    },
+    "actions": {
+      "send": "Send invoice",
+      "sendConfirm": "Send this invoice to the carrier by email with a PDF attached?",
+      "sentToast": "Invoice sent.",
+      "downloadPdf": "Download PDF",
+      "recordPayment": "Record payment",
+      "recordPaymentTitle": "Record a manual payment",
+      "recordPaymentSuccess": "Payment recorded.",
+      "void": "Void invoice",
+      "voidTitle": "Void this invoice",
+      "voidReasonLabel": "Reason for voiding",
+      "voidedToast": "Invoice voided.",
+      "dispute": "Mark disputed",
+      "disputeTitle": "Mark this invoice disputed",
+      "disputeReasonLabel": "Reason for the dispute",
+      "disputedToast": "Invoice marked disputed.",
+      "markUncollectable": "Mark uncollectable",
+      "uncollectableTitle": "Mark this invoice uncollectable",
+      "uncollectableReasonLabel": "Reason",
+      "uncollectableToast": "Invoice marked uncollectable.",
+      "markDue": "Mark due",
+      "markDueTitle": "Mark this invoice due",
+      "markPaidTitle": "Mark this invoice paid",
+      "markPaidConfirm": "Record this uncollectable invoice as paid? Use this only after payment was actually received outside the normal flow.",
+      "payNow": "Pay now",
+      "refund": "Refund",
+      "refundTitle": "Refund this payment",
+      "refundReasonLabel": "Reason for the refund",
+      "refundAmountLabel": "Refund amount (leave blank for a full refund)",
+      "refundSuccess": "Refund recorded."
+    },
+    "payment": {
+      "method": {
+        "card": "Card",
+        "ach": "ACH bank transfer",
+        "check": "Check",
+        "wire": "Wire transfer",
+        "cash": "Cash",
+        "offset": "Offset against settlement",
+        "other": "Other"
+      },
+      "fields": {
+        "amount": "Amount",
+        "method": "Payment method",
+        "reference": "Reference / check number",
+        "receivedAt": "Received on",
+        "notes": "Notes"
+      },
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "refunded": "Refunded",
+        "partially_refunded": "Partially refunded",
+        "disputed": "Disputed",
+        "cancelled": "Cancelled"
+      },
+      "panelTitle": "Pay this invoice",
+      "panelDescription": "Pay the remaining balance of {balance} by card or ACH bank transfer.",
+      "payWithCard": "Pay with card",
+      "payWithAch": "Pay with ACH bank transfer",
+      "processing": "Processing payment…",
+      "success": "Payment submitted.",
+      "mockNotice": "Test mode: no real card network or bank is contacted. This panel drives the same payment flow production Stripe uses, with a simulated card network.",
+      "mockCardLabel": "Test card number",
+      "mockSubmit": "Submit test payment",
+      "attemptFailed": "The payment attempt failed: {reason}",
+      "mockOnlyError": "Test-mode payment is unavailable because a live payment processor is configured.",
+      "attemptStatus": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "refunded": "Refunded",
+        "partially_refunded": "Partially refunded",
+        "disputed": "Disputed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "receivables": {
+      "outstanding": "Outstanding",
+      "overdue": "Overdue",
+      "draftCount": "Drafts",
+      "sentCount": "Awaiting payment",
+      "overdueCount": "Overdue invoices",
+      "disputedCount": "Disputed"
+    }
+  },
+  "commission": {
+    "title": "Dispatcher commissions",
+    "fields": {
+      "dispatcher": "Dispatcher",
+      "load": "Load",
+      "basis": "Basis",
+      "basisAmount": "Basis amount",
+      "percentage": "Percentage",
+      "amount": "Amount",
+      "status": "Status",
+      "paidAt": "Paid on"
+    },
+    "status": {
+      "accrued": "Accrued",
+      "approved": "Approved",
+      "paid": "Paid",
+      "voided": "Voided"
+    },
+    "actions": {
+      "approve": "Approve",
+      "markPaid": "Mark paid",
+      "bulkApprove": "Approve selected",
+      "bulkMarkPaid": "Mark selected paid"
+    },
+    "summary": {
+      "title": "Commission summary",
+      "period": "Period",
+      "accrued": "Accrued",
+      "approved": "Approved",
+      "paid": "Paid",
+      "total": "Total"
+    }
+  },
+  "settlement": {
+    "title": "Settlements",
+    "detail": {
+      "title": "Settlement {settlementNumber}",
+      "lines": "Loads in this settlement",
+      "totals": "Totals"
+    },
+    "fields": {
+      "settlementNumber": "Settlement number",
+      "carrier": "Carrier",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "grossRate": "Gross rate",
+      "reimbursements": "Reimbursements",
+      "dispatchFees": "Dispatch fees",
+      "deductions": "Deductions",
+      "netAmount": "Net amount",
+      "status": "Status",
+      "issuedAt": "Issued on",
+      "paidAt": "Paid on",
+      "notes": "Notes",
+      "factoringCompany": "Factoring company",
+      "factoringSubmittedAt": "Submitted to factor on"
+    },
+    "status": {
+      "draft": "Draft",
+      "issued": "Issued",
+      "paid": "Paid",
+      "voided": "Voided"
+    },
+    "list": {
+      "empty": "No settlements yet.",
+      "generate": "Generate settlement"
+    },
+    "generate": {
+      "title": "Generate a settlement",
+      "description": "Builds a settlement from every load for this carrier whose financial snapshot falls inside the selected period. A load already included in an earlier settlement is never included twice.",
+      "carrier": "Carrier",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "notes": "Notes",
+      "submit": "Generate settlement",
+      "success": "Settlement {settlementNumber} generated with {lineCount} load(s)."
+    },
+    "actions": {
+      "issue": "Issue settlement",
+      "issueConfirm": "Issue this settlement? A PDF statement will be generated.",
+      "issuedToast": "Settlement issued.",
+      "markPaid": "Mark paid",
+      "markPaidToast": "Settlement marked paid.",
+      "void": "Void settlement",
+      "voidReasonLabel": "Reason for voiding",
+      "voidedToast": "Settlement voided.",
+      "downloadPdf": "Download PDF",
+      "submitToFactor": "Record submission to factoring company"
+    },
+    "statement": {
+      "title": "Carrier statement",
+      "description": "A running account of settlements issued to this carrier and invoices billed to this carrier — separate from any single settlement's own statement.",
+      "date": "Date",
+      "description_column": "Description",
+      "amount": "Amount",
+      "runningBalance": "Running balance",
+      "kind": {
+        "settlement_issued": "Settlement issued",
+        "settlement_paid": "Settlement paid",
+        "invoice_charge": "Invoice charged",
+        "invoice_payment": "Invoice paid"
+      },
+      "empty": "No activity in this period."
+    }
+  },
+  "factoring": {
+    "title": "Factoring",
+    "manualNoticeBanner": "Factoring is a manual record-keeping workflow. Nothing on this screen contacts a factoring company automatically — every status here reflects what a person on your team confirmed by phone, email or paperwork.",
+    "manualNoticeShort": "Manual workflow — no automated funding integration.",
+    "awaitingManualVerification": "Awaiting manual verification",
+    "submittedToFactorOn": "Submitted to factor on {date}",
+    "companies": {
+      "title": "Factoring companies",
+      "new": "New factoring company",
+      "edit": "Edit factoring company",
+      "empty": "No factoring companies yet.",
+      "fields": {
+        "name": "Company name",
+        "contactName": "Contact name",
+        "email": "Email",
+        "phone": "Phone",
+        "addressLine1": "Address",
+        "addressCity": "City",
+        "addressState": "State",
+        "addressPostalCode": "ZIP code",
+        "fundingInstructions": "Funding instructions",
+        "active": "Active"
+      },
+      "createSuccess": "Factoring company created.",
+      "updateSuccess": "Factoring company updated.",
+      "deleteSuccess": "Factoring company removed.",
+      "deleteConfirmTitle": "Delete factoring company",
+      "deleteConfirmBody": "This company will no longer be selectable for new carrier assignments."
+    },
+    "assignments": {
+      "title": "Carrier factoring assignments",
+      "new": "New assignment",
+      "empty": "This carrier has no factoring assignment on file.",
+      "fields": {
+        "carrier": "Carrier",
+        "factoringCompany": "Factoring company",
+        "verificationStatus": "Verification status",
+        "effectiveFrom": "Effective from",
+        "effectiveTo": "Effective to",
+        "verifiedBy": "Verified by",
+        "verifiedAt": "Verified on",
+        "notes": "Notes",
+        "noticeOfAssignment": "Notice of Assignment",
+        "changeOfPayee": "Change of Payee"
+      },
+      "verificationStatus": {
+        "not_started": "Not started — awaiting manual verification",
+        "pending": "Pending manual verification",
+        "verified": "Manually verified",
+        "mismatch": "Mismatch found — needs review",
+        "failed": "Verification failed",
+        "manually_overridden": "Manually overridden",
+        "expired": "Verification expired — re-verify"
+      },
+      "documentKind": {
+        "notice_of_assignment": "Notice of Assignment",
+        "change_of_payee": "Change of Payee"
+      },
+      "uploadDocument": "Upload document",
+      "uploadNoticeOfAssignment": "Upload Notice of Assignment",
+      "uploadChangeOfPayee": "Upload Change of Payee",
+      "setVerificationStatus": "Update verification status",
+      "setVerificationStatusReason": "Note on how this was verified (call, email, signed document…)",
+      "endAssignment": "End assignment",
+      "endAssignmentConfirm": "End this factoring assignment as of today?",
+      "createSuccess": "Assignment created — awaiting manual verification.",
+      "updateSuccess": "Assignment updated.",
+      "uploadSuccess": "Document attached.",
+      "endSuccess": "Assignment ended."
+    }
+  }
+}

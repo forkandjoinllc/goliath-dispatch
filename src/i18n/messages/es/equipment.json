@@ -1,0 +1,176 @@
+{
+  "title": "Equipo",
+  "trucks": {
+    "title": "Camiones",
+    "new": "Agregar camión",
+    "edit": "Editar camión",
+    "detail": "Camión {unitNumber}",
+    "empty": "Todavía no hay camiones. Agregue el primero para comenzar.",
+    "searchPlaceholder": "Buscar por número de unidad o VIN"
+  },
+  "trailers": {
+    "title": "Remolques",
+    "new": "Agregar remolque",
+    "edit": "Editar remolque",
+    "detail": "Remolque {unitNumber}",
+    "empty": "Todavía no hay remolques. Agregue el primero para comenzar.",
+    "searchPlaceholder": "Buscar por número de unidad o VIN"
+  },
+  "fields": {
+    "carrier": "Transportista",
+    "unitNumber": "Número de unidad",
+    "vin": "VIN",
+    "year": "Año",
+    "make": "Marca",
+    "model": "Modelo",
+    "equipmentType": "Tipo de equipo",
+    "plateNumber": "Número de placa",
+    "plateState": "Estado de la placa",
+    "status": "Estado",
+    "registrationNumber": "Número de registro",
+    "registrationExpiresAt": "Vencimiento del registro",
+    "lastInspectionAt": "Última inspección",
+    "nextInspectionDueAt": "Próxima inspección vence",
+    "lastMaintenanceAt": "Último mantenimiento",
+    "nextMaintenanceDueAt": "Próximo mantenimiento vence",
+    "outOfServiceReason": "Motivo de fuera de servicio",
+    "notes": "Notas",
+    "lengthInches": "Longitud",
+    "widthInches": "Ancho",
+    "deckHeightInches": "Altura de la plataforma",
+    "wellLengthInches": "Longitud del pozo (well)",
+    "capacityPounds": "Capacidad",
+    "axleCount": "Cantidad de ejes",
+    "axleConfiguration": "Configuración de ejes",
+    "removableGooseneck": "Cuello de ganso desmontable (RGN)",
+    "isExtendable": "Extensible",
+    "coiVerificationStatus": "Verificación de COI / VIN"
+  },
+  "status": {
+    "pending_verification": "Pendiente de verificación",
+    "active": "Activo",
+    "out_of_service": "Fuera de servicio",
+    "archived": "Archivado"
+  },
+  "verificationStatus": {
+    "not_started": "No iniciada",
+    "pending": "Pendiente",
+    "verified": "Verificada",
+    "mismatch": "No coincide",
+    "failed": "Fallida",
+    "manually_overridden": "Anulada manualmente",
+    "expired": "Vencida"
+  },
+  "vin": {
+    "helpText": "Ingrese el VIN de 17 caracteres. Al salir del campo, decodificaremos automáticamente el año del modelo y el fabricante.",
+    "decoding": "Decodificando VIN…",
+    "decodedBanner": "El año y la marca se completaron a partir del VIN. Revíselos antes de guardar; siempre puede sobrescribirlos.",
+    "decodeNoMatch": "No pudimos reconocer el fabricante de este VIN. Ingrese año, marca y modelo manualmente.",
+    "checkDigitInvalid": "El dígito verificador de este VIN no coincide; revíselo antes de guardar.",
+    "invalidFormat": "Ingrese un VIN válido de 17 caracteres.",
+    "sourceVinDecode": "Del decodificador de VIN",
+    "sourceManual": "Ingresado manualmente"
+  },
+  "media": {
+    "title": "Multimedia",
+    "description": "Se requieren al menos {required} fotos antes de poder marcar esta unidad como activa, cubriendo los cuatro ángulos requeridos.",
+    "angles": {
+      "front": "Frente",
+      "rear": "Parte trasera",
+      "driver_side": "Lado del conductor",
+      "passenger_side": "Lado del pasajero",
+      "interior": "Interior",
+      "detail": "Detalle"
+    },
+    "requiredAngle": "Ángulo requerido",
+    "optionalAngle": "Opcional",
+    "upload": "Subir foto",
+    "uploadVideo": "Subir video",
+    "reorder": "Reordenar",
+    "delete": "Quitar",
+    "confirmDelete": "¿Quitar esta foto? Esta acción no se puede deshacer.",
+    "missingAnglesWarning": "Faltan ángulos requeridos: {angles}.",
+    "allAnglesCaptured": "Los cuatro ángulos requeridos están capturados.",
+    "photoCount": "{count} de {required} fotos requeridas",
+    "caption": "Descripción",
+    "captionPlaceholder": "Nota opcional sobre esta foto",
+    "empty": "Todavía no se han subido fotos ni video."
+  },
+  "compliance": {
+    "title": "Cumplimiento",
+    "description": "Las mismas verificaciones que ve un despachador al asignar esta unidad a una carga.",
+    "ok": "Esta unidad está lista para ser asignada.",
+    "blocked": "{count} motivo(s) bloqueando la asignación.",
+    "warnings": "{count} advertencia(s)",
+    "override": "Anular",
+    "coiVerification": "Verificación del certificado de seguro",
+    "extractedVins": "VIN encontrados en el certificado",
+    "matchedVin": "VIN coincidente",
+    "noMatch": "No se encontró coincidencia en el certificado de seguro actual."
+  },
+  "types": {
+    "title": "Tipos de equipo",
+    "description": "Agregue o edite los tipos de camión y remolque disponibles para esta organización, sin necesidad de una nueva implementación.",
+    "new": "Agregar tipo",
+    "edit": "Editar tipo",
+    "code": "Código",
+    "labelEn": "Etiqueta (inglés)",
+    "labelEs": "Etiqueta (español)",
+    "category": "Categoría",
+    "categoryTruck": "Camión",
+    "categoryTrailer": "Remolque",
+    "supportsRgn": "Admite cuello de ganso desmontable (RGN)",
+    "sortOrder": "Orden",
+    "active": "Activo",
+    "systemBadge": "Tipo del sistema",
+    "systemTypeHelp": "Los tipos del sistema vienen incluidos con el producto y los usan las reglas de cumplimiento y de sobredimensión. Pueden desactivarse pero nunca eliminarse.",
+    "deactivate": "Desactivar",
+    "reactivate": "Reactivar",
+    "delete": "Eliminar",
+    "confirmDeactivate": "¿Desactivar {label}? Ya no podrá seleccionarse en equipo nuevo.",
+    "confirmDelete": "¿Eliminar {label}? Esta acción no se puede deshacer.",
+    "empty": "Todavía no hay tipos de equipo."
+  },
+  "actions": {
+    "create": "Agregar equipo",
+    "edit": "Editar",
+    "activate": "Marcar activo",
+    "setOutOfService": "Marcar fuera de servicio",
+    "reactivate": "Volver a servicio",
+    "archive": "Archivar"
+  },
+  "confirm": {
+    "activate": "¿Marcar {unitNumber} como activo? Esto requiere que se cumpla el control de cumplimiento.",
+    "setOutOfService": "¿Marcar {unitNumber} como fuera de servicio?",
+    "archive": "¿Archivar {unitNumber}? El equipo archivado no puede asignarse a cargas."
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "media": "Multimedia",
+    "compliance": "Cumplimiento",
+    "documents": "Documentos",
+    "history": "Historial"
+  },
+  "columns": {
+    "unitNumber": "Unidad",
+    "vin": "VIN",
+    "type": "Tipo",
+    "status": "Estado",
+    "compliance": "Cumplimiento",
+    "registrationExpiresAt": "Registro",
+    "nextInspectionDueAt": "Inspección"
+  },
+  "filters": {
+    "allStatuses": "Todos los estados",
+    "allTypes": "Todos los tipos",
+    "allVerificationStates": "Todos los estados de verificación",
+    "expiringSoon": "Por vencer"
+  },
+  "errors": {
+    "invalidTransition": "El equipo no puede pasar de {from} a {to}.",
+    "blockedByCompliance": "Este equipo no puede marcarse como activo mientras {count} motivo(s) de cumplimiento sigan sin resolverse.",
+    "duplicateTypeCode": "Ya existe un tipo de equipo con el código {code}.",
+    "systemTypeImmutable": "{code} es un tipo del sistema y solo puede desactivarse, no eliminarse.",
+    "outOfServiceReasonRequired": "Se requiere un motivo para marcar el equipo fuera de servicio."
+  }
+}

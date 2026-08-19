@@ -1,0 +1,601 @@
+{
+  "meta": {
+    "title": "Goliath Dispatch — Heavy-Haul Dispatch Software",
+    "description": "Carrier onboarding, compliance, dispatch, tracking, permits and escorts, and settlements in one bilingual system built for US heavy-haul dispatch companies."
+  },
+  "seo": {
+    "home": {
+      "title": "Goliath Dispatch — Heavy-Haul Dispatch Software",
+      "description": "Run carrier onboarding, compliance, dispatch, tracking, permits and escorts, and settlements in one bilingual system built for US heavy-haul dispatch companies."
+    },
+    "services": {
+      "title": "Services — Dispatch, Compliance, Documents, Invoicing, Tracking, Permits",
+      "description": "Everything a heavy-haul dispatch office runs on: load dispatch, carrier onboarding and compliance, document management, invoicing and settlements, tracking, and permits and escorts."
+    },
+    "heavyHaul": {
+      "title": "Heavy Haul & Oversize — Permits, Escorts and Route Surveys",
+      "description": "Legal-limit baselines, what triggers a permit, what triggers an escort, route surveys, and how state rules vary — with a clear line between operational guidance and a legal determination."
+    },
+    "forCarriers": {
+      "title": "For Carriers — Onboarding, Verification and Settlements",
+      "description": "What carrier onboarding requires, how FMCSA and equipment verification work, and how dispatch fee settlements are computed and preserved."
+    },
+    "forClients": {
+      "title": "For Shippers & Brokers — Quoting and Tracking",
+      "description": "Request a quote and track your freight with a secure link — no account required in this release."
+    },
+    "about": {
+      "title": "About Goliath Dispatch",
+      "description": "Built by people who have run dispatch boards, not just software teams — why compliance gates and immutable settlements are the default, not a feature toggle."
+    },
+    "contact": {
+      "title": "Contact Goliath Dispatch",
+      "description": "Reach our team directly by phone, email, or the contact form. Business hours and office address included."
+    },
+    "resources": {
+      "title": "Resources — Guides, Checklists and Compliance Bulletins",
+      "description": "Guides, checklists and bulletins for running a compliant, efficient heavy-haul dispatch operation."
+    },
+    "carrierSignup": {
+      "title": "Carrier Signup — Join a Dispatch Company on Goliath Dispatch",
+      "description": "Submit your company, contact and equipment information to start carrier onboarding, including required documents and what happens next."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "How Goliath Dispatch collects, uses, retains and protects data, including SMS and tracking consent."
+    },
+    "terms": {
+      "title": "Terms and Conditions",
+      "description": "The terms governing use of the Goliath Dispatch platform by dispatch companies, carriers, drivers and customers."
+    }
+  },
+  "header": {
+    "requestQuoteCta": "Request a quote",
+    "getStartedCta": "Get started",
+    "mobileMenuOpen": "Open menu",
+    "mobileMenuClose": "Close menu",
+    "mobileMenuLabel": "Site navigation"
+  },
+  "footer": {
+    "tagline": "Heavy-haul dispatch software for US transportation dispatch companies.",
+    "productHeading": "Product",
+    "companyHeading": "Company",
+    "legalHeading": "Legal",
+    "contactHeading": "Contact",
+    "hoursHeading": "Business hours",
+    "followHeading": "Follow us",
+    "copyright": "© {year} Goliath Dispatch. All rights reserved.",
+    "hours": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "closed": "Closed"
+    }
+  },
+  "common": {
+    "operationalGuidanceOnly": "Operational guidance, not a legal determination.",
+    "learnMore": "Learn more"
+  },
+  "forms": {
+    "labels": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "companyName": "Company name",
+      "dotNumber": "USDOT number",
+      "mcNumber": "MC number",
+      "ein": "EIN",
+      "message": "Message",
+      "notes": "Notes",
+      "commodity": "Commodity",
+      "weightPounds": "Weight (lb)",
+      "length": "Length",
+      "width": "Width",
+      "height": "Height",
+      "feet": "ft",
+      "inches": "in",
+      "originCity": "Origin city",
+      "originState": "Origin state",
+      "destinationCity": "Destination city",
+      "destinationState": "Destination state",
+      "readyDate": "Ready date",
+      "equipmentPreference": "Equipment preference",
+      "isOversizeSuspected": "I think this load may be oversize",
+      "legalName": "Legal business name",
+      "dba": "DBA (if different)",
+      "website": "Company website",
+      "preferredLanguage": "Preferred language",
+      "factoringApplies": "I factor my invoices",
+      "physicalAddress": "Physical address",
+      "mailingAddress": "Mailing address",
+      "mailingSameAsPhysical": "Mailing address is the same as physical address",
+      "addressLine1": "Address line 1",
+      "addressLine2": "Address line 2 (optional)",
+      "city": "City",
+      "state": "State",
+      "postalCode": "ZIP code",
+      "contactFirstName": "Contact first name",
+      "contactLastName": "Contact last name"
+    },
+    "placeholders": {
+      "commodity": "e.g. Transformer, wind blade, excavator",
+      "equipmentPreference": "e.g. RGN, step deck, flatbed"
+    },
+    "consent": {
+      "leadConsent": "I agree to be contacted about this inquiry.",
+      "privacyConsent": "I have read and agree to the Privacy Policy.",
+      "termsConsent": "I agree to the Terms and Conditions.",
+      "privacyConsentPrefix": "I have read and agree to the",
+      "termsConsentPrefix": "I agree to the"
+    },
+    "hpFieldLabel": "Leave this field blank",
+    "buttons": {
+      "submitLead": "Send message",
+      "submitQuote": "Request quote",
+      "submitCarrierSignup": "Submit application",
+      "sending": "Sending…"
+    },
+    "success": {
+      "leadTitle": "Message sent",
+      "leadBody": "Thanks for reaching out — we'll be in touch shortly.",
+      "quoteTitle": "Quote request received",
+      "quoteBody": "We're reviewing your load details and will follow up with pricing and, if applicable, permit and escort guidance."
+    }
+  },
+  "notifications": {
+    "lead.received": {
+      "title": "New website inquiry from {name}",
+      "body": "{name} ({company}) submitted the contact form on the marketing site. Follow up from the Leads queue."
+    },
+    "quote_request.received": {
+      "title": "New quote request from {name}",
+      "body": "{name} requested a quote for a shipment from {origin} to {destination}."
+    },
+    "carrier_signup.received": {
+      "title": "New carrier signup: {name}",
+      "body": "{name} (DOT {dot}) submitted a carrier signup application on the marketing site."
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Built for heavy-haul dispatch",
+      "title": "Run your dispatch operation the way it actually works.",
+      "subtitle": "Goliath Dispatch is the system of record for US transportation dispatch companies: carrier onboarding and compliance, load dispatch, tracking, permits and escorts, and settlements — bilingual from the first screen.",
+      "primaryCta": "Get started",
+      "secondaryCta": "See how it works",
+      "illustrationAlt": "A lowboy trailer hauling an oversize load with escort vehicles, on a highway with a route line overlay"
+    },
+    "proofPoints": {
+      "heading": "Why dispatch companies switch",
+      "item1": {
+        "title": "One system, not five spreadsheets",
+        "body": "Dispatch, carrier compliance, documents, invoicing and tracking live in one place instead of a spreadsheet, a shared drive and a phone full of texts."
+      },
+      "item2": {
+        "title": "Compliance gates that actually block a bad dispatch",
+        "body": "FMCSA authority, COI-to-VIN matches, driver credentials and equipment photos are checked automatically before a load can be assigned — not caught after the fact."
+      },
+      "item3": {
+        "title": "Financials that don't get rewritten",
+        "body": "Every settlement is computed in integer cents and saved as a permanent snapshot. When a fee percentage changes next quarter, last month's math doesn't change with it."
+      },
+      "item4": {
+        "title": "Bilingual from the ground up",
+        "body": "English and Spanish are both first-class, not a translated afterthought — because your dispatchers, carriers and drivers already work in both."
+      }
+    },
+    "oversizeBand": {
+      "title": "Heavy-haul and oversize, without the guesswork",
+      "body": "Permit and escort requirements are evaluated against your load's dimensions, weight and route before it's dispatched, using each state's baseline rules. It's operational guidance your team can plan around — not a substitute for the permit itself.",
+      "cta": "See how oversize evaluation works"
+    },
+    "howItWorks": {
+      "heading": "How it works",
+      "step1": {
+        "title": "Carrier onboards",
+        "body": "Legal name, DOT/MC, Certificate of Insurance, W-9 and, if factoring applies, a Notice of Assignment — submitted once."
+      },
+      "step2": {
+        "title": "Equipment verified",
+        "body": "VIN matched to the COI, four photos minimum, registration and inspection current before any assignment."
+      },
+      "step3": {
+        "title": "Load dispatched",
+        "body": "Compliance gates run automatically. A load with an expired document or an unconfirmed escort cannot move."
+      },
+      "step4": {
+        "title": "Tracked",
+        "body": "The carrier and the customer both see live status. The customer gets a secure link — not another login to manage."
+      },
+      "step5": {
+        "title": "Settled",
+        "body": "Dispatch fee, reimbursables and deductions computed the same way every time, recorded as an immutable snapshot."
+      }
+    },
+    "audiences": {
+      "heading": "Built around who actually uses it",
+      "dispatchCompanies": {
+        "title": "For dispatch companies",
+        "body": "Bring your carriers, your customers and your paperwork into one system built around how a heavy-haul dispatch office actually runs a week.",
+        "cta": "See services"
+      },
+      "carriers": {
+        "title": "For carriers",
+        "body": "Onboard once, keep your documents current, and get paid on a settlement you can actually audit.",
+        "cta": "Carrier signup"
+      },
+      "clients": {
+        "title": "For shippers and brokers",
+        "body": "Request a quote, get a secure tracking link, and stop calling for a status update.",
+        "cta": "Request a quote"
+      }
+    },
+    "closingCta": {
+      "title": "Ready to see it running your operation?",
+      "body": "Tell us about your fleet, your lanes, and what's slowing your office down today.",
+      "primaryCta": "Talk to us",
+      "secondaryCta": "Get started"
+    }
+  },
+  "services": {
+    "hero": {
+      "title": "Services",
+      "subtitle": "Everything a heavy-haul dispatch office needs, in the order a load actually moves through it."
+    },
+    "dispatch": {
+      "title": "Dispatch",
+      "body": "Build, assign and track loads from a single board. Assignment is compliance-checked automatically — a truck, trailer or driver with an expired document, or a scheduling conflict, cannot be assigned to a load.",
+      "bullet1": "Load board with real-time status from dispatched to delivered",
+      "bullet2": "Automatic compliance gates before any resource assignment",
+      "bullet3": "Dispatcher commission tracked without touching the carrier's settlement"
+    },
+    "onboardingCompliance": {
+      "title": "Carrier onboarding & compliance",
+      "body": "A structured intake — Certificate of Authority, Certificate of Insurance, W-9, and a Notice of Assignment when factoring applies — with FMCSA authority checked at onboarding and re-verified automatically every 7 days.",
+      "bullet1": "Guided document collection with expiration tracking",
+      "bullet2": "FMCSA authority verification, not a one-time check",
+      "bullet3": "A written reason and an audit trail for every override"
+    },
+    "documentManagement": {
+      "title": "Document management",
+      "body": "Every Certificate of Insurance, registration, license and medical card lives with an expiration date the system watches. A 30-day warning beats a load getting stopped at a scale house.",
+      "bullet1": "Centralized documents for carriers, equipment and drivers",
+      "bullet2": "Configurable expiration warning window",
+      "bullet3": "Watermarked, short-lived download links, not open file shares"
+    },
+    "invoicingSettlements": {
+      "title": "Invoicing & settlements",
+      "body": "Customer invoices and carrier settlements are computed from the same underlying numbers, in integer cents, with every input preserved as an immutable snapshot — so a dispute doesn't turn into a spreadsheet archaeology project.",
+      "bullet1": "Only approved expenses affect the math",
+      "bullet2": "Permits and escorts excluded from commission by default",
+      "bullet3": "A monotonically versioned snapshot for every settlement"
+    },
+    "tracking": {
+      "title": "Tracking",
+      "body": "Status updates from pickup to delivery, with a secure link the customer can open without creating an account.",
+      "bullet1": "Live status shared with dispatcher, carrier and customer",
+      "bullet2": "Secure, expiring public tracking links",
+      "bullet3": "A single source of truth instead of a status phone call"
+    },
+    "permitsEscorts": {
+      "title": "Permits & escorts",
+      "body": "Route-specific requirements evaluated against your load's dimensions and weight and each state's baseline rules — with a clear line between what the system tells you and what only a permit can authorize.",
+      "bullet1": "Oversize evaluation before dispatch, not after",
+      "bullet2": "Permit and escort status tracked next to the load",
+      "bullet3": "A load cannot dispatch with an unmet permit or escort gate"
+    }
+  },
+  "heavyHaul": {
+    "hero": {
+      "title": "Heavy haul & oversize",
+      "subtitle": "Oversize and overweight freight isn't a special mode — it's freight with a permit requirement, an escort requirement, or both. Here's how Goliath Dispatch evaluates it, and where that evaluation stops."
+    },
+    "legalLimits": {
+      "title": "Federal legal-limit baseline",
+      "body": "Without a permit, the baseline most states apply is 8'6\" wide, 13'6\" tall, and 80,000 lb gross weight on a standard five-axle configuration, with trailer length commonly capped around 53'. Every state sets its own permit thresholds at or above that baseline, and several set tighter limits on specific roads, bridges or through certain cities."
+    },
+    "permitTriggers": {
+      "title": "What triggers a permit",
+      "body": "Exceeding a state's legal width, height, length or weight limit — even by a few inches or a few hundred pounds — requires a permit for that state. Some states also require a permit for a load within legal dimensions if its axle weight distribution exceeds the bridge formula for that route."
+    },
+    "escortTriggers": {
+      "title": "What triggers an escort",
+      "body": "Most states require a pilot car once width passes a state-specific threshold, commonly between 12' and 14'. Height that risks overhead obstructions, and length beyond roughly 100'–110' combined, typically add a rear or front escort requirement. Several states require a police escort above certain dimensions or on specific designated routes."
+    },
+    "routeSurveys": {
+      "title": "When a route survey is required",
+      "body": "Height close to a bridge or wire clearance, or a route through a city with load-specific detours, calls for a physical route survey before the trip — not just a routing calculation. Goliath Dispatch flags when your load's height or width crosses the threshold where a survey is standard practice; performing the survey itself is a service your team or your escort provider carries out."
+    },
+    "stateVariation": {
+      "title": "Why \"the rule\" isn't one rule",
+      "body": "Permit thresholds, escort thresholds, travel curfews and required equipment — flags, lighting, oversize signage — vary by state, and sometimes by county or specific route. A load that's legal to move at 12' wide in one state may need an escort at that same width one state over."
+    },
+    "disclaimer": {
+      "title": "What this evaluation is, and isn't",
+      "body": "Goliath Dispatch's oversize evaluation is operational guidance: it flags when your load's dimensions and weight are likely to require a permit or an escort, based on the state and route you provide, so your team can plan before dispatch. It is not a legal determination, and it does not replace the permit itself. Obtaining the correct permits for a load, in every state it crosses, is the operator's responsibility. When the platform's evaluation and a state's actual permit requirement disagree, the state's requirement governs — always confirm with the issuing state or your permit service before the load moves."
+    },
+    "faq": {
+      "heading": "Frequently asked questions",
+      "q1": {
+        "question": "Does the platform submit permit applications for me?",
+        "answer": "No. The platform tracks permit status, expiration and escort confirmation. It does not submit permit applications on your behalf in this release."
+      },
+      "q2": {
+        "question": "What if my load is borderline?",
+        "answer": "Treat it as oversize. The cost of an unnecessary escort is always lower than the cost of a citation, an impound, or a bridge strike."
+      },
+      "q3": {
+        "question": "Does \"legal\" at pickup mean legal for the whole route?",
+        "answer": "No. Width, height and weight thresholds change at state lines, and a multi-state route needs permits evaluated for each state individually."
+      },
+      "q4": {
+        "question": "Who is responsible if a permit is wrong or missing?",
+        "answer": "The operator moving the load. Our evaluation is a planning tool, not a permit — see the disclaimer above."
+      }
+    }
+  },
+  "forCarriers": {
+    "hero": {
+      "title": "For carriers",
+      "subtitle": "Getting active takes one submission and a short review — not a folder of emails."
+    },
+    "onboarding": {
+      "title": "What onboarding asks for",
+      "certificateOfAuthority": {
+        "title": "Certificate of Authority",
+        "body": "Matched against your DOT and MC numbers with FMCSA before you're activated."
+      },
+      "coi": {
+        "title": "Certificate of Insurance",
+        "body": "Naming the required coverage and limits, with your equipment's VIN listed on the policy."
+      },
+      "w9": {
+        "title": "W-9",
+        "body": "A completed W-9 for tax reporting."
+      },
+      "noticeOfAssignment": {
+        "title": "Notice of Assignment",
+        "body": "Only required if you factor your invoices — it tells us to pay your factor directly, without slowing down your onboarding."
+      }
+    },
+    "verification": {
+      "title": "How verification works",
+      "body": "Your FMCSA authority is checked against the DOT/MC you provide and re-verified automatically every 7 days for as long as you're active, not just once at signup. Your equipment's VIN is matched against your Certificate of Insurance before it can be assigned to a load, and every truck and trailer needs at least four photos before it goes active."
+    },
+    "settlements": {
+      "title": "How settlements work",
+      "body": "Your settlement is your gross rate plus approved reimbursable expenses, minus the dispatch fee and any approved deductions — computed the same way on every load and recorded as a permanent snapshot, so what you were paid on a load last quarter is exactly what the record still shows today."
+    },
+    "cta": {
+      "title": "Ready to onboard?",
+      "body": "Submit your company information and our onboarding team will follow up with next steps.",
+      "button": "Start carrier signup"
+    }
+  },
+  "forClients": {
+    "hero": {
+      "title": "For shippers & brokers",
+      "subtitle": "Getting a quote and watching your freight move shouldn't require an account."
+    },
+    "quoting": {
+      "title": "How quoting works",
+      "body": "Send us the commodity, dimensions, weight, origin and destination, and a ready date. If anything about the load suggests it's oversize, tell us — we'll evaluate permit and escort needs before we price it."
+    },
+    "tracking": {
+      "title": "How tracking works",
+      "body": "Once your load is dispatched, you get a secure link by email — not a username and password. Open it anytime to see status from pickup to delivery.",
+      "accountNote": "In this release, customers track shipments through that secure link rather than a full account. A customer portal is on our roadmap."
+    },
+    "cta": {
+      "title": "Have a load to move?",
+      "body": "Tell us what you're shipping and we'll get back to you with pricing.",
+      "button": "Request a quote"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "About Goliath Dispatch",
+      "subtitle": "Built by people who have run dispatch boards, not just software teams."
+    },
+    "story": {
+      "title": "Why we built this",
+      "body": "We kept seeing the same failure mode at dispatch companies: a carrier's insurance lapses, nobody notices for two weeks, and it surfaces at the worst possible moment — during a claim. Compliance gates, immutable settlements, and permits and escorts tracked next to the load itself exist because we needed them ourselves, not because they made a good pitch deck."
+    },
+    "values": {
+      "heading": "What we hold ourselves to",
+      "operationalHonesty": {
+        "title": "Operational honesty",
+        "body": "A load that shouldn't move doesn't move. That's not a feature toggle — it's the default, with a written reason required for every override."
+      },
+      "bilingualByDefault": {
+        "title": "Bilingual by default",
+        "body": "Spanish isn't a translation layer bolted onto an English product. Dispatchers, carriers and drivers who work in Spanish get the same system, not a lesser one."
+      },
+      "auditableFinancials": {
+        "title": "Auditable financials",
+        "body": "Every settlement is integer cents and a permanent snapshot. If a number changes, you can see exactly when, why, and by how much."
+      }
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Contact us",
+      "subtitle": "Questions about your account, a load, or getting started — reach us directly."
+    },
+    "formHeading": "Send us a message",
+    "hoursHeading": "Business hours",
+    "addressHeading": "Office",
+    "mapPlaceholderAlt": "Map showing the general area of our office location",
+    "mapPlaceholderLabel": "Map view is not available in this release"
+  },
+  "resources": {
+    "hero": {
+      "title": "Resources",
+      "subtitle": "Guides, checklists and bulletins for running a compliant, efficient dispatch operation."
+    },
+    "emptyState": {
+      "title": "Nothing published yet",
+      "body": "We're building out the library — permit and escort checklists by state, onboarding guides, and compliance bulletins will appear here as they're ready."
+    }
+  },
+  "carrierSignup": {
+    "hero": {
+      "title": "Carrier signup",
+      "subtitle": "Tell us about your company. A member of our onboarding team will follow up with next steps."
+    },
+    "sections": {
+      "companyInfo": "Company information",
+      "contactInfo": "Primary contact",
+      "addresses": "Addresses",
+      "preferences": "Preferences",
+      "consent": "Consent"
+    },
+    "whatHappensNext": {
+      "title": "What happens next",
+      "intro": "Once you submit, our onboarding team will review your information and follow up by email or phone. Expect to be asked for:",
+      "coi": "Certificate of Insurance, naming the required coverage and your equipment's VIN",
+      "authority": "Certificate of Authority, matched to your DOT and MC numbers",
+      "w9": "A completed W-9",
+      "noa": "A Notice of Assignment, if you factor your invoices",
+      "equipmentPhotos": "At least four photos of each truck and trailer you plan to run"
+    },
+    "success": {
+      "title": "Thanks — we've received your information",
+      "body": "Our onboarding team typically responds within one business day. Keep an eye on the email address you provided."
+    }
+  },
+  "privacy": {
+    "hero": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: {date}",
+      "counselNote": "This policy is a template for operational use and should be reviewed by qualified counsel before it is relied on as your company's final legal document."
+    },
+    "sections": {
+      "intro": {
+        "title": "Introduction",
+        "body": "This Privacy Policy describes how Goliath Dispatch (\"we\", \"us\") collects, uses, discloses and retains information in connection with the Goliath Dispatch platform, its marketing site, and related services. It applies to visitors to our marketing site, prospective and onboarded carriers, drivers, dispatch company personnel, and customers who receive a tracking link."
+      },
+      "dataWeCollect": {
+        "title": "Data we collect",
+        "body": "We collect information you provide directly — name, email, phone, company and DOT/MC numbers on a contact, quote or carrier-signup form; onboarding documents such as a Certificate of Insurance, Certificate of Authority, W-9 and Notice of Assignment; account and profile information once you're a registered user. We also collect information generated by using the platform — load, document and communication records, device and browser information, IP address, and, where consented, driver and vehicle location during an active load."
+      },
+      "howWeUseData": {
+        "title": "How we use data",
+        "body": "We use data to operate the platform: evaluating carrier onboarding, verifying FMCSA authority, computing settlements and invoices, dispatching and tracking loads, evaluating oversize/permit and escort requirements, responding to inquiries, and meeting legal, tax and regulatory obligations. We do not sell personal information."
+      },
+      "electronicSignatureConsent": {
+        "title": "Electronic signature consent",
+        "body": "Where the platform requests an electronic signature — for example, on an onboarding agreement or a rate confirmation — your action to sign electronically constitutes your consent to conduct that transaction by electronic means, and a record of the signature, including the signer, timestamp, IP address and document hash, is retained as described below."
+      },
+      "smsConsentAndStop": {
+        "title": "SMS consent and STOP handling",
+        "body": "If you opt in to receive text messages — load status updates, verification codes, or account notices — standard message and data rates may apply, and message frequency varies. You may withdraw consent at any time by replying STOP to any message, which immediately suppresses further SMS to that number; replying HELP returns support contact information. Withdrawing SMS consent does not affect email or in-app notifications."
+      },
+      "trackingLocationDriverConsent": {
+        "title": "Tracking, location data and driver consent",
+        "body": "Location data is collected from a driver's device or a vehicle's tracking hardware only while a load is active, and only with the driver's or carrier's consent, recorded and revocable through account settings. Customers who receive a public tracking link see shipment status and estimated timing, not a driver's precise real-time location or personal information."
+      },
+      "retention": {
+        "title": "Data retention",
+        "body": "Operational records — loads, documents, tracking history and related communications — are kept in the active system for 24 months, then moved to a protected archive and permanently purged no later than 5 years after archival, unless a legal hold applies. Financial records, invoices, signed agreements and signature certificates are retained for a minimum of 7 years, consistent with tax and audit requirements, and are never purged earlier than that regardless of account status. A legal hold suspends any scheduled deletion for the records it covers."
+      },
+      "subprocessors": {
+        "title": "Subprocessors",
+        "body": "We use vetted service providers to operate the platform, including hosting and database infrastructure, transactional email delivery, SMS delivery, payment processing, mapping and routing, motor carrier authority verification (FMCSA), document text extraction, and load tracking data providers. Each subprocessor is bound by a written agreement limiting its use of data to the services it provides us."
+      },
+      "yourRights": {
+        "title": "Your rights",
+        "body": "Depending on your state of residence, you may have the right to request access to, correction of, deletion of, or a portable copy of your personal information, and to opt out of certain uses. Submit a request through the Contact page; we will verify your identity before acting on it and respond within the time required by applicable law. Some information cannot be deleted before its required retention period — see Data Retention above."
+      },
+      "dataSecurity": {
+        "title": "Data security",
+        "body": "Documents and signature records are stored in private object storage with access granted only through short-lived signed URLs. Administrative access to tenant data is scoped and logged, and financial and operational records carry an append-only audit trail."
+      },
+      "childrensPrivacy": {
+        "title": "Children's privacy",
+        "body": "The platform is intended for business use by adults. We do not knowingly collect personal information from anyone under 18."
+      },
+      "changesToPolicy": {
+        "title": "Changes to this policy",
+        "body": "We will post any material change here with an updated \"Last updated\" date and, where required, seek renewed consent before the change applies to you."
+      },
+      "contactUs": {
+        "title": "Contact us",
+        "body": "Questions about this policy or a request concerning your data can be sent through the Contact page or to the privacy contact address listed there."
+      }
+    }
+  },
+  "terms": {
+    "hero": {
+      "title": "Terms and Conditions",
+      "lastUpdated": "Last updated: {date}",
+      "counselNote": "This document is a template for operational use and should be reviewed by qualified counsel before it is relied on as your company's final legal document."
+    },
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of terms",
+        "body": "By accessing or using the Goliath Dispatch platform or marketing site, you agree to these Terms and Conditions and to the Privacy Policy. If you are accepting on behalf of a company, you represent that you have authority to bind that company."
+      },
+      "description": {
+        "title": "Description of service",
+        "body": "Goliath Dispatch provides software for dispatch companies to manage carrier onboarding and compliance, load dispatch, document management, invoicing and settlements, tracking, and permit and escort tracking. We are a software provider; we are not a motor carrier, freight broker, or insurer, and do not assume the regulatory obligations of any of those roles."
+      },
+      "accountsEligibility": {
+        "title": "Accounts and eligibility",
+        "body": "You must provide accurate registration and onboarding information and keep it current. Accounts are issued to a company and its authorized users; sharing login credentials is prohibited. We may suspend or terminate an account for a material breach of these terms, non-payment, or conduct that puts other users, drivers, or the platform's integrity at risk."
+      },
+      "carrierResponsibilities": {
+        "title": "Carrier and operator responsibilities",
+        "body": "Carriers and dispatch companies remain solely responsible for their own regulatory compliance, including maintaining valid operating authority and insurance, obtaining and carrying every permit required for a load in every state it crosses, and arranging any required escorts. The platform's oversize evaluation is operational guidance, not a legal determination — see the Heavy Haul & Oversize page. Obtaining correct permits is always the operator's responsibility, and the platform's evaluation does not shift that responsibility to us."
+      },
+      "feesBilling": {
+        "title": "Fees and billing",
+        "body": "Subscription fees, dispatch fees and any other charges are as agreed in your order form or account settings, billed on the stated cycle. Fees are non-refundable except as required by law or expressly stated otherwise."
+      },
+      "prohibitedUses": {
+        "title": "Prohibited uses",
+        "body": "You may not use the platform to submit false onboarding, compliance or insurance information; to circumvent a compliance gate through means other than a documented, authorized override; to interfere with the platform's security or availability; or to use another user's or carrier's data without authorization."
+      },
+      "intellectualProperty": {
+        "title": "Intellectual property",
+        "body": "The platform, its software, and its content are owned by Goliath Dispatch or its licensors. You retain ownership of the data you submit; you grant us the license needed to host, process and display it to operate the platform for you."
+      },
+      "disclaimers": {
+        "title": "Disclaimers",
+        "body": "The platform is provided \"as is.\" Compliance gates, oversize evaluations and verification results are decision-support tools based on the data provided to the platform; they do not constitute legal, regulatory, insurance or permitting advice, and do not guarantee compliance with any law, regulation, or a specific state's permit or escort requirements."
+      },
+      "limitationOfLiability": {
+        "title": "Limitation of liability",
+        "body": "To the maximum extent permitted by law, Goliath Dispatch is not liable for indirect, incidental, consequential or punitive damages, or for any citation, fine, impound, delay, or cargo loss arising from a permit, escort, or regulatory compliance failure, which remains the operator's responsibility as described above. Our aggregate liability for any claim is limited to the fees you paid us in the twelve months preceding the claim."
+      },
+      "termination": {
+        "title": "Termination",
+        "body": "Either party may terminate as provided in your order form or, absent one, with 30 days' written notice. Financial and compliance records are retained after termination as described in the Privacy Policy's retention section."
+      },
+      "disputeResolutionGoverningLaw": {
+        "title": "Dispute resolution and governing law",
+        "body": "These terms are governed by the laws of the State of Texas, without regard to conflict-of-laws principles. Disputes will be resolved in the state or federal courts located in Tarrant County, Texas, and each party consents to that venue."
+      },
+      "changesToTerms": {
+        "title": "Changes to these terms",
+        "body": "We will post any material change here with an updated \"Last updated\" date. Continued use of the platform after a change takes effect constitutes acceptance of the revised terms."
+      },
+      "contactUs": {
+        "title": "Contact us",
+        "body": "Questions about these terms can be sent through the Contact page."
+      }
+    }
+  },
+  "illustrations": {
+    "logoAlt": "Goliath Dispatch",
+    "flatbedOversizeAlt": "A lowboy trailer hauling an oversize load with escort vehicles, on a highway with a route line overlay",
+    "routeMapAlt": "An abstract map showing a highway route between two points with a permit checkpoint marker",
+    "trailerPatternAlt": "A repeating pattern of trailer and container silhouettes",
+    "hazardStripeAlt": "A diagonal hazard-stripe pattern in safety orange and navy"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "title": "Assignments",
+  "tabs": {
+    "matrix": "Dispatcher matrix",
+    "groups": "Groups",
+    "history": "History"
+  },
+  "matrix": {
+    "title": "Dispatcher × carrier matrix",
+    "description": "Every dispatcher in this organization and the carriers currently assigned to them.",
+    "dispatcher": "Dispatcher",
+    "carriers": "Carriers",
+    "primaryBadge": "Primary",
+    "empty": "No dispatcher has an active carrier assignment yet."
+  },
+  "reach": {
+    "title": "Reach",
+    "description": "Everything {dispatcherName} can currently see and act on — through a carrier assignment, a direct grant, or a group they own.",
+    "carriers": "Carriers ({count})",
+    "trucks": "Trucks ({count})",
+    "trailers": "Trailers ({count})",
+    "drivers": "Drivers ({count})",
+    "groups": "Groups ({count})",
+    "empty": "This dispatcher has no assignments yet."
+  },
+  "grants": {
+    "title": "Direct resource grants",
+    "description": "Trucks, trailers, drivers and groups granted to this dispatcher individually, outside of any carrier assignment.",
+    "grant": "Grant access",
+    "revoke": "Revoke access",
+    "resourceType": "Resource type",
+    "resourceTypes": {
+      "truck": "Truck",
+      "trailer": "Trailer",
+      "driver": "Driver",
+      "group": "Group"
+    },
+    "resource": "Resource",
+    "grantedOn": "Granted on",
+    "grantedBy": "Granted by",
+    "reason": "Reason",
+    "reasonPlaceholder": "Why is this dispatcher getting direct access?",
+    "empty": "No direct grants. This dispatcher's reach comes entirely from carrier assignments and groups.",
+    "confirmRevoke": "Revoke {dispatcherName}'s access to {resourceLabel}?"
+  },
+  "groups": {
+    "title": "Groups",
+    "description": "A group bundles carriers, trucks, trailers and drivers so they can be granted to a dispatcher together.",
+    "rename": "Rename group",
+    "deactivate": "Deactivate group",
+    "reactivate": "Reactivate group",
+    "owner": "Owner",
+    "memberCount": "{count} members",
+    "empty": "No groups yet.",
+    "confirmDeactivate": "Deactivate {groupName}? Dispatchers granted this group will lose the access it carries.",
+    "memberTypes": {
+      "carrier": "Carrier",
+      "truck": "Truck",
+      "trailer": "Trailer",
+      "driver": "Driver"
+    }
+  },
+  "history": {
+    "title": "Assignment history",
+    "description": "Every dispatcher this carrier has ever had, including ended assignments.",
+    "dispatcher": "Dispatcher",
+    "startDate": "Start",
+    "endDate": "End",
+    "current": "Current",
+    "primary": "Primary",
+    "assignedBy": "Assigned by",
+    "reason": "Reason",
+    "empty": "This carrier has no assignment history yet."
+  },
+  "errors": {
+    "grantAlreadyActive": "This dispatcher already has an active grant to that resource."
+  },
+  "permissionDenied": {
+    "title": "Assignments are Admin-only",
+    "description": "Only an Administrator can assign carriers, equipment, drivers or groups to a dispatcher."
+  }
+}

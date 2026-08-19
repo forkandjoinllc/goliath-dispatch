@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 32" role="img" aria-labelledby="hazardStripeTitle" preserveAspectRatio="xMidYMid slice">
+  <title id="hazardStripeTitle">A diagonal hazard-stripe pattern in safety orange and navy</title>
+  <defs>
+    <pattern id="hazardStripePattern" width="32" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="32" height="32" fill="#FF5A00" />
+      <rect width="16" height="32" fill="#062B5C" />
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="160" height="32" fill="url(#hazardStripePattern)" />
+</svg>

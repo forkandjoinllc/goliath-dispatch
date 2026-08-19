@@ -1,0 +1,176 @@
+{
+  "title": "Conductores",
+  "list": {
+    "new": "Agregar conductor",
+    "empty": "Todavía no hay conductores. Agregue el primero para comenzar.",
+    "searchPlaceholder": "Buscar por nombre"
+  },
+  "detail": {
+    "title": "{name}",
+    "edit": "Editar conductor"
+  },
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "dateOfBirth": "Fecha de nacimiento",
+    "age": "{age} años",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "preferredLocale": "Idioma preferido",
+    "licenseState": "Estado de la licencia",
+    "licenseNumber": "Número de licencia CDL",
+    "licenseNumberMasked": "CDL terminada en {last4}",
+    "licenseNumberMaskedHelp": "Oculto por privacidad. Ingrese un número nuevo solo para reemplazarlo.",
+    "cdlClass": "Clase de licencia CDL",
+    "endorsements": "Endosos",
+    "restrictions": "Restricciones",
+    "licenseExpiresAt": "Vencimiento de la licencia",
+    "medicalCardExpiresAt": "Vencimiento de la tarjeta médica",
+    "status": "Estado",
+    "verificationStatus": "Estado de revisión de licencia",
+    "notes": "Notas"
+  },
+  "cdlClass": {
+    "A": "Clase A",
+    "B": "Clase B",
+    "C": "Clase C"
+  },
+  "endorsements": {
+    "H": "H — Materiales peligrosos",
+    "N": "N — Vehículos cisterna",
+    "P": "P — Pasajeros",
+    "S": "S — Autobús escolar",
+    "T": "T — Remolques dobles/triples",
+    "X": "X — Combinación de vehículo cisterna y materiales peligrosos"
+  },
+  "restrictions": {
+    "L": "L — Sin vehículo con frenos de aire",
+    "Z": "Z — Sin vehículo con frenos de aire completo",
+    "E": "E — Sin transmisión manual",
+    "O": "O — Sin tractocamión con remolque",
+    "M": "M — Sin autobús Clase A",
+    "V": "V — Se requiere documentación de exención médica"
+  },
+  "status": {
+    "available": "Disponible",
+    "on_load": "En carga",
+    "off_duty": "Fuera de servicio",
+    "inactive": "Inactivo"
+  },
+  "verificationStatus": {
+    "not_started": "Sin revisar",
+    "pending": "Revisión pendiente",
+    "verified": "Aprobado",
+    "mismatch": "No coincide",
+    "failed": "Rechazado",
+    "manually_overridden": "Anulado manualmente",
+    "expired": "Vencido"
+  },
+  "documents": {
+    "cdl_front": "Licencia CDL — frente",
+    "cdl_back": "Licencia CDL — reverso",
+    "medical_card": "Tarjeta médica",
+    "driver_other": "Otro documento del conductor"
+  },
+  "approval": {
+    "title": "Revisión de licencia",
+    "description": "Revise la licencia y la tarjeta médica, luego apruebe o rechace. Esta es una revisión manual; no existe una verificación automática por OCR de la licencia.",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "notes": "Notas del revisor",
+    "notesPlaceholder": "¿Qué revisó? Obligatorio al rechazar.",
+    "reviewedBy": "Revisado por {reviewer} el {date}",
+    "notReviewed": "Este conductor todavía no ha sido revisado.",
+    "confirmApprove": "¿Aprobar a {name} después de la revisión de la licencia?",
+    "confirmReject": "¿Rechazar la revisión de la licencia de {name}?"
+  },
+  "carrierRelationships": {
+    "title": "Transportistas",
+    "description": "Los transportistas para los que conduce este conductor. Un conductor puede trabajar para varios transportistas a la vez.",
+    "add": "Agregar relación con transportista",
+    "end": "Finalizar relación",
+    "setPrimary": "Establecer como transportista principal",
+    "primaryBadge": "Principal",
+    "startDate": "Desde",
+    "endDate": "Finalizada",
+    "approvedBy": "Aprobado por {approver}",
+    "current": "Actual",
+    "ended": "Finalizada",
+    "empty": "Este conductor todavía no está vinculado a ningún transportista.",
+    "confirmEnd": "¿Finalizar la relación de {name} con {carrierName}?",
+    "alreadyActive": "Este conductor ya tiene una relación activa con este transportista."
+  },
+  "compliance": {
+    "title": "Cumplimiento",
+    "description": "Las mismas verificaciones que ve un despachador al asignar este conductor a una carga, evaluadas por relación con cada transportista.",
+    "ok": "Listo para ser asignado a cargas de este transportista.",
+    "blocked": "{count} motivo(s) bloqueando la asignación."
+  },
+  "currentLoad": {
+    "title": "Cargas actuales y próximas",
+    "empty": "Sin compromisos de carga actuales o próximos."
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "carriers": "Transportistas",
+    "documents": "Documentos",
+    "compliance": "Cumplimiento",
+    "approval": "Aprobación",
+    "portal": "Acceso al portal",
+    "history": "Historial"
+  },
+  "portal": {
+    "title": "Acceso al portal",
+    "description": "Si este conductor puede iniciar sesión en su propio portal, y su estado.",
+    "emailLabel": "Correo electrónico",
+    "invite": "Invitar al portal",
+    "invited": "Invitación enviada.",
+    "resendInvite": "Reenviar invitación",
+    "resent": "Invitación reenviada.",
+    "revokeInvite": "Revocar invitación",
+    "invitationRevoked": "Invitación revocada.",
+    "confirmRevokeInvite": "¿Revocar esta invitación pendiente?",
+    "revokeAccess": "Revocar acceso al portal",
+    "accessRevoked": "Acceso al portal revocado.",
+    "confirmRevokeAccess": "¿Revocar el acceso al portal de este conductor? Ya no podrá iniciar sesión.",
+    "invitedOn": "Se invitó a {email} el {date}. Esperando aceptación.",
+    "noAccess": "Este conductor no tiene acceso al portal.",
+    "membershipStatus": {
+      "invited": "Invitado",
+      "pending_verification": "Verificación pendiente",
+      "active": "Activo",
+      "suspended": "Suspendido",
+      "deactivated": "Desactivado"
+    }
+  },
+  "columns": {
+    "name": "Nombre",
+    "status": "Estado",
+    "verificationStatus": "Revisión",
+    "licenseExpiresAt": "Vencimiento de licencia",
+    "medicalCardExpiresAt": "Vencimiento de tarjeta médica",
+    "carriers": "Transportistas"
+  },
+  "filters": {
+    "allStatuses": "Todos los estados",
+    "allVerificationStates": "Todos los estados de revisión",
+    "expiringSoon": "Por vencer"
+  },
+  "expiring": {
+    "license": "Licencias por vencer",
+    "medicalCard": "Tarjetas médicas por vencer",
+    "empty": "Nada por vencer en el rango seleccionado."
+  },
+  "actions": {
+    "create": "Agregar conductor",
+    "edit": "Editar"
+  },
+  "errors": {
+    "duplicateLicense": "Ya existe un conductor con este número de licencia CDL en esta organización.",
+    "relationshipAlreadyActive": "Este conductor ya tiene una relación activa con este transportista.",
+    "portalAlreadyLinked": "Este conductor ya tiene un inicio de sesión en el portal.",
+    "portalNotLinked": "Este conductor no tiene un inicio de sesión en el portal.",
+    "userNotDriverMember": "Ese usuario no es un miembro con rol de conductor de esta organización.",
+    "userAlreadyLinkedToDriver": "Ese usuario ya está vinculado a otro conductor."
+  }
+}

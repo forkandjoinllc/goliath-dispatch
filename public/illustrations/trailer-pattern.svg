@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" role="img" aria-labelledby="trailerPatternTitle" preserveAspectRatio="xMidYMid slice">
+  <title id="trailerPatternTitle">A repeating pattern of trailer and container silhouettes</title>
+  <defs>
+    <pattern id="trailerPattern" width="200" height="100" patternUnits="userSpaceOnUse">
+      <rect x="10" y="55" width="70" height="30" rx="3" fill="#9B9B9B" opacity="0.18" />
+      <circle cx="24" cy="88" r="6" fill="#9B9B9B" opacity="0.18" />
+      <circle cx="66" cy="88" r="6" fill="#9B9B9B" opacity="0.18" />
+
+      <rect x="100" y="40" width="50" height="45" rx="2" fill="#9B9B9B" opacity="0.14" />
+      <line x1="100" y1="55" x2="150" y2="55" stroke="#9B9B9B" stroke-opacity="0.14" stroke-width="2" />
+      <line x1="100" y1="70" x2="150" y2="70" stroke="#9B9B9B" stroke-opacity="0.14" stroke-width="2" />
+
+      <rect x="165" y="60" width="30" height="25" rx="2" fill="#9B9B9B" opacity="0.16" />
+    </pattern>
+  </defs>
+  <rect x="0" y="0" width="400" height="200" fill="url(#trailerPattern)" />
+</svg>

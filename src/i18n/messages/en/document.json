@@ -1,0 +1,189 @@
+{
+  "fields": {
+    "title": "Title",
+    "description": "Description"
+  },
+  "list": {
+    "title": "Documents",
+    "columns": {
+      "document": "Document",
+      "type": "Type",
+      "owner": "Owner",
+      "reviewStatus": "Review status",
+      "expiration": "Expiration"
+    },
+    "ownerTypes": {
+      "carrier": "Carrier",
+      "truck": "Truck",
+      "trailer": "Trailer",
+      "driver": "Driver",
+      "load": "Load",
+      "invoice": "Invoice",
+      "tenant": "Company"
+    },
+    "searchPlaceholder": "Search by title or document type",
+    "expiringWithin": "Expiring within {days} days",
+    "anyExpiration": "Any expiration",
+    "reviewQueueHint": "Documents pending or in review are shown first.",
+    "empty": "No documents found.",
+    "versionHistory": "Version history",
+    "versionNumber": "Version {number}",
+    "accessLog": "Access log",
+    "accessActions": {
+      "view": "Viewed",
+      "download": "Downloaded",
+      "print": "Printed"
+    }
+  },
+  "types": {
+    "certificate_of_authority": "Certificate of Authority",
+    "certificate_of_insurance": "Certificate of Insurance (COI)",
+    "w9": "Form W-9",
+    "notice_of_assignment": "Notice of Assignment",
+    "change_of_payee": "Change of Payee",
+    "carrier_agreement": "Carrier Agreement",
+    "other_onboarding": "Other onboarding document",
+    "truck_registration": "Truck Registration",
+    "trailer_registration": "Trailer Registration",
+    "annual_inspection": "Annual Inspection Report",
+    "equipment_photo": "Equipment Photo",
+    "equipment_video": "Equipment Video",
+    "cdl_front": "CDL (front)",
+    "cdl_back": "CDL (back)",
+    "medical_card": "Medical Certificate",
+    "driver_other": "Other driver document",
+    "bol": "Bill of Lading (BOL)",
+    "pod": "Proof of Delivery (POD)",
+    "rate_confirmation": "Rate Confirmation",
+    "permit": "Permit",
+    "escort_document": "Escort Document",
+    "route_survey": "Route Survey",
+    "receipt": "Receipt",
+    "invoice": "Invoice",
+    "lumper_receipt": "Lumper Receipt",
+    "scale_ticket": "Scale Ticket",
+    "other": "Other"
+  },
+  "reviewStatus": {
+    "pending": "Pending review",
+    "in_review": "In review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "expired": "Expired",
+    "superseded": "Superseded"
+  },
+  "upload": {
+    "title": "Upload document",
+    "dropHint": "Drag and drop a file here, or click to browse.",
+    "selectType": "Document type",
+    "selectFile": "Choose file",
+    "replacing": "This will add a new version. The previous version stays in the history.",
+    "success": "Document uploaded and queued for review.",
+    "newVersionSuccess": "New version uploaded. Review status reset to pending.",
+    "scanning": "Scanning for malware…",
+    "issueDate": "Issue date",
+    "expirationDate": "Expiration date",
+    "originalFilename": "File name",
+    "fileSize": "File size",
+    "markRequired": "This is a required document"
+  },
+  "review": {
+    "title": "Review document",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reasonRequired": "A rejection reason is required.",
+    "reasonPlaceholder": "Explain what needs to be corrected…",
+    "approvedBy": "Approved by {name} on {date}",
+    "rejectedBy": "Rejected by {name} on {date}",
+    "notes": "Reviewer notes"
+  },
+  "expiry": {
+    "expiresOn": "Expires {date}",
+    "expiresSoon": "Expires soon ({date})",
+    "expired": "Expired on {date}",
+    "warningBanner": "{document} expires on {date}.",
+    "sweepNotice": "{count} documents require attention."
+  },
+  "access": {
+    "download": "Download",
+    "downloadWatermarked": "Download (watermarked)",
+    "viewOriginal": "View original",
+    "linkExpired": "This download link has expired. Request a new one.",
+    "notAuthorized": "You are not authorized to download this document."
+  },
+  "watermark": {
+    "downloadedOn": "Downloaded {date}"
+  },
+  "pdf": {
+    "invoiceTitle": "Invoice",
+    "settlementTitle": "Carrier Settlement Statement",
+    "auditCertificateTitle": "Signature Audit Certificate",
+    "invoiceNumber": "Invoice #",
+    "issueDate": "Issue date",
+    "dueDate": "Due date",
+    "paymentTerms": "Net {days}",
+    "billTo": "Bill to",
+    "adjustments": "Adjustments",
+    "amountPaid": "Amount paid",
+    "settlementNumber": "Settlement #",
+    "carrier": "Carrier",
+    "period": "Period",
+    "periodTotal": "Period total",
+    "consent": "Consent",
+    "signature": "Signature",
+    "signedAt": "Signed {date}",
+    "signedFrom": "IP address {ip}",
+    "requestId": "Request ID",
+    "signer": "Signer",
+    "templateKey": "Template",
+    "templateHash": "Template hash",
+    "documentHash": "Document hash (SHA-256)",
+    "signatureHash": "Signature hash (SHA-256)",
+    "integritySeal": "Integrity seal",
+    "ceremonyLog": "Ceremony log",
+    "pageOf": "Page {page} of {total}",
+    "columns": {
+      "description": "Description",
+      "quantity": "Qty",
+      "unitPrice": "Unit price",
+      "amount": "Amount",
+      "load": "Load",
+      "grossRate": "Gross rate",
+      "reimbursements": "Reimbursements",
+      "dispatchFee": "Dispatch fee",
+      "deductions": "Deductions",
+      "net": "Net",
+      "timestamp": "Timestamp",
+      "event": "Event",
+      "actor": "Actor",
+      "ipAddress": "IP address",
+      "eventHash": "Event hash"
+    }
+  },
+  "certificate": {
+    "events": {
+      "requested": "Signature requested",
+      "emailed": "Request emailed to signer",
+      "opened": "Email opened",
+      "viewed": "Document viewed",
+      "consent_shown": "Consent notice shown",
+      "consent_accepted": "Consent accepted",
+      "signature_captured": "Signature captured",
+      "document_generated": "Signed document generated",
+      "sealed": "Integrity seal applied",
+      "emailed_copy": "Signed copy emailed",
+      "declined": "Signature declined",
+      "voided": "Signature request voided",
+      "superseded": "Superseded by a newer template version",
+      "certificate_downloaded": "Audit certificate downloaded"
+    }
+  },
+  "errors": {
+    "rejectionReasonRequired": "A rejection reason is required to reject a document.",
+    "documentNotFound": "That document could not be found.",
+    "versionNotFound": "That document version could not be found.",
+    "alreadyReviewed": "This version has already been reviewed.",
+    "keyMismatch": "This document could not be verified against your organization.",
+    "downloadLinkInvalid": "This download link is invalid or has expired."
+  }
+}

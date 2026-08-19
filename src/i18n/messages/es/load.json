@@ -1,0 +1,355 @@
+{
+  "title": "Cargas",
+  "loadNumber": "Carga {number}",
+  "views": {
+    "table": "Tabla",
+    "board": "Tablero",
+    "calendar": "Calendario",
+    "timeline": "Cronología",
+    "map": "Mapa"
+  },
+  "filters": {
+    "status": "Estado",
+    "customer": "Cliente",
+    "carrier": "Transportista",
+    "dispatcher": "Despachador",
+    "driver": "Conductor",
+    "truck": "Camión",
+    "trailer": "Remolque",
+    "dateRange": "Recogida planificada",
+    "reference": "N.º de carga, referencia u OC",
+    "referencePlaceholder": "Buscar número de carga, referencia u OC",
+    "oversizeOnly": "Solo sobredimensionadas / sobrepeso",
+    "clear": "Borrar filtros",
+    "apply": "Aplicar",
+    "allStatuses": "Todos los estados"
+  },
+  "columns": {
+    "loadNumber": "N.º de carga",
+    "customer": "Cliente",
+    "carrier": "Transportista",
+    "dispatcher": "Despachador",
+    "status": "Estado",
+    "plannedPickupAt": "Recogida planificada",
+    "plannedDeliveryAt": "Entrega planificada",
+    "customerCharge": "Cargo al cliente",
+    "carrierGrossRate": "Tarifa del transportista",
+    "miles": "Millas",
+    "oversize": "Sobredimensionada",
+    "reference": "Referencia",
+    "compliance": "Cumplimiento"
+  },
+  "statusDescriptions": {
+    "draft": "En preparación. Todavía no es visible para un transportista.",
+    "available": "Lista para ofrecer a un transportista; aún no se ha asignado ninguno.",
+    "assigned": "Se asignó un transportista, pero la carga aún no ha sido despachada.",
+    "dispatched": "Superó todas las verificaciones de cumplimiento y fue entregada al transportista.",
+    "en_route_to_pickup": "El camión se dirige hacia la recogida.",
+    "at_pickup": "El camión llegó al lugar de recogida.",
+    "in_transit": "La mercancía está cargada y en camino hacia la entrega.",
+    "at_delivery": "El camión llegó al lugar de entrega.",
+    "delivered": "La mercancía ha sido entregada.",
+    "pod_received": "Se cuenta con un comprobante de entrega (POD) aprobado.",
+    "invoiced": "Se ha creado una factura para esta carga.",
+    "paid": "La factura ha sido pagada. Esta carga está cerrada.",
+    "cancelled": "Esta carga no se moverá. La cancelación es definitiva."
+  },
+  "stopTypes": {
+    "pickup": "Recogida",
+    "delivery": "Entrega"
+  },
+  "appointmentTypes": {
+    "exact": "Cita exacta",
+    "window": "Ventana de cita",
+    "fcfs": "Primero en llegar, primero en servir",
+    "open": "Abierta / sin cita"
+  },
+  "appointmentTypeDescriptions": {
+    "exact": "La instalación requiere llegada a una hora específica.",
+    "window": "La instalación acepta la llegada dentro de una ventana de tiempo.",
+    "fcfs": "Sin cita: los camiones se atienden en el orden de llegada.",
+    "open": "Todavía no se ha establecido ninguna restricción de horario."
+  },
+  "fields": {
+    "customer": "Cliente",
+    "customerContact": "Contacto del cliente",
+    "carrier": "Transportista",
+    "dispatcher": "Despachador",
+    "customerReference": "Referencia del cliente",
+    "poNumber": "Número de OC",
+    "commodity": "Mercancía",
+    "weightPounds": "Peso (lbs)",
+    "dimensions": "Dimensiones",
+    "lengthInches": "Longitud (in)",
+    "widthInches": "Ancho (in)",
+    "heightInches": "Altura (in)",
+    "pieceCount": "Cantidad de piezas",
+    "equipmentType": "Tipo de equipo",
+    "axleConfiguration": "Configuración de ejes",
+    "grossVehicleWeightPounds": "Peso bruto del vehículo (lbs)",
+    "specialInstructions": "Instrucciones especiales",
+    "internalNotes": "Notas internas (no se comparten con el transportista)",
+    "oversize": "Sobredimensionada",
+    "overweight": "Sobrepeso",
+    "oversizeIndicator": "Esta carga excede las dimensiones legales estándar y probablemente requerirá un permiso.",
+    "overweightIndicator": "Esta carga excede el peso legal estándar y probablemente requerirá un permiso.",
+    "plannedPickupAt": "Recogida planificada",
+    "plannedDeliveryAt": "Entrega planificada",
+    "actualPickupAt": "Recogida real",
+    "actualDeliveryAt": "Entrega real",
+    "miles": "Millas",
+    "deadheadMiles": "Millas en vacío"
+  },
+  "financials": {
+    "title": "Finanzas",
+    "customerCharge": "Cargo al cliente",
+    "carrierGrossRate": "Tarifa bruta del transportista",
+    "carrierDispatchFee": "Comisión de despacho del transportista",
+    "dispatcherCommission": "Comisión del despachador",
+    "dispatcherCommissionBasis": "Base de la comisión",
+    "commissionBasis": {
+      "dispatch_fee_amount": "Monto de la comisión de despacho",
+      "carrier_gross_rate": "Tarifa bruta del transportista",
+      "commissionable_base": "Base comisionable"
+    },
+    "commissionableBase": "Base comisionable",
+    "dispatchFeeAmount": "Monto de la comisión de despacho",
+    "netCarrierSettlement": "Liquidación neta del transportista",
+    "grossMargin": "Margen bruto",
+    "dispatcherCommissionAmount": "Monto de la comisión del despachador",
+    "snapshotHistory": "Historial de cálculos",
+    "version": "Versión {version}",
+    "computedAt": "Calculado {date}",
+    "reason": {
+      "load_created": "Carga creada",
+      "load_updated": "Carga actualizada",
+      "carrier_assigned": "Transportista asignado"
+    },
+    "noSnapshot": "Todavía no se ha calculado ningún resumen financiero.",
+    "permissionDenied": "No tiene permiso para ver las finanzas de la carga."
+  },
+  "stops": {
+    "title": "Paradas",
+    "add": "Agregar parada",
+    "addPickup": "Agregar recogida",
+    "addDelivery": "Agregar entrega",
+    "remove": "Eliminar parada",
+    "removeConfirm": "¿Eliminar esta parada? Las paradas restantes se renumerarán.",
+    "reorderHint": "Arrastre para reordenar, o use el menú de movimiento por teclado.",
+    "sequence": "Parada {sequence}",
+    "facilityName": "Nombre de la instalación",
+    "address": "Dirección",
+    "contact": "Contacto de la parada",
+    "contactName": "Nombre del contacto",
+    "contactPhone": "Teléfono del contacto",
+    "contactEmail": "Correo electrónico del contacto",
+    "confirmationNumber": "Número de confirmación",
+    "instructions": "Instrucciones",
+    "appointmentType": "Tipo de cita",
+    "windowStart": "Inicio de ventana",
+    "windowEnd": "Fin de ventana",
+    "localTime": "Hora local ({timezone})",
+    "tenantTime": "Su hora ({timezone})",
+    "actualArrivalAt": "Llegada real",
+    "actualDepartureAt": "Salida real",
+    "recordArrival": "Registrar llegada",
+    "recordDeparture": "Registrar salida",
+    "detentionMinutes": "Detención",
+    "detentionMinutesValue": "{minutes} min",
+    "detentionNotes": "Notas de detención",
+    "noDetention": "Sin detención",
+    "empty": "Todavía no hay paradas. Agregue al menos una recogida y una entrega."
+  },
+  "assignments": {
+    "title": "Asignaciones",
+    "empty": "Todavía no hay camiones, remolques ni conductores asignados.",
+    "assign": "Asignar recursos",
+    "unassign": "Desasignar",
+    "unassignConfirm": "¿Desasignar este recurso de la carga?",
+    "unassignReasonLabel": "Motivo de la desasignación",
+    "primary": "Principal",
+    "committedWindow": "Comprometido {from} – {to}",
+    "resourceType": {
+      "truck": "Camión",
+      "trailer": "Remolque",
+      "driver": "Conductor"
+    },
+    "dialog": {
+      "title": "Asignar recursos",
+      "trucks": "Camiones",
+      "trailers": "Remolques",
+      "drivers": "Conductores",
+      "noneAvailable": "No se encontraron candidatos para este transportista.",
+      "blocked": "Bloqueado",
+      "blockedReasonsTitle": "Por qué este candidato está bloqueado",
+      "assign": "Asignar seleccionados",
+      "cancel": "Cancelar",
+      "allBlockedWarning": "Todos los candidatos seleccionados están bloqueados actualmente. Resuelva los motivos a continuación o elija otro candidato — no se asignará nada hasta que todos los candidatos pasen la verificación.",
+      "carrierRequired": "Asigne un transportista a esta carga antes de asignar camiones, remolques o conductores."
+    }
+  },
+  "documents": {
+    "title": "Documentos",
+    "upload": "Subir documento",
+    "empty": "Todavía no se han subido documentos.",
+    "removed": "Documento eliminado.",
+    "confirmRemove": "¿Eliminar este documento de la carga?",
+    "types": {
+      "bol": "Conocimiento de embarque",
+      "pod": "Comprobante de entrega",
+      "rate_confirmation": "Confirmación de tarifa",
+      "receipt": "Recibo",
+      "permit": "Permiso",
+      "escort_document": "Documento de escolta",
+      "route_survey": "Estudio de ruta",
+      "invoice": "Factura",
+      "lumper_receipt": "Recibo de lumper",
+      "scale_ticket": "Boleto de báscula",
+      "other": "Otro"
+    },
+    "keyStatus": {
+      "missing": "No subido",
+      "pending": "Pendiente de revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado"
+    },
+    "rateConfirmation": {
+      "title": "Confirmación de tarifa",
+      "description": "Revise la confirmación de tarifa a continuación y registre su decisión.",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "requestChanges": "Solicitar cambios",
+      "reasonLabel": "Motivo",
+      "reasonRequiredHint": "Se requiere un motivo para rechazar o solicitar cambios.",
+      "decisionRecorded": "Decisión registrada el {date} por {actor}.",
+      "decision": {
+        "accepted": "Aceptada",
+        "rejected": "Rechazada",
+        "changes_requested": "Cambios solicitados"
+      },
+      "history": "Historial de decisiones",
+      "noRateConfirmation": "Todavía no se ha subido una confirmación de tarifa para esta carga.",
+      "documentVersion": "Versión de documento {version}"
+    }
+  },
+  "tracking": {
+    "title": "Rastreo",
+    "summary": "Resumen de rastreo",
+    "comingSoon": "El rastreo GPS en vivo aún no está conectado para esta cuenta. Una vez que se configure un proveedor de rastreo (Trucker Tools, MacroPoint o Highway), las actualizaciones de posición en vivo aparecerán aquí.",
+    "publicLink": "Enlace público de rastreo",
+    "checkCalls": {
+      "title": "Llamadas de control",
+      "schedule": "Programar llamada de control",
+      "complete": "Marcar como completada",
+      "due": "Vence {date}",
+      "overdue": "Vencida desde {date}",
+      "scheduledFor": "Programada para",
+      "notes": "Notas",
+      "locationSummary": "Resumen de ubicación",
+      "completedBy": "Completada por {actor} el {date}",
+      "origin": {
+        "scheduled": "Programada",
+        "provider_event": "Proveedor de rastreo",
+        "manual": "Manual"
+      },
+      "empty": "No hay llamadas de control programadas."
+    }
+  },
+  "history": {
+    "title": "Historial de estado",
+    "empty": "Todavía no se han registrado cambios de estado.",
+    "entry": "{from} → {to}",
+    "entryFromNone": "Creada como {to}",
+    "source": {
+      "user": "Por {actor}",
+      "tracking_provider": "Proveedor de rastreo",
+      "system_job": "Sistema",
+      "webhook": "Webhook"
+    }
+  },
+  "duplicate": {
+    "action": "Duplicar carga",
+    "confirmTitle": "¿Duplicar esta carga?",
+    "confirmDescription": "Se creará un nuevo borrador con el mismo cliente, paradas, dimensiones, requisito de equipo y porcentajes de comisión. El transportista, las asignaciones, los documentos, el historial de estado y el historial financiero no se copian.",
+    "confirm": "Crear duplicado",
+    "cancel": "Cancelar",
+    "linkedFrom": "Duplicada de {loadNumber}"
+  },
+  "cancel": {
+    "action": "Cancelar carga",
+    "title": "Cancelar esta carga",
+    "reasonLabel": "Motivo de la cancelación",
+    "reasonPlaceholder": "p. ej. El cliente canceló el envío",
+    "confirm": "Cancelar carga",
+    "cancelAction": "No, dejarlo así",
+    "cancelledOn": "Cancelada el {date}"
+  },
+  "new": {
+    "title": "Nueva carga",
+    "steps": {
+      "customer": "Cliente",
+      "stops": "Paradas",
+      "freight": "Mercancía",
+      "equipment": "Equipo",
+      "financials": "Finanzas",
+      "review": "Revisión"
+    },
+    "next": "Siguiente",
+    "back": "Atrás",
+    "saveDraft": "Guardar borrador",
+    "submit": "Crear carga",
+    "createCustomer": "Crear un nuevo cliente",
+    "reviewTitle": "Revise antes de crear",
+    "stepProgress": "Paso {current} de {total}",
+    "reviewStopsCount": "{count, plural, one {# parada} other {# paradas}}"
+  },
+  "edit": {
+    "title": "Editar carga",
+    "submit": "Guardar cambios"
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "assignments": "Asignaciones",
+    "financials": "Finanzas",
+    "documents": "Documentos",
+    "tracking": "Rastreo",
+    "history": "Historial"
+  },
+  "actions": {
+    "edit": "Editar carga",
+    "assignCarrier": "Asignar transportista",
+    "assignResources": "Asignar recursos",
+    "changeStatus": "Cambiar estado",
+    "cancel": "Cancelar carga",
+    "duplicate": "Duplicar carga",
+    "print": "Imprimir",
+    "viewDetail": "Ver carga"
+  },
+  "states": {
+    "loading": "Cargando cargas…",
+    "error": "No pudimos cargar esta carga.",
+    "permissionDenied": "No tiene permiso para ver esta carga.",
+    "empty": "Ninguna carga coincide con los filtros actuales.",
+    "emptyBoard": "No hay cargas para mostrar en el tablero.",
+    "emptyCalendar": "No hay cargas planificadas en este rango.",
+    "emptyTimeline": "No hay ventanas de parada para mostrar.",
+    "emptyMap": "No hay ubicaciones de parada para mostrar en el mapa."
+  },
+  "errors": {
+    "stopsRequired": "Una carga necesita al menos una parada de recogida y una de entrega.",
+    "carrierRequiredForAssignment": "Asigne un transportista antes de mover esta carga a Asignada o de asignar camiones, remolques o conductores.",
+    "dispatchGateBlocked": "Esta carga no se puede despachar hasta que se cumplan todas las verificaciones de cumplimiento.",
+    "podRequired": "Se requiere un comprobante de entrega aprobado antes de que esta carga pueda pasar a POD recibido.",
+    "invoiceRequired": "Debe existir una factura antes de que esta carga pueda pasar a Facturada.",
+    "carrierNotCompliant": "Este transportista no se puede asignar: {count, plural, one {un problema de cumplimiento está} other {# problemas de cumplimiento están}} bloqueando.",
+    "rateConfirmationNotFound": "Todavía no se ha subido una confirmación de tarifa para esta carga.",
+    "stopSequenceMismatch": "El nuevo orden de paradas no coincide con las paradas actuales de la carga.",
+    "arrivalRequiredBeforeDeparture": "Registre la hora de llegada antes de registrar una salida."
+  },
+  "compliance": {
+    "summary": "Cumplimiento",
+    "blockingCount": "{count, plural, one {1 problema bloqueante} other {# problemas bloqueantes}}",
+    "warningCount": "{count, plural, one {1 advertencia} other {# advertencias}}",
+    "clear": "Se cumplen todas las verificaciones de cumplimiento"
+  }
+}

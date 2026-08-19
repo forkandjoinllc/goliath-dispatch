@@ -1,0 +1,178 @@
+import 'dotenv/config'
+import 'server-only'
+import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { serverEnv } from '@/lib/env'
+import { sqlClient } from '@/db/client'
+import { seedPlans, seedPlatformSuperAdmin } from './platform'
+import { seedTenantA, seedTrackingForTenantA } from './tenant-a'
+import { seedTenantB } from './tenant-b'
+import { logStep } from './helpers'
+
+/**
+ * Demo seed entry point — `npm run db:seed` (and `npm run db:reset`).
+ *
+ * Refuses outright in production (`APP_ENV=production`) or when
+ * `ALLOW_DEMO_SEED` is explicitly false, regardless of who runs it or how —
+ * this script inserts a Platform Super Admin and a large amount of
+ * plausible-looking (but entirely synthetic) business data, which must never
+ * land in a real customer database.
+ *
+ * Idempotent: every tenant module checks for its own tenant by slug before
+ * doing anything, so re-running this script against a database that already
+ * has the demo data is a fast no-op that reports what already exists rather
+ * than erroring or duplicating rows.
+ */
+async function main(): Promise<void> {
+  const env = serverEnv()
+
+  if (env.APP_ENV === 'production') {
+    throw new Error('Refusing to run the demo seed: APP_ENV=production')
+  }
+  if (!env.ALLOW_DEMO_SEED) {
+    throw new Error('Refusing to run the demo seed: ALLOW_DEMO_SEED is false')
+  }
+
+  const password = env.SEED_DEMO_PASSWORD
+  logStep('════════════════════════════════════════════════════════════')
+  logStep('Goliath Dispatch — demo environment seed')
+  logStep('════════════════════════════════════════════════════════════')
+
+  const platformAdmin = await seedPlatformSuperAdmin(password)
+  const { actorFor } = await import('./helpers')
+  const platformActor = actorFor(
+    { userId: platformAdmin.userId, firstName: 'Priya', lastName: 'Okafor', email: platformAdmin.email, locale: 'en' },
+    null,
+    'platform_super_admin',
+    { isPlatformSuperAdmin: true },
+  )
+  await seedPlans(platformActor)
+
+  const tenantA = await seedTenantA(password)
+  const tenantB = await seedTenantB(password)
+
+  // Tracking needs a fully-dispatched load and its assigned driver's *user*
+  // account — both only exist once tenant A's loads are seeded, so this
+  // runs as a distinct step rather than being folded into `seedTenantA`.
+  await seedTrackingIfPossible(tenantA.tenantId)
+
+  await writeCredentialsDoc({ platformAdmin, tenantA, tenantB, password })
+
+  await sqlClient.end()
+  logStep('════════════════════════════════════════════════════════════')
+  logStep('✓ demo seed complete — see docs/demo-credentials.md')
+  logStep('════════════════════════════════════════════════════════════')
+}
+
+async function seedTrackingIfPossible(tenantAId: string): Promise<void> {
+  const { tenantDb } = await import('@/db/tenant-db')
+  const { loads, loadAssignments, userTenantMemberships } = await import('@/db/schema')
+  const { eq, and, isNull } = await import('drizzle-orm')
+  const db = tenantDb(tenantAId)
+
+  // Only one seeded driver (`carmen.reyes@example.com`) has a portal user
+  // account, and only one particular truck/trailer/driver combination on
+  // one particular carrier's loads uses that driver — so this can't just
+  // take the *first* dispatched load found (most won't have a portal-user
+  // driver at all); it has to search every dispatched load for the one
+  // whose assigned driver actually has a portal account.
+  const dispatchedLoads = await db.findMany(loads, { where: eq(loads.status, 'dispatched') })
+  if (dispatchedLoads.length === 0) {
+    logStep('  ↳ tracking: no dispatched load available, skipping')
+    return
+  }
+
+  for (const dispatchedLoad of dispatchedLoads) {
+    const assignment = await db.findFirst(loadAssignments, {
+      where: and(eq(loadAssignments.loadId, dispatchedLoad.id), isNull(loadAssignments.unassignedAt))!,
+    })
+    if (!assignment?.driverId) continue
+
+    const membership = await db.findFirst(userTenantMemberships, { where: eq(userTenantMemberships.driverId, assignment.driverId) })
+    if (!membership) continue
+
+    const adminMembership = await db.findFirst(userTenantMemberships, { where: eq(userTenantMemberships.role, 'admin') })
+    if (!adminMembership) return
+
+    await seedTrackingForTenantA(tenantAId, adminMembership.userId, dispatchedLoad.id, assignment.driverId, membership.userId)
+    logStep('  ↳ tracking session started + advanced, public links created (1 live, 1 expired)')
+    return
+  }
+
+  logStep('  ↳ tracking: no dispatched load has a driver with a portal account, skipping')
+}
+
+interface CredentialsDocInput {
+  platformAdmin: { email: string }
+  tenantA: Awaited<ReturnType<typeof seedTenantA>>
+  tenantB: Awaited<ReturnType<typeof seedTenantB>>
+  password: string
+}
+
+async function writeCredentialsDoc(input: CredentialsDocInput): Promise<void> {
+  const { platformAdmin, tenantA, tenantB, password } = input
+
+  const lines: string[] = []
+  lines.push('# Demo credentials')
+  lines.push('')
+  lines.push('Generated by `src/db/seed/index.ts` (`npm run db:seed` / `npm run db:reset`).')
+  lines.push('')
+  lines.push('Every account below is synthetic: `@example.com` emails, `555` phone numbers,')
+  lines.push('invented DOT/MC/EIN/VIN/license numbers. None of this is real personal or')
+  lines.push('business data. This file is regenerated on every seed run — do not hand-edit it.')
+  lines.push('')
+  lines.push(`**Every password is the same:** \`${password}\` (from \`SEED_DEMO_PASSWORD\`; override it in \`.env\` before seeding a shared environment).`)
+  lines.push('')
+  lines.push('## Platform')
+  lines.push('')
+  lines.push('| Role | Email |')
+  lines.push('| --- | --- |')
+  lines.push(`| Platform Super Admin | ${platformAdmin.email} |`)
+  lines.push('')
+  lines.push(`## Tenant A — Goliath Dispatch Co. (Growth plan, active, primary/richly-populated tenant)`)
+  lines.push('')
+  lines.push(`Slug: \`${tenantA.slug}\` · ${tenantA.carrierCount} carriers · ${tenantA.truckCount} trucks · ${tenantA.trailerCount} trailers · ${tenantA.driverCount} drivers · ${tenantA.customerCount} customers · ${tenantA.loadCount} loads`)
+  lines.push('')
+  lines.push('| Role | Email |')
+  lines.push('| --- | --- |')
+  for (const c of tenantA.credentials) {
+    lines.push(`| ${c.role} | ${c.email} |`)
+  }
+  lines.push('')
+  lines.push(`## Tenant B — Summit Heavy Logistics (Starter plan, trialing, secondary/smaller tenant)`)
+  lines.push('')
+  lines.push(`Slug: \`${tenantB.slug}\` · ${tenantB.carrierCount} carriers · ${tenantB.truckCount} trucks · ${tenantB.trailerCount} trailers · ${tenantB.driverCount} drivers · ${tenantB.customerCount} customers · ${tenantB.loadCount} loads`)
+  lines.push('')
+  lines.push('| Role | Email |')
+  lines.push('| --- | --- |')
+  for (const c of tenantB.credentials) {
+    lines.push(`| ${c.role} | ${c.email} |`)
+  }
+  lines.push('')
+  lines.push('## Notes')
+  lines.push('')
+  lines.push('- **Tenant isolation demo:** both tenants have an independent carrier record named')
+  lines.push('  "Rivera Transport LLC" with the same USDOT number — two fully separate rows,')
+  lines.push('  never shared or linked, demonstrating that identical business identity in two')
+  lines.push('  tenants stays completely isolated (in tenant A it is approved-then-suspended; in')
+  lines.push('  tenant B it is approved and active).')
+  lines.push('- The Accounting user in tenant A has TOTP MFA enrolled and confirmed through the')
+  lines.push('  real enrollment path (`beginMfaEnrollment`/`confirmMfaEnrollment`) — sign in, then')
+  lines.push('  use any TOTP app against the same secret, or the account\'s recovery codes.')
+  lines.push('- Every seeded record was created through the real service layer (`createCarrier`,')
+  lines.push('  `createLoad`, `transitionStatus`, `sendInvoice`, `signDocument`, …), not direct')
+  lines.push('  database inserts, except where explicitly commented otherwise in the seed source.')
+  lines.push('')
+
+  const outPath = join(process.cwd(), 'docs', 'demo-credentials.md')
+  await writeFile(outPath, lines.join('\n'), 'utf8')
+  logStep(`  ↳ wrote ${outPath}`)
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch(async (error) => {
+    console.error('✗ demo seed failed:', error)
+    await sqlClient.end().catch(() => {})
+    process.exit(1)
+  })

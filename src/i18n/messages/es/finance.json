@@ -1,0 +1,493 @@
+{
+  "nav": {
+    "invoices": "Facturas",
+    "settlements": "Liquidaciones",
+    "expenses": "Gastos",
+    "factoring": "Factoraje"
+  },
+  "errors": {
+    "categoryCodeTaken": "Ya existe una categoría con el código \"{code}\".",
+    "categoryNotFound": "No se encontró esa categoría de gasto.",
+    "categoryInUse": "Esta categoría está en uso por al menos un gasto y no se puede eliminar.",
+    "systemCategoryImmutable": "\"{code}\" es una categoría del sistema y no se puede eliminar.",
+    "systemCategoryTreatmentLocked": "\"{code}\" es una categoría del sistema — su tratamiento de comisión no se puede cambiar.",
+    "expenseNotFound": "No se encontró ese gasto.",
+    "expenseAlreadyRejected": "Este gasto ya fue rechazado.",
+    "cannotRejectApprovedExpense": "Un gasto aprobado no se puede rechazar directamente. Comuníquese con un administrador para revertirlo.",
+    "loadNotFound": "No se encontró esa carga.",
+    "snapshotVersionConflict": "Otra actualización de las finanzas de esta carga ocurrió al mismo tiempo. Intente de nuevo.",
+    "invoiceNotFound": "No se encontró esa factura.",
+    "invalidInvoiceTransition": "Una factura no puede pasar de \"{from}\" a \"{to}\".",
+    "invoiceNotPayable": "Esta factura no puede recibir un pago mientras esté en estado \"{status}\".",
+    "invoiceAlreadyPaid": "Esta factura ya está pagada en su totalidad.",
+    "paymentNotFound": "No se encontró ese pago.",
+    "paymentAlreadyRefunded": "Este pago ya fue reembolsado en su totalidad.",
+    "settlementNotFound": "No se encontró esa liquidación.",
+    "invalidSettlementTransition": "Una liquidación no puede pasar de \"{from}\" a \"{to}\".",
+    "commissionNotFound": "No se encontró ese registro de comisión.",
+    "invalidCommissionTransition": "Una comisión no puede pasar de \"{from}\" a \"{to}\".",
+    "factoringCompanyNotFound": "No se encontró esa empresa de factoraje.",
+    "factoringCompanyNameTaken": "Ya existe una empresa de factoraje llamada \"{name}\".",
+    "factoringCompanyInUse": "Esta empresa de factoraje tiene al menos una asignación de transportista y no se puede eliminar.",
+    "factoringAssignmentNotFound": "No se encontró esa asignación de factoraje."
+  },
+  "validation": {
+    "amountPositive": "Ingrese un monto mayor que cero.",
+    "categoryInactive": "Esta categoría de gasto está inactiva y no puede recibir nuevos gastos.",
+    "receiptRequired": "Esta categoría requiere adjuntar un recibo.",
+    "expenseNeedsLoadOrCarrier": "Seleccione la carga o el transportista al que pertenece este gasto.",
+    "rejectionReasonRequired": "Ingrese un motivo para rechazar este gasto.",
+    "reasonRequired": "Ingrese un motivo.",
+    "endAfterStart": "La fecha de fin del período debe ser posterior a la fecha de inicio.",
+    "loadMissingCarrier": "Esta carga aún no tiene un transportista asignado, por lo que no se puede crear una factura.",
+    "noLoadsInPeriod": "No se encontraron cargas elegibles para este transportista en el período seleccionado.",
+    "overpayment": "Este pago no puede exceder el saldo restante de ${maxAmount}.",
+    "refundExceedsAvailable": "Este reembolso no puede exceder el monto reembolsable de ${maxAmount}.",
+    "selectAtLeastOne": "Seleccione al menos un elemento."
+  },
+  "email": {
+    "invoiceSubject": "Factura {invoiceNumber} de {tenant}",
+    "invoiceBody": "Se adjunta su factura {invoiceNumber} de {tenant}. Por favor realice el pago antes de la fecha de vencimiento indicada."
+  },
+  "formulas": {
+    "title": "Cómo se calculan las cifras de esta carga",
+    "commissionableBase": {
+      "label": "Base comisionable",
+      "explanation": "La tarifa bruta del transportista menos los gastos aprobados marcados como \"excluidos de comisión\" (permisos y escoltas, de forma predeterminada). Sobre este monto se calcula la cuota de despacho — el dinero que solo pasó a través de la carga, como un permiso, nunca se usa para calcular la cuota."
+    },
+    "dispatchFee": {
+      "label": "Cuota de despacho",
+      "explanation": "La base comisionable multiplicada por el porcentaje de cuota de despacho del transportista. Esto es lo que se le factura al transportista — el cargo de Goliath Dispatch por reservar y gestionar la carga."
+    },
+    "netSettlement": {
+      "label": "Liquidación neta del transportista",
+      "explanation": "La tarifa bruta del transportista, más los gastos reembolsables aprobados, menos la cuota de despacho, menos cualquier deducción al transportista. Esto es lo que se le debe al transportista por la carga."
+    },
+    "grossMargin": {
+      "label": "Margen bruto",
+      "explanation": "El cargo al cliente menos la tarifa bruta del transportista menos los gastos que la empresa de despacho absorbió por su cuenta. Esta es la ganancia de la carga antes de la comisión del despachador."
+    },
+    "dispatcherCommission": {
+      "label": "Comisión del despachador",
+      "explanation": "El porcentaje de comisión del despachador aplicado a la base elegida (la cuota de despacho, la tarifa bruta del transportista o la base comisionable). Este es un costo para la empresa de despacho — nunca reduce lo que se le paga al transportista."
+    }
+  },
+  "commissionBasis": {
+    "dispatch_fee_amount": "Monto de la cuota de despacho",
+    "carrier_gross_rate": "Tarifa bruta del transportista",
+    "commissionable_base": "Base comisionable"
+  },
+  "expenseTreatment": {
+    "excluded_from_commission": "Excluido de comisión",
+    "reimbursable_to_carrier": "Reembolsable al transportista",
+    "tenant_absorbed": "Absorbido por la empresa de despacho",
+    "carrier_deduction": "Deducción al transportista",
+    "excluded_from_commission_hint": "Se resta de la base comisionable antes de calcular la cuota de despacho.",
+    "reimbursable_to_carrier_hint": "Se agrega de vuelta a la liquidación del transportista.",
+    "tenant_absorbed_hint": "Lo paga la empresa de despacho; reduce el margen bruto.",
+    "carrier_deduction_hint": "Se deduce de la liquidación del transportista y se factura en la factura del transportista."
+  },
+  "expense": {
+    "title": "Gastos",
+    "fields": {
+      "load": "Carga",
+      "carrier": "Transportista",
+      "category": "Categoría",
+      "amount": "Monto",
+      "description": "Descripción",
+      "incurredOn": "Fecha del gasto",
+      "receipt": "Recibo",
+      "status": "Estado",
+      "submittedBy": "Enviado por",
+      "submittedAt": "Enviado el",
+      "reviewedBy": "Revisado por",
+      "reviewedAt": "Revisado el",
+      "rejectionReason": "Motivo del rechazo",
+      "treatmentSnapshot": "Tratamiento al momento del envío"
+    },
+    "status": {
+      "submitted": "Enviado",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "reimbursed": "Reembolsado"
+    },
+    "list": {
+      "new": "Enviar gasto",
+      "empty": "Todavía no hay gastos.",
+      "searchPlaceholder": "Buscar por descripción…",
+      "allStatuses": "Todos los estados"
+    },
+    "submit": {
+      "title": "Enviar un gasto",
+      "description": "Adjunte un recibo cuando la categoría lo requiera — el revisor no puede aprobar un gasto al que le falte un recibo obligatorio.",
+      "submitAction": "Enviar gasto",
+      "success": "Gasto enviado para revisión.",
+      "searchLoadPlaceholder": "Buscar por número de carga…",
+      "searchCarrierPlaceholder": "Buscar transportistas…",
+      "receiptDropHint": "Arrastre un recibo aquí, o",
+      "receiptAcceptedTypes": "JPEG, PNG o PDF",
+      "receiptMaxSize": "Hasta 10 MB"
+    },
+    "approvalQueue": {
+      "title": "Aprobaciones de gastos",
+      "empty": "No hay nada pendiente de revisión.",
+      "approve": "Aprobar",
+      "approveSelected": "Aprobar seleccionados",
+      "reject": "Rechazar",
+      "rejectTitle": "Rechazar gasto",
+      "rejectReasonLabel": "Motivo del rechazo",
+      "confirmApprove": "¿Aprobar este gasto? Se incluirá en el próximo cálculo financiero de la carga.",
+      "approvedToast": "Gasto aprobado.",
+      "rejectedToast": "Gasto rechazado.",
+      "bulkApprovedToast": "{count} gasto(s) aprobado(s)."
+    },
+    "category": {
+      "title": "Categorías de gastos",
+      "new": "Nueva categoría",
+      "edit": "Editar categoría",
+      "code": "Código",
+      "labelEn": "Etiqueta en inglés",
+      "labelEs": "Etiqueta en español",
+      "treatment": "Tratamiento de comisión",
+      "requiresReceipt": "Requiere recibo",
+      "active": "Activa",
+      "sortOrder": "Orden",
+      "systemBadge": "Categoría del sistema",
+      "systemLockedHint": "Las categorías del sistema no se pueden eliminar y su tratamiento de comisión no se puede cambiar — esto es necesario para que los cálculos ya liquidados nunca puedan reescribirse.",
+      "deleteConfirmTitle": "Eliminar categoría",
+      "deleteConfirmBody": "Esta categoría ya no estará disponible para nuevos gastos. Los gastos existentes conservan el tratamiento con el que fueron enviados.",
+      "createSuccess": "Categoría creada.",
+      "updateSuccess": "Categoría actualizada.",
+      "deleteSuccess": "Categoría eliminada."
+    }
+  },
+  "invoice": {
+    "title": "Facturas",
+    "detail": {
+      "title": "Factura {invoiceNumber}",
+      "billTo": "Facturar a",
+      "lineItems": "Conceptos",
+      "paymentHistory": "Historial de pagos",
+      "paymentAttempts": "Intentos de pago",
+      "auditHistory": "Historial"
+    },
+    "fields": {
+      "invoiceNumber": "Número de factura",
+      "carrier": "Transportista",
+      "load": "Carga",
+      "status": "Estado",
+      "subtotal": "Subtotal",
+      "adjustments": "Ajustes",
+      "total": "Total",
+      "amountPaid": "Monto pagado",
+      "balance": "Saldo",
+      "issueDate": "Fecha de emisión",
+      "dueDate": "Fecha de vencimiento",
+      "paymentTerms": "Condiciones de pago",
+      "paymentTermsDays": "Neto {days}",
+      "sentAt": "Enviada el",
+      "paidAt": "Pagada el",
+      "voidedAt": "Anulada el",
+      "voidReason": "Motivo de anulación",
+      "disputedAt": "Disputada el",
+      "disputeReason": "Motivo de la disputa",
+      "uncollectableAt": "Marcada como incobrable el",
+      "notes": "Notas"
+    },
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "due": "Vencimiento pendiente",
+      "paid": "Pagada",
+      "overdue": "Vencida",
+      "disputed": "Disputada",
+      "voided": "Anulada",
+      "uncollectable": "Incobrable"
+    },
+    "lineItemKind": {
+      "dispatch_fee": "Cuota de despacho",
+      "expense": "Gasto",
+      "adjustment": "Ajuste",
+      "credit": "Crédito"
+    },
+    "aging": {
+      "title": "Antigüedad de saldos",
+      "current": "Corriente",
+      "0-30": "0–30 días",
+      "31-60": "31–60 días",
+      "61-90": "61–90 días",
+      "90+": "90+ días"
+    },
+    "list": {
+      "empty": "Todavía no hay facturas.",
+      "searchPlaceholder": "Buscar número de factura o transportista…",
+      "allStatuses": "Todos los estados",
+      "overdueOnly": "Solo vencidas",
+      "newInvoice": "Crear factura"
+    },
+    "actions": {
+      "send": "Enviar factura",
+      "sendConfirm": "¿Enviar esta factura al transportista por correo electrónico con un PDF adjunto?",
+      "sentToast": "Factura enviada.",
+      "downloadPdf": "Descargar PDF",
+      "recordPayment": "Registrar pago",
+      "recordPaymentTitle": "Registrar un pago manual",
+      "recordPaymentSuccess": "Pago registrado.",
+      "void": "Anular factura",
+      "voidTitle": "Anular esta factura",
+      "voidReasonLabel": "Motivo de la anulación",
+      "voidedToast": "Factura anulada.",
+      "dispute": "Marcar como disputada",
+      "disputeTitle": "Marcar esta factura como disputada",
+      "disputeReasonLabel": "Motivo de la disputa",
+      "disputedToast": "Factura marcada como disputada.",
+      "markUncollectable": "Marcar como incobrable",
+      "uncollectableTitle": "Marcar esta factura como incobrable",
+      "uncollectableReasonLabel": "Motivo",
+      "uncollectableToast": "Factura marcada como incobrable.",
+      "markDue": "Marcar como pendiente de vencimiento",
+      "markDueTitle": "Marcar esta factura como pendiente de vencimiento",
+      "markPaidTitle": "Marcar esta factura como pagada",
+      "markPaidConfirm": "¿Registrar esta factura incobrable como pagada? Use esto solo después de recibir el pago fuera del flujo normal.",
+      "payNow": "Pagar ahora",
+      "refund": "Reembolsar",
+      "refundTitle": "Reembolsar este pago",
+      "refundReasonLabel": "Motivo del reembolso",
+      "refundAmountLabel": "Monto del reembolso (deje en blanco para un reembolso total)",
+      "refundSuccess": "Reembolso registrado."
+    },
+    "payment": {
+      "method": {
+        "card": "Tarjeta",
+        "ach": "Transferencia bancaria ACH",
+        "check": "Cheque",
+        "wire": "Transferencia bancaria",
+        "cash": "Efectivo",
+        "offset": "Compensación contra liquidación",
+        "other": "Otro"
+      },
+      "fields": {
+        "amount": "Monto",
+        "method": "Método de pago",
+        "reference": "Referencia / número de cheque",
+        "receivedAt": "Recibido el",
+        "notes": "Notas"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "processing": "Procesando",
+        "succeeded": "Exitoso",
+        "failed": "Fallido",
+        "refunded": "Reembolsado",
+        "partially_refunded": "Reembolsado parcialmente",
+        "disputed": "Disputado",
+        "cancelled": "Cancelado"
+      },
+      "panelTitle": "Pagar esta factura",
+      "panelDescription": "Pague el saldo restante de {balance} con tarjeta o transferencia bancaria ACH.",
+      "payWithCard": "Pagar con tarjeta",
+      "payWithAch": "Pagar con transferencia ACH",
+      "processing": "Procesando el pago…",
+      "success": "Pago enviado.",
+      "mockNotice": "Modo de prueba: no se contacta ninguna red de tarjetas ni banco real. Este panel usa el mismo flujo de pago que producción, con una red de tarjetas simulada.",
+      "mockCardLabel": "Número de tarjeta de prueba",
+      "mockSubmit": "Enviar pago de prueba",
+      "attemptFailed": "El intento de pago falló: {reason}",
+      "mockOnlyError": "El pago en modo de prueba no está disponible porque hay un procesador de pagos en vivo configurado.",
+      "attemptStatus": {
+        "pending": "Pendiente",
+        "processing": "Procesando",
+        "succeeded": "Exitoso",
+        "failed": "Fallido",
+        "refunded": "Reembolsado",
+        "partially_refunded": "Reembolsado parcialmente",
+        "disputed": "Disputado",
+        "cancelled": "Cancelado"
+      }
+    },
+    "receivables": {
+      "outstanding": "Cuentas por cobrar",
+      "overdue": "Vencido",
+      "draftCount": "Borradores",
+      "sentCount": "En espera de pago",
+      "overdueCount": "Facturas vencidas",
+      "disputedCount": "Disputadas"
+    }
+  },
+  "commission": {
+    "title": "Comisiones de despachadores",
+    "fields": {
+      "dispatcher": "Despachador",
+      "load": "Carga",
+      "basis": "Base",
+      "basisAmount": "Monto base",
+      "percentage": "Porcentaje",
+      "amount": "Monto",
+      "status": "Estado",
+      "paidAt": "Pagada el"
+    },
+    "status": {
+      "accrued": "Devengada",
+      "approved": "Aprobada",
+      "paid": "Pagada",
+      "voided": "Anulada"
+    },
+    "actions": {
+      "approve": "Aprobar",
+      "markPaid": "Marcar como pagada",
+      "bulkApprove": "Aprobar seleccionadas",
+      "bulkMarkPaid": "Marcar seleccionadas como pagadas"
+    },
+    "summary": {
+      "title": "Resumen de comisiones",
+      "period": "Período",
+      "accrued": "Devengado",
+      "approved": "Aprobado",
+      "paid": "Pagado",
+      "total": "Total"
+    }
+  },
+  "settlement": {
+    "title": "Liquidaciones",
+    "detail": {
+      "title": "Liquidación {settlementNumber}",
+      "lines": "Cargas en esta liquidación",
+      "totals": "Totales"
+    },
+    "fields": {
+      "settlementNumber": "Número de liquidación",
+      "carrier": "Transportista",
+      "periodStart": "Inicio del período",
+      "periodEnd": "Fin del período",
+      "grossRate": "Tarifa bruta",
+      "reimbursements": "Reembolsos",
+      "dispatchFees": "Cuotas de despacho",
+      "deductions": "Deducciones",
+      "netAmount": "Monto neto",
+      "status": "Estado",
+      "issuedAt": "Emitida el",
+      "paidAt": "Pagada el",
+      "notes": "Notas",
+      "factoringCompany": "Empresa de factoraje",
+      "factoringSubmittedAt": "Enviada al factor el"
+    },
+    "status": {
+      "draft": "Borrador",
+      "issued": "Emitida",
+      "paid": "Pagada",
+      "voided": "Anulada"
+    },
+    "list": {
+      "empty": "Todavía no hay liquidaciones.",
+      "generate": "Generar liquidación"
+    },
+    "generate": {
+      "title": "Generar una liquidación",
+      "description": "Genera una liquidación con cada carga de este transportista cuyo cálculo financiero caiga dentro del período seleccionado. Una carga ya incluida en una liquidación anterior nunca se incluye dos veces.",
+      "carrier": "Transportista",
+      "periodStart": "Inicio del período",
+      "periodEnd": "Fin del período",
+      "notes": "Notas",
+      "submit": "Generar liquidación",
+      "success": "Liquidación {settlementNumber} generada con {lineCount} carga(s)."
+    },
+    "actions": {
+      "issue": "Emitir liquidación",
+      "issueConfirm": "¿Emitir esta liquidación? Se generará un estado de cuenta en PDF.",
+      "issuedToast": "Liquidación emitida.",
+      "markPaid": "Marcar como pagada",
+      "markPaidToast": "Liquidación marcada como pagada.",
+      "void": "Anular liquidación",
+      "voidReasonLabel": "Motivo de la anulación",
+      "voidedToast": "Liquidación anulada.",
+      "downloadPdf": "Descargar PDF",
+      "submitToFactor": "Registrar envío a la empresa de factoraje"
+    },
+    "statement": {
+      "title": "Estado de cuenta del transportista",
+      "description": "Un registro continuo de las liquidaciones emitidas a este transportista y las facturas cobradas a este transportista — independiente del estado de cuenta de cualquier liquidación individual.",
+      "date": "Fecha",
+      "description_column": "Descripción",
+      "amount": "Monto",
+      "runningBalance": "Saldo acumulado",
+      "kind": {
+        "settlement_issued": "Liquidación emitida",
+        "settlement_paid": "Liquidación pagada",
+        "invoice_charge": "Factura cobrada",
+        "invoice_payment": "Factura pagada"
+      },
+      "empty": "Sin actividad en este período."
+    }
+  },
+  "factoring": {
+    "title": "Factoraje",
+    "manualNoticeBanner": "El factoraje es un proceso manual de registro. Nada en esta pantalla contacta automáticamente a una empresa de factoraje — cada estado aquí refleja lo que una persona de su equipo confirmó por teléfono, correo electrónico o documentación.",
+    "manualNoticeShort": "Proceso manual — sin integración automática de financiamiento.",
+    "awaitingManualVerification": "En espera de verificación manual",
+    "submittedToFactorOn": "Enviado al factor el {date}",
+    "companies": {
+      "title": "Empresas de factoraje",
+      "new": "Nueva empresa de factoraje",
+      "edit": "Editar empresa de factoraje",
+      "empty": "Todavía no hay empresas de factoraje.",
+      "fields": {
+        "name": "Nombre de la empresa",
+        "contactName": "Nombre de contacto",
+        "email": "Correo electrónico",
+        "phone": "Teléfono",
+        "addressLine1": "Dirección",
+        "addressCity": "Ciudad",
+        "addressState": "Estado",
+        "addressPostalCode": "Código postal",
+        "fundingInstructions": "Instrucciones de financiamiento",
+        "active": "Activa"
+      },
+      "createSuccess": "Empresa de factoraje creada.",
+      "updateSuccess": "Empresa de factoraje actualizada.",
+      "deleteSuccess": "Empresa de factoraje eliminada.",
+      "deleteConfirmTitle": "Eliminar empresa de factoraje",
+      "deleteConfirmBody": "Esta empresa ya no se podrá seleccionar para nuevas asignaciones de transportistas."
+    },
+    "assignments": {
+      "title": "Asignaciones de factoraje por transportista",
+      "new": "Nueva asignación",
+      "empty": "Este transportista no tiene una asignación de factoraje registrada.",
+      "fields": {
+        "carrier": "Transportista",
+        "factoringCompany": "Empresa de factoraje",
+        "verificationStatus": "Estado de verificación",
+        "effectiveFrom": "Vigente desde",
+        "effectiveTo": "Vigente hasta",
+        "verifiedBy": "Verificado por",
+        "verifiedAt": "Verificado el",
+        "notes": "Notas",
+        "noticeOfAssignment": "Aviso de cesión (Notice of Assignment)",
+        "changeOfPayee": "Cambio de beneficiario (Change of Payee)"
+      },
+      "verificationStatus": {
+        "not_started": "No iniciado — en espera de verificación manual",
+        "pending": "Pendiente de verificación manual",
+        "verified": "Verificado manualmente",
+        "mismatch": "Se encontró una discrepancia — requiere revisión",
+        "failed": "La verificación falló",
+        "manually_overridden": "Anulado manualmente",
+        "expired": "La verificación expiró — vuelva a verificar"
+      },
+      "documentKind": {
+        "notice_of_assignment": "Aviso de cesión (Notice of Assignment)",
+        "change_of_payee": "Cambio de beneficiario (Change of Payee)"
+      },
+      "uploadDocument": "Subir documento",
+      "uploadNoticeOfAssignment": "Subir aviso de cesión",
+      "uploadChangeOfPayee": "Subir cambio de beneficiario",
+      "setVerificationStatus": "Actualizar estado de verificación",
+      "setVerificationStatusReason": "Nota sobre cómo se verificó (llamada, correo, documento firmado…)",
+      "endAssignment": "Finalizar asignación",
+      "endAssignmentConfirm": "¿Finalizar esta asignación de factoraje a partir de hoy?",
+      "createSuccess": "Asignación creada — en espera de verificación manual.",
+      "updateSuccess": "Asignación actualizada.",
+      "uploadSuccess": "Documento adjuntado.",
+      "endSuccess": "Asignación finalizada."
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "fields": {
+    "legalName": "Razón social",
+    "dba": "Nombre comercial (DBA)",
+    "dotNumber": "Número de DOT",
+    "mcNumber": "Número de MC",
+    "ein": "EIN",
+    "einLast4": "EIN terminado en {last4}",
+    "contactFirstName": "Nombre del contacto",
+    "contactLastName": "Apellido del contacto",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "website": "Sitio web",
+    "preferredLocale": "Idioma preferido",
+    "physicalAddress": "Dirección física",
+    "mailingAddress": "Dirección postal",
+    "mailingSameAsPhysical": "La dirección postal es la misma que la dirección física",
+    "usesFactoring": "Utiliza una empresa de factoraje",
+    "dispatchFeeBps": "Comisión de despacho",
+    "notes": "Notas",
+    "suspendedAt": "Suspendido el",
+    "suspensionReason": "Motivo de la suspensión",
+    "lastActivityAt": "Última actividad"
+  },
+  "verificationStatus": {
+    "not_started": "No iniciada",
+    "pending": "Pendiente",
+    "verified": "Verificada",
+    "mismatch": "Discrepancia",
+    "failed": "Fallida",
+    "manually_overridden": "Anulada manualmente",
+    "expired": "Vencida"
+  },
+  "fmcsa": {
+    "title": "Verificación de FMCSA",
+    "runVerification": "Ejecutar verificación de FMCSA",
+    "lastVerifiedAt": "Última verificación",
+    "nextVerificationAt": "Próxima verificación",
+    "resultVerified": "Verificado: coincide con los registros de FMCSA.",
+    "resultMismatch": "Los registros de FMCSA no coinciden por completo con la información ingresada.",
+    "resultFailed": "La verificación de FMCSA falló.",
+    "resultManuallyOverridden": "Anulado manualmente por {overriddenBy} el {overriddenAt}.",
+    "attempt": "Intento {attempt}",
+    "mismatchField": {
+      "dotNumber": "Número de DOT",
+      "mcNumber": "Número de MC",
+      "legalName": "Razón social",
+      "operatingAuthority": "Autoridad de operación",
+      "insuranceOnFile": "Seguro registrado"
+    },
+    "override": {
+      "title": "Anular verificación de FMCSA",
+      "description": "Anular permite que este transportista continúe a pesar de la discrepancia indicada abajo. Esta acción queda registrada en la bitácora de auditoría y solo puede realizarla un Administrador o Contabilidad.",
+      "reasonLabel": "Motivo de la anulación",
+      "reasonPlaceholder": "Explique por qué esta discrepancia es aceptable.",
+      "confirm": "Anular verificación",
+      "cancel": "Cancelar"
+    }
+  },
+  "equipmentVerification": {
+    "title": "Verificación de COI / VIN",
+    "override": {
+      "title": "Anular verificación de equipo",
+      "description": "Anular permite asignar este camión o remolque a pesar de la discrepancia indicada abajo. Esta acción queda registrada en la bitácora de auditoría y solo puede realizarla un Administrador o Contabilidad.",
+      "reasonLabel": "Motivo de la anulación",
+      "reasonPlaceholder": "Explique por qué esta discrepancia es aceptable.",
+      "confirm": "Anular verificación",
+      "cancel": "Cancelar"
+    }
+  },
+  "compliance": {
+    "title": "Estado de cumplimiento",
+    "coiExpired": "El certificado de seguro (COI) venció el {date}.",
+    "coiNotVerified": "El certificado de seguro no ha sido verificado contra el VIN de este equipo.",
+    "driverInactive": "El estado de este conductor es inactivo.",
+    "driverLicenseExpired": "La licencia del conductor venció el {date}.",
+    "driverLicenseMissing": "No hay número de licencia registrado para este conductor.",
+    "driverMedicalCardExpired": "El certificado médico del conductor venció el {date}.",
+    "driverMedicalCardMissing": "El conductor no tiene un certificado médico registrado.",
+    "driverNoCarrierRelationship": "Este conductor no tiene una relación activa con este transportista.",
+    "driverNotApproved": "Este conductor no ha sido aprobado tras la revisión de su licencia.",
+    "equipmentInactive": "Este equipo no está activo (estado actual: {status}).",
+    "fmcsaMcMismatch": "El número de MC ingresado ({entered}) no coincide con el que reporta FMCSA ({reported}).",
+    "fmcsaNameMismatch": "La razón social ingresada ({entered}) no coincide con la que reporta FMCSA ({reported}).",
+    "fmcsaNoInsurance": "FMCSA no muestra un seguro registrado para este transportista.",
+    "fmcsaNotFound": "No se encontró ningún registro de FMCSA para el DOT {dot}.",
+    "fmcsaNotVerified": "La autoridad de operación de este transportista ante FMCSA no ha sido verificada.",
+    "fmcsaStale": "La verificación de FMCSA está vencida (la próxima verificación debía realizarse el {date}).",
+    "inspectionExpired": "La inspección anual venció el {date}.",
+    "noApprovedCoi": "Este transportista no tiene un certificado de seguro (COI) aprobado registrado.",
+    "ocrFailed": "No se pudo escanear el certificado de seguro para confirmar este VIN.",
+    "onboardingNotApproved": "El proceso de incorporación no ha sido aprobado (estado actual: {status}).",
+    "oversizeEvaluationMissing": "No se ha realizado una evaluación de sobredimensión/sobrepeso para esta carga.",
+    "oversizeEvaluationStale": "La evaluación de sobredimensión/sobrepeso no coincide con las dimensiones actuales de la carga.",
+    "registrationExpired": "El registro venció el {date}.",
+    "suspended": "Este transportista está suspendido."
+  },
+  "actions": {
+    "create": "Agregar transportista",
+    "edit": "Editar transportista",
+    "suspend": "Suspender transportista",
+    "reactivate": "Reactivar transportista",
+    "assignDispatcher": "Asignar despachador",
+    "removeDispatcher": "Quitar despachador",
+    "setPrimaryDispatcher": "Establecer como despachador principal",
+    "setDispatchFee": "Establecer comisión de despacho"
+  },
+  "confirm": {
+    "suspend": "¿Suspender a {legalName}? No podrá recibir nuevas asignaciones de carga hasta que sea reactivado.",
+    "reactivate": "¿Reactivar a {legalName}?",
+    "removeDispatcher": "¿Quitar a {dispatcherName} de {legalName}?",
+    "setPrimaryDispatcher": "¿Establecer a {dispatcherName} como despachador principal de {legalName}?"
+  },
+  "groups": {
+    "create": "Crear grupo",
+    "addMember": "Agregar al grupo",
+    "removeMember": "Quitar del grupo",
+    "name": "Nombre del grupo",
+    "description": "Descripción"
+  },
+  "list": {
+    "title": "Transportistas",
+    "columns": {
+      "legalName": "Transportista",
+      "dotMc": "DOT / MC",
+      "onboardingStatus": "Incorporación",
+      "fmcsaStatus": "FMCSA",
+      "assignedDispatcher": "Despachador",
+      "compliance": "Cumplimiento",
+      "lastActivity": "Última actividad"
+    },
+    "searchPlaceholder": "Buscar por razón social, DBA, número de DOT o MC",
+    "allStatuses": "Todos los estados",
+    "empty": "No se encontraron transportistas."
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "onboarding": "Incorporación",
+    "verification": "Verificación",
+    "documents": "Documentos",
+    "signatures": "Firmas",
+    "equipmentDrivers": "Equipo y conductores",
+    "dispatchers": "Despachadores",
+    "compliance": "Cumplimiento"
+  },
+  "signatures": {
+    "title": "Solicitudes de firma"
+  },
+  "dispatchers": {
+    "primaryLabel": "Despachador principal"
+  },
+  "leads": {
+    "title": "Prospectos",
+    "source": "Origen",
+    "sources": {
+      "contact_form": "Formulario de contacto",
+      "carrier_signup": "Registro de transportista",
+      "quote_request": "Solicitud de cotización",
+      "resources": "Descarga de recursos"
+    },
+    "statuses": {
+      "new": "Nuevo",
+      "contacted": "Contactado",
+      "qualified": "Calificado",
+      "converted": "Convertido",
+      "disqualified": "Descalificado"
+    },
+    "statusUpdated": "Estado del prospecto actualizado.",
+    "assignedTo": "Asignado a",
+    "assigned": "Prospecto asignado.",
+    "convert": "Convertir en transportista",
+    "convertDescription": "Revise la información enviada en el formulario de registro de transportista, haga las correcciones necesarias y cree el registro del transportista.",
+    "parsedPayload": "Información enviada",
+    "converted": "Prospecto convertido en transportista.",
+    "empty": "No se encontraron prospectos.",
+    "allSources": "Todos los orígenes"
+  }
+}

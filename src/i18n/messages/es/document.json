@@ -1,0 +1,189 @@
+{
+  "fields": {
+    "title": "Título",
+    "description": "Descripción"
+  },
+  "list": {
+    "title": "Documentos",
+    "columns": {
+      "document": "Documento",
+      "type": "Tipo",
+      "owner": "Propietario",
+      "reviewStatus": "Estado de revisión",
+      "expiration": "Vencimiento"
+    },
+    "ownerTypes": {
+      "carrier": "Transportista",
+      "truck": "Camión",
+      "trailer": "Remolque",
+      "driver": "Conductor",
+      "load": "Carga",
+      "invoice": "Factura",
+      "tenant": "Empresa"
+    },
+    "searchPlaceholder": "Buscar por título o tipo de documento",
+    "expiringWithin": "Vence dentro de {days} días",
+    "anyExpiration": "Cualquier vencimiento",
+    "reviewQueueHint": "Los documentos pendientes o en revisión se muestran primero.",
+    "empty": "No se encontraron documentos.",
+    "versionHistory": "Historial de versiones",
+    "versionNumber": "Versión {number}",
+    "accessLog": "Registro de acceso",
+    "accessActions": {
+      "view": "Visto",
+      "download": "Descargado",
+      "print": "Impreso"
+    }
+  },
+  "types": {
+    "certificate_of_authority": "Certificado de autoridad",
+    "certificate_of_insurance": "Certificado de seguro",
+    "w9": "Formulario W-9",
+    "notice_of_assignment": "Aviso de cesión de pago",
+    "change_of_payee": "Cambio de beneficiario de pago",
+    "carrier_agreement": "Contrato de transportista",
+    "other_onboarding": "Otro documento de incorporación",
+    "truck_registration": "Registro del camión",
+    "trailer_registration": "Registro del remolque",
+    "annual_inspection": "Informe de inspección anual",
+    "equipment_photo": "Fotografía del equipo",
+    "equipment_video": "Video del equipo",
+    "cdl_front": "Licencia CDL (frente)",
+    "cdl_back": "Licencia CDL (reverso)",
+    "medical_card": "Certificado médico",
+    "driver_other": "Otro documento del conductor",
+    "bol": "Conocimiento de embarque (BOL)",
+    "pod": "Comprobante de entrega (POD)",
+    "rate_confirmation": "Confirmación de tarifa",
+    "permit": "Permiso",
+    "escort_document": "Documento de escolta",
+    "route_survey": "Estudio de ruta",
+    "receipt": "Recibo",
+    "invoice": "Factura",
+    "lumper_receipt": "Recibo de cuadrilla de carga (lumper)",
+    "scale_ticket": "Boleta de báscula",
+    "other": "Otro"
+  },
+  "reviewStatus": {
+    "pending": "Pendiente de revisión",
+    "in_review": "En revisión",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "expired": "Vencido",
+    "superseded": "Reemplazado"
+  },
+  "upload": {
+    "title": "Subir documento",
+    "dropHint": "Arrastra y suelta un archivo aquí, o haz clic para explorarlo.",
+    "selectType": "Tipo de documento",
+    "selectFile": "Seleccionar archivo",
+    "replacing": "Esto agregará una nueva versión. La versión anterior permanece en el historial.",
+    "success": "Documento subido y en espera de revisión.",
+    "newVersionSuccess": "Nueva versión subida. El estado de revisión volvió a pendiente.",
+    "scanning": "Analizando en busca de malware…",
+    "issueDate": "Fecha de emisión",
+    "expirationDate": "Fecha de vencimiento",
+    "originalFilename": "Nombre del archivo",
+    "fileSize": "Tamaño del archivo",
+    "markRequired": "Este es un documento obligatorio"
+  },
+  "review": {
+    "title": "Revisar documento",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "reasonRequired": "Se requiere un motivo de rechazo.",
+    "reasonPlaceholder": "Explica qué se debe corregir…",
+    "approvedBy": "Aprobado por {name} el {date}",
+    "rejectedBy": "Rechazado por {name} el {date}",
+    "notes": "Notas del revisor"
+  },
+  "expiry": {
+    "expiresOn": "Vence el {date}",
+    "expiresSoon": "Vence pronto ({date})",
+    "expired": "Venció el {date}",
+    "warningBanner": "{document} vence el {date}.",
+    "sweepNotice": "{count} documentos requieren atención."
+  },
+  "access": {
+    "download": "Descargar",
+    "downloadWatermarked": "Descargar (con marca de agua)",
+    "viewOriginal": "Ver original",
+    "linkExpired": "Este enlace de descarga ha vencido. Solicita uno nuevo.",
+    "notAuthorized": "No tienes autorización para descargar este documento."
+  },
+  "watermark": {
+    "downloadedOn": "Descargado el {date}"
+  },
+  "pdf": {
+    "invoiceTitle": "Factura",
+    "settlementTitle": "Estado de cuenta de liquidación del transportista",
+    "auditCertificateTitle": "Certificado de auditoría de firma",
+    "invoiceNumber": "N.º de factura",
+    "issueDate": "Fecha de emisión",
+    "dueDate": "Fecha de vencimiento",
+    "paymentTerms": "Neto {days}",
+    "billTo": "Facturar a",
+    "adjustments": "Ajustes",
+    "amountPaid": "Monto pagado",
+    "settlementNumber": "N.º de liquidación",
+    "carrier": "Transportista",
+    "period": "Período",
+    "periodTotal": "Total del período",
+    "consent": "Consentimiento",
+    "signature": "Firma",
+    "signedAt": "Firmado el {date}",
+    "signedFrom": "Dirección IP {ip}",
+    "requestId": "ID de solicitud",
+    "signer": "Firmante",
+    "templateKey": "Plantilla",
+    "templateHash": "Hash de la plantilla",
+    "documentHash": "Hash del documento (SHA-256)",
+    "signatureHash": "Hash de la firma (SHA-256)",
+    "integritySeal": "Sello de integridad",
+    "ceremonyLog": "Registro de la ceremonia",
+    "pageOf": "Página {page} de {total}",
+    "columns": {
+      "description": "Descripción",
+      "quantity": "Cant.",
+      "unitPrice": "Precio unitario",
+      "amount": "Importe",
+      "load": "Carga",
+      "grossRate": "Tarifa bruta",
+      "reimbursements": "Reembolsos",
+      "dispatchFee": "Comisión de despacho",
+      "deductions": "Deducciones",
+      "net": "Neto",
+      "timestamp": "Fecha y hora",
+      "event": "Evento",
+      "actor": "Actor",
+      "ipAddress": "Dirección IP",
+      "eventHash": "Hash del evento"
+    }
+  },
+  "certificate": {
+    "events": {
+      "requested": "Firma solicitada",
+      "emailed": "Solicitud enviada por correo al firmante",
+      "opened": "Correo abierto",
+      "viewed": "Documento visto",
+      "consent_shown": "Aviso de consentimiento mostrado",
+      "consent_accepted": "Consentimiento aceptado",
+      "signature_captured": "Firma capturada",
+      "document_generated": "Documento firmado generado",
+      "sealed": "Sello de integridad aplicado",
+      "emailed_copy": "Copia firmada enviada por correo",
+      "declined": "Firma rechazada",
+      "voided": "Solicitud de firma anulada",
+      "superseded": "Reemplazada por una versión más reciente de la plantilla",
+      "certificate_downloaded": "Certificado de auditoría descargado"
+    }
+  },
+  "errors": {
+    "rejectionReasonRequired": "Se requiere un motivo de rechazo para rechazar un documento.",
+    "documentNotFound": "No se pudo encontrar ese documento.",
+    "versionNotFound": "No se pudo encontrar esa versión del documento.",
+    "alreadyReviewed": "Esta versión ya fue revisada.",
+    "keyMismatch": "No se pudo verificar este documento con tu organización.",
+    "downloadLinkInvalid": "Este enlace de descarga no es válido o ha vencido."
+  }
+}

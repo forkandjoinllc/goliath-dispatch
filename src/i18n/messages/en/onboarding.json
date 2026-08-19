@@ -1,0 +1,85 @@
+{
+  "status": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "under_review": "Under review",
+    "corrections_required": "Corrections required",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "suspended": "Suspended"
+  },
+  "statusDescription": {
+    "draft": "The carrier profile is still being filled out and has not been submitted.",
+    "submitted": "Submitted and waiting for review.",
+    "under_review": "An administrator is reviewing the submitted documents.",
+    "corrections_required": "The carrier must fix or resubmit something before review can continue.",
+    "approved": "Approved. The carrier may be assigned to loads once its other compliance checks pass.",
+    "rejected": "Onboarding was rejected and will not proceed further.",
+    "suspended": "Approved, but currently suspended from receiving new load assignments."
+  },
+  "checklist": {
+    "title": "Required documents",
+    "complete": "Complete",
+    "incomplete": "Incomplete",
+    "certificate_of_authority": "Certificate of Authority",
+    "certificate_of_insurance": "Certificate of Insurance (COI)",
+    "w9": "W-9",
+    "notice_of_assignment": "Notice of Assignment",
+    "change_of_payee": "Change of Payee"
+  },
+  "transitions": {
+    "submit": {
+      "action": "Submit for review",
+      "confirm": "Submit this carrier's onboarding for review?",
+      "success": "Onboarding submitted for review."
+    },
+    "startReview": {
+      "action": "Start review",
+      "confirm": "Start reviewing this carrier's onboarding?"
+    },
+    "requestCorrections": {
+      "action": "Request corrections",
+      "confirm": "Send this carrier back for corrections?",
+      "reasonLabel": "What needs to be corrected?",
+      "reasonPlaceholder": "Describe exactly what the carrier needs to fix or resubmit."
+    },
+    "approve": {
+      "action": "Approve",
+      "confirm": "Approve this carrier's onboarding?",
+      "success": "Onboarding approved."
+    },
+    "reject": {
+      "action": "Reject",
+      "confirm": "Reject this carrier's onboarding?",
+      "reasonLabel": "Reason for rejection",
+      "reasonPlaceholder": "Explain why this onboarding is being rejected."
+    },
+    "suspend": {
+      "action": "Suspend",
+      "confirm": "Suspend this carrier?",
+      "reasonLabel": "Reason for suspension",
+      "reasonPlaceholder": "Explain why this carrier is being suspended."
+    },
+    "reactivate": {
+      "action": "Reactivate",
+      "confirm": "Reactivate this carrier?",
+      "reasonLabel": "Reason for reactivation",
+      "reasonPlaceholder": "Explain why this carrier is being reactivated."
+    }
+  },
+  "errors": {
+    "invalidTransition": "Onboarding cannot move from {from} to {to}.",
+    "missingDocuments": "Submission requires the following documents first: {documents}.",
+    "blockedByCompliance": "This carrier cannot be approved while {count} compliance issue(s) remain unresolved."
+  },
+  "board": {
+    "title": "Onboarding board",
+    "assignedDispatcher": "Assigned dispatcher",
+    "unassigned": "Unassigned",
+    "missingDocuments": "Missing documents",
+    "verificationProblems": "Verification problems",
+    "expiringSoon": "Expiring soon",
+    "lastActivity": "Last activity",
+    "noCards": "No carriers in this status."
+  }
+}

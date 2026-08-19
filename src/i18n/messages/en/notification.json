@@ -1,0 +1,190 @@
+{
+  "events": {
+    "document": {
+      "expiring": {
+        "title": "{documentType} expires soon",
+        "body": "{ownerName}'s {documentType} expires on {expirationDate} ({daysRemaining} day(s) from now). Upload a renewal before it lapses."
+      },
+      "expired": {
+        "title": "{documentType} has expired",
+        "body": "{ownerName}'s {documentType} expired on {expirationDate}. This may block new load assignments until a current version is uploaded and approved."
+      },
+      "rejected": {
+        "title": "{documentType} was rejected",
+        "body": "{ownerName}'s {documentType} was rejected: {reason}"
+      }
+    },
+    "onboarding": {
+      "corrections_required": {
+        "title": "Corrections needed for {carrierName}",
+        "body": "{carrierName}'s onboarding needs corrections before it can continue: {notes}"
+      },
+      "approved": {
+        "title": "{carrierName}'s onboarding was approved",
+        "body": "{carrierName}'s onboarding has been approved."
+      },
+      "rejected": {
+        "title": "{carrierName}'s onboarding was rejected",
+        "body": "{carrierName}'s onboarding was rejected: {reason}"
+      }
+    },
+    "signature": {
+      "requested": {
+        "title": "Signature requested: {documentTitle}",
+        "body": "A signature request for \"{documentTitle}\" was sent to {signerName}."
+      },
+      "signed": {
+        "title": "{documentTitle} was signed",
+        "body": "{signerName} signed \"{documentTitle}\"."
+      }
+    },
+    "load": {
+      "assigned": {
+        "title": "Load {loadNumber} assigned",
+        "body": "Load {loadNumber} for {carrierName} was assigned ({pickupCity} to {deliveryCity})."
+      },
+      "rate_confirmation_requested": {
+        "title": "Rate confirmation needed for load {loadNumber}",
+        "body": "{carrierName}, please review and respond to the rate confirmation for load {loadNumber}."
+      }
+    },
+    "invoice": {
+      "sent": {
+        "title": "Invoice {invoiceNumber} sent",
+        "body": "Invoice {invoiceNumber} for {amount} was sent, due {dueDate}."
+      },
+      "overdue": {
+        "title": "Invoice {invoiceNumber} is overdue",
+        "body": "Invoice {invoiceNumber} for {amount} is now {daysOverdue} day(s) overdue."
+      }
+    },
+    "expense": {
+      "rejected": {
+        "title": "Expense rejected",
+        "body": "Your {category} expense for {amount} was rejected: {reason}"
+      }
+    },
+    "lead": {
+      "received": {
+        "title": "New lead: {name}",
+        "body": "A new lead arrived from {name} ({company})."
+      }
+    },
+    "export": {
+      "ready": {
+        "title": "Your export is ready",
+        "body": "Your {reportName} export ({format}, {rowCount} row(s)) is ready to download."
+      }
+    }
+  },
+  "channels": {
+    "in_app": "In-app",
+    "email": "Email",
+    "sms": "Text message"
+  },
+  "deliveryStatus": {
+    "queued": "Queued",
+    "sent": "Sent",
+    "delivered": "Delivered",
+    "failed": "Failed",
+    "read": "Read",
+    "suppressed": "Suppressed"
+  },
+  "preferences": {
+    "title": "Notification preferences",
+    "channelColumn": "Channel",
+    "eventColumn": "Event",
+    "save": "Save preferences",
+    "saved": "Preferences saved."
+  },
+  "templates": {
+    "title": "Notification templates",
+    "subtitle": "Override the built-in copy for a specific event, channel and language. Leave a language untouched to keep the built-in copy.",
+    "eventLabel": "Event",
+    "channelLabel": "Channel",
+    "localeLabel": "Language",
+    "subjectLabel": "Subject / title",
+    "bodyLabel": "Body",
+    "availableTokens": "Available tokens",
+    "active": "Active",
+    "save": "Save template",
+    "saved": "Template saved.",
+    "usingDefault": "Using the built-in default copy."
+  },
+  "errors": {
+    "unknownToken": "This template references a token this event does not support: {tokens}"
+  },
+  "messaging": {
+    "title": "Messages",
+    "newConversation": "New conversation",
+    "noConversations": "No conversations yet",
+    "noConversationsHint": "Start a conversation from a carrier or load to see it here.",
+    "selectConversation": "Select a conversation to view it",
+    "backToList": "Back to conversations",
+    "search": "Search conversations",
+    "unread": "{count} unread",
+    "compose": {
+      "placeholder": "Write a message…",
+      "send": "Send",
+      "attach": "Attach a file",
+      "insertTemplate": "Insert a template",
+      "sending": "Sending…"
+    },
+    "thread": {
+      "loadContext": "Load {loadNumber}",
+      "carrierContext": "Carrier: {carrierName}",
+      "you": "You",
+      "systemNote": "System note",
+      "attachments": "{count} attachment(s)",
+      "download": "Download",
+      "empty": "No messages yet. Say hello.",
+      "pollingNotice": "This thread refreshes automatically every 20 seconds — it is not a live/streaming connection."
+    },
+    "participants": {
+      "title": "Participants",
+      "primary": "Primary",
+      "add": "Add participant",
+      "remove": "Remove",
+      "leave": "Leave conversation",
+      "leaveConfirm": "Leave this conversation? You will stop receiving new messages until someone adds you back.",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "muted": "Muted"
+    },
+    "kind": {
+      "direct": "Direct message",
+      "load": "Load thread",
+      "broadcast": "Broadcast"
+    },
+    "templates": {
+      "whereAreYou": {
+        "label": "Where are you?",
+        "body": "Hi {driverName}, can you share your current location and ETA for load {loadNumber}?"
+      },
+      "requestPod": {
+        "label": "Request POD",
+        "body": "Please send the proof of delivery for load {loadNumber} as soon as it's available."
+      },
+      "requestEta": {
+        "label": "Request ETA",
+        "body": "What's your current ETA to {deliveryCity} for load {loadNumber}?"
+      },
+      "confirmPickupTime": {
+        "label": "Confirm pickup time",
+        "body": "Confirming pickup for load {loadNumber} at {pickupTime}. Please reply to confirm."
+      },
+      "confirmDeliveryTime": {
+        "label": "Confirm delivery time",
+        "body": "Confirming delivery for load {loadNumber} at {deliveryTime}. Please reply to confirm."
+      },
+      "rateConfirmationReminder": {
+        "label": "Rate confirmation reminder",
+        "body": "Friendly reminder to review and sign the rate confirmation for load {loadNumber}."
+      },
+      "documentsNeeded": {
+        "label": "Documents needed",
+        "body": "We still need the following document(s) to move forward: {documents}."
+      }
+    }
+  }
+}

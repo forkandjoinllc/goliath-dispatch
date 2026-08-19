@@ -1,0 +1,70 @@
+erDiagram
+    loads ||--o{ expenses : incurs
+    carriers ||--o{ expenses : "may attribute to"
+    tenants ||--o{ expense_categories : defines
+    expense_categories ||--o{ expenses : categorizes
+    loads ||--o{ financial_snapshots : "versions of"
+    financial_snapshots ||--o{ dispatcher_commissions : yields
+    carriers ||--o{ invoices : billed
+    invoices ||--o{ invoice_line_items : has
+    invoices ||--o{ payments : receives
+    invoices ||--o{ payment_attempts : attempts
+    payments ||--o| payment_attempts : "may result from"
+    carriers ||--o{ carrier_settlements : issued
+    carrier_settlements ||--o{ carrier_settlement_lines : has
+    loads ||--o{ carrier_settlement_lines : "summarized in"
+    financial_snapshots ||--o{ carrier_settlement_lines : "sourced from"
+    factoring_companies ||--o{ carrier_settlements : "may route to"
+
+    expenses {
+        uuid id PK
+        uuid load_id FK
+        uuid category_id FK
+        enum treatment_snapshot "frozen at approval time"
+        bigint amount_cents
+        enum status
+    }
+    financial_snapshots {
+        uuid id PK
+        uuid load_id FK
+        integer version "UK per load, append-only"
+        bigint commissionable_base_cents
+        bigint dispatch_fee_amount_cents
+        bigint net_carrier_settlement_cents
+        bigint gross_margin_cents
+        bigint dispatcher_commission_amount_cents
+    }
+    dispatcher_commissions {
+        uuid id PK
+        uuid financial_snapshot_id FK
+        uuid dispatcher_user_id FK
+        varchar status "accrued|approved|paid|voided"
+    }
+    invoices {
+        uuid id PK
+        uuid carrier_id FK
+        varchar invoice_number UK "per tenant"
+        enum status
+        bigint total_cents
+        bigint balance_cents
+    }
+    payments {
+        uuid id PK
+        uuid invoice_id FK
+        bigint amount_cents
+        enum method
+        enum status
+        varchar stripe_payment_intent_id UK
+    }
+    carrier_settlements {
+        uuid id PK
+        uuid carrier_id FK
+        varchar settlement_number UK "per tenant"
+        bigint net_amount_cents
+        varchar status
+    }
+    stripe_events {
+        uuid id PK
+        varchar stripe_event_id UK "idempotency guard"
+        varchar processing_status
+    }

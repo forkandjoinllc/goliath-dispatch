@@ -1,0 +1,190 @@
+{
+  "events": {
+    "document": {
+      "expiring": {
+        "title": "{documentType} vence pronto",
+        "body": "El documento {documentType} de {ownerName} vence el {expirationDate} (en {daysRemaining} día(s)). Suba una renovación antes de que venza."
+      },
+      "expired": {
+        "title": "{documentType} venció",
+        "body": "El documento {documentType} de {ownerName} venció el {expirationDate}. Esto puede bloquear la asignación de nuevas cargas hasta que se suba y apruebe una versión vigente."
+      },
+      "rejected": {
+        "title": "{documentType} fue rechazado",
+        "body": "El documento {documentType} de {ownerName} fue rechazado: {reason}"
+      }
+    },
+    "onboarding": {
+      "corrections_required": {
+        "title": "Se requieren correcciones para {carrierName}",
+        "body": "El proceso de incorporación de {carrierName} necesita correcciones antes de continuar: {notes}"
+      },
+      "approved": {
+        "title": "Se aprobó la incorporación de {carrierName}",
+        "body": "La incorporación de {carrierName} ha sido aprobada."
+      },
+      "rejected": {
+        "title": "Se rechazó la incorporación de {carrierName}",
+        "body": "La incorporación de {carrierName} fue rechazada: {reason}"
+      }
+    },
+    "signature": {
+      "requested": {
+        "title": "Firma solicitada: {documentTitle}",
+        "body": "Se envió una solicitud de firma para \"{documentTitle}\" a {signerName}."
+      },
+      "signed": {
+        "title": "{documentTitle} fue firmado",
+        "body": "{signerName} firmó \"{documentTitle}\"."
+      }
+    },
+    "load": {
+      "assigned": {
+        "title": "Carga {loadNumber} asignada",
+        "body": "La carga {loadNumber} para {carrierName} fue asignada (de {pickupCity} a {deliveryCity})."
+      },
+      "rate_confirmation_requested": {
+        "title": "Se necesita confirmación de tarifa para la carga {loadNumber}",
+        "body": "{carrierName}, por favor revise y responda la confirmación de tarifa de la carga {loadNumber}."
+      }
+    },
+    "invoice": {
+      "sent": {
+        "title": "Factura {invoiceNumber} enviada",
+        "body": "La factura {invoiceNumber} por {amount} fue enviada, con vencimiento el {dueDate}."
+      },
+      "overdue": {
+        "title": "La factura {invoiceNumber} está vencida",
+        "body": "La factura {invoiceNumber} por {amount} lleva {daysOverdue} día(s) de vencida."
+      }
+    },
+    "expense": {
+      "rejected": {
+        "title": "Gasto rechazado",
+        "body": "Su gasto de {category} por {amount} fue rechazado: {reason}"
+      }
+    },
+    "lead": {
+      "received": {
+        "title": "Nueva prospecto: {name}",
+        "body": "Se recibió un nuevo prospecto de {name} ({company})."
+      }
+    },
+    "export": {
+      "ready": {
+        "title": "Su exportación está lista",
+        "body": "Su exportación de {reportName} ({format}, {rowCount} fila(s)) está lista para descargar."
+      }
+    }
+  },
+  "channels": {
+    "in_app": "En la aplicación",
+    "email": "Correo electrónico",
+    "sms": "Mensaje de texto"
+  },
+  "deliveryStatus": {
+    "queued": "En cola",
+    "sent": "Enviado",
+    "delivered": "Entregado",
+    "failed": "Fallido",
+    "read": "Leído",
+    "suppressed": "Suprimido"
+  },
+  "preferences": {
+    "title": "Preferencias de notificación",
+    "channelColumn": "Canal",
+    "eventColumn": "Evento",
+    "save": "Guardar preferencias",
+    "saved": "Preferencias guardadas."
+  },
+  "templates": {
+    "title": "Plantillas de notificación",
+    "subtitle": "Personalice el texto predeterminado para un evento, canal e idioma específicos. Deje un idioma sin modificar para conservar el texto predeterminado.",
+    "eventLabel": "Evento",
+    "channelLabel": "Canal",
+    "localeLabel": "Idioma",
+    "subjectLabel": "Asunto / título",
+    "bodyLabel": "Cuerpo",
+    "availableTokens": "Variables disponibles",
+    "active": "Activa",
+    "save": "Guardar plantilla",
+    "saved": "Plantilla guardada.",
+    "usingDefault": "Se está usando el texto predeterminado."
+  },
+  "errors": {
+    "unknownToken": "Esta plantilla usa una variable que este evento no admite: {tokens}"
+  },
+  "messaging": {
+    "title": "Mensajes",
+    "newConversation": "Nueva conversación",
+    "noConversations": "Todavía no hay conversaciones",
+    "noConversationsHint": "Inicie una conversación desde un transportista o una carga para verla aquí.",
+    "selectConversation": "Seleccione una conversación para verla",
+    "backToList": "Volver a conversaciones",
+    "search": "Buscar conversaciones",
+    "unread": "{count} sin leer",
+    "compose": {
+      "placeholder": "Escriba un mensaje…",
+      "send": "Enviar",
+      "attach": "Adjuntar un archivo",
+      "insertTemplate": "Insertar una plantilla",
+      "sending": "Enviando…"
+    },
+    "thread": {
+      "loadContext": "Carga {loadNumber}",
+      "carrierContext": "Transportista: {carrierName}",
+      "you": "Usted",
+      "systemNote": "Nota del sistema",
+      "attachments": "{count} archivo(s) adjunto(s)",
+      "download": "Descargar",
+      "empty": "Todavía no hay mensajes. Salude.",
+      "pollingNotice": "Este hilo se actualiza automáticamente cada 20 segundos — no es una conexión en vivo/streaming."
+    },
+    "participants": {
+      "title": "Participantes",
+      "primary": "Principal",
+      "add": "Agregar participante",
+      "remove": "Quitar",
+      "leave": "Salir de la conversación",
+      "leaveConfirm": "¿Salir de esta conversación? Dejará de recibir mensajes nuevos hasta que alguien lo agregue de nuevo.",
+      "mute": "Silenciar",
+      "unmute": "Activar sonido",
+      "muted": "Silenciado"
+    },
+    "kind": {
+      "direct": "Mensaje directo",
+      "load": "Hilo de carga",
+      "broadcast": "Difusión"
+    },
+    "templates": {
+      "whereAreYou": {
+        "label": "¿Dónde está?",
+        "body": "Hola {driverName}, ¿puede compartir su ubicación actual y la hora estimada de llegada para la carga {loadNumber}?"
+      },
+      "requestPod": {
+        "label": "Solicitar prueba de entrega",
+        "body": "Por favor envíe la prueba de entrega (POD) de la carga {loadNumber} en cuanto esté disponible."
+      },
+      "requestEta": {
+        "label": "Solicitar hora estimada de llegada",
+        "body": "¿Cuál es su hora estimada de llegada a {deliveryCity} para la carga {loadNumber}?"
+      },
+      "confirmPickupTime": {
+        "label": "Confirmar hora de recogida",
+        "body": "Confirmando la recogida de la carga {loadNumber} a las {pickupTime}. Por favor responda para confirmar."
+      },
+      "confirmDeliveryTime": {
+        "label": "Confirmar hora de entrega",
+        "body": "Confirmando la entrega de la carga {loadNumber} a las {deliveryTime}. Por favor responda para confirmar."
+      },
+      "rateConfirmationReminder": {
+        "label": "Recordatorio de confirmación de tarifa",
+        "body": "Recordatorio para revisar y firmar la confirmación de tarifa de la carga {loadNumber}."
+      },
+      "documentsNeeded": {
+        "label": "Documentos requeridos",
+        "body": "Todavía necesitamos los siguientes documentos para continuar: {documents}."
+      }
+    }
+  }
+}

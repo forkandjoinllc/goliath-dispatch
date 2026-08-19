@@ -1,0 +1,60 @@
+erDiagram
+    tenants ||--o{ loads : owns
+    customers ||--o{ loads : requests
+    carriers ||--o| loads : "assigned to (immutable once locked)"
+    loads ||--o{ load_stops : has
+    loads ||--o{ load_assignments : has
+    trucks ||--o{ load_assignments : "assigned as"
+    trailers ||--o{ load_assignments : "assigned as"
+    drivers ||--o{ load_assignments : "assigned as"
+    loads ||--o{ load_status_history : logs
+    loads ||--o{ load_documents : has
+    documents ||--o{ load_documents : "linked to"
+    loads ||--o{ rate_confirmation_acceptances : "accepted by carrier"
+    loads ||--o{ check_calls : scheduled
+
+    loads {
+        uuid id PK
+        uuid tenant_id FK
+        varchar load_number UK "per tenant"
+        uuid customer_id FK
+        uuid carrier_id FK "nullable then locked"
+        enum status
+        bigint customer_charge_cents
+        bigint carrier_gross_rate_cents
+        integer carrier_dispatch_fee_bps
+        boolean is_oversize
+    }
+    load_stops {
+        uuid id PK
+        uuid load_id FK
+        enum stop_type "pickup|delivery"
+        integer sequence "UK per load"
+        varchar timezone
+        timestamp window_start
+        timestamp window_end
+    }
+    load_assignments {
+        uuid id PK
+        uuid load_id FK
+        varchar resource_type "truck|trailer|driver"
+        uuid truck_id FK
+        uuid trailer_id FK
+        uuid driver_id FK
+        timestamp committed_from
+        timestamp committed_to
+        timestamp unassigned_at "partial UK: one active per resource per load"
+    }
+    load_status_history {
+        uuid id PK
+        uuid load_id FK
+        enum from_status
+        enum to_status
+        varchar source "user|tracking_provider|system_job|webhook"
+    }
+    rate_confirmation_acceptances {
+        uuid id PK
+        uuid load_id FK
+        varchar decision "accepted|rejected|changes_requested"
+        varchar document_sha256
+    }

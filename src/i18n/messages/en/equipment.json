@@ -1,0 +1,176 @@
+{
+  "title": "Equipment",
+  "trucks": {
+    "title": "Trucks",
+    "new": "Add truck",
+    "edit": "Edit truck",
+    "detail": "Truck {unitNumber}",
+    "empty": "No trucks yet. Add the first truck to get started.",
+    "searchPlaceholder": "Search by unit number or VIN"
+  },
+  "trailers": {
+    "title": "Trailers",
+    "new": "Add trailer",
+    "edit": "Edit trailer",
+    "detail": "Trailer {unitNumber}",
+    "empty": "No trailers yet. Add the first trailer to get started.",
+    "searchPlaceholder": "Search by unit number or VIN"
+  },
+  "fields": {
+    "carrier": "Carrier",
+    "unitNumber": "Unit number",
+    "vin": "VIN",
+    "year": "Year",
+    "make": "Make",
+    "model": "Model",
+    "equipmentType": "Equipment type",
+    "plateNumber": "Plate number",
+    "plateState": "Plate state",
+    "status": "Status",
+    "registrationNumber": "Registration number",
+    "registrationExpiresAt": "Registration expires",
+    "lastInspectionAt": "Last inspection",
+    "nextInspectionDueAt": "Next inspection due",
+    "lastMaintenanceAt": "Last maintenance",
+    "nextMaintenanceDueAt": "Next maintenance due",
+    "outOfServiceReason": "Out-of-service reason",
+    "notes": "Notes",
+    "lengthInches": "Length",
+    "widthInches": "Width",
+    "deckHeightInches": "Deck height",
+    "wellLengthInches": "Well length",
+    "capacityPounds": "Capacity",
+    "axleCount": "Axle count",
+    "axleConfiguration": "Axle configuration",
+    "removableGooseneck": "Removable gooseneck (RGN)",
+    "isExtendable": "Extendable",
+    "coiVerificationStatus": "COI / VIN verification"
+  },
+  "status": {
+    "pending_verification": "Pending verification",
+    "active": "Active",
+    "out_of_service": "Out of service",
+    "archived": "Archived"
+  },
+  "verificationStatus": {
+    "not_started": "Not started",
+    "pending": "Pending",
+    "verified": "Verified",
+    "mismatch": "Mismatch",
+    "failed": "Failed",
+    "manually_overridden": "Manually overridden",
+    "expired": "Expired"
+  },
+  "vin": {
+    "helpText": "Enter the 17-character VIN. We'll decode the model year and manufacturer automatically when you leave the field.",
+    "decoding": "Decoding VIN…",
+    "decodedBanner": "Year and make were filled in from the VIN. Review them before saving — you can always overwrite them.",
+    "decodeNoMatch": "We could not recognize this VIN's manufacturer. Enter year, make and model manually.",
+    "checkDigitInvalid": "This VIN's check digit does not match — double check it before saving.",
+    "invalidFormat": "Enter a valid 17-character VIN.",
+    "sourceVinDecode": "From VIN decode",
+    "sourceManual": "Entered manually"
+  },
+  "media": {
+    "title": "Media",
+    "description": "At least {required} photos are required before this unit can be marked active, covering all four required angles.",
+    "angles": {
+      "front": "Front",
+      "rear": "Rear",
+      "driver_side": "Driver side",
+      "passenger_side": "Passenger side",
+      "interior": "Interior",
+      "detail": "Detail"
+    },
+    "requiredAngle": "Required angle",
+    "optionalAngle": "Optional",
+    "upload": "Upload photo",
+    "uploadVideo": "Upload video",
+    "reorder": "Reorder",
+    "delete": "Remove",
+    "confirmDelete": "Remove this photo? This cannot be undone.",
+    "missingAnglesWarning": "Missing required angles: {angles}.",
+    "allAnglesCaptured": "All four required angles are captured.",
+    "photoCount": "{count} of {required} required photos",
+    "caption": "Caption",
+    "captionPlaceholder": "Optional note about this photo",
+    "empty": "No photos or video uploaded yet."
+  },
+  "compliance": {
+    "title": "Compliance",
+    "description": "The same checks a dispatcher sees when assigning this unit to a load.",
+    "ok": "This unit is ready for assignment.",
+    "blocked": "{count} reason(s) blocking assignment.",
+    "warnings": "{count} warning(s)",
+    "override": "Override",
+    "coiVerification": "Certificate of insurance verification",
+    "extractedVins": "VINs found on the certificate",
+    "matchedVin": "Matched VIN",
+    "noMatch": "No match found on the current certificate of insurance."
+  },
+  "types": {
+    "title": "Equipment types",
+    "description": "Add or edit the truck and trailer types available to this organization — no deployment required.",
+    "new": "Add type",
+    "edit": "Edit type",
+    "code": "Code",
+    "labelEn": "Label (English)",
+    "labelEs": "Label (Spanish)",
+    "category": "Category",
+    "categoryTruck": "Truck",
+    "categoryTrailer": "Trailer",
+    "supportsRgn": "Supports removable gooseneck (RGN)",
+    "sortOrder": "Sort order",
+    "active": "Active",
+    "systemBadge": "System type",
+    "systemTypeHelp": "System types are seeded with the product and used by compliance and oversize rules. They can be deactivated but never deleted.",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "delete": "Delete",
+    "confirmDeactivate": "Deactivate {label}? It will no longer be selectable on new equipment.",
+    "confirmDelete": "Delete {label}? This cannot be undone.",
+    "empty": "No equipment types yet."
+  },
+  "actions": {
+    "create": "Add equipment",
+    "edit": "Edit",
+    "activate": "Mark active",
+    "setOutOfService": "Mark out of service",
+    "reactivate": "Return to service",
+    "archive": "Archive"
+  },
+  "confirm": {
+    "activate": "Mark {unitNumber} active? This requires the compliance gate to pass.",
+    "setOutOfService": "Mark {unitNumber} out of service?",
+    "archive": "Archive {unitNumber}? Archived equipment cannot be assigned to loads."
+  },
+  "tabs": {
+    "overview": "Overview",
+    "media": "Media",
+    "compliance": "Compliance",
+    "documents": "Documents",
+    "history": "History"
+  },
+  "columns": {
+    "unitNumber": "Unit",
+    "vin": "VIN",
+    "type": "Type",
+    "status": "Status",
+    "compliance": "Compliance",
+    "registrationExpiresAt": "Registration",
+    "nextInspectionDueAt": "Inspection"
+  },
+  "filters": {
+    "allStatuses": "All statuses",
+    "allTypes": "All types",
+    "allVerificationStates": "All verification states",
+    "expiringSoon": "Expiring soon"
+  },
+  "errors": {
+    "invalidTransition": "Equipment cannot move from {from} to {to}.",
+    "blockedByCompliance": "This equipment cannot be marked active while {count} compliance reason(s) remain unmet.",
+    "duplicateTypeCode": "An equipment type with code {code} already exists.",
+    "systemTypeImmutable": "{code} is a system type and can only be deactivated, not deleted.",
+    "outOfServiceReasonRequired": "A reason is required to mark equipment out of service."
+  }
+}

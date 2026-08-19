@@ -1,0 +1,41 @@
+erDiagram
+    tenants ||--o{ integration_connections : configures
+    loads ||--o{ tracking_sessions : has
+    drivers ||--o{ tracking_sessions : "may drive"
+    trucks ||--o{ tracking_sessions : "may power"
+    tracking_sessions ||--o{ tracking_events : emits
+    loads ||--o{ tracking_events : "belongs to (denormalized)"
+    loads ||--o{ public_tracking_links : shares
+
+    integration_connections {
+        uuid id PK
+        uuid tenant_id FK
+        varchar category "tracking|maps|fmcsa|ocr|email|sms|payments|tolls"
+        varchar provider
+        boolean enabled
+        text credentials_encrypted
+        varchar health_status
+    }
+    tracking_sessions {
+        uuid id PK
+        uuid load_id FK
+        uuid driver_id FK
+        uuid truck_id FK
+        enum provider
+        timestamp consent_granted_at "no ingestion before this"
+        varchar health_status "unknown|healthy|stale|lost|ended"
+    }
+    tracking_events {
+        uuid id PK
+        uuid session_id FK
+        uuid load_id FK
+        enum event_type
+        varchar raw_provider_reference "idempotency key, UK per provider"
+    }
+    public_tracking_links {
+        uuid id PK
+        uuid load_id FK
+        varchar token_hash UK
+        timestamp expires_at
+        timestamp revoked_at
+    }

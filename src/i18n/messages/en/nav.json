@@ -1,0 +1,187 @@
+{
+  "primary": {
+    "dashboard": "Dashboard",
+    "loads": "Loads",
+    "carriers": "Carriers",
+    "customers": "Customers",
+    "drivers": "Drivers",
+    "equipment": "Equipment",
+    "trucks": "Trucks",
+    "trailers": "Trailers",
+    "documents": "Documents",
+    "onboarding": "Onboarding",
+    "signatures": "Signatures",
+    "invoices": "Invoices",
+    "settlements": "Settlements",
+    "expenses": "Expenses",
+    "payments": "Payments",
+    "factoring": "Factoring",
+    "reports": "Reports",
+    "tracking": "Tracking",
+    "permits": "Permits & escorts",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "assignments": "Assignments",
+    "groups": "Groups",
+    "users": "Users",
+    "settings": "Settings",
+    "audit": "Audit trail",
+    "leads": "Leads",
+    "integrations": "Integrations",
+    "billing": "Billing",
+    "tenants": "Tenants",
+    "plans": "Plans",
+    "platformHealth": "Platform health",
+    "retention": "Retention"
+  },
+  "groups": {
+    "operations": "Operations",
+    "compliance": "Compliance",
+    "finance": "Finance",
+    "insight": "Insight",
+    "administration": "Administration",
+    "platform": "Platform"
+  },
+  "userMenu": {
+    "profile": "Your profile",
+    "security": "Security",
+    "preferences": "Preferences",
+    "language": "Language",
+    "signOut": "Sign out",
+    "impersonating": "Impersonating {name}",
+    "endImpersonation": "End impersonation"
+  },
+  "search": {
+    "placeholder": "Search loads, carriers, customers, drivers, equipment…",
+    "hint": "Press / to search",
+    "recent": "Recent",
+    "noResults": "Nothing matched “{query}”",
+    "groups": {
+      "loads": "Loads",
+      "carriers": "Carriers",
+      "customers": "Customers",
+      "drivers": "Drivers",
+      "trucks": "Trucks",
+      "trailers": "Trailers",
+      "invoices": "Invoices"
+    }
+  },
+  "breadcrumb": {
+    "home": "Home",
+    "nav": "Breadcrumb"
+  },
+  "impersonation": {
+    "recorded": "All activity in this session is recorded"
+  },
+  "status": {
+    "load": {
+      "draft": "Draft",
+      "available": "Available",
+      "assigned": "Assigned",
+      "dispatched": "Dispatched",
+      "enRouteToPickup": "En route to pickup",
+      "atPickup": "At pickup",
+      "inTransit": "In transit",
+      "atDelivery": "At delivery",
+      "delivered": "Delivered",
+      "podReceived": "POD received",
+      "invoiced": "Invoiced",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "onboarding": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "underReview": "Under review",
+      "correctionsRequired": "Corrections required",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "suspended": "Suspended"
+    },
+    "verification": {
+      "notStarted": "Not started",
+      "pending": "Pending",
+      "verified": "Verified",
+      "mismatch": "Mismatch",
+      "failed": "Failed",
+      "manuallyOverridden": "Manually overridden",
+      "expired": "Expired"
+    },
+    "invoice": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "due": "Due",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "disputed": "Disputed",
+      "voided": "Voided",
+      "uncollectable": "Uncollectable"
+    },
+    "payment": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "refunded": "Refunded",
+      "partiallyRefunded": "Partially refunded",
+      "disputed": "Disputed",
+      "cancelled": "Cancelled"
+    },
+    "equipment": {
+      "pendingVerification": "Pending verification",
+      "active": "Active",
+      "outOfService": "Out of service",
+      "archived": "Archived"
+    },
+    "driver": {
+      "available": "Available",
+      "onLoad": "On load",
+      "offDuty": "Off duty",
+      "inactive": "Inactive"
+    },
+    "job": {
+      "queued": "Queued",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "deadLetter": "Dead letter",
+      "cancelled": "Cancelled"
+    },
+    "compliance": {
+      "blocked": "Blocked",
+      "warning": "Needs attention",
+      "clear": "Clear"
+    },
+    "expiry": {
+      "expiresIn": "Expires in {days} days",
+      "expiresToday": "Expires today",
+      "expiredAgo": "Expired {days} days ago"
+    }
+  },
+  "skipToContent": "Skip to main content",
+  "openMenu": "Open menu",
+  "mainNav": "Primary navigation",
+  "public": {
+    "home": "Home",
+    "services": "Services",
+    "heavyHaul": "Heavy haul & oversize",
+    "forCarriers": "For carriers",
+    "forClients": "For clients",
+    "about": "About",
+    "contact": "Contact",
+    "resources": "Resources",
+    "carrierSignup": "Carrier signup",
+    "login": "Log in",
+    "privacy": "Privacy policy",
+    "terms": "Terms & conditions",
+    "getStarted": "Get started",
+    "requestQuote": "Request a quote"
+  },
+  "roles": {
+    "admin": "Admin",
+    "accounting": "Accounting",
+    "dispatcher": "Dispatcher",
+    "carrier": "Carrier",
+    "driver": "Driver"
+  }
+}

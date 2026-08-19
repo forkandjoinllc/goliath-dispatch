@@ -1,0 +1,82 @@
+{
+  "title": "Asignaciones",
+  "tabs": {
+    "matrix": "Matriz de despachadores",
+    "groups": "Grupos",
+    "history": "Historial"
+  },
+  "matrix": {
+    "title": "Matriz de despachadores × transportistas",
+    "description": "Todos los despachadores de esta organización y los transportistas que tienen asignados actualmente.",
+    "dispatcher": "Despachador",
+    "carriers": "Transportistas",
+    "primaryBadge": "Principal",
+    "empty": "Ningún despachador tiene una asignación de transportista activa todavía."
+  },
+  "reach": {
+    "title": "Alcance",
+    "description": "Todo lo que {dispatcherName} puede ver y gestionar actualmente — mediante una asignación de transportista, un acceso directo o un grupo que administra.",
+    "carriers": "Transportistas ({count})",
+    "trucks": "Camiones ({count})",
+    "trailers": "Remolques ({count})",
+    "drivers": "Conductores ({count})",
+    "groups": "Grupos ({count})",
+    "empty": "Este despachador todavía no tiene asignaciones."
+  },
+  "grants": {
+    "title": "Accesos directos",
+    "description": "Camiones, remolques, conductores y grupos otorgados individualmente a este despachador, fuera de cualquier asignación de transportista.",
+    "grant": "Otorgar acceso",
+    "revoke": "Revocar acceso",
+    "resourceType": "Tipo de recurso",
+    "resourceTypes": {
+      "truck": "Camión",
+      "trailer": "Remolque",
+      "driver": "Conductor",
+      "group": "Grupo"
+    },
+    "resource": "Recurso",
+    "grantedOn": "Otorgado el",
+    "grantedBy": "Otorgado por",
+    "reason": "Motivo",
+    "reasonPlaceholder": "¿Por qué recibe este despachador acceso directo?",
+    "empty": "Sin accesos directos. El alcance de este despachador proviene por completo de asignaciones de transportistas y grupos.",
+    "confirmRevoke": "¿Revocar el acceso de {dispatcherName} a {resourceLabel}?"
+  },
+  "groups": {
+    "title": "Grupos",
+    "description": "Un grupo reúne transportistas, camiones, remolques y conductores para poder otorgarlos juntos a un despachador.",
+    "rename": "Renombrar grupo",
+    "deactivate": "Desactivar grupo",
+    "reactivate": "Reactivar grupo",
+    "owner": "Propietario",
+    "memberCount": "{count} miembros",
+    "empty": "Todavía no hay grupos.",
+    "confirmDeactivate": "¿Desactivar {groupName}? Los despachadores con este grupo otorgado perderán el acceso que otorga.",
+    "memberTypes": {
+      "carrier": "Transportista",
+      "truck": "Camión",
+      "trailer": "Remolque",
+      "driver": "Conductor"
+    }
+  },
+  "history": {
+    "title": "Historial de asignaciones",
+    "description": "Todos los despachadores que ha tenido este transportista, incluidas las asignaciones finalizadas.",
+    "dispatcher": "Despachador",
+    "startDate": "Inicio",
+    "endDate": "Fin",
+    "current": "Actual",
+    "primary": "Principal",
+    "assignedBy": "Asignado por",
+    "reason": "Motivo",
+    "empty": "Este transportista todavía no tiene historial de asignaciones."
+  },
+  "errors": {
+    "grantAlreadyActive": "Este despachador ya tiene un acceso activo a ese recurso."
+  },
+  "permissionDenied": {
+    "title": "Las asignaciones son exclusivas de Administrador",
+    "description": "Solo un Administrador puede asignar transportistas, equipo, conductores o grupos a un despachador."
+  }
+}

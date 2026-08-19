@@ -1,0 +1,178 @@
+{
+  "fields": {
+    "legalName": "Legal name",
+    "dba": "DBA",
+    "dotNumber": "DOT number",
+    "mcNumber": "MC number",
+    "ein": "EIN",
+    "einLast4": "EIN ending in {last4}",
+    "contactFirstName": "Contact first name",
+    "contactLastName": "Contact last name",
+    "email": "Email",
+    "phone": "Phone",
+    "website": "Website",
+    "preferredLocale": "Preferred language",
+    "physicalAddress": "Physical address",
+    "mailingAddress": "Mailing address",
+    "mailingSameAsPhysical": "Mailing address is the same as the physical address",
+    "usesFactoring": "Uses a factoring company",
+    "dispatchFeeBps": "Dispatch fee",
+    "notes": "Notes",
+    "suspendedAt": "Suspended on",
+    "suspensionReason": "Suspension reason",
+    "lastActivityAt": "Last activity"
+  },
+  "verificationStatus": {
+    "not_started": "Not started",
+    "pending": "Pending",
+    "verified": "Verified",
+    "mismatch": "Mismatch",
+    "failed": "Failed",
+    "manually_overridden": "Manually overridden",
+    "expired": "Expired"
+  },
+  "fmcsa": {
+    "title": "FMCSA verification",
+    "runVerification": "Run FMCSA verification",
+    "lastVerifiedAt": "Last verified",
+    "nextVerificationAt": "Next verification due",
+    "resultVerified": "Verified — matches FMCSA records.",
+    "resultMismatch": "FMCSA records do not fully match the information entered.",
+    "resultFailed": "FMCSA verification failed.",
+    "resultManuallyOverridden": "Manually overridden by {overriddenBy} on {overriddenAt}.",
+    "attempt": "Attempt {attempt}",
+    "mismatchField": {
+      "dotNumber": "DOT number",
+      "mcNumber": "MC number",
+      "legalName": "Legal name",
+      "operatingAuthority": "Operating authority",
+      "insuranceOnFile": "Insurance on file"
+    },
+    "override": {
+      "title": "Override FMCSA verification",
+      "description": "Overriding lets this carrier proceed despite the mismatch below. This is recorded in the audit trail and can only be done by an Admin or Accounting.",
+      "reasonLabel": "Reason for override",
+      "reasonPlaceholder": "Explain why this mismatch is acceptable.",
+      "confirm": "Override verification",
+      "cancel": "Cancel"
+    }
+  },
+  "equipmentVerification": {
+    "title": "COI / VIN verification",
+    "override": {
+      "title": "Override equipment verification",
+      "description": "Overriding lets this truck or trailer be assigned despite the mismatch below. This is recorded in the audit trail and can only be done by an Admin or Accounting.",
+      "reasonLabel": "Reason for override",
+      "reasonPlaceholder": "Explain why this mismatch is acceptable.",
+      "confirm": "Override verification",
+      "cancel": "Cancel"
+    }
+  },
+  "compliance": {
+    "title": "Compliance status",
+    "coiExpired": "The certificate of insurance (COI) expired on {date}.",
+    "coiNotVerified": "The certificate of insurance has not been verified against this equipment's VIN.",
+    "driverInactive": "This driver's status is inactive.",
+    "driverLicenseExpired": "The driver's license expired on {date}.",
+    "driverLicenseMissing": "No license number is on file for this driver.",
+    "driverMedicalCardExpired": "The driver's medical card expired on {date}.",
+    "driverMedicalCardMissing": "The driver does not have a medical card on file.",
+    "driverNoCarrierRelationship": "This driver does not have an active relationship with this carrier.",
+    "driverNotApproved": "This driver has not been approved after license review.",
+    "equipmentInactive": "This equipment is not active (current status: {status}).",
+    "fmcsaMcMismatch": "The MC number entered ({entered}) does not match the MC number FMCSA reports ({reported}).",
+    "fmcsaNameMismatch": "The legal name entered ({entered}) does not match the legal name FMCSA reports ({reported}).",
+    "fmcsaNoInsurance": "FMCSA does not show insurance on file for this carrier.",
+    "fmcsaNotFound": "No FMCSA record was found for DOT {dot}.",
+    "fmcsaNotVerified": "This carrier's FMCSA operating authority has not been verified.",
+    "fmcsaStale": "The FMCSA verification is out of date (the next verification was due {date}).",
+    "inspectionExpired": "The annual inspection expired on {date}.",
+    "noApprovedCoi": "This carrier does not have an approved certificate of insurance on file.",
+    "ocrFailed": "The certificate of insurance could not be scanned to confirm this VIN.",
+    "onboardingNotApproved": "Onboarding has not been approved (current status: {status}).",
+    "oversizeEvaluationMissing": "An oversize/overweight evaluation has not been run for this load.",
+    "oversizeEvaluationStale": "The oversize/overweight evaluation does not match the load's current dimensions.",
+    "registrationExpired": "The registration expired on {date}.",
+    "suspended": "This carrier is suspended."
+  },
+  "actions": {
+    "create": "Add carrier",
+    "edit": "Edit carrier",
+    "suspend": "Suspend carrier",
+    "reactivate": "Reactivate carrier",
+    "assignDispatcher": "Assign dispatcher",
+    "removeDispatcher": "Remove dispatcher",
+    "setPrimaryDispatcher": "Set as primary dispatcher",
+    "setDispatchFee": "Set dispatch fee"
+  },
+  "confirm": {
+    "suspend": "Suspend {legalName}? They will not be eligible for new load assignments until reactivated.",
+    "reactivate": "Reactivate {legalName}?",
+    "removeDispatcher": "Remove {dispatcherName} from {legalName}?",
+    "setPrimaryDispatcher": "Set {dispatcherName} as the primary dispatcher for {legalName}?"
+  },
+  "groups": {
+    "create": "Create group",
+    "addMember": "Add to group",
+    "removeMember": "Remove from group",
+    "name": "Group name",
+    "description": "Description"
+  },
+  "list": {
+    "title": "Carriers",
+    "columns": {
+      "legalName": "Carrier",
+      "dotMc": "DOT / MC",
+      "onboardingStatus": "Onboarding",
+      "fmcsaStatus": "FMCSA",
+      "assignedDispatcher": "Dispatcher",
+      "compliance": "Compliance",
+      "lastActivity": "Last activity"
+    },
+    "searchPlaceholder": "Search by legal name, DBA, DOT or MC number",
+    "allStatuses": "All statuses",
+    "empty": "No carriers found."
+  },
+  "tabs": {
+    "overview": "Overview",
+    "onboarding": "Onboarding",
+    "verification": "Verification",
+    "documents": "Documents",
+    "signatures": "Signatures",
+    "equipmentDrivers": "Equipment & drivers",
+    "dispatchers": "Dispatchers",
+    "compliance": "Compliance"
+  },
+  "signatures": {
+    "title": "Signature requests"
+  },
+  "dispatchers": {
+    "primaryLabel": "Primary dispatcher"
+  },
+  "leads": {
+    "title": "Leads",
+    "source": "Source",
+    "sources": {
+      "contact_form": "Contact form",
+      "carrier_signup": "Carrier sign-up",
+      "quote_request": "Quote request",
+      "resources": "Resource download"
+    },
+    "statuses": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "converted": "Converted",
+      "disqualified": "Disqualified"
+    },
+    "statusUpdated": "Lead status updated.",
+    "assignedTo": "Assigned to",
+    "assigned": "Lead assigned.",
+    "convert": "Convert to carrier",
+    "convertDescription": "Review the information submitted on the carrier sign-up form, make any corrections, and create the carrier record.",
+    "parsedPayload": "Submitted information",
+    "converted": "Lead converted to carrier.",
+    "empty": "No leads found.",
+    "allSources": "All sources"
+  }
+}

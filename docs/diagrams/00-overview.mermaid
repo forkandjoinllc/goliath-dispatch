@@ -1,0 +1,80 @@
+%% High-level domain map for Goliath Dispatch (92 tables total).
+%% Each box is a domain group, not a table — see the other files in this
+%% directory (and docs/data-model.md) for the per-table ER diagrams.
+flowchart LR
+    subgraph Identity["Tenancy & Identity"]
+        T[tenants]
+        U[users]
+        M[memberships / roles / sessions]
+    end
+
+    subgraph Carriers["Carriers & Onboarding"]
+        C[carriers]
+        ON[onboarding + FMCSA]
+        DISP[dispatcher assignments]
+        FACT[factoring]
+    end
+
+    subgraph EquipDriver["Equipment & Drivers"]
+        EQ[trucks / trailers]
+        DR[drivers]
+    end
+
+    subgraph Docs["Documents & Signatures"]
+        DOC[documents / versions]
+        SIG[signature templates / requests / records]
+    end
+
+    subgraph Cust["Customers"]
+        CU[customers / contacts / locations]
+    end
+
+    subgraph Loads["Loads & Stops"]
+        L[loads / stops / assignments]
+    end
+
+    subgraph RoutesGrp["Routes, Oversize & Permits"]
+        RT[routes]
+        OS[oversize rules + evaluations]
+        PM[permits / escorts]
+    end
+
+    subgraph Fin["Financials"]
+        EXP[expenses]
+        SNAP[financial snapshots]
+        INV[invoices / payments]
+        SET[carrier settlements]
+    end
+
+    subgraph MsgNotif["Messaging & Notifications"]
+        CONV[conversations / messages]
+        NOTIF[notifications]
+    end
+
+    subgraph Track["Tracking"]
+        SESS[tracking sessions / events]
+        PUB[public tracking links]
+    end
+
+    subgraph PlatAudit["Platform, Audit & Retention"]
+        AUD[audit events]
+        JOBS[job queue]
+        HOLD[legal holds]
+        LEAD[leads / quote requests]
+    end
+
+    Identity -->|owns| Carriers
+    Identity -->|owns| Cust
+    Carriers --> EquipDriver
+    Carriers --> Docs
+    Cust --> Loads
+    Carriers --> Loads
+    EquipDriver --> Loads
+    Loads --> RoutesGrp
+    Loads --> Fin
+    Loads --> Docs
+    Loads --> MsgNotif
+    Loads --> Track
+    Carriers --> Fin
+    Identity --> PlatAudit
+    Loads -.->|every mutation| PlatAudit

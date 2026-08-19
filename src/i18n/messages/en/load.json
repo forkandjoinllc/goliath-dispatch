@@ -1,0 +1,355 @@
+{
+  "title": "Loads",
+  "loadNumber": "Load {number}",
+  "views": {
+    "table": "Table",
+    "board": "Board",
+    "calendar": "Calendar",
+    "timeline": "Timeline",
+    "map": "Map"
+  },
+  "filters": {
+    "status": "Status",
+    "customer": "Customer",
+    "carrier": "Carrier",
+    "dispatcher": "Dispatcher",
+    "driver": "Driver",
+    "truck": "Truck",
+    "trailer": "Trailer",
+    "dateRange": "Planned pickup",
+    "reference": "Load #, reference or PO",
+    "referencePlaceholder": "Search load number, reference or PO",
+    "oversizeOnly": "Oversize / overweight only",
+    "clear": "Clear filters",
+    "apply": "Apply",
+    "allStatuses": "All statuses"
+  },
+  "columns": {
+    "loadNumber": "Load #",
+    "customer": "Customer",
+    "carrier": "Carrier",
+    "dispatcher": "Dispatcher",
+    "status": "Status",
+    "plannedPickupAt": "Planned pickup",
+    "plannedDeliveryAt": "Planned delivery",
+    "customerCharge": "Customer charge",
+    "carrierGrossRate": "Carrier rate",
+    "miles": "Miles",
+    "oversize": "Oversize",
+    "reference": "Reference",
+    "compliance": "Compliance"
+  },
+  "statusDescriptions": {
+    "draft": "Being built. Not yet visible to a carrier.",
+    "available": "Ready to offer to a carrier; no carrier assigned yet.",
+    "assigned": "A carrier is assigned but the load has not been dispatched.",
+    "dispatched": "Cleared every compliance gate and handed to the carrier.",
+    "en_route_to_pickup": "The truck is moving toward the pickup.",
+    "at_pickup": "The truck has arrived at the pickup location.",
+    "in_transit": "Freight is loaded and moving toward delivery.",
+    "at_delivery": "The truck has arrived at the delivery location.",
+    "delivered": "Freight has been delivered.",
+    "pod_received": "An approved proof of delivery is on file.",
+    "invoiced": "An invoice has been created for this load.",
+    "paid": "The invoice has been paid. This load is closed.",
+    "cancelled": "This load will not move. Cancellation is final."
+  },
+  "stopTypes": {
+    "pickup": "Pickup",
+    "delivery": "Delivery"
+  },
+  "appointmentTypes": {
+    "exact": "Exact appointment",
+    "window": "Appointment window",
+    "fcfs": "First come, first served",
+    "open": "Open / no appointment"
+  },
+  "appointmentTypeDescriptions": {
+    "exact": "The facility requires arrival at a specific time.",
+    "window": "The facility accepts arrival within a time window.",
+    "fcfs": "No appointment — trucks are worked in arrival order.",
+    "open": "No scheduling constraint has been set yet."
+  },
+  "fields": {
+    "customer": "Customer",
+    "customerContact": "Customer contact",
+    "carrier": "Carrier",
+    "dispatcher": "Dispatcher",
+    "customerReference": "Customer reference",
+    "poNumber": "PO number",
+    "commodity": "Commodity",
+    "weightPounds": "Weight (lbs)",
+    "dimensions": "Dimensions",
+    "lengthInches": "Length (in)",
+    "widthInches": "Width (in)",
+    "heightInches": "Height (in)",
+    "pieceCount": "Piece count",
+    "equipmentType": "Equipment type",
+    "axleConfiguration": "Axle configuration",
+    "grossVehicleWeightPounds": "Gross vehicle weight (lbs)",
+    "specialInstructions": "Special instructions",
+    "internalNotes": "Internal notes (not shared with the carrier)",
+    "oversize": "Oversize",
+    "overweight": "Overweight",
+    "oversizeIndicator": "This load exceeds standard legal dimensions and will likely require a permit.",
+    "overweightIndicator": "This load exceeds standard legal weight and will likely require a permit.",
+    "plannedPickupAt": "Planned pickup",
+    "plannedDeliveryAt": "Planned delivery",
+    "actualPickupAt": "Actual pickup",
+    "actualDeliveryAt": "Actual delivery",
+    "miles": "Miles",
+    "deadheadMiles": "Deadhead miles"
+  },
+  "financials": {
+    "title": "Financials",
+    "customerCharge": "Customer charge",
+    "carrierGrossRate": "Carrier gross rate",
+    "carrierDispatchFee": "Carrier dispatch fee",
+    "dispatcherCommission": "Dispatcher commission",
+    "dispatcherCommissionBasis": "Commission basis",
+    "commissionBasis": {
+      "dispatch_fee_amount": "Dispatch fee amount",
+      "carrier_gross_rate": "Carrier gross rate",
+      "commissionable_base": "Commissionable base"
+    },
+    "commissionableBase": "Commissionable base",
+    "dispatchFeeAmount": "Dispatch fee amount",
+    "netCarrierSettlement": "Net carrier settlement",
+    "grossMargin": "Gross margin",
+    "dispatcherCommissionAmount": "Dispatcher commission amount",
+    "snapshotHistory": "Snapshot history",
+    "version": "Version {version}",
+    "computedAt": "Computed {date}",
+    "reason": {
+      "load_created": "Load created",
+      "load_updated": "Load updated",
+      "carrier_assigned": "Carrier assigned"
+    },
+    "noSnapshot": "No financial snapshot has been computed yet.",
+    "permissionDenied": "You do not have permission to view load financials."
+  },
+  "stops": {
+    "title": "Stops",
+    "add": "Add stop",
+    "addPickup": "Add pickup",
+    "addDelivery": "Add delivery",
+    "remove": "Remove stop",
+    "removeConfirm": "Remove this stop? Remaining stops will be renumbered.",
+    "reorderHint": "Drag to reorder, or use the keyboard move menu.",
+    "sequence": "Stop {sequence}",
+    "facilityName": "Facility name",
+    "address": "Address",
+    "contact": "Stop contact",
+    "contactName": "Contact name",
+    "contactPhone": "Contact phone",
+    "contactEmail": "Contact email",
+    "confirmationNumber": "Confirmation number",
+    "instructions": "Instructions",
+    "appointmentType": "Appointment type",
+    "windowStart": "Window start",
+    "windowEnd": "Window end",
+    "localTime": "Local time ({timezone})",
+    "tenantTime": "Your time ({timezone})",
+    "actualArrivalAt": "Actual arrival",
+    "actualDepartureAt": "Actual departure",
+    "recordArrival": "Record arrival",
+    "recordDeparture": "Record departure",
+    "detentionMinutes": "Detention",
+    "detentionMinutesValue": "{minutes} min",
+    "detentionNotes": "Detention notes",
+    "noDetention": "No detention",
+    "empty": "No stops yet. Add at least one pickup and one delivery."
+  },
+  "assignments": {
+    "title": "Assignments",
+    "empty": "No trucks, trailers or drivers assigned yet.",
+    "assign": "Assign resources",
+    "unassign": "Unassign",
+    "unassignConfirm": "Unassign this resource from the load?",
+    "unassignReasonLabel": "Reason for unassigning",
+    "primary": "Primary",
+    "committedWindow": "Committed {from} – {to}",
+    "resourceType": {
+      "truck": "Truck",
+      "trailer": "Trailer",
+      "driver": "Driver"
+    },
+    "dialog": {
+      "title": "Assign resources",
+      "trucks": "Trucks",
+      "trailers": "Trailers",
+      "drivers": "Drivers",
+      "noneAvailable": "No candidates found for this carrier.",
+      "blocked": "Blocked",
+      "blockedReasonsTitle": "Why this candidate is blocked",
+      "assign": "Assign selected",
+      "cancel": "Cancel",
+      "allBlockedWarning": "Every selected candidate is currently blocked. Fix the reasons below or choose a different one — nothing will be assigned until every candidate passes.",
+      "carrierRequired": "Assign a carrier to this load before assigning trucks, trailers or drivers."
+    }
+  },
+  "documents": {
+    "title": "Documents",
+    "upload": "Upload document",
+    "empty": "No documents uploaded yet.",
+    "removed": "Document removed.",
+    "confirmRemove": "Remove this document from the load?",
+    "types": {
+      "bol": "Bill of lading",
+      "pod": "Proof of delivery",
+      "rate_confirmation": "Rate confirmation",
+      "receipt": "Receipt",
+      "permit": "Permit",
+      "escort_document": "Escort document",
+      "route_survey": "Route survey",
+      "invoice": "Invoice",
+      "lumper_receipt": "Lumper receipt",
+      "scale_ticket": "Scale ticket",
+      "other": "Other"
+    },
+    "keyStatus": {
+      "missing": "Not uploaded",
+      "pending": "Awaiting review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "rateConfirmation": {
+      "title": "Rate confirmation",
+      "description": "Review the rate confirmation below and record your decision.",
+      "accept": "Accept",
+      "reject": "Reject",
+      "requestChanges": "Request changes",
+      "reasonLabel": "Reason",
+      "reasonRequiredHint": "A reason is required to reject or request changes.",
+      "decisionRecorded": "Decision recorded {date} by {actor}.",
+      "decision": {
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "changes_requested": "Changes requested"
+      },
+      "history": "Decision history",
+      "noRateConfirmation": "No rate confirmation has been uploaded for this load yet.",
+      "documentVersion": "Document version {version}"
+    }
+  },
+  "tracking": {
+    "title": "Tracking",
+    "summary": "Tracking summary",
+    "comingSoon": "Live GPS tracking is not yet connected for this tenant. Once a tracking provider (Trucker Tools, MacroPoint or Highway) is configured, live position updates will appear here.",
+    "publicLink": "Public tracking link",
+    "checkCalls": {
+      "title": "Check calls",
+      "schedule": "Schedule check call",
+      "complete": "Mark complete",
+      "due": "Due {date}",
+      "overdue": "Overdue since {date}",
+      "scheduledFor": "Scheduled for",
+      "notes": "Notes",
+      "locationSummary": "Location summary",
+      "completedBy": "Completed by {actor} on {date}",
+      "origin": {
+        "scheduled": "Scheduled",
+        "provider_event": "Tracking provider",
+        "manual": "Manual"
+      },
+      "empty": "No check calls scheduled."
+    }
+  },
+  "history": {
+    "title": "Status history",
+    "empty": "No status changes recorded yet.",
+    "entry": "{from} → {to}",
+    "entryFromNone": "Created as {to}",
+    "source": {
+      "user": "By {actor}",
+      "tracking_provider": "Tracking provider",
+      "system_job": "System",
+      "webhook": "Webhook"
+    }
+  },
+  "duplicate": {
+    "action": "Duplicate load",
+    "confirmTitle": "Duplicate this load?",
+    "confirmDescription": "A new draft will be created with the same customer, stops, dimensions, equipment requirement and fee percentages. The carrier, assignments, documents, status history and financial history are not copied.",
+    "confirm": "Create duplicate",
+    "cancel": "Cancel",
+    "linkedFrom": "Duplicated from {loadNumber}"
+  },
+  "cancel": {
+    "action": "Cancel load",
+    "title": "Cancel this load",
+    "reasonLabel": "Reason for cancellation",
+    "reasonPlaceholder": "e.g. Customer cancelled the shipment",
+    "confirm": "Cancel load",
+    "cancelAction": "Never mind",
+    "cancelledOn": "Cancelled {date}"
+  },
+  "new": {
+    "title": "New load",
+    "steps": {
+      "customer": "Customer",
+      "stops": "Stops",
+      "freight": "Freight",
+      "equipment": "Equipment",
+      "financials": "Financials",
+      "review": "Review"
+    },
+    "next": "Next",
+    "back": "Back",
+    "saveDraft": "Save draft",
+    "submit": "Create load",
+    "createCustomer": "Create a new customer",
+    "reviewTitle": "Review before creating",
+    "stepProgress": "Step {current} of {total}",
+    "reviewStopsCount": "{count, plural, one {# stop} other {# stops}}"
+  },
+  "edit": {
+    "title": "Edit load",
+    "submit": "Save changes"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "assignments": "Assignments",
+    "financials": "Financials",
+    "documents": "Documents",
+    "tracking": "Tracking",
+    "history": "History"
+  },
+  "actions": {
+    "edit": "Edit load",
+    "assignCarrier": "Assign carrier",
+    "assignResources": "Assign resources",
+    "changeStatus": "Change status",
+    "cancel": "Cancel load",
+    "duplicate": "Duplicate load",
+    "print": "Print",
+    "viewDetail": "View load"
+  },
+  "states": {
+    "loading": "Loading loads…",
+    "error": "We could not load this load.",
+    "permissionDenied": "You do not have permission to view this load.",
+    "empty": "No loads match the current filters.",
+    "emptyBoard": "No loads to show on the board.",
+    "emptyCalendar": "No loads planned in this range.",
+    "emptyTimeline": "No stop windows to show.",
+    "emptyMap": "No stop locations to show on the map."
+  },
+  "errors": {
+    "stopsRequired": "A load needs at least one pickup and one delivery stop.",
+    "carrierRequiredForAssignment": "Assign a carrier before moving this load to Assigned or assigning trucks, trailers or drivers.",
+    "dispatchGateBlocked": "This load cannot be dispatched until every compliance gate is met.",
+    "podRequired": "An approved proof of delivery is required before this load can move to POD received.",
+    "invoiceRequired": "An invoice must exist before this load can move to Invoiced.",
+    "carrierNotCompliant": "This carrier cannot be assigned: {count, plural, one {one compliance issue is} other {# compliance issues are}} blocking.",
+    "rateConfirmationNotFound": "No rate confirmation has been uploaded for this load yet.",
+    "stopSequenceMismatch": "The new stop order does not match the load's current stops.",
+    "arrivalRequiredBeforeDeparture": "Record the arrival time before recording a departure."
+  },
+  "compliance": {
+    "summary": "Compliance",
+    "blockingCount": "{count, plural, one {1 blocking issue} other {# blocking issues}}",
+    "warningCount": "{count, plural, one {1 warning} other {# warnings}}",
+    "clear": "All compliance gates met"
+  }
+}

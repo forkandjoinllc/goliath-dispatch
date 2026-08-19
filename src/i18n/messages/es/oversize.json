@@ -1,0 +1,216 @@
+{
+  "disclaimer": {
+    "title": "Guía operativa, no una determinación legal",
+    "body": "Esta evaluación es una guía operativa generada a partir de los límites estatales registrados en este sistema. No constituye una determinación legal y no reemplaza la confirmación de los requisitos vigentes de permisos, escoltas y restricciones de viaje con la autoridad de permisos de cada estado. Los permisos y las escoltas siguen siendo responsabilidad del operador."
+  },
+  "outcome": {
+    "clear": "Sin restricciones",
+    "oversize": "Sobredimensionada",
+    "overweight": "Sobrepeso",
+    "oversize_overweight": "Sobredimensionada y con sobrepeso",
+    "insufficient_data": "Datos insuficientes"
+  },
+  "outcomeDescription": {
+    "clear": "Dentro de los límites legales en todos los estados que cruza la ruta.",
+    "oversize": "Excede un límite legal de tamaño (ancho, alto o largo) en al menos un estado de la ruta.",
+    "overweight": "Excede un límite legal de peso (peso bruto vehicular o por eje) en al menos un estado de la ruta.",
+    "oversize_overweight": "Excede tanto un límite legal de tamaño como un límite legal de peso en al menos un estado de la ruta.",
+    "insufficient_data": "Falta uno o más datos de entrada, por lo que no se puede confirmar el resultado — vea las advertencias a continuación."
+  },
+  "dimension": {
+    "width": "Ancho",
+    "height": "Altura",
+    "length": "Largo",
+    "grossWeight": "Peso bruto vehicular",
+    "axleWeight": "Peso por eje"
+  },
+  "unit": {
+    "in": "pulg",
+    "lb": "lb"
+  },
+  "notes": {
+    "permitRequired": "Es probable que se requiera un permiso estatal en {state}.",
+    "escortRequired": "Es probable que se requiera una escolta en {state}.",
+    "policeEscortRequired": "Es probable que se requiera una escolta policial en {state}.",
+    "withinLegalLimits": "Dentro de los límites legales en {state}."
+  },
+  "restrictions": {
+    "night": "Se prohíbe el viaje nocturno.",
+    "weekend": "Se prohíbe el viaje en fin de semana.",
+    "holiday": "Se prohíbe el viaje en días festivos federales.",
+    "curfew": "Restricción de horario vigente de {start} a {end}."
+  },
+  "warnings": {
+    "missingWidth": "No se ingresó el ancho — esta evaluación no puede confirmar que la carga cumpla el límite de ancho.",
+    "missingHeight": "No se ingresó la altura — esta evaluación no puede confirmar que la carga cumpla el límite de altura.",
+    "missingLength": "No se ingresó el largo — esta evaluación no puede confirmar que la carga cumpla el límite de largo.",
+    "missingGrossWeight": "No se ingresó el peso bruto vehicular — esta evaluación no puede confirmar que la carga cumpla el límite de peso.",
+    "missingAxleWeight": "No se ingresó el peso por eje — no se pudo evaluar la exposición a sobrepeso por eje.",
+    "noRoute": "No se pudo calcular una ruta para esta carga, por lo que no se pudieron verificar los límites de ningún estado.",
+    "noRouteStates": "La ruta no cruza ningún estado reconocido, por lo que no se pudieron verificar los límites de ningún estado."
+  },
+  "evaluation": {
+    "title": "Evaluación de carga sobredimensionada / con sobrepeso",
+    "description": "Evalúa las dimensiones y el peso de la carga contra los límites de cada estado que cruza la ruta.",
+    "runButton": "Ejecutar evaluación",
+    "rerunButton": "Volver a evaluar",
+    "running": "Evaluando…",
+    "axleWeightLabel": "Peso del eje más pesado (lb)",
+    "axleWeightHint": "No se almacena en la carga — se ingresa de nuevo cada vez que se ejecuta una evaluación.",
+    "axleConfigurationLabel": "Configuración de ejes",
+    "axleConfigurationPlaceholder": "p. ej., 5 ejes, dolly direccional",
+    "evaluatedAt": "Evaluado el {date}",
+    "noEvaluationYet": "Aún no se ha ejecutado una evaluación para esta carga.",
+    "staleBanner": "Las dimensiones de la carga cambiaron desde que se ejecutó esta evaluación. Ejecute una nueva evaluación antes de despachar.",
+    "inputsUsed": "Datos utilizados",
+    "routeStatesUsed": "Estados evaluados",
+    "noRouteStatesUsed": "Ningún estado — no había una ruta disponible al momento de la evaluación."
+  },
+  "panel": {
+    "stateResultsTitle": "Resultados por estado",
+    "stateResultsEmpty": "No se evaluó ningún estado.",
+    "exceedancesTitle": "Excedencias",
+    "noExceedances": "Sin excedencias en este estado.",
+    "permitColumn": "Permiso",
+    "escortColumn": "Escolta",
+    "policeEscortColumn": "Escolta policial",
+    "travelRestrictionsTitle": "Restricciones de viaje",
+    "noTravelRestrictions": "No hay restricciones de viaje registradas para este estado.",
+    "notesTitle": "Notas",
+    "missingDataTitle": "Datos faltantes",
+    "yes": "Requerido",
+    "no": "No requerido"
+  },
+  "validation": {
+    "title": "Aprobación de administrador",
+    "description": "El despacho permanece bloqueado para una carga sobredimensionada o con sobrepeso hasta que un administrador valide esta evaluación.",
+    "status": {
+      "pending": "Pendiente de aprobación",
+      "validated": "Validada",
+      "rejected": "Rechazada"
+    },
+    "validateButton": "Validar",
+    "rejectButton": "Rechazar",
+    "notesLabel": "Notas",
+    "notesPlaceholder": "Opcional — registre por qué se validó o rechazó.",
+    "validatedBy": "{status} por {name} el {date}",
+    "adminOnly": "Solo un administrador puede validar una evaluación de sobredimensión.",
+    "submitted": "Se registró la aprobación de la evaluación.",
+    "confirmRejectTitle": "¿Rechazar esta evaluación?",
+    "confirmRejectBody": "El despacho permanecerá bloqueado hasta que se valide una nueva evaluación."
+  },
+  "rules": {
+    "title": "Reglas estatales de sobredimensión",
+    "description": "Límites legales, umbrales de escolta y restricciones de viaje por estado. Estos valores parten como punto de referencia útil en la configuración inicial y son completamente editables — trate cada valor como una guía que debe verificarse con la autoridad de permisos del estado, no como un sustituto de hacerlo.",
+    "stateColumn": "Estado",
+    "widthColumn": "Ancho máximo",
+    "heightColumn": "Altura máxima",
+    "lengthColumn": "Largo máximo",
+    "grossWeightColumn": "PBV máximo",
+    "axleWeightColumn": "Peso máximo por eje",
+    "editButton": "Editar",
+    "editTitle": "Editar regla de sobredimensión de {state}",
+    "section": {
+      "limits": "Límites legales",
+      "escorts": "Umbrales de escolta",
+      "restrictions": "Restricciones de viaje",
+      "authority": "Autoridad de permisos",
+      "notes": "Notas del operador"
+    },
+    "escortWidthThreshold": "Se requiere escolta por encima de este ancho",
+    "escortHeightThreshold": "Se requiere escolta por encima de esta altura",
+    "escortLengthThreshold": "Se requiere escolta por encima de este largo",
+    "policeEscortWidthThreshold": "Se requiere escolta policial por encima de este ancho",
+    "permitRequiredAboveLegal": "Se requiere permiso por encima de los límites legales",
+    "nightTravelProhibited": "Viaje nocturno prohibido",
+    "weekendTravelProhibited": "Viaje en fin de semana prohibido",
+    "holidayTravelProhibited": "Viaje en días festivos prohibido",
+    "curfewWindows": "Horarios de restricción",
+    "addCurfewWindow": "Agregar horario de restricción",
+    "curfewStart": "Inicio",
+    "curfewEnd": "Fin",
+    "curfewNote": "Nota",
+    "permitAuthorityName": "Nombre de la autoridad",
+    "permitAuthorityUrl": "URL de la autoridad",
+    "sourceNoteEn": "Notas (inglés)",
+    "sourceNoteEs": "Notas (español)",
+    "travelRestrictionsNoteEn": "Notas de restricción (inglés)",
+    "travelRestrictionsNoteEs": "Notas de restricción (español)",
+    "lastReviewed": "Última revisión el {date}",
+    "saveButton": "Guardar regla",
+    "saved": "Regla de sobredimensión actualizada."
+  },
+  "permits": {
+    "title": "Permisos",
+    "description": "Permisos estatales requeridos para el movimiento de carga sobredimensionada o con sobrepeso de esta carga.",
+    "empty": "No hay permisos registrados para esta carga.",
+    "addButton": "Agregar permiso",
+    "editButton": "Editar permiso",
+    "stateLabel": "Estado",
+    "permitTypeLabel": "Tipo de permiso",
+    "permitNumberLabel": "Número de permiso",
+    "issuedAtLabel": "Emitido",
+    "expiresAtLabel": "Vence",
+    "costLabel": "Costo",
+    "notesLabel": "Notas",
+    "documentLabel": "Documento del permiso",
+    "routeSurveyDocumentLabel": "Documento del estudio de ruta",
+    "status": {
+      "pending": "Pendiente",
+      "requested": "Solicitado",
+      "issued": "Emitido",
+      "expired": "Vencido",
+      "rejected": "Rechazado",
+      "not_required": "No requerido"
+    },
+    "expiringSoon": "Vence el {date}",
+    "expired": "Venció el {date}",
+    "created": "Permiso creado.",
+    "updated": "Permiso actualizado."
+  },
+  "escorts": {
+    "title": "Escoltas",
+    "description": "Carros piloto, escoltas policiales, varas de altura y estudios de ruta requeridos para esta carga.",
+    "empty": "No hay escoltas registradas para esta carga.",
+    "addButton": "Agregar escolta",
+    "editButton": "Editar escolta",
+    "type": {
+      "pilot_car": "Carro piloto",
+      "police": "Escolta policial",
+      "height_pole": "Vara de altura",
+      "route_survey": "Estudio de ruta"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "confirmed": "Confirmada",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "not_required": "No requerida"
+    },
+    "providerNameLabel": "Proveedor",
+    "agencyNameLabel": "Agencia",
+    "contactNameLabel": "Nombre de contacto",
+    "contactPhoneLabel": "Teléfono de contacto",
+    "contactEmailLabel": "Correo de contacto",
+    "scheduledForLabel": "Programada para",
+    "costLabel": "Costo",
+    "notesLabel": "Notas",
+    "documentLabel": "Documento de la escolta",
+    "created": "Escolta creada.",
+    "updated": "Escolta actualizada."
+  },
+  "readiness": {
+    "title": "Aprobación de permisos listos",
+    "description": "Aprobación de administrador de que todos los permisos requeridos están emitidos y vigentes, y todas las escoltas requeridas están confirmadas.",
+    "approveButton": "Aprobar permisos listos",
+    "approved": "Aprobado por {name} el {date}",
+    "notApproved": "Aún no aprobado",
+    "blocked": "No se puede aprobar — {count} requisito(s) pendiente(s).",
+    "success": "Carga aprobada con permisos listos."
+  },
+  "expiryWarnings": {
+    "title": "Permisos por vencer",
+    "empty": "No hay permisos que venzan en los próximos {days} días.",
+    "expiresOn": "Vence el {date}"
+  }
+}

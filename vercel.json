@@ -1,0 +1,36 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fmcsa-reverification",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/document-expiration",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/invoice-overdue",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/retention-archive",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/retention-purge",
+      "schedule": "0 10 * * 0"
+    },
+    {
+      "path": "/api/cron/tracking-ingest",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/tracking-link-expiry",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/drain",
+      "schedule": "* * * * *"
+    }
+  ]
+}

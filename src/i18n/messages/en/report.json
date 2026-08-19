@@ -1,0 +1,208 @@
+{
+  "picker": {
+    "title": "Reports",
+    "description": "Every report reflects only the carriers, loads and financials you are permitted to see.",
+    "empty": "No reports are available for your role yet.",
+    "viewReport": "View report"
+  },
+  "reports": {
+    "revenueMargin": {
+      "title": "Revenue & margin",
+      "description": "Customer charge, carrier rate and gross margin by period, customer, carrier or dispatcher."
+    },
+    "loadPerformance": {
+      "title": "Load performance",
+      "description": "On-time pickup and delivery rates, transit time and detention by status or carrier."
+    },
+    "carrierScorecard": {
+      "title": "Carrier scorecard",
+      "description": "Volume, on-time performance and document compliance for every carrier."
+    },
+    "dispatcherPerformance": {
+      "title": "Dispatcher performance",
+      "description": "Loads, revenue, margin and commission accrued or paid by dispatcher."
+    },
+    "receivablesAging": {
+      "title": "Receivables aging",
+      "description": "Open invoice balances grouped into current, 30, 60 and 90+ day buckets."
+    },
+    "settlementSummary": {
+      "title": "Settlement summary",
+      "description": "Carrier settlements for the period with gross rate, fees, deductions and net amount."
+    },
+    "documentCompliance": {
+      "title": "Document compliance",
+      "description": "Documents expiring soon or already expired, by owner."
+    },
+    "onboardingPipeline": {
+      "title": "Onboarding pipeline",
+      "description": "Time spent in each onboarding status and where carriers stall."
+    },
+    "equipmentUtilization": {
+      "title": "Equipment & driver utilization",
+      "description": "Assigned days versus available days for trucks, trailers and drivers."
+    },
+    "oversizeActivity": {
+      "title": "Oversize activity",
+      "description": "Permits issued, escort costs and states traversed for oversize loads."
+    },
+    "auditActivity": {
+      "title": "Audit activity",
+      "description": "Audit event volume by actor and action type."
+    }
+  },
+  "filters": {
+    "dateRange": "Date range",
+    "presets": {
+      "daily": "Today",
+      "weekly": "Last 7 days",
+      "monthly": "This month",
+      "yearly": "This year",
+      "custom": "Custom"
+    },
+    "start": "Start date",
+    "end": "End date",
+    "to": "to",
+    "all": "All",
+    "reset": "Reset filters",
+    "fields": {
+      "groupBy": "Group by",
+      "carrierId": "Carrier",
+      "customerId": "Customer",
+      "resourceType": "Resource type",
+      "ownerType": "Owner type"
+    },
+    "values": {
+      "period": "Period",
+      "customer": "Customer",
+      "carrier": "Carrier",
+      "dispatcher": "Dispatcher",
+      "status": "Status",
+      "truck": "Truck",
+      "trailer": "Trailer",
+      "driver": "Driver"
+    }
+  },
+  "columns": {
+    "dimension": "Dimension",
+    "loadCount": "Loads",
+    "customerCharge": "Customer charge",
+    "carrierGrossRate": "Carrier gross rate",
+    "grossMargin": "Gross margin",
+    "marginPercent": "Margin %",
+    "dispatcherCommission": "Dispatcher commission",
+    "onTimePickupRate": "On-time pickup %",
+    "onTimeDeliveryRate": "On-time delivery %",
+    "avgTransitDays": "Avg. transit days",
+    "detentionMinutes": "Detention (minutes)",
+    "carrierName": "Carrier",
+    "verificationStatus": "FMCSA verification",
+    "documentCompliance": "Document compliance",
+    "dispatcherName": "Dispatcher",
+    "commissionAccrued": "Commission accrued",
+    "commissionPaid": "Commission paid",
+    "agingBucket": "Aging bucket",
+    "amount": "Amount",
+    "settlementNumber": "Settlement #",
+    "periodStart": "Period start",
+    "periodEnd": "Period end",
+    "grossRate": "Gross rate",
+    "dispatchFees": "Dispatch fees",
+    "deductions": "Deductions",
+    "netAmount": "Net amount",
+    "status": "Status",
+    "ownerType": "Owner type",
+    "ownerLabel": "Owner",
+    "documentType": "Document type",
+    "expirationDate": "Expiration date",
+    "daysRemaining": "Days remaining",
+    "onboardingStatus": "Onboarding status",
+    "avgDaysInStatus": "Avg. days in status",
+    "currentCount": "Currently in status",
+    "unit": "Unit",
+    "assignedDays": "Assigned days",
+    "availableDays": "Available days",
+    "utilizationRate": "Utilization %",
+    "loadNumber": "Load #",
+    "permitsIssued": "Permits issued",
+    "permitCost": "Permit cost",
+    "escortCost": "Escort cost",
+    "statesTraversed": "States traversed",
+    "actor": "Actor",
+    "actionType": "Action type",
+    "eventCount": "Events"
+  },
+  "table": {
+    "empty": "No rows match the current filters.",
+    "summary": "Totals"
+  },
+  "values": {
+    "empty": "—",
+    "unassigned": "Unassigned",
+    "expired": "Expired",
+    "expiring": "Expiring soon",
+    "system": "System"
+  },
+  "export": {
+    "title": "Export",
+    "formats": {
+      "csv": "CSV",
+      "xlsx": "Excel",
+      "pdf": "PDF"
+    },
+    "history": "Recent exports",
+    "status": {
+      "queued": "Queued",
+      "running": "Generating",
+      "succeeded": "Ready",
+      "failed": "Failed"
+    },
+    "rowCount": "{count} rows",
+    "download": "Download",
+    "ready": "Your export is ready to download.",
+    "failed": "The export failed to generate."
+  },
+  "errors": {
+    "unknownReport": "\"{reportKey}\" is not a known report.",
+    "exportNotFound": "That export could not be found.",
+    "exportNotReady": "That export is not ready to download yet.",
+    "exportExpired": "That export has expired. Generate a new one.",
+    "missingScopeSnapshot": "This export is missing its permission snapshot and cannot be generated."
+  },
+  "audit": {
+    "title": "Audit trail",
+    "description": "Every recorded action, read-only — the database itself rejects any attempt to alter or delete an audit event.",
+    "empty": "No audit events match the current filters.",
+    "reasonBadge": "Reason recorded",
+    "before": "Before",
+    "after": "After",
+    "impersonated": "Under impersonation",
+    "impersonationSessions": "Impersonation sessions",
+    "impersonationDescription": "Every session where one account acted under another's authority, and every event recorded during it.",
+    "impersonationSessionDetail": "Impersonation session",
+    "impersonationSummary": "Impersonation session",
+    "active": "Active",
+    "ended": "Ended",
+    "eventCount": "{count} events",
+    "columns": {
+      "occurredAt": "Occurred at",
+      "actor": "Actor",
+      "action": "Action",
+      "entity": "Entity",
+      "requestId": "Request",
+      "reason": "Reason"
+    },
+    "filters": {
+      "action": "Action",
+      "entityType": "Entity type",
+      "requestId": "Request ID",
+      "reasonPresent": "Reason recorded only",
+      "from": "From",
+      "to": "To"
+    },
+    "requestGroup": {
+      "title": "Request timeline",
+      "description": "Every audit event recorded under request {requestId}."
+    }
+  }
+}
