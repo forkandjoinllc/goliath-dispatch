@@ -64,6 +64,24 @@ Verifica: `node -v` debe dar v20.11 o superior — es lo que exige `package.json
    Esto es literalmente lo que pediste: Forge instala un webhook en GitHub y
    cada push a `main` dispara el despliegue. No hace falta GitHub Actions.
 
+## 3.5 · Desactivar Zero Downtime Deployment
+
+En **Apps**, si está activado **Zero Downtime Deployment**, desactívalo.
+
+No es un capricho. Para una aplicación Node conviene apagarlo por tres razones
+concretas:
+
+- PM2 en modo cluster ya reemplaza los procesos de uno en uno (`pm2 reload`),
+  así que no se pierden peticiones durante el despliegue de todos modos.
+- Con el modo activado, Forge mueve el symlink `current` **después** de que
+  termina el script. Ningún comando dentro del script puede reiniciar la
+  aplicación contra la versión nueva: reiniciaría la vieja.
+- Cada release recibe su propio `node_modules` y su propio `.next`. Es más de
+  un gigabyte por despliegue, y se acumula hasta llenar el disco.
+
+El script funciona con el modo encendido o apagado — detecta el caso y se
+adapta — pero apagado el despliegue es completo de principio a fin.
+
 ## 4 · Configurar el script de despliegue
 
 En **Apps → Deploy Script**, reemplaza todo el contenido por:
