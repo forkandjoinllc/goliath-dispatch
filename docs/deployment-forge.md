@@ -1,216 +1,113 @@
 # Despliegue en Laravel Forge
 
-Guía para servir Goliath Dispatch (Next.js) desde un servidor gestionado por
-Forge, con despliegue automático en cada push a GitHub.
+Servidor **fleetforce** (ID 1223071) · sitio **goliathdispatch.com** (ID 3345800)
+Ubuntu 24.04 · PHP 8.3 · MySQL 8.4 · Nueva York
 
-> Esta guía cubre la aplicación Next.js actual. Cuando la migración a Laravel
-> esté lista, el script de despliegue cambia pero los pasos de Forge —
-> repositorio, Quick Deploy, variables, programador — son los mismos.
+> El servidor es **compartido**: además de este, alojan `app.pulsedcalls.com`,
+> `fleetforceapp.com`, `api.supporteld.com` y `highway.toptracking.com`, todos en
+> producción. Nada de lo que hay aquí toca configuración del servidor —
+> PHP-FPM, MySQL, nginx global—: todo queda dentro del sitio. Un cambio a nivel
+> de servidor para arreglar este sitio se llevaría por delante los otros cuatro.
 
----
+## Lo que hace falta una sola vez
 
-## 0 · Lo que Forge no hereda de Vercel
+### 1. Base de datos
 
-Tres cosas dejan de funcionar solas al salir de Vercel. Las tres se resuelven
-en esta guía, pero conviene saber por qué existen los pasos:
+El servidor no tiene todavía una base para este sitio. En Forge → Storage →
+Database:
 
-| En Vercel | En Forge |
+- **Add database**: `goliath_dispatch`
+- **Add user**: uno propio para este sitio, con acceso **solo** a esa base.
+
+Un usuario por sitio, no el `forge` que tiene acceso a todas: si algún día se
+filtra el `.env` de este sitio, lo que se filtra es el acceso a esta base y no a
+los 649 MB de `callcenter`.
+
+La contraseña la genera y la guarda Forge. **No debe pasar por el chat, ni por
+el repositorio, ni por un fichero de este proyecto.**
+
+### 2. Variables de entorno
+
+En Forge → el sitio → Environment. Se parte de `.env.example` y se rellenan:
+
+| Variable | De dónde sale |
 |---|---|
-| `vercel.json` define 8 tareas programadas | Nadie lee ese archivo: se configuran en el **programador** (paso 6) |
-| La aplicación corre como funciones serverless | Corre como un proceso Node persistente bajo **PM2** (paso 4) |
-| Nginx y TLS son invisibles | Se configura el **proxy inverso** a mano (paso 5) |
+| `APP_KEY` | `php artisan key:generate` en el servidor (no se escribe a mano) |
+| `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | lo del paso 1 |
+| `APP_URL` | `https://goliathdispatch.com` |
 
----
+Todo lo demás puede quedarse como está. Los servicios externos sin credenciales
+usan adaptadores simulados: la aplicación arranca igual, y lo que no funciona es
+lo que necesita ese servicio, no el sitio entero.
 
-## 1 · Crear el servidor
+Si el servidor no tiene Redis, cambiar `QUEUE_CONNECTION=database` y
+`CACHE_STORE=database`, y no arrancar Horizon.
 
-En Forge, **Create Server**. Recomendado para empezar:
+### 3. Demonio de renderizado en servidor
 
-- Proveedor: DigitalOcean, Hetzner o AWS — cualquiera sirve.
-- Tamaño: 2 vCPU / 4 GB es holgado. Con 1 vCPU / 2 GB el `next build` durante
-  el despliegue puede quedarse sin memoria.
-- Base de datos: **PostgreSQL** (la aplicación actual la usa; la migración a
-  Laravel cambiará esto a MySQL).
-- PHP: la versión que Forge ofrezca. No se usa, pero Forge la instala igual.
+Forge → el sitio → Processes → Add background process:
 
-Anota la contraseña de la base de datos que Forge muestra **una sola vez**.
-
-## 2 · Instalar Node y PM2
-
-Forge no instala Node por defecto. En la pestaña **Server → Packages**, o por
-SSH:
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo npm install -g pm2
-
-# Que PM2 reviva los procesos al reiniciar el servidor
-pm2 startup systemd -u forge --hp /home/forge
-# Ejecuta el comando que imprima la línea anterior, con sudo
+```
+Command:   php artisan inertia:start-ssr
+Directory: /home/forge/goliathdispatch.com/current
+User:      forge
+Processes: 1
 ```
 
-Verifica: `node -v` debe dar v20.11 o superior — es lo que exige `package.json`.
+Sin este proceso el sitio **funciona**, pero devuelve un `<div>` vacío y el
+contenido lo pinta el navegador. Para una aplicación tras login daría igual; para
+un sitio de marketing que vive de que lo indexen, no: un rastreador vería una
+página en blanco en los dos idiomas.
 
-## 3 · Crear el sitio y conectar el repositorio
+El script de despliegue hace `inertia:stop-ssr` después de activar el release, y
+el gestor de procesos lo vuelve a levantar solo con el bundle nuevo.
 
-1. **Sites → New Site**. Dominio, tipo *Static HTML / Nginx*, sin base de datos
-   nueva (ya la creó el servidor).
-2. En el sitio, **Git Repository**: `forkandjoinllc/goliath-dispatch`, rama
-   `main`. **Desmarca "Install Composer dependencies"** — esto no es un proyecto
-   PHP.
-3. En **Apps**, activa **Quick Deploy**.
+### 4. Tareas programadas
 
-   Esto es literalmente lo que pediste: Forge instala un webhook en GitHub y
-   cada push a `main` dispara el despliegue. No hace falta GitHub Actions.
+Forge → el sitio → Scheduled jobs:
 
-## 3.5 · Desactivar Zero Downtime Deployment
-
-En **Apps**, si está activado **Zero Downtime Deployment**, desactívalo.
-
-No es un capricho. Para una aplicación Node conviene apagarlo por tres razones
-concretas:
-
-- PM2 en modo cluster ya reemplaza los procesos de uno en uno (`pm2 reload`),
-  así que no se pierden peticiones durante el despliegue de todos modos.
-- Con el modo activado, Forge mueve el symlink `current` **después** de que
-  termina el script. Ningún comando dentro del script puede reiniciar la
-  aplicación contra la versión nueva: reiniciaría la vieja.
-- Cada release recibe su propio `node_modules` y su propio `.next`. Es más de
-  un gigabyte por despliegue, y se acumula hasta llenar el disco.
-
-El script funciona con el modo encendido o apagado — detecta el caso y se
-adapta — pero apagado el despliegue es completo de principio a fin.
-
-## 4 · Configurar el script de despliegue
-
-En **Apps → Deploy Script**, reemplaza todo el contenido por:
-
-```bash
-cd $FORGE_SITE_PATH && bash deploy/forge/deploy.sh
+```
+Command:   php /home/forge/goliathdispatch.com/current/artisan schedule:run
+Frequency: Every minute
+User:      forge
 ```
 
-El script real vive en el repositorio (`deploy/forge/deploy.sh`), así que los
-cambios al procedimiento de despliegue pasan por revisión de código en vez de
-quedar solo en la interfaz de Forge, donde nada registra por qué cambiaron.
+Es la que dispara los barridos de reverificación FMCSA, los avisos de documentos
+por vencer y los trabajos de retención. Sin ella el sitio se ve perfecto y nada
+de eso ocurre nunca — que es la peor forma de fallar, porque no da error.
 
-Lo que hace: trae la rama, `npm ci`, migraciones, `npm run build`, `pm2 reload`,
-y finalmente pide la portada para confirmar que la aplicación responde de
-verdad. Si no responde, el despliegue **falla en rojo** en vez de reportar éxito
-sobre un sitio caído.
+## Script de despliegue
 
-## 5 · Configurar Nginx como proxy inverso
+Está en `deploy/forge/deploy.sh`. Se pega tal cual en la pestaña Deploy Script.
 
-**Sites → tu sitio → Edit Files → Edit Nginx Configuration**. Sustituye el
-bloque `location /` por el contenido de `deploy/forge/nginx-proxy.conf`,
-cambiando `YOUR_SITE_DOMAIN` por tu dominio real.
+Dos cosas del script que no son evidentes:
 
-No toques los marcadores `# FORGE CONFIG (DO NOT REMOVE!)` ni el bloque SSL:
-Forge los reescribe al renovar el certificado y se llevaría por delante
-cualquier cosa que esté entre ellos.
+- **`set -e` al principio.** Sin él, un `npm run build` roto seguiría adelante y
+  activaría un release sin assets: la página cargaría sin estilos ni JavaScript,
+  que es peor que no desplegar.
+- **El orden alrededor de `$ACTIVATE_RELEASE()`.** El sitio tiene Zero Downtime
+  activado, así que mientras corre el script `current` todavía apunta al release
+  VIEJO. Todo lo que prepara el release nuevo va antes; todo lo que reinicia
+  procesos va después. Recargar FPM antes de activar recargaría el release que
+  está a punto de desaparecer.
 
-## 6 · Configurar las tareas programadas
+## Migraciones y DDL
 
-**Server → Scheduler → New Scheduled Job**. Ocho entradas, todas con usuario
-`forge`. El comando en todas es el mismo salvo el último argumento:
+`php artisan migrate --force` ejecuta 99 tablas, 246 claves foráneas y 47
+triggers de DDL en crudo. **MySQL no tiene DDL transaccional**: una migración que
+falla a la mitad deja el esquema a medias y no se revierte sola.
 
-```bash
-cd /home/forge/TU_DOMINIO && bash deploy/forge/run-cron.sh <trabajo>
-```
+Por eso el `set -e`: el despliegue se detiene ahí, `$ACTIVATE_RELEASE()` nunca
+corre y el release anterior sigue sirviendo. Para arreglarlo hay que mirar el
+esquema a mano; no basta con volver a desplegar.
 
-| Trabajo | Frecuencia (cron) | Qué hace |
-|---|---|---|
-| `drain` | `* * * * *` | Vacía la cola de trabajos |
-| `tracking-ingest` | `*/5 * * * *` | Ingesta eventos de rastreo |
-| `tracking-link-expiry` | `0 * * * *` | Expira enlaces públicos de rastreo |
-| `fmcsa-reverification` | `0 6 * * *` | Reverificación FMCSA de 7 días |
-| `document-expiration` | `0 7 * * *` | Avisos de vencimiento de documentos |
-| `invoice-overdue` | `0 8 * * *` | Marca facturas vencidas |
-| `retention-archive` | `0 9 * * *` | Archiva registros fuera de ventana |
-| `retention-purge` | `0 10 * * 0` | Borrado definitivo (semanal, domingos) |
-
-Los horarios son UTC, igual que en Vercel — Forge configura los servidores en
-UTC por defecto. Verifica con `timedatectl` si tienes dudas.
-
-**El de cada minuto es el que más consume.** Si no necesitas esa latencia en los
-trabajos de fondo, bájalo a `*/2` o `*/5`.
-
-## 7 · Variables de entorno
-
-**Sites → tu sitio → Environment**. Como mínimo:
+## Comprobación después de desplegar
 
 ```bash
-NODE_ENV=production
-APP_ENV=production
-PORT=3000
-NEXT_PUBLIC_APP_URL=https://tu-dominio.com
-
-DATABASE_URL=postgres://forge:CONTRASEÑA@127.0.0.1:5432/goliath
-DATABASE_URL_UNPOOLED=postgres://forge:CONTRASEÑA@127.0.0.1:5432/goliath
-
-AUTH_SECRET=...
-ENCRYPTION_KEY=...
-SIGNATURE_HASH_PEPPER=...
-PUBLIC_TRACKING_TOKEN_SECRET=...
-CRON_SECRET=...
-
-ALLOW_DEMO_SEED=false
+curl -sI https://goliathdispatch.com/                 # 302 -> /en o /es
+curl -s  https://goliathdispatch.com/en | grep -o '<title>[^<]*'
+curl -s  https://goliathdispatch.com/es | grep -o '<h1[^>]*>[^<]\{0,40\}'
 ```
 
-Los cinco secretos se generan con:
-
-```bash
-for v in AUTH_SECRET ENCRYPTION_KEY SIGNATURE_HASH_PEPPER PUBLIC_TRACKING_TOKEN_SECRET CRON_SECRET; do
-  echo "$v=$(openssl rand -base64 32)"
-done
-```
-
-`ALLOW_DEMO_SEED=false` no es opcional: es lo que impide que alguien siembre
-usuarios de demostración en producción.
-
-Todo lo demás (Stripe, Mailgun, Twilio, Google Maps, FMCSA, OCR, rastreo)
-funciona en modo simulado por defecto. Se activa poniendo su llave y cambiando
-su interruptor `*_DRIVER`.
-
-## 8 · Primer despliegue
-
-1. **Deploy Now** en la pestaña Apps.
-2. Cuando termine, aplica el esquema por SSH:
-
-   ```bash
-   cd /home/forge/TU_DOMINIO
-   npm run db:migrate
-   ```
-
-3. Emite el certificado en **SSL → LetsEncrypt**.
-4. Abre `https://tu-dominio.com` — debe redirigir a `/en` y mostrar la portada.
-
-Desde aquí, cada `git push` a `main` despliega solo.
-
----
-
-## Verificación
-
-```bash
-pm2 status                      # el proceso debe estar "online"
-pm2 logs goliath-dispatch       # registros de la aplicación
-bash deploy/forge/run-cron.sh drain   # probar una tarea a mano
-```
-
-## Cuando algo falla
-
-| Síntoma | Causa habitual |
-|---|---|
-| 502 Bad Gateway | El proceso Node no está arriba: `pm2 status`, `pm2 logs` |
-| El despliegue falla en `npm run build` | Memoria insuficiente. Añade swap o sube el tamaño del servidor |
-| `DATABASE_URL is not set` | Falta en Environment, o el despliegue corrió antes de guardarla |
-| Las tareas no corren | `CRON_SECRET` distinto entre el .env y el que espera la aplicación |
-| Todo se registra desde 127.0.0.1 | Falta `X-Forwarded-For` en Nginx (paso 5) |
-
-## Copias de seguridad
-
-Forge ofrece copias de la base de datos en **Server → Backups**. Actívalas.
-Ten presente que **no** respaldan los archivos subidos: si usas
-`STORAGE_DRIVER=local`, la carpeta `.local-storage` queda fuera de la copia y
-un restore dejaría la base apuntando a documentos que ya no existen. Para
-producción usa `STORAGE_DRIVER=s3` contra un bucket privado.
+Si el `<h1>` sale vacío pero la página carga en el navegador, el demonio de SSR
+no está corriendo (paso 3).

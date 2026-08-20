@@ -1,0 +1,136 @@
+/**
+ * Goliath Dispatch — design tokens
+ * ---------------------------------
+ * Tailwind v4 CSS-first theme. Every colour here derives from the four
+ * brand colours in resources/brand-source/brand-guide.pdf:
+ *   Goliath Navy   #062B5C
+ *   Safety Orange  #FF5A00
+ *   Steel Gray     #9B9B9B
+ *   Carbon         #111827
+ *
+ * The tint/shade ramps are generated (not eyeballed) by converting the
+ * base hex to HSL and interpolating lightness toward white (light steps)
+ * and black (dark steps), holding hue/saturation constant apart from a
+ * small desaturation at the extremes so 50-step tints don't look grey and
+ * 900/950-step shades don't look neon. The base hex is pinned exactly to
+ * its canonical step:
+ *   --color-navy-700   = #062B5C  (the brand navy, unchanged)
+ *   --color-safety-500 = #FF5A00  (the brand safety orange, unchanged)
+ *   --color-steel-400  = #9B9B9B  (the brand steel gray, unchanged)
+ * See docs/brand.md for the generator and the accessibility rules that
+ * govern which step to reach for.
+ */
+
+@theme {
+  /* ---- Goliath Navy ------------------------------------------------ */
+  --color-navy-50: #F1F7FD;
+  --color-navy-100: #BED7F8;
+  --color-navy-200: #8AB7F3;
+  --color-navy-300: #5698EF;
+  --color-navy-400: #2078EC;
+  --color-navy-500: #105DC4;
+  --color-navy-600: #0A4490;
+  --color-navy-700: #062B5C; /* canonical Goliath Navy */
+  --color-navy-800: #052043;
+  --color-navy-900: #04142A;
+  --color-navy-950: #020912;
+
+  /* ---- Safety Orange ------------------------------------------------
+   * safety-500 is the canonical brand orange. It measures ~3.1:1 against
+   * white — enough for borders, icons, fills and large display type
+   * (>=24px / >=19px bold), not enough for body text. safety-600 is the
+   * text-safe / white-on-fill-safe step (5.0:1+). See docs/brand.md. */
+  --color-safety-50: #FEF5F0;
+  --color-safety-100: #FCD7C2;
+  --color-safety-200: #FCB893;
+  --color-safety-300: #FC9963;
+  --color-safety-400: #FD7A32;
+  --color-safety-500: #FF5A00; /* canonical Safety Orange */
+  --color-safety-600: #C24602; /* text-safe orange / accessible fill */
+  --color-safety-700: #873103;
+  --color-safety-800: #4D1D02;
+  --color-safety-900: #140701;
+
+  /* ---- Steel Gray ---------------------------------------------------
+   * steel-400 is the canonical brand steel. Like safety-500 it is a
+   * decorative/UI-boundary colour, not a text colour (2.8:1 on white).
+   * Use steel-600+ for any steel-family text. */
+  --color-steel-50: #F7F7F7;
+  --color-steel-100: #E0E0E0;
+  --color-steel-200: #C9C9C9;
+  --color-steel-300: #B2B2B2;
+  --color-steel-400: #9B9B9B; /* canonical Steel Gray */
+  --color-steel-500: #7E7E7E;
+  --color-steel-600: #616161; /* text-safe steel */
+  --color-steel-700: #444444;
+  --color-steel-800: #272727;
+  --color-steel-900: #0A0A0A;
+
+  /* ---- Carbon ---------------------------------------------------------
+   * Fixed ink colour, not a ramp — used for primary body text and dense
+   * data (tables, forms) where pure navy would compete with links/headings. */
+  --color-carbon: #111827;
+
+  /* ---- Semantic status colours --------------------------------------
+   * Distinct hues from the brand (green/amber/red/blue family) so a
+   * status chip is never mistaken for a brand accent. Each has a *-50
+   * tint for backgrounds, a *-500 for icons/fills/large text, and a
+   * *-700 text-safe step for small text on white or on its own tint.
+   * Measured ratios are enforced by tests/brand/contrast.mjs. */
+  --color-success-50: #F0FDF4;
+  --color-success-500: #16A34A;
+  --color-success-700: #15803D;
+
+  --color-warning-50: #FFFBEB;
+  --color-warning-500: #F59E0B;
+  --color-warning-700: #A16207;
+
+  --color-danger-50: #FEF2F2;
+  --color-danger-500: #DC2626;
+  --color-danger-700: #B91C1C;
+
+  --color-info-50: #F0F9FF;
+  --color-info-500: #0284C7;
+  --color-info-700: #0369A1;
+
+  /* ---- Typography -----------------------------------------------------
+   * Roboto Condensed for both headings and body copy, per the brand
+   * guide ("Roboto Condensed Regular — clear, efficient, operational").
+   * Self-hosted from public/brand/fonts — never fetched from Google Fonts. */
+  --font-sans: "Roboto Condensed", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-display: "Roboto Condensed", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.0625rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.375rem;
+  --text-4xl--line-height: 2.75rem;
+
+  /* ---- Elevation, radius, spacing ------------------------------------
+   * Restrained — this is dense operational software, not a marketing
+   * site. Shadows are shallow and low-opacity; radii stay small so the
+   * UI reads as precise/technical rather than soft. */
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.3125rem;
+  --radius-lg: 0.5rem;
+
+  --shadow-xs: 0 1px 2px 0 rgb(6 43 92 / 0.06);
+  --shadow-sm: 0 1px 3px 0 rgb(6 43 92 / 0.10), 0 1px 2px -1px rgb(6 43 92 / 0.08);
+  --shadow-md: 0 4px 8px -2px rgb(6 43 92 / 0.12), 0 2px 4px -2px rgb(6 43 92 / 0.08);
+  --shadow-lg: 0 12px 20px -6px rgb(6 43 92 / 0.16), 0 4px 8px -4px rgb(6 43 92 / 0.10);
+
+  --spacing-control-sm: 1.75rem;  /* compact table-row control height */
+  --spacing-control-md: 2.25rem;  /* default input/button height */
+  --spacing-control-lg: 2.75rem;  /* touch-friendly control height */
+}

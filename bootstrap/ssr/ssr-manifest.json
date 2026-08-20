@@ -1,0 +1,83 @@
+{
+  "resources/js/components/Form/AntiSpamFields.tsx": [
+    "/build/assets/Field-BlFpQuPk.js"
+  ],
+  "resources/js/components/Form/Field.tsx": [
+    "/build/assets/Field-BlFpQuPk.js"
+  ],
+  "resources/js/components/Marketing/Cta.tsx": [
+    "/build/assets/Cta-kux4IRC9.js"
+  ],
+  "resources/js/components/Marketing/FeatureBlock.tsx": [
+    "/build/assets/Services-ClRv3v5S.js"
+  ],
+  "resources/js/components/Marketing/Footer.tsx": [
+    "/build/assets/MarketingLayout-i8h6UMJI.js"
+  ],
+  "resources/js/components/Marketing/Header.tsx": [
+    "/build/assets/MarketingLayout-i8h6UMJI.js"
+  ],
+  "resources/js/components/Marketing/LeadForm.tsx": [
+    "/build/assets/Contact-puyfZpQY.js"
+  ],
+  "resources/js/components/Marketing/LegalDocument.tsx": [
+    "/build/assets/LegalDocument-BdM8h5os.js"
+  ],
+  "resources/js/components/Marketing/PageHero.tsx": [
+    "/build/assets/PageHero-wWMgwMlM.js"
+  ],
+  "resources/js/components/Marketing/Section.tsx": [
+    "/build/assets/Section-DsJrJ0AG.js"
+  ],
+  "resources/js/components/Marketing/Seo.tsx": [
+    "/build/assets/MarketingLayout-i8h6UMJI.js"
+  ],
+  "resources/js/layouts/MarketingLayout.tsx": [
+    "/build/assets/MarketingLayout-i8h6UMJI.js"
+  ],
+  "resources/js/lib/format.ts": [
+    "/build/assets/Signup-FkXK-1fD.js"
+  ],
+  "resources/js/lib/i18n.tsx": [],
+  "resources/js/lib/resolve-page.ts": [],
+  "resources/js/pages/Auth/Signup.tsx": [
+    "/build/assets/Signup-FkXK-1fD.js"
+  ],
+  "resources/js/pages/Auth/SignupDone.tsx": [
+    "/build/assets/SignupDone-CCBuoK7y.js"
+  ],
+  "resources/js/pages/Marketing/About.tsx": [
+    "/build/assets/About-BrCqp804.js"
+  ],
+  "resources/js/pages/Marketing/CarrierSignup.tsx": [
+    "/build/assets/CarrierSignup-Dk3rSudQ.js"
+  ],
+  "resources/js/pages/Marketing/Contact.tsx": [
+    "/build/assets/Contact-puyfZpQY.js"
+  ],
+  "resources/js/pages/Marketing/ForCarriers.tsx": [
+    "/build/assets/ForCarriers-DFLaZbym.js"
+  ],
+  "resources/js/pages/Marketing/ForClients.tsx": [
+    "/build/assets/ForClients-JDcr-rB0.js"
+  ],
+  "resources/js/pages/Marketing/HeavyHaul.tsx": [
+    "/build/assets/HeavyHaul-Bz2hBCZl.js"
+  ],
+  "resources/js/pages/Marketing/Home.tsx": [
+    "/build/assets/Home-BMdqvnm9.js"
+  ],
+  "resources/js/pages/Marketing/Privacy.tsx": [
+    "/build/assets/Privacy-BhW0aUml.js"
+  ],
+  "resources/js/pages/Marketing/Resources.tsx": [
+    "/build/assets/Resources-Dp1p1T9R.js"
+  ],
+  "resources/js/pages/Marketing/Services.tsx": [
+    "/build/assets/Services-ClRv3v5S.js"
+  ],
+  "resources/js/pages/Marketing/Terms.tsx": [
+    "/build/assets/Terms-C7Ul82U8.js"
+  ],
+  "resources/js/ssr.tsx": []
+}

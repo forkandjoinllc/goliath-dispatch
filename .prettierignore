@@ -1,8 +1,0 @@
-node_modules
-.next
-dist
-coverage
-drizzle/**/*.sql
-playwright-report
-test-results
-package-lock.json

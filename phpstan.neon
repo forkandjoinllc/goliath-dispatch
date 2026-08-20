@@ -1,0 +1,26 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - database
+
+    # `tests/` queda fuera a propósito. Pest es un DSL dinámico: las expectativas
+    # propias (expect()->extend), $this->post() dentro de un closure y las
+    # cadenas de expect() no son analizables sin anotar a mano cada una. Al
+    # nivel 6 producía 40 errores, todos falsos positivos, que habrían enterrado
+    # los reales. Las pruebas se verifican ejecutándolas, que es su trabajo.
+    excludePaths:
+        - tests
+
+    # Nivel 6: exige tipos en firmas y detecta accesos a métodos que no existen.
+    # Los niveles 7-9 obligarían a anotar @property por cada una de las ~1.800
+    # columnas de los 92 modelos generados: mucho ruido, poca señal, mientras no
+    # haya lógica de negocio encima. Subirlo cuando la haya.
+    level: 6
+
+    ignoreErrors:
+        # Los modelos generados exponen sus columnas como propiedades mágicas de
+        # Eloquent. Anotarlas sería regenerar el esquema en PHPDoc.
+        - identifier: property.notFound

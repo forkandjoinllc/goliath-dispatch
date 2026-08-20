@@ -1,0 +1,42 @@
+/**
+ * Roboto Condensed — self-hosted, three cuts (Regular, Bold, Bold Italic)
+ * plus Regular Italic for completeness. Files live in public/brand/fonts
+ * and are never fetched from Google Fonts: the build environment has no
+ * network access to fonts.googleapis.com, and a third-party font request
+ * is a CSP exception this app doesn't need.
+ *
+ * Source: @fontsource/roboto-condensed (npm), OFL-1.1 licensed. See
+ * docs/brand.md for how to re-fetch/update these files.
+ */
+
+@font-face {
+  font-family: "Roboto Condensed";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/brand/fonts/roboto-condensed-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto Condensed";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/brand/fonts/roboto-condensed-latin-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto Condensed";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/brand/fonts/roboto-condensed-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto Condensed";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/brand/fonts/roboto-condensed-latin-700-italic.woff2") format("woff2");
+}

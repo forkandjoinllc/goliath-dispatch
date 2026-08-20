@@ -1,94 +1,72 @@
-#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Script de despliegue de Goliath Dispatch en Laravel Forge
 #
-# Forge deployment script for Goliath Dispatch (Next.js).
+# Se pega en la pestaña «Deploy Script» del sitio. Forge lo ejecuta como el
+# usuario `forge`, con el repositorio ya clonado en el nuevo release.
 #
-# Point Forge's deploy script at this file so the deployment recipe lives in
-# version control and changes go through review, rather than living only in the
-# Forge UI where nothing records why it changed:
-#
-#     cd $FORGE_SITE_PATH && bash deploy/forge/deploy.sh
-#
-# Enable "Quick Deploy" on the site's Apps tab and Forge installs a GitHub
-# webhook, so every push to the deployment branch runs this.
-#
-# ── On Forge's "Zero Downtime Deployment" ────────────────────────────────────
-# This script works with it on or off, but off is recommended for a Node app:
-#
-#   • PM2 already replaces workers one at a time (`pm2 reload`, cluster mode),
-#     so requests are not dropped during a deploy either way.
-#   • With zero-downtime on, Forge flips the `current` symlink *after* this
-#     script finishes — so nothing here can restart the app against the new
-#     release. The reload below would restart the *previous* one.
-#   • Every release gets its own `node_modules` and `.next`. That is well over
-#     a gigabyte per deploy, and it accumulates.
-#
-# When it is on, Forge has already cloned the code, so the fetch below is
-# skipped automatically.
+# El sitio tiene activado Zero Downtime Deployment, así que $FORGE_SITE_PATH
+# apunta al RELEASE NUEVO mientras corre el script, y el enlace `current`
+# todavía apunta al viejo. De ahí el orden: todo lo que prepara el release nuevo
+# va antes de $ACTIVATE_RELEASE(), y todo lo que reinicia procesos va después —
+# si no, se recargaría el proceso del release saliente.
+# ─────────────────────────────────────────────────────────────────────────────
 
-set -Eeuo pipefail
+# Cualquier orden que falle aborta el despliegue. Sin esto, un `npm run build`
+# roto seguiría adelante y activaría un release sin assets: la página cargaría
+# sin estilos y sin JavaScript, que es peor que no desplegar.
+set -e
 
-SITE_PATH="${FORGE_SITE_PATH:-$(pwd)}"
-BRANCH="${FORGE_SITE_BRANCH:-main}"
+cd $FORGE_SITE_PATH
 
-cd "$SITE_PATH"
+# ── Dependencias de PHP ──────────────────────────────────────────────────────
+# --no-dev: en producción no hay Pest, ni Pint, ni Larastan.
+# --optimize-autoloader: mapa de clases completo, sin buscar en disco por PSR-4.
+$FORGE_COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-# Forge's zero-downtime mode clones into releases/<id> and hands us a tree that
-# is already at the right commit. Pulling there is at best redundant and at
-# worst rewinds a detached checkout.
-if [[ "$SITE_PATH" == *"/releases/"* ]]; then
-  echo "▸ Zero-downtime release detected — Forge already placed the code"
-elif git rev-parse --git-dir > /dev/null 2>&1 && git remote get-url origin > /dev/null 2>&1; then
-  echo "▸ Fetching ${BRANCH}"
-  git fetch --prune origin "$BRANCH"
-  git reset --hard "origin/${BRANCH}"
-else
-  echo "▸ Not a git working tree with an origin remote — skipping fetch"
-fi
-
-echo "▸ Installing dependencies"
-# `npm ci` — an exact, reproducible install from package-lock.json. Never
-# `npm install` on a server: it can silently resolve a different tree than the
-# one that passed CI.
+# ── Assets ───────────────────────────────────────────────────────────────────
+# `npm ci` y no `npm install`: instala EXACTAMENTE lo del package-lock.json. Con
+# `install`, una dependencia transitiva podría subir de versión entre el build
+# que se probó y el que se despliega.
 npm ci --no-audit --no-fund
 
-echo "▸ Applying database migrations"
-# Runs before the build so the new code never starts against an old schema.
-# Migrations here are additive by convention; a destructive change is applied
-# manually, in a maintenance window, not by an automatic deploy.
-npm run db:migrate
+# El sitio público se renderiza en el servidor para que un buscador vea el texto
+# y no un div vacío, así que hace falta el bundle de SSR además del de cliente.
+npm run build:ssr
 
-echo "▸ Building"
-npm run build
+# ── Base de datos ────────────────────────────────────────────────────────────
+# --force porque en producción `migrate` pregunta y aquí no hay nadie que
+# conteste. Las migraciones de este proyecto ejecutan DDL en crudo (99 tablas,
+# 246 claves foráneas, 47 triggers) y MySQL no tiene DDL transaccional: una
+# migración a medias deja el esquema a medias. Por eso `set -e` de arriba
+# importa tanto — el despliegue para aquí y el release viejo sigue sirviendo.
+$FORGE_PHP artisan migrate --force
 
-echo "▸ Reloading the application"
-mkdir -p storage/logs
+# Idempotente y reejecutable: sincroniza el catálogo de permisos y los planes
+# con lo que dice el código. Ver database/seeders/.
+$FORGE_PHP artisan db:seed --class=Database\\Seeders\\DatabaseSeeder --force
 
-if [[ "$SITE_PATH" == *"/releases/"* ]]; then
-  # The symlink has not flipped yet, so reloading now would point PM2 at the
-  # outgoing release. Leave a marker the post-activation hook picks up.
-  echo "  (zero-downtime mode: run 'pm2 reload goliath-dispatch' after activation)"
-else
-  if pm2 describe goliath-dispatch > /dev/null 2>&1; then
-    pm2 reload ecosystem.config.js --update-env
-  else
-    pm2 start ecosystem.config.js
-    pm2 save
-  fi
+# ── Cachés ───────────────────────────────────────────────────────────────────
+# Se limpian antes de reconstruir: una caché de configuración del release
+# anterior apuntaría a rutas que ya no existen.
+$FORGE_PHP artisan config:cache
+$FORGE_PHP artisan route:cache
+$FORGE_PHP artisan view:cache
+$FORGE_PHP artisan event:cache
 
-  echo "▸ Warming the home page"
-  # Fails the deploy loudly if the app cannot actually serve a request, instead
-  # of reporting success and leaving a broken site up.
-  for attempt in $(seq 1 10); do
-    if curl -fsS -o /dev/null --max-time 10 "http://127.0.0.1:${PORT:-3000}/en/home"; then
-      echo "✓ Deployment complete"
-      exit 0
-    fi
-    echo "  waiting for the server to answer (${attempt}/10)…"
-    sleep 3
-  done
+# ── Activación ───────────────────────────────────────────────────────────────
+# A partir de aquí, `current` ya apunta al release nuevo.
+$ACTIVATE_RELEASE()
 
-  echo "✗ The application did not answer after the reload. Check: pm2 logs goliath-dispatch"
-  exit 1
-fi
+# PHP-FPM recarga el opcache; sin esto seguiría sirviendo el bytecode del
+# release anterior. `reload` y no `restart`: no corta las peticiones en curso —
+# y en este servidor hay otros cuatro sitios en producción compartiendo FPM.
+( flock -w 10 9 || exit 1
+    echo 'Reiniciando FPM...'; sudo -S service $FORGE_PHP_FPM reload ) 9>/tmp/fpmlock
 
-echo "✓ Deployment complete"
+# El servidor de SSR ejecuta el bundle nuevo. Va DESPUÉS de activar, porque
+# antes estaría arrancando el del release saliente.
+$FORGE_PHP artisan inertia:stop-ssr || true
+
+# Horizon recoge el código nuevo terminando sus workers; el supervisor los
+# vuelve a levantar solos.
+$FORGE_PHP artisan horizon:terminate || true

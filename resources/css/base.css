@@ -1,0 +1,90 @@
+/**
+ * Goliath Dispatch — base layer
+ * Global element defaults. Component styling belongs in the app, not here.
+ */
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-carbon);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-steel-50);
+    color: var(--color-carbon);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-navy-700);
+    line-height: 1.15;
+  }
+
+  /* Numeric/tabular data — load figures, weights, distances, ETAs — must
+   * line up in columns. Opt in with [data-numeric] on the cell/element,
+   * or use Tailwind's built-in `tabular-nums` utility directly. */
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Focus-visible treatment. This is never removed or replaced with
+   * `outline: none` anywhere in the app — keyboard operability matters
+   * more than a cleaner box in dispatch software people rely on. */
+  :focus-visible {
+    outline: 2px solid var(--color-safety-600);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* On navy/dark surfaces the safety-600 outline still reads, but give
+   * it a touch more offset/contrast against a dark fill. */
+  .bg-navy-700 :focus-visible,
+  .bg-navy-800 :focus-visible,
+  .bg-navy-900 :focus-visible {
+    outline-color: var(--color-safety-400);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  @media print {
+    * {
+      background: transparent !important;
+      color: #000 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    a[href]::after {
+      content: " (" attr(href) ")";
+      font-size: 0.85em;
+    }
+
+    .print\:hidden,
+    [data-print="hidden"] {
+      display: none !important;
+    }
+
+    table {
+      border-collapse: collapse !important;
+    }
+
+    th, td {
+      border: 1px solid #999 !important;
+    }
+  }
+}

@@ -1,0 +1,14 @@
+/**
+ * Goliath Dispatch — brand stylesheet entry point
+ *
+ * Import order matters: Tailwind's base/utility layers first, then the
+ * self-hosted font faces, then the design tokens (@theme), then our own
+ * base-layer overrides and custom utilities.
+ */
+
+@import "tailwindcss";
+
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./base.css";
+@import "./utilities.css";
