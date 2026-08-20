@@ -24,7 +24,8 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 Esto hay que decirlo antes que nada.
 
 Los ficheros de `tests/Feature/Carriers`, `tests/Feature/Customers`,
-`tests/Unit/Customers`, `tests/Unit/Support` y `tests/Unit/I18n/NavigationLabelsTest`
+`tests/Feature/Loads`, `tests/Unit/Customers`, `tests/Unit/Finance`,
+`tests/Unit/Support` y `tests/Unit/I18n/NavigationLabelsTest`
 se escribieron en un entorno donde **Pest no se puede instalar**: composer exige
 autenticarse contra GitHub para las dependencias de desarrollo, y ese entorno no
 podía hacerlo. Llevan un aviso en su cabecera.
@@ -40,6 +41,9 @@ Lo que sí está comprobado, y conviene distinguirlo:
 | Que las clases y métodos existen | `class_exists` / `method_exists` |
 | Los valores de `NameKeyTest` | Llamando a `NameKey::for()` con cada par del dataset |
 | Las aserciones de `NavigationTest` | Ejecutando `Navigation::for()` con los seis roles |
+| **Las 26 aserciones de `CalculatorTest`** | Ejecutando `Calculator` y `Money` con cada caso, una por una |
+| Las del grafo en `LoadTransitionTest` | Ejecutando `Transitions` con los trece estados |
+| Las claves de `loads.blocking.*` | Comprobadas en los dos diccionarios |
 | Sintaxis PHP | `php -l` sobre cada fichero |
 
 Lo que **no** está comprobado es la mecánica de Pest: la firma exacta de una
@@ -84,3 +88,7 @@ problema de autorización cuando sería el limitador haciendo su trabajo.
   ejecutar en este entorno. `composer lint` y `composer stan`.
 - No hay pruebas de las pantallas en React. La verificación de la interfaz ha
   sido con navegador a mano.
+- `tests/Support/Scenario.php` vive bajo el espacio `Tests\`, que está en
+  `autoload-dev`. Con las dependencias de desarrollo ausentes no se autocarga;
+  se comprobó cargando el fichero a mano. Con `composer install` completo, se
+  resuelve solo.
