@@ -12,6 +12,7 @@ use App\Enums\OnboardingStatus;
 use App\Enums\Role;
 use App\Enums\StopType;
 use App\Enums\VerificationStatus;
+use App\Support\Customers\NameKey;
 use App\Support\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -696,7 +697,7 @@ class DemoDataSeeder extends Seeder
 
         foreach ($rows as $r) {
             $customerId = $this->upsert('customers', [
-                'company_name_normalized' => $this->normalize($r['name']),
+                'company_name_normalized' => NameKey::for($r['name']),
             ], [
                 'company_name' => $r['name'],
                 'email' => $r['email'],
@@ -943,14 +944,6 @@ class DemoDataSeeder extends Seeder
         ]);
 
         return $id;
-    }
-
-    /** La misma normalización que usa la detección de duplicados de clientes. */
-    private function normalize(string $name): string
-    {
-        return trim(preg_replace('/\s+/', ' ', strtolower(
-            preg_replace('/[^a-z0-9 ]/i', '', Str::ascii($name))
-        )) ?? '');
     }
 
     private function report(): void

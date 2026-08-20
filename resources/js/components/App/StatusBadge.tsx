@@ -55,12 +55,34 @@ const DOCUMENT_REVIEW: Record<string, Tone> = {
   superseded: 'neutral',
 }
 
-const FAMILIES: Record<string, { tones: Record<string, Tone>; prefix: string }> = {
+const LOAD: Record<string, Tone> = {
+  draft: 'neutral',
+  available: 'neutral',
+  assigned: 'progress',
+  dispatched: 'progress',
+  en_route_to_pickup: 'progress',
+  at_pickup: 'progress',
+  in_transit: 'progress',
+  at_delivery: 'progress',
+  delivered: 'good',
+  pod_received: 'good',
+  invoiced: 'good',
+  paid: 'good',
+  cancelled: 'bad',
+}
+
+// El tipo de `family` se deriva de este objeto, pero anotarlo como
+// `Record<string, …>` haría que `keyof` fuese `string` y una familia
+// inexistente pasaría el compilador para reventar en pantalla. Sin anotación,
+// TypeScript infiere las claves literales y `family="load"` solo compila si
+// existe de verdad.
+const FAMILIES = {
   onboarding: { tones: ONBOARDING, prefix: 'nav.status.onboarding' },
   verification: { tones: VERIFICATION, prefix: 'nav.status.verification' },
   equipment: { tones: EQUIPMENT, prefix: 'nav.status.equipment' },
   document: { tones: DOCUMENT_REVIEW, prefix: 'nav.status.document' },
-}
+  load: { tones: LOAD, prefix: 'nav.status.load' },
+} satisfies Record<string, { tones: Record<string, Tone>; prefix: string }>
 
 /** `corrections_required` → `correctionsRequired`, que es la clave del diccionario. */
 function camel(value: string): string {

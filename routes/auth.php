@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
+use App\Http\Controllers\App\CustomerController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
@@ -72,4 +73,17 @@ Route::middleware(['auth'])->group(function (): void {
         ->name('carriers.verification.run');
     Route::post('carriers/{carrier}/verification/override', [CarrierOnboardingController::class, 'override'])
         ->name('carriers.verification.override');
+
+    /*
+    | Clientes
+    |
+    | Mismo orden que arriba y por lo mismo: `create` antes de `{customer}`.
+    */
+    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+    Route::patch('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 });
