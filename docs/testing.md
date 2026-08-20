@@ -43,7 +43,9 @@ Lo que sí está comprobado, y conviene distinguirlo:
 | Las aserciones de `NavigationTest` | Ejecutando `Navigation::for()` con los seis roles |
 | **Las 26 aserciones de `CalculatorTest`** | Ejecutando `Calculator` y `Money` con cada caso, una por una |
 | Las del grafo en `LoadTransitionTest` | Ejecutando `Transitions` con los trece estados |
-| Las claves de `loads.blocking.*` | Comprobadas en los dos diccionarios |
+| Las claves de `loads.blocking.*` y `loads.assign.*` | Comprobadas en los dos diccionarios |
+| El ciclo completo de `LoadFormTest` | Recorrido por HTTP: carga creada, asignada, despachada y entregada |
+| Los dos permisos de edición | Probados en las dos direcciones con despachador y contabilidad |
 | Sintaxis PHP | `php -l` sobre cada fichero |
 
 Lo que **no** está comprobado es la mecánica de Pest: la firma exacta de una
