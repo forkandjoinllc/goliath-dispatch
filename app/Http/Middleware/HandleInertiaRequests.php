@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Enums\Locale;
+use App\Support\AppShell;
 use App\Support\Dictionary;
 use App\Support\Locales;
 use Illuminate\Http\Request;
@@ -49,6 +50,16 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                 ],
             ],
+
+            // El armazón autenticado: menú filtrado por permisos, empresa
+            // activa y empresas a las que se puede cambiar.
+            //
+            // Es un cierre para que no cueste nada en el sitio público: Inertia
+            // solo lo evalúa al serializar, y devuelve null en cuanto ve que no
+            // hay usuario. Se comparte aquí, y no en cada controlador, porque el
+            // armazón envuelve todas las páginas: si dependiera del controlador,
+            // un olvido produciría una página sin menú y sin error.
+            'shell' => fn (): ?array => app(AppShell::class)->payload(),
 
             // Un único mensaje efímero. No se pasa la bolsa de sesión completa:
             // acabaría filtrando lo que otra petición dejó ahí.

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\App;
 
-use App\Authorization\ActorFactory;
+use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\Permissions;
+use App\Authorization\PermissionDescriptionsEs;
 use App\Authorization\RoleMatrix;
 use App\Enums\Locale;
 use App\Models\Session;
-use App\Support\Dictionary;
 use App\Support\InertiaPage;
 use App\Support\Locales;
 use App\Support\TenantContext;
@@ -23,13 +23,16 @@ use Inertia\Response;
 /**
  * La pantalla que se ve justo después de entrar.
  *
- * No es el panel definitivo — eso es la fase 4. Es la respuesta honesta a «¿qué
- * puedo hacer con este usuario?»: quién eres, en qué empresa estás actuando, con
- * qué rol, y la lista exacta de permisos que eso te concede, con su ámbito.
+ * No es el panel definitivo. Es la respuesta honesta a «¿qué puedo hacer con
+ * este usuario?»: el rol, la empresa en la que se está actuando y la lista
+ * exacta de permisos que eso concede, con su ámbito.
  *
  * Que sea visible importa más de lo que parece. La matriz de permisos vive en
- * PHP y se prueba con Pest, pero hasta que alguien la ve en pantalla junto al
- * rol que la produjo, nadie puede señalar «ese ámbito está mal».
+ * PHP, pero hasta que alguien la ve en pantalla junto al rol que la produjo,
+ * nadie puede señalar «ese ámbito está mal».
+ *
+ * Quién eres y en qué empresa estás ya no se calcula aquí: eso lo aporta el
+ * armazón compartido (App\Support\AppShell) para TODAS las páginas.
  */
 final class DashboardController
 {
@@ -37,14 +40,10 @@ final class DashboardController
 
     public function __invoke(
         Request $request,
-        ActorFactory $factory,
+        CurrentActor $current,
         PermissionChecker $checker,
-        TenantContext $context,
     ): Response {
-        $user = $request->user();
-        $sessionId = $request->session()->getId();
-
-        $actor = $factory->for($user, $context->id(), $sessionId);
+        $actor = $current->require();
 
         /** @var Locale $locale */
         $locale = $request->attributes->get('locale', Locales::default());
@@ -52,14 +51,9 @@ final class DashboardController
 
         $spanish = $locale === Locale::Es;
 
-        // Los ajustes de la empresa deciden una concesión (ver RoleMatrix::resolve),
-        // así que el listado tiene que evaluarse con la misma política que usaría
-        // una comprobación de verdad. Si no, la pantalla mentiría.
-        $policy = $actor->tenantId === null ? null : [
-            'allow_dispatcher_resource_assignment' => (bool) DB::table('tenant_settings')
-                ->where('tenant_id', $actor->tenantId)
-                ->value('allow_dispatcher_resource_assignment'),
-        ];
+        // Se evalúa con la MISMA política que usaría una comprobación de verdad
+        // (ver CurrentActor::policy). Con otra, la pantalla mentiría.
+        $policy = $current->policy();
 
         $granted = [];
         foreach (Permissions::ALL as $key => $description) {
@@ -75,7 +69,7 @@ final class DashboardController
                 'action' => $parts['action'],
                 'scope' => $decision->scope?->value,
                 'description' => $spanish
-                    ? \App\Authorization\PermissionDescriptionsEs::get($key)
+                    ? PermissionDescriptionsEs::get($key)
                     : $description,
             ];
         }
@@ -83,21 +77,6 @@ final class DashboardController
         ksort($granted);
 
         return Inertia::render('App/Dashboard', [
-            'actor' => [
-                'name' => $actor->fullName(),
-                'email' => $actor->email,
-                'role' => $actor->role?->value,
-                'isPlatformSuperAdmin' => $actor->isPlatformSuperAdmin,
-                'tenantId' => $actor->tenantId,
-                'mfaRequired' => $actor->mfaRequired,
-                'mfaSatisfied' => $actor->mfaSatisfied,
-            ],
-            'tenant' => $actor->tenantId === null ? null : $context->withoutTenant(
-                fn () => DB::table('tenants')
-                    ->where('id', $actor->tenantId)
-                    ->first(['display_name', 'slug', 'status'])
-            ),
-            'memberships' => $this->memberships($request, $context),
             'permissions' => $granted,
             'totals' => [
                 'granted' => array_sum(array_map('count', $granted)),
@@ -112,7 +91,8 @@ final class DashboardController
      *
      * Se comprueba que el usuario tenga una pertenencia ACTIVA en la empresa
      * destino antes de tocar nada: sin eso, cualquiera podría cambiarse a la
-     * empresa que quisiera mandando un id.
+     * empresa que quisiera mandando un id. Que el menú solo ofrezca las suyas es
+     * comodidad; esta comprobación es la que de verdad lo impide.
      */
     public function switchTenant(Request $request, TenantContext $context): RedirectResponse
     {
@@ -135,26 +115,5 @@ final class DashboardController
         ]);
 
         return back();
-    }
-
-    /**
-     * @return list<array{id: string, name: string, role: string}>
-     */
-    private function memberships(Request $request, TenantContext $context): array
-    {
-        return $context->withoutTenant(fn (): array => DB::table('user_tenant_memberships as m')
-            ->join('tenants as t', 't.id', '=', 'm.tenant_id')
-            ->where('m.user_id', $request->user()->id)
-            ->where('m.status', 'active')
-            ->whereNull('m.deleted_at')
-            ->whereNull('t.deleted_at')
-            ->orderBy('t.display_name')
-            ->get(['t.id', 't.display_name as name', 'm.role'])
-            ->map(fn ($row): array => [
-                'id' => (string) $row->id,
-                'name' => (string) $row->name,
-                'role' => (string) $row->role,
-            ])
-            ->all());
     }
 }

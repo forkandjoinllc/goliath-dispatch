@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\App\DashboardController;
+use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,4 +48,5 @@ Route::get('signup/done', [SignupController::class, 'done'])->name('signup.done'
 Route::middleware(['auth'])->group(function (): void {
     Route::get('home', DashboardController::class)->name('home');
     Route::post('switch-tenant', [DashboardController::class, 'switchTenant'])->name('tenant.switch');
+    Route::post('locale', LocaleController::class)->name('locale.update');
 });

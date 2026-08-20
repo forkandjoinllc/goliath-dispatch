@@ -15,6 +15,9 @@
 /auth.json
 /node_modules
 /public/build
+# Igual que /public/build: lo produce `npm run build:ssr`, y el despliegue de
+# Forge lo ejecuta siempre. Versionarlo solo genera conflictos en cada rama.
+/bootstrap/ssr
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

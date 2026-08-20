@@ -42,6 +42,21 @@
     "administration": "Administración",
     "platform": "Plataforma"
   },
+  "pending": {
+    "badge": "Próximamente",
+    "hint": "Su rol le da acceso a esto. La pantalla aún se está construyendo."
+  },
+  "shell": {
+    "sidebar": "Secciones",
+    "collapse": "Contraer navegación",
+    "expand": "Expandir navegación",
+    "switchTenant": "Cambiar de empresa",
+    "currentCompany": "Empresa actual",
+    "noCompany": "Sin empresa activa",
+    "platformScope": "Ámbito de plataforma",
+    "accountMenu": "Menú de la cuenta",
+    "mfaPending": "Se exige verificación en dos pasos y aún no se ha completado."
+  },
   "userMenu": {
     "profile": "Su perfil",
     "security": "Seguridad",
@@ -178,6 +193,7 @@
     "requestQuote": "Solicitar cotización"
   },
   "roles": {
+    "platform_super_admin": "Superadministrador de plataforma",
     "admin": "Administrador",
     "accounting": "Contabilidad",
     "dispatcher": "Despachador",

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Support\TenantContext;
 use App\Translation\JsonNamespaceLoader;
@@ -35,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Sin estado; se comparte por comodidad, no por necesidad.
         $this->app->singleton(PermissionChecker::class);
+
+        // `scoped` y no `singleton`: cachea el Actor durante la petición, y el
+        // contenedor lo tira al terminarla. Con singleton, bajo Octane la
+        // siguiente petición heredaría el Actor de la anterior — el peor error
+        // posible en un sistema multiempresa.
+        $this->app->scoped(CurrentActor::class);
     }
 
     public function boot(): void

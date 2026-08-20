@@ -42,6 +42,21 @@
     "administration": "Administration",
     "platform": "Platform"
   },
+  "pending": {
+    "badge": "Coming soon",
+    "hint": "Your role grants access to this. The screen is still being built."
+  },
+  "shell": {
+    "sidebar": "Sections",
+    "collapse": "Collapse navigation",
+    "expand": "Expand navigation",
+    "switchTenant": "Switch company",
+    "currentCompany": "Current company",
+    "noCompany": "No active company",
+    "platformScope": "Platform scope",
+    "accountMenu": "Account menu",
+    "mfaPending": "Two-factor authentication is required and not yet satisfied."
+  },
   "userMenu": {
     "profile": "Your profile",
     "security": "Security",
@@ -178,6 +193,7 @@
     "requestQuote": "Request a quote"
   },
   "roles": {
+    "platform_super_admin": "Platform super admin",
     "admin": "Admin",
     "accounting": "Accounting",
     "dispatcher": "Dispatcher",

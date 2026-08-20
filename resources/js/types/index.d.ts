@@ -1,4 +1,5 @@
 import type { Config as ZiggyConfig } from 'ziggy-js'
+import type { Shell } from '@/types/app'
 
 export type Locale = 'en' | 'es'
 
@@ -24,6 +25,8 @@ export interface SharedProps {
   locales: LocaleOption[]
   dictionary: Record<string, DictionaryNode>
   auth: { user: AuthUser | null }
+  /** El armazón autenticado. Null en el sitio público — ver App\Support\AppShell. */
+  shell: Shell | null
   flash: { success: string | null; error: string | null }
   ziggy: ZiggyConfig & { location: string }
   [key: string]: unknown
