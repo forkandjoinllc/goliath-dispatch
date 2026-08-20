@@ -70,6 +70,24 @@ $PHP artisan migrate --force
 # código se separen. Ver database/seeders/.
 $PHP artisan db:seed --force
 
+# ── Directorios compartidos de storage ───────────────────────────────────────
+# Forge comparte `storage/` entre releases mediante un enlace simbólico, pero el
+# directorio compartido que crea al aprovisionar el sitio trae solo `logs/`.
+#
+# El resultado fue un despliegue caído con «View path not found»: `view:cache`
+# llama a realpath() sobre storage/framework/views, realpath() devuelve false
+# cuando el directorio no existe, y el comando revienta sin decir cuál falta.
+#
+# Se crean aquí, en cada despliegue, y no una vez a mano en el servidor: un
+# `mkdir` que hay que acordarse de repetir al recrear el sitio es un despliegue
+# roto esperando su turno.
+mkdir -p storage/framework/cache/data \
+         storage/framework/sessions \
+         storage/framework/testing \
+         storage/framework/views \
+         storage/app/public \
+         storage/logs
+
 # ── Cachés ───────────────────────────────────────────────────────────────────
 # Se reconstruyen dentro del release nuevo; las del anterior se quedan con él.
 $PHP artisan config:cache

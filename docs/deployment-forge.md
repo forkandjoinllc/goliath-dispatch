@@ -92,15 +92,21 @@ FORGE_PHP="$FORGE_PHP" FORGE_COMPOSER="$FORGE_COMPOSER" bash deploy/forge/deploy
 
 $ACTIVATE_RELEASE()
 
-cd $FORGE_SITE_PATH/current
+cd $FORGE_SITE_PATH
 $FORGE_PHP artisan inertia:stop-ssr || true
 $FORGE_PHP artisan horizon:terminate || true
 ```
 
+`cd $FORGE_SITE_PATH` a secas, **sin añadir `/current`**. En un sitio con
+despliegues sin corte, Forge ya sustituye `$FORGE_SITE_PATH` por la ruta del
+enlace `current`; escribir `$FORGE_SITE_PATH/current` da
+`…/goliathdispatch.com/current/current`, que no existe, y el despliegue muere en
+la última línea con el release ya activado — el peor momento posible.
+
 **En `deploy/forge/deploy.sh`** (versionado) van los pasos de construcción:
 composer, npm, build, migraciones, seeders y cachés.
 
-Tres cosas que no son evidentes:
+Cuatro cosas que no son evidentes:
 
 - **`set -e` al principio.** Sin él, un `npm run build` roto seguiría adelante y
   se activaría un release sin assets: la página cargaría sin estilos ni
@@ -108,6 +114,12 @@ Tres cosas que no son evidentes:
 - **Todo lo que prepara el release va ANTES de `$ACTIVATE_RELEASE()`.** Mientras
   corre el script, `current` todavía apunta al release viejo. Si algo falla, el
   release no se activa y el sitio sigue sirviendo lo anterior.
+- **Los directorios de `storage/` se crean en cada despliegue.** El directorio
+  compartido que Forge aprovisiona trae solo `logs/`, y `view:cache` llama a
+  `realpath()` sobre `storage/framework/views`: si no existe, `realpath()`
+  devuelve false y el comando muere con «View path not found» sin decir qué
+  falta. Hacerlo a mano una vez en el servidor deja un despliegue roto esperando
+  a que alguien recree el sitio.
 - **Lo que reinicia procesos va DESPUÉS.** `inertia:stop-ssr` y
   `horizon:terminate` no matan nada: le dicen al proceso que termine, y el
   gestor de Forge lo vuelve a levantar con el código nuevo. Hacerlo antes de
@@ -125,6 +137,39 @@ falla a la mitad deja el esquema a medias y no se revierte sola.
 Por eso el `set -e`: el despliegue se detiene ahí, `$ACTIVATE_RELEASE()` nunca
 corre y el release anterior sigue sirviendo. Para arreglarlo hay que mirar el
 esquema a mano; no basta con volver a desplegar.
+
+## Cuentas y datos de demostración
+
+`db:seed --force` corre en cada despliegue y siembra solo lo que debe existir en
+cualquier entorno: el catálogo de permisos y los planes. Los datos de
+demostración van aparte y hay que pedirlos a la cara, una vez, desde el
+servidor:
+
+```bash
+cd /home/forge/goliathdispatch.com/current
+php artisan db:seed --class=DemoUsersSeeder --force   # una cuenta por rol
+php artisan db:seed --class=DemoDataSeeder  --force   # transportistas, flota, cargas
+```
+
+Ambos son idempotentes: se pueden repetir sin duplicar nada.
+
+Están fuera de `DatabaseSeeder` a propósito, y no por comodidad. `DemoUsersSeeder`
+crea cuentas con una contraseña conocida; si corriera en cada despliegue, esas
+cuentas volverían a existir cada vez que alguien las borrase. Para cambiarla:
+
+```bash
+DEMO_PASSWORD='…' php artisan db:seed --class=DemoUsersSeeder --force
+```
+
+**Estas cuentas no deben sobrevivir a la salida a producción de verdad.** La
+contraseña es conocida y los seis roles están representados, incluido el
+administrador.
+
+Los datos que siembra `DemoDataSeeder` son inventados: nombres de ficción,
+dominios `.test` (RFC 6761, no resuelven nunca), teléfonos del rango 555 y
+números USDOT que no son de ninguna empresa real. Las verificaciones FMCSA
+llevan `provider = mock` y lo dicen dentro de su propio payload — no se ha
+consultado nada en FMCSA.
 
 ## Comprobación después de desplegar
 
