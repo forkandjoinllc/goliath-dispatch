@@ -97,9 +97,13 @@ class DemoDataSeeder extends Seeder
                 $this->equipment($carriers, $equipment);
                 $drivers = $this->drivers($carriers);
                 $customers = $this->customers();
+                // linkDemoUsers va ANTES que loads a propósito: ata
+                // driver@demo.test a un conductor concreto, y loadCrew necesita
+                // saber cuál para darle cargas. Al revés, la cuenta de
+                // conductor entraba con sus quince permisos y una lista vacía.
+                $this->linkDemoUsers($carriers, $drivers);
                 $this->loads($carriers, $customers, $drivers, $equipment);
                 $this->expenses();
-                $this->linkDemoUsers($carriers, $drivers);
             });
         });
 
@@ -845,6 +849,161 @@ class DemoDataSeeder extends Seeder
                 'actual_arrival_at' => in_array($status, [LoadStatus::Delivered, LoadStatus::PodReceived, LoadStatus::Invoiced], true)
                     ? $deliveryAt->copy()->addMinutes(40)
                     : null,
+            ]);
+
+            $this->loadCrew($loadId, $status, $carrierKey, $carriers, $drivers, $oversize);
+        }
+    }
+
+    /**
+     * Camión, conductor y permiso para las cargas que ya salieron.
+     *
+     * Sin esto los datos de demostración enseñaban una carga en `dispatched` sin
+     * camión ni conductor asignado — un estado que el propio sistema no deja
+     * alcanzar, porque Guards::forDispatch() lo bloquea. Unos datos que
+     * contradicen las reglas son peores que no tener datos: quien los mira
+     * aprende una forma de trabajar que la aplicación va a rechazar.
+     *
+     * @param  array<string, string>  $carriers
+     * @param  array<string, string>  $drivers
+     */
+    private function loadCrew(
+        string $loadId,
+        LoadStatus $status,
+        ?string $carrierKey,
+        array $carriers,
+        array $drivers,
+        bool $oversize,
+    ): void {
+        // Solo desde `dispatched` en adelante. Una carga `available` sin camión
+        // no es una incoherencia: es exactamente lo que significa ese estado.
+        $rolling = [
+            LoadStatus::Dispatched, LoadStatus::EnRouteToPickup, LoadStatus::AtPickup,
+            LoadStatus::InTransit, LoadStatus::AtDelivery, LoadStatus::Delivered,
+            LoadStatus::PodReceived, LoadStatus::Invoiced,
+        ];
+
+        if ($carrierKey === null || ! in_array($status, $rolling, true)) {
+            return;
+        }
+
+        $carrierId = $carriers[$carrierKey] ?? null;
+
+        if ($carrierId === null) {
+            return;
+        }
+
+        $truck = DB::table('trucks')
+            ->where('tenant_id', $this->tenantId)
+            ->where('carrier_id', $carrierId)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->value('id');
+
+        $trailer = DB::table('trailers')
+            ->where('tenant_id', $this->tenantId)
+            ->where('carrier_id', $carrierId)
+            ->whereNull('deleted_at')
+            ->value('id');
+
+        // El conductor tiene que ser de ESE transportista y estar al día. Coger
+        // uno cualquiera sembraría justo la incoherencia que esto viene a
+        // arreglar, solo que más difícil de ver.
+        $driver = DB::table('drivers')
+            ->where('tenant_id', $this->tenantId)
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'inactive')
+            ->whereDate('license_expires_at', '>', Carbon::now())
+            ->whereDate('medical_card_expires_at', '>', Carbon::now())
+            ->whereIn('id', function ($q) use ($carrierId): void {
+                // La tabla puente se llama driver_carrier_relationships: un
+                // conductor puede trabajar para varios transportistas a lo largo
+                // del tiempo, y la relación tiene fechas.
+                $q->select('driver_id')
+                    ->from('driver_carrier_relationships')
+                    ->where('carrier_id', $carrierId)
+                    ->whereNull('deleted_at');
+            })
+            ->value('id');
+
+        // Se PREFIERE el conductor atado a driver@demo.test cuando trabaja para
+        // este transportista. No es un capricho de los datos: sin esto, la
+        // cuenta de demostración de conductor entra con sus quince permisos y no
+        // ve ninguna carga — menú lleno y pantallas vacías, que es la peor
+        // combinación posible para juzgar si algo funciona.
+        $demoDriver = DB::table('user_tenant_memberships')
+            ->where('tenant_id', $this->tenantId)
+            ->where('role', 'driver')
+            ->whereNotNull('driver_id')
+            ->value('driver_id');
+
+        if ($demoDriver !== null) {
+            $worksHere = DB::table('driver_carrier_relationships')
+                ->where('driver_id', $demoDriver)
+                ->where('carrier_id', $carrierId)
+                ->whereNull('deleted_at')
+                ->exists();
+
+            $eligible = DB::table('drivers')
+                ->where('id', $demoDriver)
+                ->where('status', '!=', 'inactive')
+                ->whereDate('license_expires_at', '>', Carbon::now())
+                ->whereDate('medical_card_expires_at', '>', Carbon::now())
+                ->exists();
+
+            if ($worksHere && $eligible) {
+                $driver = $demoDriver;
+            }
+        }
+
+        // Sin conductor apto de ese transportista, se coge cualquiera al día:
+        // el esquema de demostración no siempre ata conductores a transportistas.
+        $driver ??= DB::table('drivers')
+            ->where('tenant_id', $this->tenantId)
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'inactive')
+            ->whereDate('license_expires_at', '>', Carbon::now())
+            ->whereDate('medical_card_expires_at', '>', Carbon::now())
+            ->value('id');
+
+        if ($truck !== null) {
+            $this->upsert('load_assignments', ['load_id' => $loadId, 'resource_type' => 'truck'], [
+                'truck_id' => $truck,
+                'is_primary' => true,
+                'assigned_by_user_id' => null,
+            ]);
+        }
+
+        if ($trailer !== null) {
+            $this->upsert('load_assignments', ['load_id' => $loadId, 'resource_type' => 'trailer'], [
+                'trailer_id' => $trailer,
+                'is_primary' => true,
+                'assigned_by_user_id' => null,
+            ]);
+        }
+
+        if ($driver !== null) {
+            $this->upsert('load_assignments', ['load_id' => $loadId, 'resource_type' => 'driver'], [
+                'driver_id' => $driver,
+                'is_primary' => true,
+                'assigned_by_user_id' => null,
+            ]);
+        }
+
+        // Una carga sobredimensionada que ya salió tiene su permiso aprobado por
+        // una persona. Es la puerta de cumplimiento más dura del sistema y los
+        // datos tienen que respetarla.
+        if ($oversize) {
+            $approver = DB::table('user_tenant_memberships')
+                ->where('tenant_id', $this->tenantId)
+                ->where('role', 'admin')
+                ->value('user_id');
+
+            DB::table('loads')->where('id', $loadId)->update([
+                'permit_ready_approved_by_user_id' => $approver,
+                'permit_ready_approved_at' => Carbon::now()->subDays(4),
+                'oversize_validated_by_user_id' => $approver,
+                'oversize_validated_at' => Carbon::now()->subDays(4),
             ]);
         }
     }

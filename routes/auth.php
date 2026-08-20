@@ -6,6 +6,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
+use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
@@ -86,4 +87,18 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::patch('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+
+    /*
+    | Cargas
+    |
+    | La transición lleva la acción en la RUTA y no en el cuerpo. Así cada paso
+    | tiene su propia URL —/loads/{id}/status/dispatched— y aparece tal cual en
+    | el registro del servidor. Con la acción en el cuerpo, el registro solo
+    | diría «POST /loads/{id}/status» y averiguar quién despachó qué exigiría
+    | cruzar dos fuentes.
+    */
+    Route::get('loads', [LoadController::class, 'index'])->name('loads.index');
+    Route::get('loads/{load}', [LoadController::class, 'show'])->name('loads.show');
+    Route::post('loads/{load}/status/{action}', [LoadController::class, 'transition'])
+        ->name('loads.transition');
 });
