@@ -1,27 +1,35 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Script de despliegue de Goliath Dispatch en Laravel Forge
+# Goliath Dispatch — pasos de construcción del despliegue
 #
-# Se pega en la pestaña «Deploy Script» del sitio. Forge lo ejecuta como el
-# usuario `forge`, con el repositorio ya clonado en el nuevo release.
+# Lo invoca el script de despliegue de Forge, que ya ha hecho $CREATE_RELEASE()
+# y ha entrado en $FORGE_RELEASE_DIRECTORY. Es decir: esto corre DENTRO del
+# release nuevo, mientras `current` todavía apunta al viejo.
 #
-# El sitio tiene activado Zero Downtime Deployment, así que $FORGE_SITE_PATH
-# apunta al RELEASE NUEVO mientras corre el script, y el enlace `current`
-# todavía apunta al viejo. De ahí el orden: todo lo que prepara el release nuevo
-# va antes de $ACTIVATE_RELEASE(), y todo lo que reinicia procesos va después —
-# si no, se recargaría el proceso del release saliente.
+# Por eso aquí no hay $ACTIVATE_RELEASE() ni recarga de PHP-FPM: de la
+# activación se encarga el script de Forge cuando este termina, y con
+# despliegues sin corte la recarga de FPM no hace falta.
+#
+# Y por eso el orden importa: si algo de aquí falla, `current` no se mueve y el
+# sitio sigue sirviendo el release anterior.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Cualquier orden que falle aborta el despliegue. Sin esto, un `npm run build`
-# roto seguiría adelante y activaría un release sin assets: la página cargaría
-# sin estilos y sin JavaScript, que es peor que no desplegar.
+# roto seguiría adelante y se activaría un release sin assets: la página
+# cargaría sin estilos ni JavaScript, que es peor que no desplegar.
 set -e
 
-cd $FORGE_SITE_PATH
+# Forge sustituye $FORGE_PHP y $FORGE_COMPOSER en SU script, no dentro de este
+# fichero, así que se reciben por entorno y se cae a los del PATH si no vienen.
+PHP="${FORGE_PHP:-php}"
+COMPOSER="${FORGE_COMPOSER:-composer}"
+
+echo "==> PHP: $($PHP -v | head -1)"
+echo "==> Node: $(node -v)  npm: $(npm -v)"
 
 # ── Dependencias de PHP ──────────────────────────────────────────────────────
 # --no-dev: en producción no hay Pest, ni Pint, ni Larastan.
 # --optimize-autoloader: mapa de clases completo, sin buscar en disco por PSR-4.
-$FORGE_COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+$COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 # ── Assets ───────────────────────────────────────────────────────────────────
 # `npm ci` y no `npm install`: instala EXACTAMENTE lo del package-lock.json. Con
@@ -29,44 +37,34 @@ $FORGE_COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autol
 # que se probó y el que se despliega.
 npm ci --no-audit --no-fund
 
-# El sitio público se renderiza en el servidor para que un buscador vea el texto
-# y no un div vacío, así que hace falta el bundle de SSR además del de cliente.
+# Cliente y servidor. El sitio público se renderiza en el servidor para que un
+# buscador vea el texto y no un div vacío, así que el bundle de SSR no es opcional.
 npm run build:ssr
 
 # ── Base de datos ────────────────────────────────────────────────────────────
 # --force porque en producción `migrate` pregunta y aquí no hay nadie que
-# conteste. Las migraciones de este proyecto ejecutan DDL en crudo (99 tablas,
-# 246 claves foráneas, 47 triggers) y MySQL no tiene DDL transaccional: una
-# migración a medias deja el esquema a medias. Por eso `set -e` de arriba
-# importa tanto — el despliegue para aquí y el release viejo sigue sirviendo.
-$FORGE_PHP artisan migrate --force
+# conteste.
+#
+# Estas migraciones ejecutan DDL en crudo: 99 tablas, 246 claves foráneas, 47
+# triggers. MySQL NO tiene DDL transaccional, así que una migración que falla a
+# la mitad deja el esquema a medias y no se revierte sola. El `set -e` de arriba
+# es lo que evita que encima se active un release contra ese esquema roto.
+$PHP artisan migrate --force
 
-# Idempotente y reejecutable: sincroniza el catálogo de permisos y los planes
-# con lo que dice el código. Ver database/seeders/.
-$FORGE_PHP artisan db:seed --class=Database\\Seeders\\DatabaseSeeder --force
+# Idempotente: sincroniza el catálogo de permisos y los planes con lo que dice
+# el código. Reejecutarlo en cada despliegue es lo que impide que la tabla y el
+# código se separen. Ver database/seeders/.
+$PHP artisan db:seed --force
 
 # ── Cachés ───────────────────────────────────────────────────────────────────
-# Se limpian antes de reconstruir: una caché de configuración del release
-# anterior apuntaría a rutas que ya no existen.
-$FORGE_PHP artisan config:cache
-$FORGE_PHP artisan route:cache
-$FORGE_PHP artisan view:cache
-$FORGE_PHP artisan event:cache
+# Se reconstruyen dentro del release nuevo; las del anterior se quedan con él.
+$PHP artisan config:cache
+$PHP artisan route:cache
+$PHP artisan view:cache
+$PHP artisan event:cache
 
-# ── Activación ───────────────────────────────────────────────────────────────
-# A partir de aquí, `current` ya apunta al release nuevo.
-$ACTIVATE_RELEASE()
+# El enlace de storage vive en un directorio compartido entre releases; si ya
+# existe, `storage:link` sin --force falla y tumbaría el despliegue.
+$PHP artisan storage:link --force || true
 
-# PHP-FPM recarga el opcache; sin esto seguiría sirviendo el bytecode del
-# release anterior. `reload` y no `restart`: no corta las peticiones en curso —
-# y en este servidor hay otros cuatro sitios en producción compartiendo FPM.
-( flock -w 10 9 || exit 1
-    echo 'Reiniciando FPM...'; sudo -S service $FORGE_PHP_FPM reload ) 9>/tmp/fpmlock
-
-# El servidor de SSR ejecuta el bundle nuevo. Va DESPUÉS de activar, porque
-# antes estaría arrancando el del release saliente.
-$FORGE_PHP artisan inertia:stop-ssr || true
-
-# Horizon recoge el código nuevo terminando sus workers; el supervisor los
-# vuelve a levantar solos.
-$FORGE_PHP artisan horizon:terminate || true
+echo "==> Release preparado. Forge activará a continuación."

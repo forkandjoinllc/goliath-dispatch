@@ -78,18 +78,43 @@ de eso ocurre nunca — que es la peor forma de fallar, porque no da error.
 
 ## Script de despliegue
 
-Está en `deploy/forge/deploy.sh`. Se pega tal cual en la pestaña Deploy Script.
+Está partido en dos a propósito.
 
-Dos cosas del script que no son evidentes:
+**En la pestaña Deploy Script de Forge** va solo el armazón, porque las
+directivas `$CREATE_RELEASE()` y `$ACTIVATE_RELEASE()` las sustituye Forge en
+SU script y no funcionan dentro de un fichero del repositorio:
+
+```bash
+$CREATE_RELEASE()
+cd $FORGE_RELEASE_DIRECTORY
+
+FORGE_PHP="$FORGE_PHP" FORGE_COMPOSER="$FORGE_COMPOSER" bash deploy/forge/deploy.sh
+
+$ACTIVATE_RELEASE()
+
+cd $FORGE_SITE_PATH/current
+$FORGE_PHP artisan inertia:stop-ssr || true
+$FORGE_PHP artisan horizon:terminate || true
+```
+
+**En `deploy/forge/deploy.sh`** (versionado) van los pasos de construcción:
+composer, npm, build, migraciones, seeders y cachés.
+
+Tres cosas que no son evidentes:
 
 - **`set -e` al principio.** Sin él, un `npm run build` roto seguiría adelante y
-  activaría un release sin assets: la página cargaría sin estilos ni JavaScript,
-  que es peor que no desplegar.
-- **El orden alrededor de `$ACTIVATE_RELEASE()`.** El sitio tiene Zero Downtime
-  activado, así que mientras corre el script `current` todavía apunta al release
-  VIEJO. Todo lo que prepara el release nuevo va antes; todo lo que reinicia
-  procesos va después. Recargar FPM antes de activar recargaría el release que
-  está a punto de desaparecer.
+  se activaría un release sin assets: la página cargaría sin estilos ni
+  JavaScript, que es peor que no desplegar.
+- **Todo lo que prepara el release va ANTES de `$ACTIVATE_RELEASE()`.** Mientras
+  corre el script, `current` todavía apunta al release viejo. Si algo falla, el
+  release no se activa y el sitio sigue sirviendo lo anterior.
+- **Lo que reinicia procesos va DESPUÉS.** `inertia:stop-ssr` y
+  `horizon:terminate` no matan nada: le dicen al proceso que termine, y el
+  gestor de Forge lo vuelve a levantar con el código nuevo. Hacerlo antes de
+  activar reiniciaría el proceso del release que está a punto de desaparecer.
+
+Con despliegues sin corte **no hace falta recargar PHP-FPM**, y conviene no
+hacerlo: en este servidor FPM lo comparten otros cuatro sitios en producción.
 
 ## Migraciones y DDL
 
