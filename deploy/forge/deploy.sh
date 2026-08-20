@@ -41,6 +41,20 @@ npm ci --no-audit --no-fund
 # buscador vea el texto y no un div vacío, así que el bundle de SSR no es opcional.
 npm run build:ssr
 
+# ── Clave de aplicación ──────────────────────────────────────────────────────
+# Solo si no hay ninguna. Es idempotente A PROPÓSITO: regenerar la APP_KEY en
+# cada despliegue invalidaría todas las sesiones abiertas, todos los sellos de
+# formulario firmados y —lo grave— dejaría ilegible cualquier columna cifrada
+# con la clave anterior, como `carriers.ein_encrypted`.
+#
+# Se genera aquí y no se escribe a mano en ningún sitio: así la clave existe
+# únicamente en el .env del servidor y no ha pasado por un chat ni por el
+# repositorio.
+if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+    echo "==> Sin APP_KEY: generando una (solo esta vez)"
+    $PHP artisan key:generate --force
+fi
+
 # ── Base de datos ────────────────────────────────────────────────────────────
 # --force porque en producción `migrate` pregunta y aquí no hay nadie que
 # conteste.
