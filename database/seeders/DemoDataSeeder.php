@@ -98,6 +98,7 @@ class DemoDataSeeder extends Seeder
                 $drivers = $this->drivers($carriers);
                 $customers = $this->customers();
                 $this->loads($carriers, $customers, $drivers, $equipment);
+                $this->expenses();
                 $this->linkDemoUsers($carriers, $drivers);
             });
         });
@@ -152,8 +153,14 @@ class DemoDataSeeder extends Seeder
             ['tolls', 'Tolls', 'Peajes', 'carrier_deduction', 20],
             ['lumper', 'Lumper', 'Maniobra de carga', 'reimbursable_to_carrier', 30],
             ['scale', 'Scale ticket', 'Boleta de báscula', 'carrier_deduction', 40],
-            ['permit', 'Permit', 'Permiso', 'reimbursable_to_carrier', 50],
-            ['escort', 'Escort', 'Escolta', 'reimbursable_to_carrier', 60],
+            // Excluidos, no reembolsables. Lo dice el propio esquema —
+            // «Permits and escorts ship as excluded-by-default system
+            // categories»— y tiene sentido: un permiso de sobredimensión de
+            // $3.000 es un coste que se traslada tal cual, no flete. Cobrar la
+            // tarifa de despacho sobre él sería cobrarle al transportista un
+            // 10% de un dinero que solo pasó por sus manos.
+            ['permit', 'Permit', 'Permiso', 'excluded_from_commission', 50],
+            ['escort', 'Escort', 'Escolta', 'excluded_from_commission', 60],
             ['repair', 'Repair', 'Reparación', 'carrier_deduction', 70],
             ['other', 'Other', 'Otro', 'tenant_absorbed', 80],
         ];
@@ -944,6 +951,81 @@ class DemoDataSeeder extends Seeder
         ]);
 
         return $id;
+    }
+
+    /**
+     * Gastos sobre las cargas ya entregadas.
+     *
+     * Están puestos para que se vean los CUATRO tratamientos, no para llenar una
+     * tabla. Sin un gasto excluido de por medio, las dos formas posibles de
+     * calcular la tarifa de despacho dan exactamente el mismo número, y la
+     * decisión de cuál es la correcta parecería no importar — que es justo la
+     * trampa que estos datos existen para evitar.
+     *
+     * La carga sobredimensionada lleva su permiso y su escolta como excluidos:
+     * son dinero que solo pasa por las manos del transportista.
+     */
+    private function expenses(): void
+    {
+        $categories = DB::table('expense_categories')
+            ->where('tenant_id', $this->tenantId)
+            ->get(['id', 'code', 'treatment'])
+            ->keyBy('code');
+
+        $admin = DB::table('user_tenant_memberships')
+            ->where('tenant_id', $this->tenantId)
+            ->where('role', 'admin')
+            ->value('user_id');
+
+        if ($admin === null) {
+            // Sin usuarios de demostración sembrados no hay a quién atribuir el
+            // gasto, y `submitted_by_user_id` no admite nulo. Se salta en vez de
+            // reventar: este sembrador corre en despliegues donde el de usuarios
+            // no se ha ejecutado.
+            return;
+        }
+
+        $rows = [
+            ['GD-24003', 'permit', 340000, 'Permiso de sobredimensión Texas–Oklahoma'],
+            ['GD-24003', 'escort', 185000, 'Dos escoltas, tramo I-40'],
+            ['GD-24003', 'fuel', 62000, 'Combustible anticipado en Amarillo'],
+            ['GD-24001', 'lumper', 15000, 'Maniobra de descarga en destino'],
+            ['GD-24001', 'tolls', 8400, 'Peajes de la ruta'],
+            ['GD-24005', 'lumper', 7500, 'Maniobra en el patio del cliente'],
+            ['GD-24005', 'other', 4000, 'Reimpresión de documentación'],
+            ['GD-24006', 'permit', 96000, 'Permiso de altura, corredor de Illinois'],
+            ['GD-24006', 'repair', 21000, 'Cambio de neumático en ruta'],
+        ];
+
+        foreach ($rows as [$loadNumber, $code, $cents, $description]) {
+            $load = DB::table('loads')
+                ->where('tenant_id', $this->tenantId)
+                ->where('load_number', $loadNumber)
+                ->first(['id', 'carrier_id']);
+
+            if ($load === null || ! isset($categories[$code])) {
+                continue;
+            }
+
+            // El tratamiento se COPIA de la categoría, no se consulta después.
+            // Es lo que exige la columna: `treatment_snapshot`. Si mañana se
+            // reclasifica «peajes» de retención a absorbido, las liquidaciones
+            // ya cerradas no pueden cambiar de importe.
+            $this->upsert('expenses', [
+                'load_id' => $load->id,
+                'category_id' => $categories[$code]->id,
+            ], [
+                'carrier_id' => $load->carrier_id,
+                'treatment_snapshot' => $categories[$code]->treatment,
+                'amount_cents' => $cents,
+                'description' => $description,
+                'incurred_on' => Carbon::now()->subDays(random_int(3, 20)),
+                'status' => 'approved',
+                'submitted_by_user_id' => $admin,
+                'reviewed_by_user_id' => $admin,
+                'reviewed_at' => Carbon::now()->subDays(2),
+            ]);
+        }
     }
 
     private function report(): void
