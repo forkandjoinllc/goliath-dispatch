@@ -853,6 +853,24 @@ class DemoDataSeeder extends Seeder
 
             $this->loadCrew($loadId, $status, $carrierKey, $carriers, $drivers, $oversize);
         }
+
+        // El contador arranca donde termina la serie sembrada.
+        //
+        // Sin esto, la primera carga que alguien da de alta en la demostración
+        // sale GD-01000 al lado de ocho cargas GD-240xx, y parece que el sistema
+        // numera al azar. La serie visible es lo primero que mira quien evalúa
+        // esto, y una discontinuidad ahí resta más confianza de lo que costaría
+        // arreglarla después.
+        $highest = DB::table('loads')
+            ->where('tenant_id', $this->tenantId)
+            ->orderByDesc('load_number')
+            ->value('load_number');
+
+        if ($highest !== null && preg_match('/(\d+)$/', (string) $highest, $m) === 1) {
+            DB::table('tenant_settings')
+                ->where('tenant_id', $this->tenantId)
+                ->update(['load_number_next_sequence' => ((int) $m[1]) + 1]);
+        }
     }
 
     /**

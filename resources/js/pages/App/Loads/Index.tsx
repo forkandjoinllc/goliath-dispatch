@@ -106,9 +106,12 @@ export default function LoadsIndex({
       crumbs={[{ label: t('loads.index.title') }]}
       actions={
         can.create ? (
-          <span className="rounded border border-dashed border-steel-300 px-4 py-2 text-sm text-steel-600">
+          <Link
+            href="/loads/create"
+            className="rounded bg-safety-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-safety-700"
+          >
             {t('loads.index.add')}
-          </span>
+          </Link>
         ) : null
       }
     >

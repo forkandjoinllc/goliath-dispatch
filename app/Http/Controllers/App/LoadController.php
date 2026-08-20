@@ -9,17 +9,23 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\LoadStatus;
+use App\Enums\Role;
 use App\Enums\Scope;
+use App\Models\Customer;
 use App\Models\Load;
 use App\Support\Finance\LoadCalculator;
 use App\Support\InertiaPage;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
+use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\Transitions;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -156,6 +162,14 @@ final class LoadController
             // las herramientas del navegador.
             'financials' => $canMoney ? $this->financials($model) : null,
             'actions' => $actions,
+            // Lo que se puede asignar, solo si este actor puede asignarlo. Un
+            // catálogo de conductores en la respuesta de quien no puede asignar
+            // sería información de más sin ningún uso.
+            'assignable' => $checker->can($actor, 'load:assign_resources', $context, $policy)->allowed
+                || $checker->can($actor, 'load:assign_carrier', $context, $policy)->allowed
+                    ? $this->assignable($model, $actor)
+                    : null,
+            'carrierLocked' => $model->carrier_locked_at !== null,
             'can' => [
                 'update' => $checker->can($actor, 'load:update', $context, $policy)->allowed,
                 'updateFinancials' => $checker->can($actor, 'load:financials:update', $context, $policy)->allowed,
@@ -164,6 +178,157 @@ final class LoadController
                 'duplicate' => $checker->can($actor, 'load:duplicate', $context, $policy)->allowed,
             ],
         ]);
+    }
+
+
+    public function create(Request $request, CurrentActor $current, PermissionChecker $checker): Response
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $checker->authorize($actor, 'load:create', null, $policy);
+
+        $this->usesDictionary($request, ['loads', 'nav', 'validation']);
+
+        return Inertia::render('App/Loads/Form', [
+            'load' => null,
+            'stops' => [],
+            'choices' => $this->choices($actor),
+            // El despachador puede crear cargas pero NO tiene
+            // load:financials:update. Puede fijar el cobro al cliente al dar de
+            // alta —sin él la carga no se puede publicar— y no puede tocar la
+            // tarifa del transportista ni los porcentajes.
+            'canEditFinancials' => $checker->can($actor, 'load:financials:update', null, $policy)->allowed,
+        ]);
+    }
+
+    public function store(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $checker->authorize($actor, 'load:create', null, $policy);
+
+        $data = $this->validated($request, true);
+        $canMoney = $checker->can($actor, 'load:financials:update', null, $policy)->allowed;
+
+        $load = DB::transaction(function () use ($data, $actor, $canMoney): Load {
+            $load = new Load;
+            $load->fill($this->loadColumns($data, $canMoney, true));
+            // El número se genera aquí dentro para que el bloqueo del contador
+            // viva en la misma transacción que la inserción. Generarlo fuera
+            // dejaría un hueco en la serie cada vez que la validación falle.
+            $load->load_number = NumberGenerator::next($actor->tenantId);
+            // Una carga nace en borrador pase lo que pase. Igual que un
+            // transportista nace en borrador: publicarla es un acto aparte, con
+            // sus propias comprobaciones.
+            $load->status = LoadStatus::Draft;
+            $load->dispatcher_user_id = $actor->role === Role::Dispatcher ? $actor->userId : null;
+            $load->save();
+
+            $this->syncStops($load, $data['stops']);
+
+            return $load;
+        });
+
+        return redirect()
+            ->route('loads.show', $load->id)
+            ->with('success', __('loads.flash.created', ['number' => $load->load_number]));
+    }
+
+    public function edit(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): Response
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $model = $this->find($load);
+        $context = $this->context($model, $actor);
+
+        // Dos permisos distintos abren esta pantalla, y ninguno implica al otro.
+        //
+        // Contabilidad tiene `load:financials:update` y NO tiene `load:update`:
+        // le toca fijar la tarifa del transportista y los porcentajes, no
+        // cambiar la mercancía. Un despachador es al revés. Cerrar la pantalla
+        // con `load:update` a secas dejaba fuera precisamente al rol que existe
+        // para tocar el dinero — que es el fallo que tenía esto.
+        $canFreight = $checker->can($actor, 'load:update', $context, $policy)->allowed;
+        $canMoney = $checker->can($actor, 'load:financials:update', $context, $policy)->allowed;
+
+        abort_unless($canFreight || $canMoney, 403);
+
+        $this->usesDictionary($request, ['loads', 'nav', 'validation']);
+
+        return Inertia::render('App/Loads/Form', [
+            'load' => [
+                ...$this->detail($model),
+                // Los importes solo viajan si se pueden editar. Mandarlos para
+                // enseñarlos desactivados los pondría al alcance de quien abra
+                // las herramientas del navegador, y el permiso de LECTURA del
+                // dinero es otro distinto del de escritura.
+                'customerChargeCents' => $canMoney ? (int) $model->customer_charge_cents : null,
+                'carrierGrossRateCents' => $canMoney ? (int) $model->carrier_gross_rate_cents : null,
+                'carrierDispatchFeeBps' => $canMoney ? (int) $model->carrier_dispatch_fee_bps : null,
+                'dispatcherCommissionBps' => $canMoney ? (int) $model->dispatcher_commission_bps : null,
+            ],
+            'stops' => $this->stops($model),
+            'choices' => $this->choices($actor),
+            'canEditFinancials' => $canMoney,
+            'canEditFreight' => $canFreight,
+        ]);
+    }
+
+    public function update(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $model = $this->find($load);
+        $context = $this->context($model, $actor);
+
+        $canFreight = $checker->can($actor, 'load:update', $context, $policy)->allowed;
+        $canMoney = $checker->can($actor, 'load:financials:update', $context, $policy)->allowed;
+
+        abort_unless($canFreight || $canMoney, 403);
+
+        $data = $this->validated($request, $canFreight);
+
+        DB::transaction(function () use ($model, $data, $canMoney, $canFreight, $actor): void {
+            $before = [
+                'customer_charge_cents' => (int) $model->customer_charge_cents,
+                'carrier_gross_rate_cents' => (int) $model->carrier_gross_rate_cents,
+            ];
+
+            $model->fill($this->loadColumns($data, $canMoney, $canFreight));
+            $model->save();
+
+            // Las paradas son mercancía, no dinero: solo las toca quien puede
+            // editar la carga. Contabilidad no las recibe ni las manda.
+            if ($canFreight) {
+                $this->syncStops($model, $data['stops']);
+            }
+
+            $after = [
+                'customer_charge_cents' => (int) $model->customer_charge_cents,
+                'carrier_gross_rate_cents' => (int) $model->carrier_gross_rate_cents,
+            ];
+
+            // Todo cambio de dinero deja rastro, aunque lo haga quien puede.
+            // «¿Quién bajó la tarifa de esta carga?» es una pregunta que se hace
+            // meses después, cuando el transportista reclama.
+            if ($before !== $after) {
+                DB::table('audit_events')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $model->tenant_id,
+                    'actor_user_id' => $actor->auditUserId(),
+                    'action' => 'financial.changed',
+                    'entity_type' => 'load',
+                    'entity_id' => $model->id,
+                    'before_summary' => json_encode($before),
+                    'after_summary' => json_encode($after),
+                    'created_at' => now(),
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('loads.show', $model->id)
+            ->with('success', __('loads.flash.updated', ['number' => $model->load_number]));
     }
 
     /**
@@ -231,6 +396,12 @@ final class LoadController
             // recalcularlo a partir del historial daría una hora distinta cada
             // vez que alguien corrija una fila.
             match ($action) {
+                // Despachar CIERRA el transportista. La columna existía en el
+                // esquema y nada la escribía nunca, así que la comprobación de
+                // «esta carga ya salió con este transportista» no se disparaba
+                // jamás: se podía cambiar el transportista de una carga ya
+                // entregada, que no es una corrección sino otra carga.
+                'dispatched' => $model->carrier_locked_at ??= now(),
                 'at_pickup' => $model->actual_pickup_at ??= now(),
                 'delivered' => $model->actual_delivery_at ??= now(),
                 'pod_received' => $model->pod_received_at ??= now(),
@@ -244,7 +415,7 @@ final class LoadController
             $model->save();
 
             DB::table('load_status_history')->insert([
-                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'tenant_id' => $model->tenant_id,
                 'load_id' => $model->id,
                 'from_status' => $from->value,
@@ -262,7 +433,7 @@ final class LoadController
             ]);
 
             DB::table('audit_events')->insert([
-                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'tenant_id' => $model->tenant_id,
                 'actor_user_id' => $actor->auditUserId(),
                 'action' => 'load.status_changed',
@@ -281,6 +452,345 @@ final class LoadController
     }
 
     // ------------------------------------------------------------------ interno
+
+    /**
+     * Los recursos que se pueden poner en esta carga.
+     *
+     * Cada uno viene con su estado de cumplimiento y el motivo si no está en
+     * regla, PERO se envían todos, también los que no valen. Ocultar un
+     * conductor con la licencia vencida dejaría a quien despacha preguntándose
+     * dónde está; enseñarlo tachado con «licencia vencida el 3 de marzo» le dice
+     * qué hay que arreglar.
+     *
+     * Que se envíe no significa que se pueda: el servidor lo rechaza igual. Ver
+     * LoadAssignmentController::checkResource().
+     *
+     * @return array<string, mixed>
+     */
+    private function assignable(Load $load, Actor $actor): array
+    {
+        $today = CarbonImmutable::now()->toDateString();
+
+        $carriers = DB::table('carriers')
+            ->where('tenant_id', $load->tenant_id)
+            ->whereNull('deleted_at')
+            ->where('onboarding_status', 'approved')
+            ->orderBy('legal_name')
+            ->get(['id', 'legal_name as name', 'dispatch_fee_bps'])
+            ->map(fn ($r): array => [
+                'id' => (string) $r->id,
+                'name' => (string) $r->name,
+                'dispatchFeeBps' => (int) $r->dispatch_fee_bps,
+            ])
+            ->all();
+
+        if ($load->carrier_id === null) {
+            return ['carriers' => $carriers, 'trucks' => [], 'trailers' => [], 'drivers' => []];
+        }
+
+        $units = fn (string $table): array => DB::table($table)
+            ->where('tenant_id', $load->tenant_id)
+            ->where('carrier_id', $load->carrier_id)
+            ->whereNull('deleted_at')
+            ->orderBy('unit_number')
+            ->get(['id', 'unit_number', 'status'])
+            ->map(fn ($r): array => [
+                'id' => (string) $r->id,
+                'label' => (string) $r->unit_number,
+                'ok' => $r->status !== 'out_of_service',
+                'problem' => $r->status === 'out_of_service' ? 'unitOutOfService' : null,
+            ])
+            ->all();
+
+        $drivers = DB::table('drivers as d')
+            ->join('driver_carrier_relationships as r', 'r.driver_id', '=', 'd.id')
+            ->where('d.tenant_id', $load->tenant_id)
+            ->where('r.carrier_id', $load->carrier_id)
+            ->whereNull('d.deleted_at')
+            ->whereNull('r.deleted_at')
+            ->where(fn ($q) => $q->whereNull('r.end_date')->orWhereDate('r.end_date', '>=', $today))
+            ->orderBy('d.last_name')
+            ->get([
+                'd.id', 'd.first_name', 'd.last_name', 'd.status',
+                'd.license_expires_at', 'd.medical_card_expires_at',
+            ])
+            ->map(function ($d) use ($today): array {
+                $problem = match (true) {
+                    $d->status === 'inactive' => 'driverInactive',
+                    $d->license_expires_at !== null && $d->license_expires_at < $today => 'licenseExpired',
+                    $d->medical_card_expires_at !== null && $d->medical_card_expires_at < $today => 'medicalExpired',
+                    default => null,
+                };
+
+                return [
+                    'id' => (string) $d->id,
+                    'label' => trim("{$d->first_name} {$d->last_name}"),
+                    'ok' => $problem === null,
+                    'problem' => $problem,
+                    'licenseExpiresAt' => $d->license_expires_at,
+                    'medicalCardExpiresAt' => $d->medical_card_expires_at,
+                ];
+            })
+            ->all();
+
+        return [
+            'carriers' => $carriers,
+            'trucks' => $units('trucks'),
+            'trailers' => $units('trailers'),
+            'drivers' => $drivers,
+        ];
+    }
+
+    /**
+     * Lo que el formulario puede elegir: clientes, transportistas aprobados y
+     * tipos de equipo.
+     *
+     * Los transportistas se limitan a los APROBADOS. Ofrecer uno en borrador
+     * sería ofrecer algo que Guards va a rechazar al despachar, y descubrirlo
+     * tres pasos más tarde es peor que no verlo.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function choices(Actor $actor): array
+    {
+        return [
+            'customers' => DB::table('customers')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at')
+                ->where('status', 'active')
+                ->orderBy('company_name')
+                ->get(['id', 'company_name as name'])
+                ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+                ->all(),
+
+            'carriers' => DB::table('carriers')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at')
+                ->where('onboarding_status', 'approved')
+                ->orderBy('legal_name')
+                ->get(['id', 'legal_name as name', 'dispatch_fee_bps'])
+                ->map(fn ($r): array => [
+                    'id' => (string) $r->id,
+                    'name' => (string) $r->name,
+                    // Se manda la tarifa vigente para que el formulario la
+                    // proponga. Es una PROPUESTA: lo que se guarda es lo que
+                    // quede escrito en la carga, porque es lo que se pactó.
+                    'dispatchFeeBps' => (int) $r->dispatch_fee_bps,
+                ])
+                ->all(),
+
+            'equipmentTypes' => DB::table('equipment_types')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at')
+                ->orderBy('sort_order')
+                ->get(['id', 'code', 'label_en', 'label_es'])
+                ->map(fn ($r): array => [
+                    'id' => (string) $r->id,
+                    'code' => (string) $r->code,
+                    'labelEn' => (string) $r->label_en,
+                    'labelEs' => (string) $r->label_es,
+                ])
+                ->all(),
+        ];
+    }
+
+    /**
+     * Las columnas de `loads` que salen del formulario.
+     *
+     * `$canMoney` decide si los importes se copian o se descartan EN EL
+     * SERVIDOR. Que el formulario no pinte los campos no basta: una petición a
+     * mano los llevaría igual, y un despachador podría subirse su propia
+     * comisión.
+     *
+     * El cobro al cliente es la excepción y merece explicarse: lo fija quien
+     * crea la carga, porque sin él no se puede publicar y quien la da de alta
+     * es quien habló con el cliente. Lo que queda reservado a
+     * `load:financials:update` es la tarifa del transportista y los porcentajes
+     * —el reparto—, no el precio de venta.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function loadColumns(array $data, bool $canMoney, bool $canFreight): array
+    {
+        $columns = $canFreight ? [
+            'customer_id' => $data['customer_id'],
+            'customer_reference' => $data['customer_reference'] ?? null,
+            'po_number' => $data['po_number'] ?? null,
+            'commodity' => $data['commodity'] ?? null,
+            'weight_pounds' => $data['weight_pounds'] ?? null,
+            'piece_count' => $data['piece_count'] ?? null,
+            'length_inches' => $data['length_inches'] ?? null,
+            'width_inches' => $data['width_inches'] ?? null,
+            'height_inches' => $data['height_inches'] ?? null,
+            'required_equipment_type_id' => $data['required_equipment_type_id'] ?? null,
+            'is_oversize' => (bool) ($data['is_oversize'] ?? false),
+            'is_overweight' => (bool) ($data['is_overweight'] ?? false),
+            'miles' => $data['miles'] ?? null,
+            'deadhead_miles' => $data['deadhead_miles'] ?? null,
+            'planned_pickup_at' => $data['planned_pickup_at'] ?? null,
+            'planned_delivery_at' => $data['planned_delivery_at'] ?? null,
+            'special_instructions' => $data['special_instructions'] ?? null,
+            'internal_notes' => $data['internal_notes'] ?? null,
+            'customer_charge_cents' => $data['customer_charge_cents'] ?? 0,
+        ] : [];
+
+        if ($canMoney) {
+            $columns['carrier_gross_rate_cents'] = $data['carrier_gross_rate_cents'] ?? 0;
+            $columns['carrier_dispatch_fee_bps'] = $data['carrier_dispatch_fee_bps'] ?? 1000;
+            $columns['dispatcher_commission_bps'] = $data['dispatcher_commission_bps'] ?? 2500;
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Reescribe las paradas de una carga.
+     *
+     * Se borran las que ya no vienen y se reinsertan las demás con su secuencia
+     * recalculada, dentro de la transacción del guardado.
+     *
+     * Por qué no se actualiza en su sitio: `load_stops_load_sequence_uq` impide
+     * dos paradas con el mismo número en una carga, y reordenar en su sitio
+     * choca contra el índice a mitad de camino — mover la parada 3 al puesto 2
+     * colisiona con la 2 que todavía está ahí. Borrar y reinsertar evita
+     * inventar un baile de secuencias temporales.
+     *
+     * Se pierden `actual_arrival_at` y la detención de las paradas existentes,
+     * así que solo se reescriben las que CAMBIAN: las que llegan con su id y sin
+     * cambios se dejan en paz.
+     *
+     * @param  list<array<string, mixed>>  $stops
+     */
+    private function syncStops(Load $load, array $stops): void
+    {
+        $keep = collect($stops)->pluck('id')->filter()->all();
+
+        DB::table('load_stops')
+            ->where('load_id', $load->id)
+            ->when($keep !== [], fn ($q) => $q->whereNotIn('id', $keep))
+            ->delete();
+
+        foreach (array_values($stops) as $index => $stop) {
+            $columns = [
+                'stop_type' => $stop['stop_type'],
+                'sequence' => $index + 1,
+                'facility_name' => $stop['facility_name'] ?? null,
+                'customer_location_id' => $stop['customer_location_id'] ?? null,
+                'line1' => $stop['line1'] ?? null,
+                'city' => $stop['city'] ?? null,
+                'state' => $stop['state'] ?? null,
+                'postal_code' => $stop['postal_code'] ?? null,
+                'timezone' => $stop['timezone'] ?? 'America/Chicago',
+                'appointment_type' => $stop['appointment_type'] ?? 'window',
+                'window_start' => $stop['window_start'] ?? null,
+                'window_end' => $stop['window_end'] ?? null,
+                'contact_name' => $stop['contact_name'] ?? null,
+                'contact_phone' => $stop['contact_phone'] ?? null,
+                'instructions' => $stop['instructions'] ?? null,
+                'updated_at' => now(),
+            ];
+
+            if (! empty($stop['id'])) {
+                DB::table('load_stops')->where('id', $stop['id'])->update($columns);
+
+                continue;
+            }
+
+            DB::table('load_stops')->insert([
+                ...$columns,
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $load->tenant_id,
+                'load_id' => $load->id,
+                'created_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, bool $withFreight = true): array
+    {
+        // Quien solo puede tocar el dinero no manda mercancía ni paradas, así
+        // que exigírselas lo dejaría fuera con un error de validación que no
+        // podría arreglar. Las reglas se recortan al conjunto que ese rol puede
+        // enviar de verdad.
+        $freightRules = $withFreight ? [
+            'customer_id' => ['required', 'string', 'size:36'],
+            'customer_reference' => ['nullable', 'string', 'max:80'],
+            'po_number' => ['nullable', 'string', 'max:80'],
+            'commodity' => ['nullable', 'string', 'max:200'],
+            'weight_pounds' => ['nullable', 'integer', 'min:0', 'max:500000'],
+            'piece_count' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'length_inches' => ['nullable', 'integer', 'min:0', 'max:5000'],
+            'width_inches' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'height_inches' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'required_equipment_type_id' => ['nullable', 'string', 'size:36'],
+            'is_oversize' => ['boolean'],
+            'is_overweight' => ['boolean'],
+            'miles' => ['nullable', 'integer', 'min:0', 'max:20000'],
+            'deadhead_miles' => ['nullable', 'integer', 'min:0', 'max:20000'],
+            'planned_pickup_at' => ['nullable', 'date'],
+            'planned_delivery_at' => ['nullable', 'date', 'after_or_equal:planned_pickup_at'],
+            'special_instructions' => ['nullable', 'string', 'max:5000'],
+            'internal_notes' => ['nullable', 'string', 'max:5000'],
+            'customer_charge_cents' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
+
+            'stops' => ['required', 'array', 'min:2'],
+            'stops.*.id' => ['nullable', 'string', 'size:36'],
+            'stops.*.stop_type' => ['required', 'in:pickup,delivery'],
+            'stops.*.facility_name' => ['nullable', 'string', 'max:200'],
+            'stops.*.customer_location_id' => ['nullable', 'string', 'size:36'],
+            'stops.*.line1' => ['nullable', 'string', 'max:200'],
+            'stops.*.city' => ['nullable', 'string', 'max:120'],
+            'stops.*.state' => ['nullable', 'string', 'size:2'],
+            'stops.*.postal_code' => ['nullable', 'string', 'max:12'],
+            'stops.*.timezone' => ['nullable', 'string', 'max:64'],
+            'stops.*.appointment_type' => ['nullable', 'in:exact,window,fcfs,open'],
+            'stops.*.window_start' => ['nullable', 'date'],
+            'stops.*.window_end' => ['nullable', 'date'],
+            'stops.*.contact_name' => ['nullable', 'string', 'max:200'],
+            'stops.*.contact_phone' => ['nullable', 'string', 'max:32'],
+            'stops.*.instructions' => ['nullable', 'string', 'max:2000'],
+        ] : [];
+
+        $data = $request->validate([
+            ...$freightRules,
+            'carrier_gross_rate_cents' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
+            'carrier_dispatch_fee_bps' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'dispatcher_commission_bps' => ['nullable', 'integer', 'min:0', 'max:10000'],
+        ]);
+
+        if (! $withFreight) {
+            return $data;
+        }
+
+        // El cliente tiene que ser de esta empresa. La validación de formato no
+        // lo garantiza: un id válido de OTRA empresa pasaría `size:36`, y el
+        // scope global impide leerlo pero no impide escribirlo aquí.
+        $customerExists = Customer::query()->whereKey($data['customer_id'])->exists();
+
+        if (! $customerExists) {
+            throw ValidationException::withMessages([
+                'customer_id' => __('loads.form.customerNotFound'),
+            ]);
+        }
+
+        // Una carga necesita al menos una recogida y una entrega. Es la misma
+        // regla que Guards comprueba al publicar, adelantada al formulario para
+        // que nadie guarde algo que no va a poder publicar.
+        $types = collect($data['stops'])->pluck('stop_type');
+
+        if (! $types->contains('pickup') || ! $types->contains('delivery')) {
+            throw ValidationException::withMessages([
+                'stops' => __('loads.form.needsBothStops'),
+            ]);
+        }
+
+        return $data;
+    }
+
 
     /**
      * @return Builder<Load>

@@ -6,6 +6,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
+use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\Auth\SignupController;
@@ -98,7 +99,22 @@ Route::middleware(['auth'])->group(function (): void {
     | cruzar dos fuentes.
     */
     Route::get('loads', [LoadController::class, 'index'])->name('loads.index');
+    Route::get('loads/create', [LoadController::class, 'create'])->name('loads.create');
+    Route::post('loads', [LoadController::class, 'store'])->name('loads.store');
     Route::get('loads/{load}', [LoadController::class, 'show'])->name('loads.show');
+    Route::get('loads/{load}/edit', [LoadController::class, 'edit'])->name('loads.edit');
+    Route::patch('loads/{load}', [LoadController::class, 'update'])->name('loads.update');
     Route::post('loads/{load}/status/{action}', [LoadController::class, 'transition'])
         ->name('loads.transition');
+
+    /*
+    | Asignación. Permisos propios (load:assign_carrier, load:assign_resources)
+    | y reglas propias, así que controlador aparte.
+    */
+    Route::post('loads/{load}/carrier', [LoadAssignmentController::class, 'carrier'])
+        ->name('loads.assign.carrier');
+    Route::post('loads/{load}/resources', [LoadAssignmentController::class, 'resource'])
+        ->name('loads.assign.resource');
+    Route::delete('loads/{load}/resources/{assignment}', [LoadAssignmentController::class, 'unassign'])
+        ->name('loads.assign.remove');
 });

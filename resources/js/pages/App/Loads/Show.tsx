@@ -1,4 +1,5 @@
 import { Link, router, useForm } from '@inertiajs/react'
+import { AssignPanel, type Assignable } from '@/components/App/AssignPanel'
 import { useState, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { AppLayout } from '@/layouts/AppLayout'
@@ -100,10 +101,14 @@ interface Props {
   }[]
   financials: Financials | null
   actions: Action[]
+  assignable: Assignable | null
+  carrierLocked: boolean
   can: Record<string, boolean>
 }
 
-export default function LoadShow({ load, stops, assignments, history, financials, actions }: Props) {
+export default function LoadShow({
+  load, stops, assignments, history, financials, actions, assignable, carrierLocked, can,
+}: Props) {
   const { t, locale } = useI18n()
 
   const dt = (value: string | null, withTime = true): string =>
@@ -121,7 +126,19 @@ export default function LoadShow({ load, stops, assignments, history, financials
     <AppLayout
       title={load.loadNumber}
       crumbs={[{ label: t('loads.index.title'), href: '/loads' }, { label: load.loadNumber }]}
-      actions={<ActionBar actions={actions} loadId={load.id} />}
+      actions={
+        <>
+          {can.update ? (
+            <Link
+              href={`/loads/${load.id}/edit`}
+              className="rounded border border-steel-300 px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('common.actions.edit')}
+            </Link>
+          ) : null}
+          <ActionBar actions={actions} loadId={load.id} />
+        </>
+      }
     >
       <div className="flex flex-wrap items-center gap-3">
         <StatusBadge family="load" value={load.status} />
@@ -257,6 +274,17 @@ export default function LoadShow({ load, stops, assignments, history, financials
                         {t('loads.detail.licenseExpires')}: {dt(a.licenseExpiresAt, false)}
                       </span>
                     ) : null}
+                    {can.assignResources ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.delete(`/loads/${load.id}/resources/${a.id}`, { preserveScroll: true })
+                        }
+                        className="ml-auto rounded border border-steel-300 px-2 py-1 text-xs text-steel-700 transition hover:bg-danger-50 hover:text-danger-700"
+                      >
+                        {t('loads.assign.remove')}
+                      </button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -310,6 +338,21 @@ export default function LoadShow({ load, stops, assignments, history, financials
                 <StatusBadge family="onboarding" value={load.carrier.onboardingStatus} />
               </div>
             </Card>
+          ) : null}
+
+          {assignable ? (
+            <AssignPanel
+              loadId={load.id}
+              carrierId={load.carrier?.id ?? null}
+              carrierRateCents={financials?.carrierGrossRate ?? null}
+              assignable={assignable}
+              can={{
+                // Una vez despachada, el transportista queda cerrado: cambiarlo
+                // a estas alturas no es una corrección, es otra carga.
+                assignCarrier: Boolean(can.assignCarrier) && !carrierLocked,
+                assignResources: Boolean(can.assignResources),
+              }}
+            />
           ) : null}
 
           {/* El bloque de dinero solo existe si el servidor lo mandó. Un
