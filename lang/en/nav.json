@@ -122,6 +122,14 @@
       "manuallyOverridden": "Manually overridden",
       "expired": "Expired"
     },
+    "document": {
+      "pending": "Pending",
+      "inReview": "In review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "expired": "Expired",
+      "superseded": "Superseded"
+    },
     "invoice": {
       "draft": "Draft",
       "sent": "Sent",

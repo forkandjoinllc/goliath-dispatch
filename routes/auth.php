@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\App\DashboardController;
+use App\Http\Controllers\App\CarrierController;
+use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
@@ -49,4 +51,25 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('home', DashboardController::class)->name('home');
     Route::post('switch-tenant', [DashboardController::class, 'switchTenant'])->name('tenant.switch');
     Route::post('locale', LocaleController::class)->name('locale.update');
+
+    /*
+    | Transportistas
+    |
+    | `create` va ANTES de `{carrier}`: si no, Laravel casa /carriers/create con
+    | la ruta de detalle y busca un transportista con id «create».
+    */
+    Route::get('carriers', [CarrierController::class, 'index'])->name('carriers.index');
+    Route::get('carriers/create', [CarrierController::class, 'create'])->name('carriers.create');
+    Route::post('carriers', [CarrierController::class, 'store'])->name('carriers.store');
+    Route::get('carriers/{carrier}', [CarrierController::class, 'show'])->name('carriers.show');
+    Route::get('carriers/{carrier}/edit', [CarrierController::class, 'edit'])->name('carriers.edit');
+    Route::patch('carriers/{carrier}', [CarrierController::class, 'update'])->name('carriers.update');
+    Route::delete('carriers/{carrier}', [CarrierController::class, 'destroy'])->name('carriers.destroy');
+
+    Route::post('carriers/{carrier}/onboarding/{action}', [CarrierOnboardingController::class, 'transition'])
+        ->name('carriers.onboarding.transition');
+    Route::post('carriers/{carrier}/verification', [CarrierOnboardingController::class, 'verify'])
+        ->name('carriers.verification.run');
+    Route::post('carriers/{carrier}/verification/override', [CarrierOnboardingController::class, 'override'])
+        ->name('carriers.verification.override');
 });

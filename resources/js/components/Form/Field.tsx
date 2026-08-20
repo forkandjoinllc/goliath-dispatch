@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react'
 import { useId } from 'react'
 
 function Wrapper({
@@ -106,5 +111,44 @@ export function CheckboxField({
         </p>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * Un desplegable. Las opciones vienen como pares para que la etiqueta pueda
+ * traducirse y el valor siga siendo el que espera el servidor — nunca se manda
+ * al servidor lo que está escrito en pantalla.
+ */
+export function SelectField({
+  label,
+  error,
+  hint,
+  options,
+  ...props
+}: {
+  label: string
+  error?: string
+  hint?: string
+  options: { value: string; label: string }[]
+} & SelectHTMLAttributes<HTMLSelectElement>) {
+  const id = useId()
+  const errorId = `${id}-error`
+
+  return (
+    <Wrapper label={label} error={error} hint={hint} required={props.required} htmlFor={id}>
+      <select
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        className={INPUT_CLASS}
+        {...props}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </Wrapper>
   )
 }

@@ -6,11 +6,15 @@ namespace App\Providers;
 
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Services\Fmcsa\FmcsaVerifier;
+use App\Services\Fmcsa\MockFmcsaVerifier;
 use App\Support\TenantContext;
+use App\Translation\BraceTranslator;
 use App\Translation\JsonNamespaceLoader;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\FileLoader;
+use Illuminate\Translation\Translator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +34,19 @@ class AppServiceProvider extends ServiceProvider
             $loader->paths(),
         ));
 
+        // Los diccionarios usan `{nombre}` porque los lee también el cliente.
+        // Se sustituye el traductor para que `__()` los entienda igual — ver
+        // BraceTranslator para por qué no basta con `:nombre`.
+        //
+        // extend() otra vez y por la misma razón que arriba: el proveedor de
+        // traducción es diferido y sobrescribiría cualquier atadura previa.
+        $this->app->extend('translator', function (Translator $original, $app): BraceTranslator {
+            $translator = new BraceTranslator($original->getLoader(), $original->getLocale());
+            $translator->setFallback($original->getFallback());
+
+            return $translator;
+        });
+
         // Uno por petición y por trabajo en cola. Que sea singleton es la razón
         // de que el scope global pueda leerlo sin pasárselo a cada consulta.
         $this->app->singleton(TenantContext::class);
@@ -42,6 +59,11 @@ class AppServiceProvider extends ServiceProvider
         // siguiente petición heredaría el Actor de la anterior — el peor error
         // posible en un sistema multiempresa.
         $this->app->scoped(CurrentActor::class);
+
+        // Sin credenciales de FMCSA se ata el adaptador simulado, que se
+        // identifica como tal en cada fila que escribe. El día que haya
+        // credenciales se ata aquí el real y no cambia nada más.
+        $this->app->bind(FmcsaVerifier::class, MockFmcsaVerifier::class);
     }
 
     public function boot(): void

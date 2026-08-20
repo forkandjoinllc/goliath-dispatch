@@ -332,6 +332,11 @@ class DemoDataSeeder extends Seeder
                 'uses_factoring' => $r['factoring'],
                 'notes' => $r['notes'],
                 'last_activity_at' => $now->copy()->subHours(random_int(2, 200)),
+                // La fecha de alta se escribe a mano y no se deja en «ahora»:
+                // un transportista aprobado hace siete meses que aparece dado
+                // de alta hoy hace dudar de todas las demás fechas de la
+                // pantalla.
+                'created_at' => $approved?->copy()->subDays(5) ?? $now->copy()->subDays(random_int(3, 40)),
             ]);
         }
 

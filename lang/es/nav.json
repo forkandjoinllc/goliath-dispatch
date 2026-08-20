@@ -122,6 +122,14 @@
       "manuallyOverridden": "Anulada manualmente",
       "expired": "Vencida"
     },
+    "document": {
+      "pending": "Pendiente",
+      "inReview": "En revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "expired": "Vencido",
+      "superseded": "Reemplazado"
+    },
     "invoice": {
       "draft": "Borrador",
       "sent": "Enviada",

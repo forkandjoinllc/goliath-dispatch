@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\AuthorizationException;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SetLocale;
@@ -8,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,4 +34,32 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Sin esto, una denegación de permiso salía como 500.
+        //
+        // Es una diferencia que importa: un 500 dice «el servidor está roto» y
+        // hace que alguien vaya a mirar los registros; un 403 dice «funcionó y
+        // te dijo que no». Y en producción el 500 habría enseñado una pantalla
+        // de error genérica en vez del motivo, que está traducido.
+        $exceptions->render(function (AuthorizationException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => __($e->reasonKey)], $e->status);
+            }
+
+            // Una acción denegada (POST, PATCH, DELETE) vuelve atrás con el
+            // motivo: el usuario venía de una página a la que sí puede volver, y
+            // perder el contexto por un botón que no debía estar ahí sería un
+            // castigo desproporcionado.
+            if (! $request->isMethod('GET')) {
+                return back()->with('error', __($e->reasonKey));
+            }
+
+            // Una PÁGINA denegada sí necesita pantalla propia. Aquí `back()` no
+            // sirve: quien llega por un enlace directo o un marcador no tiene
+            // «atrás», y rebotaría a la raíz sin saber por qué.
+            return Inertia::render('App/Denied', [
+                'reason' => __($e->reasonKey),
+                'permission' => $e->permission,
+            ])->toResponse($request)->setStatusCode($e->status);
+        });
     })->create();
