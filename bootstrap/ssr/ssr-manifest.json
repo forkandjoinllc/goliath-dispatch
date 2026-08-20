@@ -1,9 +1,9 @@
 {
   "resources/js/components/Form/AntiSpamFields.tsx": [
-    "/build/assets/Field-BlFpQuPk.js"
+    "/build/assets/AntiSpamFields-CH5apMH2.js"
   ],
   "resources/js/components/Form/Field.tsx": [
-    "/build/assets/Field-BlFpQuPk.js"
+    "/build/assets/Field-BQKN739Z.js"
   ],
   "resources/js/components/Marketing/Cta.tsx": [
     "/build/assets/Cta-kux4IRC9.js"
@@ -18,7 +18,7 @@
     "/build/assets/MarketingLayout-i8h6UMJI.js"
   ],
   "resources/js/components/Marketing/LeadForm.tsx": [
-    "/build/assets/Contact-puyfZpQY.js"
+    "/build/assets/Contact-CCuMIk65.js"
   ],
   "resources/js/components/Marketing/LegalDocument.tsx": [
     "/build/assets/LegalDocument-BdM8h5os.js"
@@ -32,28 +32,46 @@
   "resources/js/components/Marketing/Seo.tsx": [
     "/build/assets/MarketingLayout-i8h6UMJI.js"
   ],
+  "resources/js/layouts/AuthLayout.tsx": [
+    "/build/assets/AuthLayout-CRJBRmNb.js"
+  ],
   "resources/js/layouts/MarketingLayout.tsx": [
     "/build/assets/MarketingLayout-i8h6UMJI.js"
   ],
   "resources/js/lib/format.ts": [
-    "/build/assets/Signup-FkXK-1fD.js"
+    "/build/assets/Signup-BIfcMqTD.js"
   ],
   "resources/js/lib/i18n.tsx": [],
   "resources/js/lib/resolve-page.ts": [],
+  "resources/js/pages/App/Dashboard.tsx": [
+    "/build/assets/Dashboard-iYDLjEWt.js"
+  ],
+  "resources/js/pages/Auth/ForgotPassword.tsx": [
+    "/build/assets/ForgotPassword-P7ySTFmB.js"
+  ],
+  "resources/js/pages/Auth/Login.tsx": [
+    "/build/assets/Login-D9QcmssS.js"
+  ],
+  "resources/js/pages/Auth/ResetPassword.tsx": [
+    "/build/assets/ResetPassword-CUpxCwp8.js"
+  ],
   "resources/js/pages/Auth/Signup.tsx": [
-    "/build/assets/Signup-FkXK-1fD.js"
+    "/build/assets/Signup-BIfcMqTD.js"
   ],
   "resources/js/pages/Auth/SignupDone.tsx": [
     "/build/assets/SignupDone-CCBuoK7y.js"
+  ],
+  "resources/js/pages/Auth/VerifyEmail.tsx": [
+    "/build/assets/VerifyEmail-JVuffsZ9.js"
   ],
   "resources/js/pages/Marketing/About.tsx": [
     "/build/assets/About-BrCqp804.js"
   ],
   "resources/js/pages/Marketing/CarrierSignup.tsx": [
-    "/build/assets/CarrierSignup-Dk3rSudQ.js"
+    "/build/assets/CarrierSignup-D547QhbK.js"
   ],
   "resources/js/pages/Marketing/Contact.tsx": [
-    "/build/assets/Contact-puyfZpQY.js"
+    "/build/assets/Contact-CCuMIk65.js"
   ],
   "resources/js/pages/Marketing/ForCarriers.tsx": [
     "/build/assets/ForCarriers-DFLaZbym.js"

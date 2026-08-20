@@ -1,5 +1,6 @@
 import { t as useI18n } from "../ssr.js";
-import { i as AntiSpamFields, r as TextField, t as CheckboxField } from "./Field-BlFpQuPk.js";
+import { r as TextField, t as CheckboxField } from "./Field-BQKN739Z.js";
+import { t as AntiSpamFields } from "./AntiSpamFields-CH5apMH2.js";
 import { Head, Link, useForm } from "@inertiajs/react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 //#region resources/js/lib/format.ts

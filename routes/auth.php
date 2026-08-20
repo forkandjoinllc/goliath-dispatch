@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +31,20 @@ Route::post('signup', [SignupController::class, 'store'])
     ->name('signup.store');
 
 Route::get('signup/done', [SignupController::class, 'done'])->name('signup.done');
+
+/*
+|--------------------------------------------------------------------------
+| Aplicación autenticada
+|--------------------------------------------------------------------------
+|
+| Por ahora solo la pantalla de aterrizaje tras entrar. `verified` no se exige
+| todavía: el correo de verificación va a un fichero de log mientras no haya
+| credenciales de correo, y exigirlo dejaría fuera a todo el mundo. Se activa en
+| cuanto el correo salga de verdad.
+|
+*/
+
+Route::middleware(['auth'])->group(function (): void {
+    Route::get('home', DashboardController::class)->name('home');
+    Route::post('switch-tenant', [DashboardController::class, 'switchTenant'])->name('tenant.switch');
+});
