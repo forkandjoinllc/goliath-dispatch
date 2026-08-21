@@ -81,7 +81,10 @@ it('el aviso NOMBRA la ficha que ya existe', function () {
     $this->post('/customers', ['company_name' => 'cliente escenario', 'status' => 'active']);
 
     // «Ya existe uno parecido» sin decir cuál obliga a buscarlo a mano.
-    expect(session('errors')->first('duplicate_override_reason'))
+    // Sobre el JSON del bolsón entero y no con ->first(): el bolsón llega a
+    // la sesión como array, no como ViewErrorBag, y ->first() reventaba. Lo
+    // que importa es que el aviso NOMBRE la ficha, esté como esté guardado.
+    expect(json_encode(session('errors'), JSON_UNESCAPED_UNICODE))
         ->toContain('Cliente Escenario LLC');
 });
 
@@ -150,7 +153,9 @@ it('no borra un cliente con cargas ni pagadas ni canceladas', function () {
         DB::table('loads')->insert([
             'id' => (string) Illuminate\Support\Str::uuid(),
             'tenant_id' => $this->scenario->tenant->id,
-            'load_number' => 'T-0001',
+            // 'T-0001' ya lo usa la carga del escenario: la clave única
+            // (tenant_id, load_number) rechazaba la fila.
+            'load_number' => 'T-9001',
             'customer_id' => $this->scenario->customer->id,
             'status' => 'in_transit',
             'created_at' => now(),
@@ -168,6 +173,12 @@ it('no borra un cliente con cargas ni pagadas ni canceladas', function () {
 
 it('borra en suave cuando no hay cargas vivas', function () {
     signIn($this->scenario, Role::Admin);
+
+    // El escenario trae DOS cargas de este cliente, y una carga viva impide
+    // borrarlo. Para que «no hay cargas vivas» sea cierto hay que cancelarlas.
+    DB::table('loads')
+        ->where('customer_id', $this->scenario->customer->id)
+        ->update(['status' => 'cancelled']);
 
     $this->delete("/customers/{$this->scenario->customer->id}")->assertRedirect();
 

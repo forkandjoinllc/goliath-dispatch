@@ -69,8 +69,11 @@ it('los dos idiomas tienen los mismos espacios de nombres', function () {
     $en = collect(glob(langDir().'/en/*.json'))->map(fn ($p) => basename($p))->sort()->values();
     $es = collect(glob(langDir().'/es/*.json'))->map(fn ($p) => basename($p))->sort()->values();
 
+    // La propiedad es la PARIDAD, no cuántos hay: el número clavado obligaba
+    // a editar esta prueba cada vez que nace un diccionario. Se escribió con
+    // 22 y hoy hay 27.
     expect($es->all())->toBe($en->all());
-    expect($en)->toHaveCount(22);
+    expect($en)->not->toBeEmpty();
 });
 
 it('cada espacio tiene exactamente las mismas claves en los dos idiomas', function (string $namespace) {

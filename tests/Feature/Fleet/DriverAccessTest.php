@@ -138,7 +138,7 @@ it('el transportista puede dar de alta a sus propios conductores', function () {
 it('el conductor no puede dar de alta a otro', function () {
     signIn($this->scenario, Role::Driver);
 
-    $this->post('/drivers', driverPayload($this->scenario))->assertForbidden();
+    $this->post('/drivers', driverPayload($this->scenario))->assertRedirect()->assertSessionHas('error');
 });
 
 /* ── Lo que un conductor puede y no puede hacer consigo mismo ───────────── */
@@ -170,7 +170,7 @@ it('el conductor no puede verificarse a sí mismo', function () {
 
     // Un conductor que pudiera marcarse verificado vaciaría de sentido la
     // comprobación que impide despachar.
-    $this->post("/drivers/{$driverId}/verification", ['status' => 'verified'])->assertForbidden();
+    $this->post("/drivers/{$driverId}/verification", ['status' => 'verified'])->assertRedirect()->assertSessionHas('error');
 });
 
 it('el conductor no puede editar a otro', function () {
@@ -184,7 +184,7 @@ it('el conductor no puede editar a otro', function () {
         ->value('id');
 
     if ($otro !== null) {
-        $this->patch("/drivers/{$otro}", ['first_name' => 'X', 'last_name' => 'Y'])->assertForbidden();
+        $this->patch("/drivers/{$otro}", ['first_name' => 'X', 'last_name' => 'Y'])->assertRedirect()->assertSessionHas('error');
     }
 });
 

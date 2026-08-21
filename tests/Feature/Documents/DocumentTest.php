@@ -112,7 +112,16 @@ it('rechaza un ejecutable renombrado a .pdf', function () {
 
     // El tipo se comprueba por el CONTENIDO, no por la extensión del nombre.
     $this->post('/documents', [
-        'file' => UploadedFile::fake()->createWithContent('seguro.pdf', "MZ\x90\x00binario"),
+        // Fichero REAL en disco, no UploadedFile::fake(): el falso miente sobre
+        // su propio tipo MIME —lo deduce de la extensión— así que `mimetypes:`
+        // recibía «application/pdf» y lo aceptaba. Con un fichero de verdad
+        // finfo lee los bytes y lo rechaza. La aplicación siempre estuvo bien.
+        'file' => (function () {
+            $ruta = tempnam(sys_get_temp_dir(), 'goliath');
+            file_put_contents($ruta, "MZ\x90\x00binario");
+
+            return new UploadedFile($ruta, 'seguro.pdf', 'application/pdf', null, true);
+        })(),
         'owner_type' => 'carrier',
         'owner_id' => $this->scenario->assignedCarrier->id,
         'document_type' => 'certificate_of_insurance',
@@ -214,7 +223,7 @@ it('un despachador no puede revisar', function () {
 
     // Sube quien tiene el papel; aprueba quien responde por él. Solo
     // administración y contabilidad tienen `document:review`.
-    $this->post("/documents/{$documentId}/review", ['decision' => 'approved'])->assertForbidden();
+    $this->post("/documents/{$documentId}/review", ['decision' => 'approved'])->assertRedirect()->assertSessionHas('error');
 });
 
 /* ── La descarga ────────────────────────────────────────────────────────── */

@@ -122,7 +122,7 @@ it('el transportista no abre la ficha de otro transportista', function () {
 it('contabilidad no puede crear transportistas', function () {
     signIn($this->scenario, Role::Accounting);
 
-    $this->post('/carriers', carrierPayload())->assertForbidden();
+    $this->post('/carriers', carrierPayload())->assertRedirect()->assertSessionHas('error');
 });
 
 it('el admin crea, y nace en borrador pase lo que pase', function () {

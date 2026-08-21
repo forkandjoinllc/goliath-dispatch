@@ -54,6 +54,15 @@ function signIn(Scenario $scenario, Role $role): void
     static $n = 0;
     $n++;
 
+    // Cambiar de rol dentro de una prueba exige SALIR primero. /login está
+    // detrás de RedirectIfAuthenticated: con sesión abierta la petición se
+    // redirige a /home sin autenticar a nadie, y assertRedirect() lo daba por
+    // bueno. El segundo signIn() no cambiaba de usuario.
+    if (auth()->check()) {
+        auth()->logout();
+        test()->flushSession();
+    }
+
     // withServerVariables y no el tercer argumento de post(): ese son
     // CABECERAS, y REMOTE_ADDR es una variable de servidor. Puesto como
     // cabecera, el limitador seguiría viendo 127.0.0.1 en todas las pruebas.
@@ -64,6 +73,15 @@ function signIn(Scenario $scenario, Role $role): void
             'password' => 'contraseña-de-prueba-1',
         ])
         ->assertRedirect();
+
+    // El cliente de pruebas NO reenvía la cookie de sesión entre peticiones.
+    // El guard sí recuerda al usuario —vive en un singleton—, así que la
+    // siguiente parece autenticada, pero StartSession genera un id NUEVO.
+    // Y la empresa activa vive en la COLUMNA sessions.active_tenant_id, que
+    // ResolveTenant lee POR ID: con id nuevo no hay fila, el contexto queda
+    // en nulo y el Actor llega sin rol. withCookie() la cifra igual que el
+    // navegador.
+    test()->withCookie(config('session.cookie'), session()->getId());
 }
 
 /*

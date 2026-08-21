@@ -21,6 +21,7 @@ uses(DatabaseTransactions::class);
 beforeEach(function () {
     app(TenantContext::class)->forget();
     $this->scenario = Scenario::create();
+    $this->scenario->approveCarrierDocuments();
     $this->load = $this->scenario->load;
 });
 
@@ -215,13 +216,13 @@ it('el transportista no puede mover el estado de su propia carga', function () {
 
     // Tiene load:read con ámbito carrier, pero no load:status:update. Quien
     // mueve la carga es la oficina de despacho.
-    $this->post("/loads/{$this->scenario->load->id}/status/available")->assertForbidden();
+    $this->post("/loads/{$this->scenario->load->id}/status/available")->assertRedirect()->assertSessionHas('error');
 });
 
 it('el despachador no mueve una carga que no lleva', function () {
     signIn($this->scenario, Role::Dispatcher);
 
-    $this->post("/loads/{$this->scenario->otherLoad->id}/status/available")->assertForbidden();
+    $this->post("/loads/{$this->scenario->otherLoad->id}/status/available")->assertRedirect()->assertSessionHas('error');
     expect(loadStatus($this->scenario->otherLoad->id))->toBe('draft');
 });
 

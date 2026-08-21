@@ -19,6 +19,16 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // CurrentActor está registrado como `scoped`: en producción vive lo que
+        // dura la petición y muere con el proceso de PHP. En las pruebas el
+        // contenedor es el MISMO durante toda la prueba, así que el Actor
+        // resuelto durante el POST /login —cuando todavía no hay empresa activa,
+        // porque LoginResponse la fija al final de esa misma petición— sobrevivía
+        // a las peticiones siguientes con tenantId y role en nulo.
+        //
+        // Registrarlo como transitorio en pruebas lo resuelve de nuevo cada vez.
+        // Es más lento y da igual: aquí lo que importa es que no mienta.
+        $this->app->bind(\App\Authorization\CurrentActor::class);
         $this->ensureSchema();
     }
 

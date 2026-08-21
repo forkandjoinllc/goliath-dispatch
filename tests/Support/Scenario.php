@@ -214,6 +214,36 @@ final class Scenario
         }
     }
 
+    /**
+     * Documentos obligatorios del transportista aprobado, aprobados y sin vencer.
+     *
+     * La puerta de cumplimiento se endureció DESPUÉS de escribirse este
+     * escenario: antes solo rechazaba documentos VENCIDOS, así que un
+     * transportista con cero documentos pasaba. Ahora exige que existan, y sin
+     * esto no hay forma de asignar ni despachar una carga en una prueba.
+     *
+     * Opcional a propósito: las pruebas de documentos cuentan filas.
+     */
+    public function approveCarrierDocuments(?string $carrierId = null): void
+    {
+        $carrierId ??= (string) $this->assignedCarrier->id;
+
+        foreach (\App\Support\Documents\DocumentTypes::requiredFor('carrier') as $type) {
+            DB::table('documents')->insert([
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenant->id,
+                'document_type' => $type,
+                'owner_type' => 'carrier',
+                'owner_id' => $carrierId,
+                'review_status' => 'approved',
+                'is_required' => 1,
+                'expiration_date' => now()->addYear(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
     public function user(Role $role): User
     {
         return $this->users[$role->value];

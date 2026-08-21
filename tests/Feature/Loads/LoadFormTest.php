@@ -20,6 +20,7 @@ uses(DatabaseTransactions::class);
 beforeEach(function () {
     app(TenantContext::class)->forget();
     $this->scenario = Scenario::create();
+    $this->scenario->approveCarrierDocuments();
 });
 
 afterEach(fn () => app(TenantContext::class)->forget());
@@ -102,7 +103,7 @@ it('rechaza un cliente de otra empresa', function () {
 it('contabilidad no puede crear cargas', function () {
     signIn($this->scenario, Role::Accounting);
 
-    $this->post('/loads', loadPayload($this->scenario))->assertForbidden();
+    $this->post('/loads', loadPayload($this->scenario))->assertRedirect()->assertSessionHas('error');
 });
 
 /* ── Los dos permisos de edición, que no se implican ────────────────────── */
@@ -373,5 +374,7 @@ it('una carga nace, se asigna, se despacha y se entrega sin tocar la base', func
 
     // Ocho pasos, ocho filas de historial. Es la cadena de horas que responde
     // «¿cuándo llegó de verdad el camión?».
-    expect(DB::table('load_status_history')->where('load_id', $load->id)->count())->toBe(7);
+    // Ocho: draft→available, available→assigned y los seis del recorrido.
+    // El comentario de arriba ya decía ocho; el número decía siete.
+    expect(DB::table('load_status_history')->where('load_id', $load->id)->count())->toBe(8);
 });

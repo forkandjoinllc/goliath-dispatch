@@ -91,5 +91,9 @@ it('cada entrada declara si su pantalla existe', function () {
     $ready = $items->where('ready', true)->pluck('href')->all();
 
     expect($ready)->toContain('/carriers', '/customers');
-    expect($items->where('ready', false)->pluck('href')->all())->toContain('/loads');
+
+    // Y que sigan existiendo entradas apagadas. Antes esta línea nombraba
+    // '/loads' como pendiente y se rompió sola el día que se construyó:
+    // clavar una ruta concreta aquí caduca por diseño.
+    expect($items->where('ready', false))->not->toBeEmpty();
 });
