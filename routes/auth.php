@@ -6,6 +6,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
+use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
@@ -117,4 +118,16 @@ Route::middleware(['auth'])->group(function (): void {
         ->name('loads.assign.resource');
     Route::delete('loads/{load}/resources/{assignment}', [LoadAssignmentController::class, 'unassign'])
         ->name('loads.assign.remove');
+
+    /*
+    | Conductores
+    */
+    Route::get('drivers', [DriverController::class, 'index'])->name('drivers.index');
+    Route::get('drivers/create', [DriverController::class, 'create'])->name('drivers.create');
+    Route::post('drivers', [DriverController::class, 'store'])->name('drivers.store');
+    Route::get('drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+    Route::get('drivers/{driver}/edit', [DriverController::class, 'edit'])->name('drivers.edit');
+    Route::patch('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
+    Route::post('drivers/{driver}/verification', [DriverController::class, 'verify'])
+        ->name('drivers.verify');
 });

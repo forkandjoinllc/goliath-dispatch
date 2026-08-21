@@ -13,6 +13,7 @@ use App\Enums\OnboardingStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Carrier;
 use App\Support\Audit;
+use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Builder;
@@ -397,11 +398,9 @@ final class CarrierController
             'contact' => trim("{$c->contact_first_name} {$c->contact_last_name}"),
             'email' => $c->email,
             'phone' => $c->phone,
-            'preferredLocale' => $c->preferred_locale instanceof Locale
-                ? $c->preferred_locale->value
-                : (string) $c->preferred_locale,
-            'onboardingStatus' => $this->enumValue($c->onboarding_status),
-            'fmcsaStatus' => $this->enumValue($c->fmcsa_status),
+            'preferredLocale' => EnumValue::of($c->preferred_locale, 'en'),
+            'onboardingStatus' => EnumValue::of($c->onboarding_status),
+            'fmcsaStatus' => EnumValue::of($c->fmcsa_status),
             'dispatchFeeBps' => (int) $c->dispatch_fee_bps,
             'lastActivityAt' => $c->last_activity_at?->toIso8601String(),
         ];
@@ -572,8 +571,4 @@ final class CarrierController
         ]);
     }
 
-    private function enumValue(mixed $value): ?string
-    {
-        return $value instanceof \BackedEnum ? (string) $value->value : ($value === null ? null : (string) $value);
-    }
 }

@@ -7,7 +7,9 @@ namespace App\Http\Controllers\App;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
+use App\Enums\AuditAction;
 use App\Models\Load;
+use App\Support\Audit;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,21 +92,19 @@ final class LoadAssignmentController
             $model->carrier_dispatch_fee_bps = (int) $carrier->dispatch_fee_bps;
             $model->save();
 
-            DB::table('audit_events')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $model->tenant_id,
-                'actor_user_id' => $actor->auditUserId(),
-                'action' => 'financial.changed',
-                'entity_type' => 'load',
-                'entity_id' => $model->id,
-                'before_summary' => json_encode($before),
-                'after_summary' => json_encode([
+            Audit::record(
+                actor: $actor,
+                action: AuditAction::FinancialChanged,
+                entityType: 'load',
+                entityId: $model->id,
+                entityLabel: (string) $model->load_number,
+                before: $before,
+                after: [
                     'carrier_id' => $carrier->id,
                     'rate' => (int) $data['carrier_gross_rate_cents'],
                     'dispatch_fee_bps' => (int) $carrier->dispatch_fee_bps,
-                ]),
-                'created_at' => now(),
-            ]);
+                ],
+            );
         });
 
         return back()->with('success', __('loads.assign.carrierDone', [

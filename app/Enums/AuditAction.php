@@ -30,6 +30,8 @@ enum AuditAction: string
     case DocumentRejected = 'document.rejected';
     case DocumentDeleted = 'document.deleted';
     case VerificationOverride = 'verification.override';
+    /** Revisión de la licencia de un conductor. Añadido, no portado — ver la migración. */
+    case DriverVerified = 'driver.verified';
     case OnboardingStatusChanged = 'onboarding.status_changed';
     case LoadCreated = 'load.created';
     case LoadStatusChanged = 'load.status_changed';

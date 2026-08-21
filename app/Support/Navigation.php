@@ -76,7 +76,7 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers'];
 
     /**
      * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy

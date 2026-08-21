@@ -8,11 +8,13 @@ use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
+use App\Enums\AuditAction;
 use App\Enums\LoadStatus;
 use App\Enums\Role;
 use App\Enums\Scope;
 use App\Models\Customer;
 use App\Models\Load;
+use App\Support\Audit;
 use App\Support\Finance\LoadCalculator;
 use App\Support\InertiaPage;
 use App\Support\Loads\Guards;
@@ -312,17 +314,15 @@ final class LoadController
             // «¿Quién bajó la tarifa de esta carga?» es una pregunta que se hace
             // meses después, cuando el transportista reclama.
             if ($before !== $after) {
-                DB::table('audit_events')->insert([
-                    'id' => (string) Str::uuid(),
-                    'tenant_id' => $model->tenant_id,
-                    'actor_user_id' => $actor->auditUserId(),
-                    'action' => 'financial.changed',
-                    'entity_type' => 'load',
-                    'entity_id' => $model->id,
-                    'before_summary' => json_encode($before),
-                    'after_summary' => json_encode($after),
-                    'created_at' => now(),
-                ]);
+                Audit::record(
+                    actor: $actor,
+                    action: AuditAction::FinancialChanged,
+                    entityType: 'load',
+                    entityId: $model->id,
+                    entityLabel: (string) $model->load_number,
+                    before: $before,
+                    after: $after,
+                );
             }
         });
 
@@ -432,18 +432,16 @@ final class LoadController
                 'updated_at' => now(),
             ]);
 
-            DB::table('audit_events')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $model->tenant_id,
-                'actor_user_id' => $actor->auditUserId(),
-                'action' => 'load.status_changed',
-                'entity_type' => 'load',
-                'entity_id' => $model->id,
-                'before_summary' => json_encode(['status' => $from->value]),
-                'after_summary' => json_encode(['status' => $target->value]),
-                'reason' => $reason !== '' ? $reason : null,
-                'created_at' => now(),
-            ]);
+            Audit::record(
+                actor: $actor,
+                action: AuditAction::LoadStatusChanged,
+                entityType: 'load',
+                entityId: $model->id,
+                entityLabel: (string) $model->load_number,
+                before: ['status' => $from->value],
+                after: ['status' => $target->value],
+                reason: $reason !== '' ? $reason : null,
+            );
         });
 
         return back()->with('success', __('loads.transition.done', [
