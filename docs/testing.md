@@ -24,8 +24,9 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 Esto hay que decirlo antes que nada.
 
 Los ficheros de `tests/Feature/Carriers`, `tests/Feature/Customers`,
-`tests/Feature/Loads`, `tests/Unit/Customers`, `tests/Unit/Finance`,
-`tests/Unit/Support` y `tests/Unit/I18n/NavigationLabelsTest`
+`tests/Feature/Loads`, `tests/Feature/Fleet`, `tests/Unit/Customers`,
+`tests/Unit/Finance`, `tests/Unit/Security`, `tests/Unit/Support` y
+`tests/Unit/I18n/NavigationLabelsTest`
 se escribieron en un entorno donde **Pest no se puede instalar**: composer exige
 autenticarse contra GitHub para las dependencias de desarrollo, y ese entorno no
 podía hacerlo. Llevan un aviso en su cabecera.
@@ -46,6 +47,9 @@ Lo que sí está comprobado, y conviene distinguirlo:
 | Las claves de `loads.blocking.*` y `loads.assign.*` | Comprobadas en los dos diccionarios |
 | El ciclo completo de `LoadFormTest` | Recorrido por HTTP: carga creada, asignada, despachada y entregada |
 | Los dos permisos de edición | Probados en las dos direcciones con despachador y contabilidad |
+| **Las 12 aserciones de `SensitiveNumberTest`** | Ejecutando `SensitiveNumber` con cada caso, una por una |
+| Que la licencia no viaje al cliente | Inspeccionando la respuesta HTTP con los cinco roles |
+| El arranque en frío | Conductor y camión creados por HTTP y usados en una carga despachada |
 | Sintaxis PHP | `php -l` sobre cada fichero |
 
 Lo que **no** está comprobado es la mecánica de Pest: la firma exacta de una

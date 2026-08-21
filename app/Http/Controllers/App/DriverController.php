@@ -660,8 +660,20 @@ final class DriverController
         // Las tres columnas del número se escriben JUNTAS o ninguna. Escribir
         // solo el cifrado dejaría el índice ciego apuntando al número anterior,
         // y la detección de duplicados encontraría a la persona equivocada.
-        if (array_key_exists('license_number', $data) && $data['license_number'] !== null) {
-            $parts = SensitiveNumber::columns((string) $data['license_number']);
+        //
+        // Vacío significa «conserva el que ya está», no «bórralo». El formulario
+        // NUNCA precarga el número —no se puede leer de vuelta— así que cada
+        // edición de un teléfono lo enviaría vacío, y borrarlo destruiría la
+        // licencia de un conductor por cambiarle el número de móvil.
+        //
+        // La cadena vacía se comprueba explícitamente aunque el middleware
+        // ConvertEmptyStringsToNull de Laravel ya la convierta a null: eso es
+        // configuración que alguien puede quitar, y aquí lo que está en juego
+        // es un dato que no se puede recuperar.
+        $licence = $data['license_number'] ?? null;
+
+        if (is_string($licence) && trim($licence) !== '') {
+            $parts = SensitiveNumber::columns($licence);
 
             $columns['license_number_encrypted'] = $parts['encrypted'];
             $columns['license_number_last4'] = $parts['last4'];
