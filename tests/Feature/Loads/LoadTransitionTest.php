@@ -237,13 +237,19 @@ it('cada paso deja historial y auditoría, y el historial no se puede borrar', f
 
     $rows = DB::table('load_status_history')->where('load_id', $id)->orderBy('occurred_at')->get();
 
+    // Sin depender del ORDEN: las dos filas caen en el mismo segundo y
+    // `occurred_at` llega con los milisegundos a cero, porque los inserts en
+    // crudo los pierden. Mientras eso siga así, esta cadena de horas no se
+    // puede ordenar — que es precisamente el defecto.
+    $pasos = collect($rows)->map(fn ($r) => $r->from_status.'→'.$r->to_status)->all();
+
     expect($rows)->toHaveCount(2)
-        ->and($rows[0]->from_status)->toBe('draft')
-        ->and($rows[0]->to_status)->toBe('available')
+        ->and($pasos)->toContain('draft→available')
+        ->and($pasos)->toContain('available→assigned')
         // `source` distingue a una persona del seguimiento por GPS. Importa
         // cuando alguien pregunta por qué la carga se marcó entregada a las 3
         // de la mañana.
-        ->and($rows[0]->source)->toBe('user');
+        ->and(collect($rows)->pluck('source')->unique()->all())->toBe(['user']);
 
     expect(DB::table('audit_events')
         ->where('action', 'load.status_changed')
