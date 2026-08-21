@@ -7,6 +7,7 @@ use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
 use App\Http\Controllers\App\DriverController;
+use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
@@ -130,4 +131,24 @@ Route::middleware(['auth'])->group(function (): void {
     Route::patch('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
     Route::post('drivers/{driver}/verification', [DriverController::class, 'verify'])
         ->name('drivers.verify');
+
+    /*
+    | Equipos: camiones y remolques
+    |
+    | El tipo va en la URL y está restringido con `whereIn`, así que una ruta
+    | inventada no llega siquiera al controlador. El controlador lo comprueba
+    | otra vez de todas formas — la ruta puede cambiar y esa comprobación acaba
+    | construyendo un nombre de tabla.
+    */
+    Route::prefix('equipment/{type}')
+        ->whereIn('type', ['trucks', 'trailers'])
+        ->group(function (): void {
+            Route::get('/', [EquipmentController::class, 'index'])->name('equipment.index');
+            Route::get('create', [EquipmentController::class, 'create'])->name('equipment.create');
+            Route::post('/', [EquipmentController::class, 'store'])->name('equipment.store');
+            Route::get('{unit}', [EquipmentController::class, 'show'])->name('equipment.show');
+            Route::get('{unit}/edit', [EquipmentController::class, 'edit'])->name('equipment.edit');
+            Route::patch('{unit}', [EquipmentController::class, 'update'])->name('equipment.update');
+            Route::post('{unit}/status', [EquipmentController::class, 'status'])->name('equipment.status');
+        });
 });

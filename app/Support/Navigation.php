@@ -40,7 +40,10 @@ final class Navigation
             ['carriers', 'carriers', ['carrier:read']],
             ['onboarding', 'onboarding', ['carrier:onboarding:read']],
             ['drivers', 'drivers', ['driver:read']],
-            ['equipment', 'equipment', ['equipment:read']],
+            // Apunta a camiones: la pantalla lleva pestañas para pasar a
+            // remolques. Dos entradas de menú para el mismo dominio partirían
+            // en dos algo que se mira junto.
+            ['equipment/trucks', 'equipment', ['equipment:read']],
             ['documents', 'documents', ['document:read']],
             ['signatures', 'signatures', ['signature:request:read', 'signature:template:read']],
         ],
@@ -76,7 +79,7 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks'];
 
     /**
      * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
