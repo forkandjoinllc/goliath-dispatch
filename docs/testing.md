@@ -24,7 +24,8 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 Esto hay que decirlo antes que nada.
 
 Los ficheros de `tests/Feature/Carriers`, `tests/Feature/Customers`,
-`tests/Feature/Loads`, `tests/Feature/Fleet`, `tests/Unit/Customers`,
+`tests/Feature/Loads`, `tests/Feature/Fleet`, `tests/Feature/Documents`,
+`tests/Unit/Customers`,
 `tests/Unit/Finance`, `tests/Unit/Security`, `tests/Unit/Support` y
 `tests/Unit/I18n/NavigationLabelsTest`
 se escribieron en un entorno donde **Pest no se puede instalar**: composer exige
@@ -50,6 +51,9 @@ Lo que sí está comprobado, y conviene distinguirlo:
 | **Las 12 aserciones de `SensitiveNumberTest`** | Ejecutando `SensitiveNumber` con cada caso, una por una |
 | Que la licencia no viaje al cliente | Inspeccionando la respuesta HTTP con los cinco roles |
 | El arranque en frío | Conductor y camión creados por HTTP y usados en una carga despachada |
+| La subida y la descarga de un fichero | Un PDF real subido, descargado por URL firmada y comparado byte a byte |
+| Que la firma sea la credencial | Sin firma 403, firma manipulada 403, firma válida sin sesión 200 |
+| Los mensajes de validación en español | Tres formularios distintos, comprobados tras crear `lang/es/validation.php` |
 | Sintaxis PHP | `php -l` sobre cada fichero |
 
 Lo que **no** está comprobado es la mecánica de Pest: la firma exacta de una
