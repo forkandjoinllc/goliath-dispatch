@@ -10,6 +10,8 @@ use App\Services\Fmcsa\FmcsaVerifier;
 use App\Services\Fmcsa\MockFmcsaVerifier;
 use App\Support\TenantContext;
 use App\Translation\BraceTranslator;
+use App\Support\Storage\DocumentStore;
+use App\Support\Storage\LocalDocumentStore;
 use App\Translation\JsonNamespaceLoader;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
@@ -33,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
             $app['files'],
             $loader->paths(),
         ));
+
+        // Dónde viven los ficheros de los documentos. Hoy el disco del
+        // servidor; el día que haya credenciales de S3, esta línea cambia de
+        // clase y nada más se entera. Ver App\Support\Storage\DocumentStore.
+        $this->app->singleton(DocumentStore::class, LocalDocumentStore::class);
 
         // Los diccionarios usan `{nombre}` porque los lee también el cliente.
         // Se sustituye el traductor para que `__()` los entienda igual — ver

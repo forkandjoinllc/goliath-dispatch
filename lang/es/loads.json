@@ -145,10 +145,10 @@
     "noTruck": "No hay camión asignado.",
     "noDriver": "No hay conductor asignado.",
     "carrierNotApproved": "El alta del transportista no está aprobada.",
-    "carrierDocumentExpired": "Un documento obligatorio del transportista está vencido.",
     "driverNotCompliant": "La licencia o la tarjeta médica de un conductor está vencida, o el conductor está inactivo.",
     "permitNotApproved": "Es una carga sobredimensionada y su permiso no está aprobado.",
-    "noPodDocument": "No se ha subido el comprobante de entrega."
+    "noPodDocument": "No se ha subido el comprobante de entrega.",
+    "missingDocument": "Falta un documento obligatorio o no está aprobado: {document}."
   },
   "form": {
     "createTitle": "Nueva carga",

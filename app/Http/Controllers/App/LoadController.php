@@ -149,7 +149,14 @@ final class LoadController
 
             $actions[] = [
                 'action' => $action,
-                'blocking' => Guards::blocking($model, $action),
+                // Se manda el TEXTO, no la clave. Los documentos que faltan
+                // llevan el tipo pegado a la clave y la pantalla tendría que
+                // volver a partirla — dos sitios haciendo lo mismo acaban
+                // discrepando.
+                'blocking' => array_map(
+                    fn (string $key): string => $this->blockingMessage($key),
+                    Guards::blocking($model, $action),
+                ),
                 'requiresReason' => Transitions::requiresReason($action),
             ];
         }
@@ -373,7 +380,7 @@ final class LoadController
         if ($blocking !== []) {
             return back()->withErrors([
                 'action' => __('loads.transition.blocked').' '.implode(' ', array_map(
-                    fn (string $key): string => __("loads.blocking.{$key}"),
+                    fn (string $key): string => $this->blockingMessage($key),
                     $blocking,
                 )),
             ]);
@@ -450,6 +457,30 @@ final class LoadController
     }
 
     // ------------------------------------------------------------------ interno
+
+    /**
+     * El texto de un motivo de bloqueo.
+     *
+     * Casi todos son claves sueltas, pero los documentos que faltan llegan como
+     * `missingDocument:certificate_of_insurance` — el motivo y el tipo juntos,
+     * porque hace falta decir CUÁL falta y pueden faltar tres.
+     *
+     * Se parten aquí y no se traduce la clave entera porque Laravel usa el `:`
+     * para los parámetros de sustitución: `loads.blocking.missingDocument:x` no
+     * resolvería nunca y el usuario vería la clave cruda en pantalla.
+     */
+    private function blockingMessage(string $key): string
+    {
+        if (! str_contains($key, ':')) {
+            return __("loads.blocking.{$key}");
+        }
+
+        [$reason, $detail] = explode(':', $key, 2);
+
+        return __("loads.blocking.{$reason}", [
+            'document' => __("documents.types.{$detail}"),
+        ]);
+    }
 
     /**
      * Los recursos que se pueden poner en esta carga.

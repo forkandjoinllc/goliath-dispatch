@@ -6,6 +6,7 @@ namespace App\Support\Loads;
 
 use App\Enums\LoadStatus;
 use App\Models\Load;
+use App\Support\Documents\DocumentTypes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -168,23 +169,66 @@ final class Guards
             $blocking[] = 'carrierNotApproved';
         }
 
-        // Documentos obligatorios vencidos. El seguro es el caso real: vence a
-        // medianoche y nadie se entera hasta que hay un siniestro.
-        $expired = DB::table('documents')
-            ->where('owner_type', 'carrier')
-            ->where('owner_id', $carrierId)
-            ->whereNull('deleted_at')
-            ->where('is_required', true)
-            ->whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '<', CarbonImmutable::now()->toDateString())
-            ->exists();
+        return [...$blocking, ...self::documentCompliance('carrier', $carrierId)];
+    }
 
-        if ($expired) {
-            $blocking[] = 'carrierDocumentExpired';
+    /**
+     * Los documentos obligatorios de un dueño: que ESTÉN, que estén APROBADOS y
+     * que no estén VENCIDOS.
+     *
+     * Las tres cosas, y la primera es la que faltaba. La versión anterior solo
+     * preguntaba si había alguno vencido:
+     *
+     *     ->whereDate('expiration_date', '<', hoy)->exists()
+     *
+     * Con cero documentos no hay ninguno vencido, así que no bloqueaba nada. Un
+     * transportista sin certificado de seguro, sin autoridad operativa y sin
+     * contrato firmado pasaba el control y su camión salía a la carretera. La
+     * comprobación parecía más fuerte de lo que era, que es la peor clase de
+     * comprobación: da la tranquilidad sin dar la protección.
+     *
+     * Con datos de demostración no se notaba nunca, porque el sembrador crea los
+     * documentos.
+     *
+     * @return list<string>
+     */
+    private static function documentCompliance(string $ownerType, string $ownerId): array
+    {
+        $required = DocumentTypes::requiredFor($ownerType);
+
+        if ($required === []) {
+            return [];
         }
 
-        return $blocking;
+        $today = CarbonImmutable::now()->toDateString();
+
+        // Un documento CUENTA si está aprobado y no ha vencido. Uno pendiente de
+        // revisión no cuenta: que alguien haya subido un PDF no significa que
+        // nadie lo haya mirado.
+        $good = DB::table('documents')
+            ->where('owner_type', $ownerType)
+            ->where('owner_id', $ownerId)
+            ->whereNull('deleted_at')
+            ->where('review_status', 'approved')
+            ->where(function ($q) use ($today): void {
+                $q->whereNull('expiration_date')
+                    ->orWhereDate('expiration_date', '>=', $today);
+            })
+            ->pluck('document_type')
+            ->unique()
+            ->all();
+
+        $missing = array_diff($required, $good);
+
+        // Se nombra CADA uno. «Faltan documentos» obliga a abrir la ficha del
+        // transportista y compararla con una lista que solo está en la cabeza de
+        // quien lleva cumplimiento.
+        return array_values(array_map(
+            static fn (string $type): string => 'missingDocument:'.$type,
+            $missing,
+        ));
     }
+
 
     /**
      * @param  list<string>  $driverIds

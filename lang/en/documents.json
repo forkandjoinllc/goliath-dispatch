@@ -1,0 +1,128 @@
+{
+  "types": {
+    "certificate_of_insurance": "certificate of insurance",
+    "certificate_of_authority": "operating authority",
+    "carrier_agreement": "carrier agreement",
+    "w9": "W-9",
+    "notice_of_assignment": "notice of assignment",
+    "change_of_payee": "change of payee",
+    "other_onboarding": "other onboarding document",
+    "cdl_front": "CDL (front)",
+    "cdl_back": "CDL (back)",
+    "medical_card": "medical card",
+    "driver_other": "other driver document",
+    "truck_registration": "truck registration",
+    "trailer_registration": "trailer registration",
+    "annual_inspection": "annual inspection",
+    "equipment_photo": "equipment photo",
+    "equipment_video": "equipment video",
+    "other": "other document"
+  },
+  "index": {
+    "title": "Documents",
+    "subtitle": "The paperwork that lets a truck legally leave, and what is about to lapse.",
+    "empty": "No documents yet",
+    "emptyHint": "Upload the first one. A carrier cannot be dispatched without its insurance certificate.",
+    "noResults": "Nothing matches these filters",
+    "noResultsHint": "Clear the filters to see everything you have access to.",
+    "upload": "Upload document",
+    "searchLabel": "Search documents",
+    "searchPlaceholder": "Title or type",
+    "showing": "Showing {from}–{to} of {total}"
+  },
+  "scope": {
+    "tenant": "All documents in this company",
+    "assigned": "Documents of the carriers in your book",
+    "carrier": "Your documents",
+    "own": "Your own documents",
+    "platform": "All documents on the platform"
+  },
+  "filters": {
+    "owner": "Belongs to",
+    "status": "Review",
+    "all": "All",
+    "expiring": "Expiring soon",
+    "clear": "Clear filters"
+  },
+  "owners": {
+    "carrier": "Carrier",
+    "driver": "Driver",
+    "truck": "Truck",
+    "trailer": "Trailer"
+  },
+  "columns": {
+    "document": "Document",
+    "belongsTo": "Belongs to",
+    "issued": "Issued",
+    "expires": "Expires",
+    "review": "Review"
+  },
+  "review": {
+    "pending": "Pending review",
+    "in_review": "In review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "expired": "Expired",
+    "superseded": "Superseded",
+    "title": "Review this document",
+    "hint": "Compare it against the document itself before deciding.",
+    "decision": "Decision",
+    "notes": "Notes",
+    "notesRequired": "Say what is wrong with it — at least ten characters. The carrier will read this, and «rejected» on its own guarantees a second upload just as bad.",
+    "done": "The review has been recorded.",
+    "action": "Record the review",
+    "history": "Review history",
+    "noReviews": "Not reviewed yet."
+  },
+  "detail": {
+    "identity": "Document",
+    "versions": "Versions",
+    "belongsTo": "Belongs to",
+    "type": "Type",
+    "title": "Title",
+    "required": "Required",
+    "issued": "Issue date",
+    "expires": "Expiration date",
+    "noExpiry": "No expiration",
+    "expired": "Expired",
+    "expiringSoon": "Expires soon",
+    "uploadedBy": "Uploaded by",
+    "uploadedAt": "Uploaded",
+    "filename": "Original filename",
+    "size": "Size",
+    "checksum": "Checksum",
+    "scanPending": "Not scanned for malware yet",
+    "current": "Current",
+    "download": "Download",
+    "newVersion": "Upload a new version",
+    "versionsHint": "A new upload never replaces the old one. If someone disputes what the insurance said in March, the answer is here.",
+    "back": "Back to documents"
+  },
+  "form": {
+    "title": "Upload document",
+    "subtitle": "Uploading puts the document back in the review queue, including a new version of one already approved.",
+    "file": "File",
+    "fileHint": "PDF, image or Word document, up to 25 MB.",
+    "belongsTo": "Belongs to",
+    "chooseOwner": "Choose who it belongs to",
+    "ownerType": "Kind of owner",
+    "documentType": "Document type",
+    "chooseType": "Choose a type",
+    "titleLabel": "Title",
+    "titleHint": "Defaults to the file name.",
+    "issueDate": "Issue date",
+    "expirationDate": "Expiration date",
+    "expirationHint": "You will be warned 45 days before, and the load gate blocks once it lapses.",
+    "unknownType": "That document type does not exist.",
+    "ownerNotAllowed": "You cannot upload documents for that owner.",
+    "ownerNotFound": "That owner does not exist in this company.",
+    "upload": "Upload",
+    "cancel": "Cancel"
+  },
+  "download": {
+    "missing": "The file is not in storage. It may not have finished uploading."
+  },
+  "flash": {
+    "uploaded": "The document was uploaded and is pending review."
+  }
+}

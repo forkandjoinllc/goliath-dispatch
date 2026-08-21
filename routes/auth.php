@@ -6,6 +6,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
+use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\LoadAssignmentController;
@@ -140,6 +141,20 @@ Route::middleware(['auth'])->group(function (): void {
     | otra vez de todas formas — la ruta puede cambiar y esa comprobación acaba
     | construyendo un nombre de tabla.
     */
+    /*
+    | Documentos
+    |
+    | La descarga NO devuelve el fichero: devuelve una redirección a una URL
+    | firmada y temporal, y deja constancia de quién la pidió. El fichero vive
+    | fuera de public/ y la ruta que lo sirve exige la firma.
+    */
+    Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');
+    Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::post('documents/{document}/review', [DocumentController::class, 'review'])->name('documents.review');
+    Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+
     Route::prefix('equipment/{type}')
         ->whereIn('type', ['trucks', 'trailers'])
         ->group(function (): void {
@@ -152,3 +167,24 @@ Route::middleware(['auth'])->group(function (): void {
             Route::post('{unit}/status', [EquipmentController::class, 'status'])->name('equipment.status');
         });
 });
+
+/*
+|--------------------------------------------------------------------------
+| El fichero de un documento
+|--------------------------------------------------------------------------
+|
+| Fuera del grupo `auth` a propósito, y con `signed`: la firma ES la credencial.
+| Es lo que permite que el enlace funcione en una pestaña nueva, en el visor de
+| PDF del navegador o en el móvil del conductor sin arrastrar la sesión.
+|
+| Caduca en minutos (ver LocalDocumentStore::temporaryUrl) y solo se genera
+| después de comprobar el permiso y de registrar el acceso. Cuando el
+| almacenamiento sea S3, esta ruta deja de usarse: la firmará S3.
+|
+| Nunca se sirve un fichero por su ruta en disco: la clave llega en base64
+| dentro de la firma, así que cambiarla invalida la firma entera.
+|
+*/
+Route::get('documents/file/{key}', [App\Http\Controllers\App\DocumentFileController::class, '__invoke'])
+    ->middleware('signed')
+    ->name('documents.file');

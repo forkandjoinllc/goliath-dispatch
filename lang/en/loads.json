@@ -145,10 +145,10 @@
     "noTruck": "No truck is assigned.",
     "noDriver": "No driver is assigned.",
     "carrierNotApproved": "The carrier's onboarding is not approved.",
-    "carrierDocumentExpired": "A required carrier document has expired.",
     "driverNotCompliant": "A driver's licence or medical card has expired, or the driver is inactive.",
     "permitNotApproved": "This is an oversize load and its permit has not been approved.",
-    "noPodDocument": "No proof of delivery has been uploaded."
+    "noPodDocument": "No proof of delivery has been uploaded.",
+    "missingDocument": "A required document is missing or not approved: {document}."
   },
   "form": {
     "createTitle": "New load",
