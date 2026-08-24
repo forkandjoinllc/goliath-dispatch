@@ -8,6 +8,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Services\Fmcsa\MockFmcsaVerifier;
+use App\Support\Database\MillisecondGrammar;
 use App\Support\TenantContext;
 use App\Translation\BraceTranslator;
 use App\Support\Storage\DocumentStore;
@@ -81,5 +82,31 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! $this->app->isProduction());
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
+        $this->preserveMilliseconds();
+
+    }
+
+    /**
+     * Que los INSERT en crudo escriban los milisegundos.
+     *
+     * Los modelos ya lo hacían por su `$dateFormat`; los `DB::table(...)` no,
+     * porque ahí convierte la gramática de consultas y la de Laravel corta en
+     * el segundo. Ver App\Support\Database\MillisecondGrammar.
+     *
+     * Aquí y no en cada sitio de escritura a propósito: hay treinta y nueve, y
+     * el siguiente que alguien escriba también tiene que salir bien sin
+     * acordarse de nada.
+     */
+    private function preserveMilliseconds(): void
+    {
+        $connection = $this->app['db']->connection();
+
+        // Solo MySQL: la gramática hereda de la suya. Si algún día hay una
+        // conexión de otro motor, esto la deja en paz en vez de romperla.
+        if ($connection->getDriverName() !== 'mysql') {
+            return;
+        }
+
+        $connection->setQueryGrammar(new MillisecondGrammar($connection));
     }
 }
