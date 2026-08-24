@@ -38,9 +38,42 @@ return [
         'country' => 'US',
     ],
 
-    // Sin teléfono ni correo todavía. Se dejan fuera a propósito en vez de
-    // poner un marcador: una dirección de correo inventada en una página de
-    // contacto es peor que no tener ninguna.
-    'phone' => null,
-    'email' => null,
+    // Tal y como se enseña. El enlace `tel:` se construye en el componente
+    // quitando todo lo que no sea dígito: un teléfono se lee mejor con
+    // paréntesis y se marca mejor sin ellos.
+    'phone' => '(888) 909-9037',
+    // El mismo número en formato E.164, para el enlace `tel:`. Explícito y no
+    // deducido: adivinar el prefijo de país a partir de diez dígitos funciona
+    // hasta el día que la empresa tenga un número que no sea de EE. UU.
+    'phone_href' => '+18889099037',
+    'email' => 'info@goliathdispatch.com',
+
+    // Despacho de carga pesada: un camión que se avería a las tres de la
+    // mañana no espera a que abra la oficina. `true` pinta «24 horas, todos
+    // los días» en vez de una tabla de horarios.
+    'hours_247' => true,
+
+    /*
+    | El mapa
+    |
+    | La URL se construye a partir del domicilio de arriba, no de unas
+    | coordenadas escritas a mano: así no hay dos sitios que puedan decir cosas
+    | distintas cuando la empresa se mude.
+    |
+    | `provider` decide de dónde sale el marco:
+    |
+    |   'google' — el marco incrustado que espera reconocer un cliente en
+    |              EE. UU. Es un tercero que ve la IP de quien visita la
+    |              página aunque no haga clic en nada, así que si la política
+    |              de privacidad enumera subencargados, ahí tiene que constar.
+    |   'none'   — sin marco. Queda la tarjeta con el domicilio y el enlace
+    |              «cómo llegar», que abre la aplicación de mapas del visitante
+    |              sin cargarle nada de nadie.
+    |
+    | El enlace de «cómo llegar» se pinta con los dos.
+    */
+    'map' => [
+        'provider' => 'google',
+        'zoom' => 16,
+    ],
 ];

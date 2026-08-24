@@ -43,5 +43,9 @@ export interface CompanyContact {
   postalCode: string | null
   country: string | null
   phone: string | null
+  phoneHref: string | null
   email: string | null
+  hours247: boolean
+  mapEmbedUrl: string | null
+  directionsUrl: string | null
 }

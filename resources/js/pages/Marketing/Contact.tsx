@@ -1,12 +1,17 @@
 import { MarketingLayout } from '@/layouts/MarketingLayout'
 import { AddressBlock } from '@/components/Marketing/AddressBlock'
 import { LeadForm } from '@/components/Marketing/LeadForm'
+import { OfficeMap } from '@/components/Marketing/OfficeMap'
 import { PageHero } from '@/components/Marketing/PageHero'
 import { Section } from '@/components/Marketing/Section'
 import { useI18n } from '@/lib/i18n'
-import type { MarketingPageProps } from '@/types/marketing'
+import type { CompanyContact, MarketingPageProps } from '@/types/marketing'
 
-export default function Contact({ formToken, ...props }: MarketingPageProps & { formToken: string }) {
+export default function Contact({
+  formToken,
+  company,
+  ...props
+}: MarketingPageProps & { formToken: string; company: CompanyContact | null }) {
   const { t, locale } = useI18n()
 
   return (
@@ -29,11 +34,14 @@ export default function Contact({ formToken, ...props }: MarketingPageProps & { 
               <h2 className="uppercase-heading text-xs text-steel-600">
                 {t('marketing.contact.hoursHeading')}
               </h2>
-              {/* El horario sale de tenant_settings cuando el sitio se sirve
-                  bajo el dominio de una empresa. La plataforma todavía no
-                  publica ninguno, y se dice en vez de inventarlo. El domicilio
-                  sí está: lo resuelve App\Support\Company. */}
-              <p className="mt-3 text-sm text-steel-700">{t('marketing.company.hoursNotPublished')}</p>
+              {/* 24/7 para la plataforma: un camión que se avería a las tres de
+                  la mañana no espera a que abra la oficina. Para una empresa
+                  cliente el horario vive en tenant_settings.business_hours, que
+                  es una tabla por días y todavía no tiene pantalla — hasta
+                  entonces se dice que no se publica en vez de inventarlo. */}
+              <p className="mt-3 text-sm text-steel-700">
+                {t(company?.hours247 ? 'marketing.company.hours247' : 'marketing.company.hoursNotPublished')}
+              </p>
             </div>
 
             <div>
@@ -42,6 +50,10 @@ export default function Contact({ formToken, ...props }: MarketingPageProps & { 
               </h2>
               <div className="mt-3">
                 <AddressBlock />
+              </div>
+
+              <div className="mt-4">
+                <OfficeMap />
               </div>
             </div>
           </aside>

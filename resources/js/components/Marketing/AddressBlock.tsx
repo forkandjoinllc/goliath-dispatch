@@ -36,13 +36,24 @@ export function AddressBlock({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
       {country ? <span className="block">{country}</span> : null}
 
       {company.phone ? (
-        <a href={`tel:${company.phone.replace(/[^+\d]/g, '')}`} className="mt-2 block hover:underline">
+        <a href={`tel:${company.phoneHref ?? company.phone}`} className="mt-2 block hover:underline">
           {company.phone}
         </a>
       ) : null}
       {company.email ? (
         <a href={`mailto:${company.email}`} className="block hover:underline">
           {company.email}
+        </a>
+      ) : null}
+
+      {company.directionsUrl ? (
+        <a
+          href={company.directionsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-block font-medium hover:underline"
+        >
+          {t('marketing.company.directions')}
         </a>
       ) : null}
     </address>

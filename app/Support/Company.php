@@ -29,9 +29,53 @@ final class Company
      */
     public static function forSite(?string $tenantId): ?array
     {
-        return $tenantId === null
+        $bloque = $tenantId === null
             ? self::platform()
             : self::tenant($tenantId);
+
+        return $bloque === null ? null : [...$bloque, ...self::maps($bloque)];
+    }
+
+    /**
+     * Las dos URL del mapa, construidas a partir del domicilio que se va a
+     * enseñar.
+     *
+     * A partir del domicilio y no de unas coordenadas escritas aparte: dos
+     * fuentes para el mismo sitio acaban discrepando el día que la empresa se
+     * muda, y el mapa señalando la oficina vieja es peor que no tener mapa.
+     *
+     * Sirve igual para una empresa cliente: su página lleva SU mapa sin que
+     * haya que tocar nada.
+     *
+     * @param  array<string, mixed>  $bloque
+     * @return array{mapEmbedUrl: string|null, directionsUrl: string|null}
+     */
+    private static function maps(array $bloque): array
+    {
+        $partes = array_values(array_filter([
+            $bloque['line1'] ?? null,
+            $bloque['city'] ?? null,
+            $bloque['state'] ?? null,
+            $bloque['postalCode'] ?? null,
+        ]));
+
+        // Sin calle no se busca nada: una consulta con solo la ciudad
+        // señalaría el centro del pueblo y parecería la oficina.
+        if ($partes === [] || ($bloque['line1'] ?? null) === null) {
+            return ['mapEmbedUrl' => null, 'directionsUrl' => null];
+        }
+
+        $consulta = rawurlencode(implode(', ', $partes));
+        $zoom = (int) config('company.map.zoom', 16);
+
+        return [
+            'mapEmbedUrl' => config('company.map.provider', 'google') === 'google'
+                ? "https://www.google.com/maps?q={$consulta}&z={$zoom}&output=embed"
+                : null,
+            // Siempre. `dir/?api=1` abre la aplicación de mapas del visitante
+            // —la suya, no la nuestra— y funciona igual en móvil y escritorio.
+            'directionsUrl' => "https://www.google.com/maps/dir/?api=1&destination={$consulta}",
+        ];
     }
 
     /**
@@ -51,7 +95,9 @@ final class Company
             'postalCode' => self::text($address['postal_code'] ?? null),
             'country' => self::text($address['country'] ?? null),
             'phone' => self::text(config('company.phone')),
+            'phoneHref' => self::text(config('company.phone_href')) ?? self::dialable(config('company.phone')),
             'email' => self::text(config('company.email')),
+            'hours247' => (bool) config('company.hours_247', false),
         ];
     }
 
@@ -87,12 +133,37 @@ final class Company
             'postalCode' => self::text($settings->address_postal_code),
             'country' => self::text($settings->address_country),
             'phone' => self::text($settings->contact_phone),
+            'phoneHref' => self::dialable($settings->contact_phone),
             'email' => self::text($settings->contact_email),
+            // El horario de una empresa cliente vive en `business_hours`, que
+            // es una tabla por días y no un «siempre abierto». Hasta que haya
+            // pantalla para pintarla, no se afirma nada.
+            'hours247' => false,
         ];
 
         // Sin calle no hay domicilio que enseñar. Devolver el bloque a medias
         // pintaría un encabezado «Oficina» encima de una ciudad suelta.
         return $bloque['line1'] === null ? null : $bloque;
+    }
+
+    /**
+     * El número tal y como se marca: sin paréntesis, guiones ni espacios.
+     *
+     * Se conserva el `+` inicial si lo trae. No se inventa ninguno: un prefijo
+     * de país deducido de la longitud acierta con los números de EE. UU. y
+     * falla con el primero que no lo sea.
+     */
+    private static function dialable(mixed $value): ?string
+    {
+        $texto = self::text($value);
+
+        if ($texto === null) {
+            return null;
+        }
+
+        $marcable = preg_replace('/(?!^\+)[^\d]/', '', $texto);
+
+        return $marcable === '' ? null : $marcable;
     }
 
     private static function text(mixed $value): ?string
