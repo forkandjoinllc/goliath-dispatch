@@ -1,3 +1,4 @@
+import { AddressBlock } from '@/components/Marketing/AddressBlock'
 import { useI18n } from '@/lib/i18n'
 
 /**
@@ -31,6 +32,18 @@ export function LegalDocument({ root, sections }: { root: string; sections: stri
             </p>
           </section>
         ))}
+      </div>
+
+      {/* La entidad y su domicilio, al final del documento. Un texto legal que
+          no dice QUIÉN se obliga obliga a poca cosa, y es lo primero que busca
+          el abogado del cliente antes de firmar nada. */}
+      <div className="mt-12 border-t border-steel-200 pt-6">
+        <h2 className="uppercase-heading text-xs text-steel-600">
+          {t('marketing.company.registeredOfficeHeading')}
+        </h2>
+        <div className="mt-3">
+          <AddressBlock />
+        </div>
       </div>
     </div>
   )

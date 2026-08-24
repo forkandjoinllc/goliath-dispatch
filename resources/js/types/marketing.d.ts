@@ -33,3 +33,15 @@ export interface MarketingPageProps {
   alternate: MarketingAlternate
   year: number
 }
+
+export interface CompanyContact {
+  legalName: string | null
+  line1: string | null
+  line2: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  country: string | null
+  phone: string | null
+  email: string | null
+}

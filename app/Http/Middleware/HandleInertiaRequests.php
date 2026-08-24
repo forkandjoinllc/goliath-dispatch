@@ -6,8 +6,10 @@ namespace App\Http\Middleware;
 
 use App\Enums\Locale;
 use App\Support\AppShell;
+use App\Support\Company;
 use App\Support\Dictionary;
 use App\Support\Locales;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -60,6 +62,15 @@ class HandleInertiaRequests extends Middleware
             // armazón envuelve todas las páginas: si dependiera del controlador,
             // un olvido produciría una página sin menú y sin error.
             'shell' => fn (): ?array => app(AppShell::class)->payload(),
+
+            // Los datos de contacto que toca enseñar bajo ESTE dominio: los de
+            // la empresa cliente si el sitio va bajo el suyo, los de la
+            // plataforma si no. Se comparte aquí y no en cada controlador
+            // porque lo pinta el PIE, que envuelve todas las páginas públicas.
+            //
+            // Cierre: solo se consulta la base de datos si la página lo
+            // serializa, y en el sitio de la plataforma ni eso.
+            'company' => fn (): ?array => Company::forSite(app(TenantContext::class)->id()),
 
             // Un único mensaje efímero. No se pasa la bolsa de sesión completa:
             // acabaría filtrando lo que otra petición dejó ahí.

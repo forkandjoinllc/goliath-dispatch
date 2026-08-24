@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react'
+import { AddressBlock } from '@/components/Marketing/AddressBlock'
 import { useI18n } from '@/lib/i18n'
 import type { MarketingNav } from '@/types/marketing'
 
@@ -42,6 +43,18 @@ export function Footer({ nav, year }: { nav: MarketingNav; year: number }) {
               className="h-9 w-auto"
             />
             <p className="mt-4 max-w-xs text-sm text-steel-100">{t('marketing.footer.tagline')}</p>
+
+            {/* El domicilio va bajo el logo porque es donde lo busca quien lo
+                busca: un cliente comprobando con quién está tratando, o una
+                gestoría buscando a quién dirigir un papel. */}
+            <div className="mt-6">
+              <h2 className="uppercase-heading text-xs text-steel-300">
+                {t('marketing.company.officeHeading')}
+              </h2>
+              <div className="mt-2">
+                <AddressBlock tone="dark" />
+              </div>
+            </div>
           </div>
 
           <LinkColumn heading={t('marketing.footer.productHeading')} links={nav.footerProduct} />

@@ -1,4 +1,5 @@
 import { MarketingLayout } from '@/layouts/MarketingLayout'
+import { AddressBlock } from '@/components/Marketing/AddressBlock'
 import { LeadForm } from '@/components/Marketing/LeadForm'
 import { PageHero } from '@/components/Marketing/PageHero'
 import { Section } from '@/components/Marketing/Section'
@@ -28,23 +29,19 @@ export default function Contact({ formToken, ...props }: MarketingPageProps & { 
               <h2 className="uppercase-heading text-xs text-steel-600">
                 {t('marketing.contact.hoursHeading')}
               </h2>
-              {/* Los horarios y la dirección salen de tenant_settings cuando el
-                  sitio se sirve bajo el dominio de una empresa. En el sitio de
-                  la plataforma no hay ninguno que mostrar, y se dice en vez de
-                  inventar una dirección. */}
-              <p className="mt-3 text-sm text-steel-700">{t('marketing.contact.mapPlaceholderLabel')}</p>
+              {/* El horario sale de tenant_settings cuando el sitio se sirve
+                  bajo el dominio de una empresa. La plataforma todavía no
+                  publica ninguno, y se dice en vez de inventarlo. El domicilio
+                  sí está: lo resuelve App\Support\Company. */}
+              <p className="mt-3 text-sm text-steel-700">{t('marketing.company.hoursNotPublished')}</p>
             </div>
 
             <div>
               <h2 className="uppercase-heading text-xs text-steel-600">
                 {t('marketing.contact.addressHeading')}
               </h2>
-              <div
-                className="mt-3 flex h-40 items-center justify-center rounded border border-dashed border-steel-300 text-center text-xs text-steel-600"
-                role="img"
-                aria-label={t('marketing.contact.mapPlaceholderAlt')}
-              >
-                {t('marketing.contact.mapPlaceholderLabel')}
+              <div className="mt-3">
+                <AddressBlock />
               </div>
             </div>
           </aside>
