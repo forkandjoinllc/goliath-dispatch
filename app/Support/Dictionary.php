@@ -31,16 +31,52 @@ final class Dictionary
         $wanted = array_values(array_unique([...self::ALWAYS, ...$namespaces]));
         sort($wanted);
 
-        $key = "dict:{$locale->value}:".implode(',', $wanted);
+        // La huella de los ficheros entra en la CLAVE. Sin ella, `rememberForever`
+        // hacía honor a su nombre: el diccionario cacheado en el primer
+        // despliegue sobrevivía a todos los siguientes, y una cadena nueva salía
+        // en la página como `marketing.company.hours247` hasta que alguien se
+        // acordaba de limpiar la caché a mano. El despliegue cachea config, rutas,
+        // vistas y eventos, pero nunca tocó esta.
+        //
+        // Cuesta un `stat` por espacio de nombres —seis en una página de
+        // marketing, y el sistema operativo los tiene en memoria— a cambio de que
+        // nadie tenga que acordarse de nada.
+        $key = "dict:{$locale->value}:".implode(',', $wanted).':'.self::fingerprint($locale, $wanted);
 
-        // En producción el diccionario no cambia entre despliegues, así que se
-        // cachea. En local no, para no tener que limpiar la caché cada vez que se
-        // toca una cadena.
+        // En producción se cachea; en local no, para no limpiar nada al tocar una
+        // cadena.
         $load = fn (): array => self::load($locale, $wanted);
 
         return app()->isProduction()
             ? Cache::rememberForever($key, $load)
             : $load();
+    }
+
+    /**
+     * La huella de los ficheros que componen este diccionario.
+     *
+     * La fecha de modificación de cada uno, resumida. Cambia una cadena y cambia
+     * la clave, así que la entrada vieja deja de consultarse sola — y la nueva
+     * se calcula en la primera petición que la pida.
+     *
+     * Las entradas huérfanas caducan por su cuenta cuando el almacén de caché
+     * las expulsa. No se borran a mano: `rememberForever` sobre una clave que ya
+     * nadie pregunta no hace daño, y buscarlas para borrarlas costaría más que
+     * dejarlas.
+     *
+     * @param  list<string>  $namespaces
+     */
+    private static function fingerprint(Locale $locale, array $namespaces): string
+    {
+        $stamps = [];
+
+        foreach ($namespaces as $namespace) {
+            $path = lang_path("{$locale->value}/{$namespace}.json");
+
+            $stamps[] = is_file($path) ? (string) filemtime($path) : '0';
+        }
+
+        return substr(md5(implode('|', $stamps)), 0, 12);
     }
 
     /**
