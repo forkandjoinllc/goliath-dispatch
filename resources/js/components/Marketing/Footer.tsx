@@ -44,22 +44,26 @@ export function Footer({ nav, year }: { nav: MarketingNav; year: number }) {
             />
             <p className="mt-4 max-w-xs text-sm text-steel-100">{t('marketing.footer.tagline')}</p>
 
-            {/* El domicilio va bajo el logo porque es donde lo busca quien lo
-                busca: un cliente comprobando con quién está tratando, o una
-                gestoría buscando a quién dirigir un papel. */}
+            {/* Los enlaces legales van bajo el logo y el domicilio al final de la
+                fila. El intercambio es deliberado: quien busca la dirección la
+                busca de arriba abajo por la derecha, donde ya mira para el
+                copyright, y quien busca la privacidad la asocia a la marca. */}
             <div className="mt-6">
-              <h2 className="uppercase-heading text-xs text-steel-300">
-                {t('marketing.company.officeHeading')}
-              </h2>
-              <div className="mt-2">
-                <AddressBlock tone="dark" />
-              </div>
+              <LinkColumn heading={t('marketing.footer.legalHeading')} links={nav.footerLegal} />
             </div>
           </div>
 
           <LinkColumn heading={t('marketing.footer.productHeading')} links={nav.footerProduct} />
           <LinkColumn heading={t('marketing.footer.companyHeading')} links={nav.footerCompany} />
-          <LinkColumn heading={t('marketing.footer.legalHeading')} links={nav.footerLegal} />
+
+          <div>
+            <h2 className="uppercase-heading text-xs text-steel-300">
+              {t('marketing.company.officeHeading')}
+            </h2>
+            <div className="mt-4">
+              <AddressBlock tone="dark" />
+            </div>
+          </div>
         </div>
 
         <div className="mt-10 border-t border-navy-600 pt-6">
