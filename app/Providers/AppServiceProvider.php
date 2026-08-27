@@ -6,8 +6,12 @@ namespace App\Providers;
 
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Services\Fmcsa\DirectoryFmcsaVerifier;
+use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
+use App\Services\Fmcsa\MockFmcsaDirectory;
 use App\Services\Fmcsa\MockFmcsaVerifier;
+use App\Services\Fmcsa\QcMobileDirectory;
 use App\Support\Database\MillisecondGrammar;
 use App\Support\TenantContext;
 use App\Translation\BraceTranslator;
@@ -15,6 +19,7 @@ use App\Support\Storage\DocumentStore;
 use App\Support\Storage\LocalDocumentStore;
 use App\Translation\JsonNamespaceLoader;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
@@ -68,10 +73,34 @@ class AppServiceProvider extends ServiceProvider
         // posible en un sistema multiempresa.
         $this->app->scoped(CurrentActor::class);
 
-        // Sin credenciales de FMCSA se ata el adaptador simulado, que se
-        // identifica como tal en cada fila que escribe. El día que haya
-        // credenciales se ata aquí el real y no cambia nada más.
-        $this->app->bind(FmcsaVerifier::class, MockFmcsaVerifier::class);
+        // Sin credenciales de FMCSA se atan los adaptadores simulados, que se
+        // identifican como tales en cada fila que escriben y en la pantalla. En
+        // cuanto hay `FMCSA_WEBKEY` en el entorno se atan los reales, y no
+        // cambia una línea de los controladores.
+        //
+        // La clave se lee de la configuración y no se pasa a ningún otro sitio:
+        // ni al cliente, ni a un log, ni a la fila de verificación.
+        $this->app->singleton(FmcsaDirectory::class, function ($app): FmcsaDirectory {
+            $clave = (string) config('services.fmcsa.web_key', '');
+
+            if (trim($clave) === '') {
+                return new MockFmcsaDirectory;
+            }
+
+            return new QcMobileDirectory(
+                $app->make(HttpFactory::class),
+                $clave,
+                (string) config('services.fmcsa.base_url', 'https://mobile.fmcsa.dot.gov/qc/services'),
+            );
+        });
+
+        $this->app->bind(FmcsaVerifier::class, function ($app): FmcsaVerifier {
+            $directory = $app->make(FmcsaDirectory::class);
+
+            return $directory->isLive()
+                ? new DirectoryFmcsaVerifier($directory)
+                : new MockFmcsaVerifier;
+        });
     }
 
     public function boot(): void

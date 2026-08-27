@@ -28,6 +28,19 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+    | FMCSA — QCMobile.
+    |
+    | Sin `FMCSA_WEBKEY` la aplicación ata el adaptador simulado y lo dice en
+    | pantalla y en cada fila que escribe. La clave entra por el `.env` DEL
+    | SERVIDOR: no se versiona, no se pega en un chat y no se registra en los
+    | logs. Se pide en https://mobile.fmcsa.dot.gov/QCDevsite/
+    */
+    'fmcsa' => [
+        'web_key' => env('FMCSA_WEBKEY'),
+        'base_url' => env('FMCSA_BASE_URL', 'https://mobile.fmcsa.dot.gov/qc/services'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

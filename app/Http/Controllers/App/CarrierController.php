@@ -13,6 +13,8 @@ use App\Enums\Locale;
 use App\Enums\OnboardingStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Carrier;
+use App\Services\Fmcsa\FmcsaDirectory;
+use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -168,22 +171,188 @@ final class CarrierController
         ]);
     }
 
-    public function create(Request $request, CurrentActor $current, PermissionChecker $checker): Response
-    {
+    /**
+     * El alta empieza por el número, no por el nombre.
+     *
+     * Un transportista ya EXISTE en el registro federal antes de existir aquí.
+     * Pedir primero el USDOT y traerse la ficha evita las tres cosas que
+     * estropean un alta escrita a mano: el nombre legal que no es el legal, la
+     * dirección vieja, y —la peor— dar de alta por segunda vez a alguien que ya
+     * estaba, con el nombre escrito de otra manera.
+     *
+     * La consulta viaja en el GET y no en un POST aparte para que la pantalla
+     * sea una sola: `?dot=` recarga esta misma ruta con la ficha dentro. Así
+     * volver atrás en el navegador funciona, y el enlace es compartible.
+     */
+    public function create(
+        Request $request,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        FmcsaDirectory $directory,
+    ): Response {
         $actor = $current->require();
         $checker->authorize($actor, 'carrier:create', null, $current->policy());
 
         $this->usesDictionary($request, ['carriers', 'nav', 'validation']);
 
+        $dot = trim((string) $request->query('dot', ''));
+        $mc = trim((string) $request->query('mc', ''));
+
         return Inertia::render('App/Carriers/Form', [
             'carrier' => null,
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', null, $current->policy())->allowed,
             'factoringCompanies' => $this->factoringOptions($actor),
+            'lookup' => $this->lookup($actor, $directory, $dot, $mc),
         ]);
     }
 
-    public function store(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    /**
+     * Deja constancia de lo que el registro federal decía el día del alta.
+     *
+     * Solo cuando la consulta fue REAL. Con el adaptador simulado no se escribe
+     * nada: una fila `verified` fabricada por un simulacro, puesta ahí sola sin
+     * que nadie la pidiera, es exactamente la clase de dato que dentro de un año
+     * alguien lee como si significara algo.
+     *
+     * Y aun siendo real, esto NO aprueba a nadie. El transportista nace en
+     * borrador; lo que esto guarda es la foto del registro, para que la revisión
+     * de incorporación empiece con algo delante en vez de en blanco.
+     */
+    private function recordFmcsaSnapshot(
+        Carrier $carrier,
+        FmcsaDirectory $directory,
+        FmcsaVerifier $verifier,
+    ): void {
+        if (! $directory->isLive()) {
+            return;
+        }
+
+        $resultado = $verifier->verify(
+            (string) $carrier->dot_number,
+            $carrier->mc_number === null ? null : (string) $carrier->mc_number,
+            (string) $carrier->legal_name,
+        );
+
+        $ahora = now();
+
+        DB::table('fmcsa_verifications')->insert([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'tenant_id' => $carrier->tenant_id,
+            'carrier_id' => $carrier->id,
+            'provider' => $verifier->name(),
+            'dot_number' => $carrier->dot_number,
+            'mc_number' => $carrier->mc_number,
+            'status' => $resultado->status->value,
+            'normalized' => json_encode($resultado->normalized),
+            // Solo el digest, nunca el cuerpo entero: la respuesta cruda trae
+            // direcciones y nombres, y esta tabla se conserva años.
+            'raw_payload_digest' => $resultado->rawDigest,
+            'attempt' => 1,
+            'error_message' => $resultado->errorMessage,
+            'created_at' => $ahora,
+            'updated_at' => $ahora,
+        ]);
+
+        DB::table('carriers')->where('id', $carrier->id)->update([
+            'fmcsa_status' => $resultado->status->value,
+            'fmcsa_last_verified_at' => $ahora,
+            'fmcsa_next_verification_at' => $resultado->status === VerificationStatus::Verified
+                ? $ahora->copy()->addYear()
+                : null,
+            'updated_at' => $ahora,
+        ]);
+    }
+
+    /**
+     * Consulta el registro y prepara lo que la pantalla necesita saber.
+     *
+     * Devuelve `null` cuando no se pidió nada: el formulario arranca en el paso
+     * uno, con el campo del número y nada más.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function lookup(Actor $actor, FmcsaDirectory $directory, string $dot, string $mc): ?array
     {
+        if ($dot === '' && $mc === '') {
+            return [
+                'status' => 'idle',
+                'live' => $directory->isLive(),
+                'provider' => $directory->name(),
+                'carrier' => null,
+                'existing' => null,
+                'message' => null,
+            ];
+        }
+
+        // Un tope por usuario. FMCSA es un servicio público y gratuito: pegarle
+        // sin freno desde un formulario es la forma más rápida de que dejen de
+        // contestarnos. Treinta consultas por minuto son de sobra para un alta
+        // y poco para un bucle.
+        $llave = 'fmcsa-lookup:'.($actor->userId ?? 'anon');
+
+        if (RateLimiter::tooManyAttempts($llave, 30)) {
+            return [
+                'status' => 'throttled',
+                'live' => $directory->isLive(),
+                'provider' => $directory->name(),
+                'carrier' => null,
+                'existing' => null,
+                'message' => null,
+                'retryAfter' => RateLimiter::availableIn($llave),
+            ];
+        }
+
+        RateLimiter::hit($llave, 60);
+
+        $resultado = $dot !== '' ? $directory->byDot($dot) : $directory->byDocket($mc);
+
+        $ficha = $resultado->carrier;
+
+        return [
+            'status' => $resultado->status->value,
+            'live' => $resultado->live,
+            'provider' => $resultado->provider,
+            'carrier' => $ficha?->toForm(),
+            // Lo más útil que puede devolver esta consulta no es la ficha: es
+            // «este ya lo tienes». Un transportista duplicado ensucia las
+            // liquidaciones durante meses.
+            //
+            // Se busca por lo que se ESCRIBIÓ, no por lo que devolvió el
+            // registro: si FMCSA no contesta, el duplicado sigue siendo un
+            // duplicado y hay que avisarlo igual.
+            'existing' => $this->existingByDot($actor, $ficha?->dotNumber ?? $dot),
+            'message' => $resultado->message,
+        ];
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    private function existingByDot(Actor $actor, string $dot): ?array
+    {
+        if (trim($dot) === '') {
+            return null;
+        }
+
+        $fila = DB::table('carriers')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('dot_number', $dot)
+            ->whereNull('deleted_at')
+            ->first(['id', 'legal_name']);
+
+        return $fila === null ? null : [
+            'id' => (string) $fila->id,
+            'legalName' => (string) $fila->legal_name,
+        ];
+    }
+
+    public function store(
+        Request $request,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        FmcsaDirectory $directory,
+        FmcsaVerifier $verifier,
+    ): RedirectResponse {
         $actor = $current->require();
         $policy = $current->policy();
         $checker->authorize($actor, 'carrier:create', null, $policy);
@@ -225,6 +394,7 @@ final class CarrierController
         ]);
 
         $this->syncFactoring($actor, $carrier, $factoring);
+        $this->recordFmcsaSnapshot($carrier, $directory, $verifier);
 
         return redirect()
             ->route('carriers.show', $carrier->id)
