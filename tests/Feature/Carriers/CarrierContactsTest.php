@@ -28,8 +28,8 @@ function carrierPayload(array $overrides = []): array
         'dot_number' => '7412580',
         'preferred_locale' => 'es',
         'contacts' => [
-            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100'],
-            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'beto@cuatrovientos.test', 'phone' => '+15550101'],
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
+            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'beto@cuatrovientos.test', 'phone' => '+15550101', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
         ...$overrides,
     ];
@@ -67,8 +67,8 @@ it('valida el correo de cada contacto', function () {
 
     $this->post('/carriers', carrierPayload([
         'contacts' => [
-            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100'],
-            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'esto-no-es-un-correo', 'phone' => ''],
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
+            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'esto-no-es-un-correo', 'phone' => '', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
     ]))->assertSessionHasErrors('contacts.1.email');
 
@@ -82,7 +82,7 @@ it('el correo del principal es obligatorio', function () {
     // hay nada que copiar.
     $this->post('/carriers', carrierPayload([
         'contacts' => [
-            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => '', 'phone' => '+15550100'],
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => '', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
     ]))->assertSessionHasErrors('contacts.0.email');
 });
@@ -93,8 +93,8 @@ it('un contacto de más puede no tener correo', function () {
     // El de guardia a las tres de la mañana es un teléfono, no un buzón.
     $this->post('/carriers', carrierPayload([
         'contacts' => [
-            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100'],
-            ['first_name' => 'Noche', 'last_name' => 'Guardia', 'email' => '', 'phone' => '+15550199'],
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
+            ['first_name' => 'Noche', 'last_name' => 'Guardia', 'email' => '', 'phone' => '+15550199', 'position' => 'after_hours', 'preferred_locale' => 'es'],
         ],
     ]))->assertRedirect()->assertSessionHasNoErrors();
 });
@@ -108,7 +108,7 @@ it('quitar un contacto lo borra en suave', function () {
 
     $this->patch("/carriers/{$carrier->id}", carrierPayload([
         'contacts' => [
-            ['id' => $principal->id, 'first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100'],
+            ['id' => $principal->id, 'first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
     ]))->assertRedirect()->assertSessionHasNoErrors();
 
@@ -124,8 +124,8 @@ it('cambiar el orden cambia el principal y las columnas espejo', function () {
 
     $this->patch("/carriers/{$carrier->id}", carrierPayload([
         'contacts' => [
-            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'beto@cuatrovientos.test', 'phone' => '+15550101'],
-            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100'],
+            ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'beto@cuatrovientos.test', 'phone' => '+15550101', 'position' => 'owner', 'preferred_locale' => 'en'],
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
     ]))->assertRedirect()->assertSessionHasNoErrors();
 
@@ -213,4 +213,68 @@ it('el estado postal también tiene que ser de su país', function () {
         'mailing_country' => 'MX',
         'mailing_state' => 'FL',
     ]))->assertSessionHasErrors('mailing_state');
+});
+
+/* ── Cargo e idioma, por persona ────────────────────────────────────────── */
+
+it('guarda el cargo y el idioma de cada contacto', function () {
+    signIn($this->scenario, Role::Admin);
+
+    $this->post('/carriers', carrierPayload([
+        'contacts' => [
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
+            ['first_name' => 'Noche', 'last_name' => 'Guardia', 'email' => '', 'phone' => '+15550199', 'position' => 'after_hours', 'preferred_locale' => 'es'],
+        ],
+    ]))->assertRedirect()->assertSessionHasNoErrors();
+
+    $carrier = DB::table('carriers')->where('dot_number', '7412580')->first();
+
+    $guardia = DB::table('carrier_contacts')
+        ->where('carrier_id', $carrier->id)
+        ->where('last_name', 'Guardia')
+        ->first();
+
+    // El dueño puede llevar el negocio en inglés y el de guardia contestar solo
+    // en español. Mandarle a este último un aviso en inglés a las tres de la
+    // mañana es la manera más rápida de que no lo lea.
+    expect($guardia->position)->toBe('after_hours')
+        ->and($guardia->preferred_locale)->toBe('es');
+});
+
+it('el cargo es una lista cerrada', function () {
+    signIn($this->scenario, Role::Admin);
+
+    // Con texto libre acaban conviviendo «dispatch», «Despacho» y «OPS».
+    $this->post('/carriers', carrierPayload([
+        'contacts' => [
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'el que coge el telefono', 'preferred_locale' => 'en'],
+        ],
+    ]))->assertSessionHasErrors('contacts.0.position');
+});
+
+it('el idioma del principal manda sobre el que venga suelto', function () {
+    signIn($this->scenario, Role::Admin);
+
+    // El payload trae `preferred_locale => es` a nivel de empresa Y un contacto
+    // principal en inglés. Gana el contacto: un solo control. Dos —uno de
+    // empresa y otro por persona— garantizaban que un día dijeran cosas
+    // distintas y nadie supiera cuál manda.
+    $this->post('/carriers', carrierPayload([
+        'preferred_locale' => 'es',
+        'contacts' => [
+            ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
+        ],
+    ]))->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(DB::table('carriers')->where('dot_number', '7412580')->value('preferred_locale'))
+        ->toBe('en');
+});
+
+it('el formulario ofrece los cargos que el servidor admite', function () {
+    signIn($this->scenario, Role::Admin);
+
+    $this->get('/carriers/create')
+        ->assertOk()
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('contactPositions', App\Enums\CarrierContactPosition::values()));
 });

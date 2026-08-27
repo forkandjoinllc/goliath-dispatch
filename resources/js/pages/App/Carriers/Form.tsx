@@ -12,6 +12,8 @@ interface ContactRow {
   last_name: string
   email: string
   phone: string
+  position: string
+  preferred_locale: string
 }
 
 interface Address {
@@ -46,6 +48,8 @@ interface CarrierDetail {
     last_name: string
     email: string | null
     phone: string | null
+    position: string
+    preferred_locale: string
     isPrimary: boolean
   }[]
 }
@@ -87,6 +91,8 @@ interface Props {
   carrier: CarrierDetail | null
   canSetFee: boolean
   factoringCompanies: { id: string; name: string }[]
+  /** Los cargos que admite el servidor. La lista vive en PHP. */
+  contactPositions: string[]
   /** La factoring que ya tiene asignada, al editar. */
   factoringCompanyId?: string | null
   /** Solo en el alta. Al editar no se consulta nada. */
@@ -108,6 +114,7 @@ export default function CarrierForm({
   carrier,
   canSetFee,
   factoringCompanies,
+  contactPositions,
   factoringCompanyId = null,
   lookup = null,
 }: Props) {
@@ -140,6 +147,8 @@ export default function CarrierForm({
           last_name: c.last_name,
           email: c.email ?? '',
           phone: c.phone ?? '',
+          position: c.position,
+          preferred_locale: c.preferred_locale,
         }))
       : [
           {
@@ -148,6 +157,8 @@ export default function CarrierForm({
             last_name: '',
             email: '',
             phone: found?.phone ?? '',
+            position: 'owner',
+            preferred_locale: 'en',
           },
         ]
 
@@ -156,10 +167,10 @@ export default function CarrierForm({
     dba: carrier?.dba ?? found?.dba ?? '',
     dot_number: carrier?.dotNumber ?? found?.dotNumber ?? '',
     mc_number: carrier?.mcNumber ?? found?.mcNumber ?? '',
-    // Los cuatro campos sueltos de contacto ya no viven aquí: el servidor los
-    // rellena desde el primero de esta lista. Ver mirrorPrimaryContact().
+    // Los campos sueltos de contacto ya no viven aquí —tampoco el idioma—: el
+    // servidor los rellena desde el primero de esta lista. Ver
+    // mirrorPrimaryContact().
     contacts: contactosIniciales,
-    preferred_locale: carrier?.preferredLocale ?? 'en',
     physical_line1: carrier?.physical.line1 ?? found?.line1 ?? '',
     physical_line2: carrier?.physical.line2 ?? '',
     physical_city: carrier?.physical.city ?? found?.city ?? '',
@@ -198,7 +209,15 @@ export default function CarrierForm({
   const addContact = () => {
     form.setData('contacts', [
       ...form.data.contacts,
-      { id: null, first_name: '', last_name: '', email: '', phone: '' },
+      {
+        id: null,
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        position: 'dispatch',
+        preferred_locale: 'en',
+      },
     ])
   }
 
@@ -361,6 +380,34 @@ export default function CarrierForm({
                     onChange={(e) => patchContact(i, { phone: e.target.value })}
                     error={form.errors[`contacts.${i}.phone` as keyof typeof form.errors] as string | undefined}
                   />
+                  <SelectField
+                    label={t('carriers.form.position')}
+                    hint={t('carriers.form.positionHint')}
+                    required
+                    value={c.position}
+                    onChange={(e) => patchContact(i, { position: e.target.value })}
+                    options={contactPositions.map((p) => ({
+                      value: p,
+                      label: t(`carriers.positions.${p}`),
+                    }))}
+                    error={form.errors[`contacts.${i}.position` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <SelectField
+                    label={t('carriers.form.contactLocale')}
+                    /* Por persona, no por empresa: el dueño puede llevar el
+                       negocio en inglés y el de guardia contestar solo en
+                       español. El del primer contacto es además el idioma de la
+                       ficha del transportista. */
+                    hint={i === 0 ? t('carriers.form.contactLocalePrimaryHint') : t('carriers.form.contactLocaleHint')}
+                    required
+                    value={c.preferred_locale}
+                    onChange={(e) => patchContact(i, { preferred_locale: e.target.value })}
+                    options={[
+                      { value: 'en', label: 'English' },
+                      { value: 'es', label: 'Español' },
+                    ]}
+                    error={form.errors[`contacts.${i}.preferred_locale` as keyof typeof form.errors] as string | undefined}
+                  />
                 </div>
               </div>
             ))}
@@ -377,18 +424,6 @@ export default function CarrierForm({
             </div>
           </div>
 
-          <SelectField
-            label={t('carriers.form.preferredLocale')}
-            hint={t('carriers.form.preferredLocaleHint')}
-            required
-            value={form.data.preferred_locale}
-            onChange={(e) => form.setData('preferred_locale', e.target.value)}
-            options={[
-              { value: 'en', label: 'English' },
-              { value: 'es', label: 'Español' },
-            ]}
-            error={form.errors.preferred_locale}
-          />
         </Section>
 
         <Section title={t('carriers.form.address')}>

@@ -189,7 +189,12 @@
     "contactsHint": "The first one is the primary: its name, email and phone are the ones shown on the carrier record and used for onboarding email.",
     "mailingAddress": "Mailing address",
     "mailingSame": "Same as physical address",
-    "mcNumberHint": "FMCSA does not publish an MC number for every carrier. Leave it blank if there is none."
+    "mcNumberHint": "FMCSA does not publish an MC number for every carrier. Leave it blank if there is none.",
+    "position": "Role",
+    "positionHint": "What to call this person about.",
+    "contactLocale": "Preferred language",
+    "contactLocaleHint": "What this person is written to in.",
+    "contactLocalePrimaryHint": "Also the carrier's language on their record and in onboarding email."
   },
   "flash": {
     "created": "{name} was added. It starts in draft — submit the onboarding when the documents are in.",
@@ -198,5 +203,16 @@
   },
   "errors": {
     "factoringNotFound": "That factoring company does not exist in this company."
+  },
+  "positions": {
+    "owner": "Owner",
+    "dispatch": "Dispatch",
+    "safety": "Safety",
+    "compliance": "Compliance / paperwork",
+    "billing": "Billing",
+    "driver_manager": "Driver manager",
+    "maintenance": "Maintenance",
+    "after_hours": "After hours",
+    "other": "Other"
   }
 }

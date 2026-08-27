@@ -9,6 +9,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
+use App\Enums\CarrierContactPosition;
 use App\Enums\Locale;
 use App\Enums\OnboardingStatus;
 use App\Enums\VerificationStatus;
@@ -204,6 +205,7 @@ final class CarrierController
             'carrier' => null,
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', null, $current->policy())->allowed,
             'factoringCompanies' => $this->factoringOptions($actor),
+            'contactPositions' => CarrierContactPosition::values(),
             'lookup' => $this->lookup($actor, $directory, $dot, $mc),
         ]);
     }
@@ -428,6 +430,7 @@ final class CarrierController
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', $this->context($model), $current->policy())->allowed,
             'factoringCompanies' => $this->factoringOptions($actor),
             'factoringCompanyId' => $this->currentFactoring($actor, (string) $model->id),
+            'contactPositions' => CarrierContactPosition::values(),
         ]);
     }
 
@@ -793,6 +796,12 @@ final class CarrierController
             'contacts.0.email' => ['required', 'email:rfc', 'max:255'],
             'contacts.*.email' => ['nullable', 'email:rfc', 'max:255'],
             'contacts.*.phone' => ['nullable', 'string', 'max:32'],
+            // El cargo responde «¿a quién llamo para esto?». Lista cerrada:
+            // con texto libre acaban conviviendo «dispatch», «Despacho» y «OPS».
+            'contacts.*.position' => ['required', Rule::in(CarrierContactPosition::values())],
+            // El idioma es POR PERSONA. El dueño puede llevar el negocio en
+            // inglés y el de guardia contestar solo en español.
+            'contacts.*.preferred_locale' => ['required', Rule::in(Locales::all())],
 
             'website' => ['nullable', 'url', 'max:255'],
             'preferred_locale' => ['required', Rule::in(Locales::all())],
@@ -849,12 +858,22 @@ final class CarrierController
             return;
         }
 
-        $request->merge([
+        $merge = [
             'contact_first_name' => $principal['first_name'] ?? null,
             'contact_last_name' => $principal['last_name'] ?? null,
             'email' => $principal['email'] ?? null,
             'phone' => $principal['phone'] ?? null,
-        ]);
+        ];
+
+        // `carriers.preferred_locale` pasa a ser el espejo del idioma del
+        // principal. Tener dos controles —uno de empresa y otro por persona—
+        // garantizaba que un día dijeran cosas distintas y nadie supiera cuál
+        // manda.
+        if (isset($principal['preferred_locale'])) {
+            $merge['preferred_locale'] = $principal['preferred_locale'];
+        }
+
+        $request->merge($merge);
     }
 
     /**
@@ -912,6 +931,8 @@ final class CarrierController
                 'last_name' => trim((string) ($contacto['last_name'] ?? '')),
                 'email' => $contacto['email'] ?? null,
                 'phone' => $contacto['phone'] ?? null,
+                'position' => $contacto['position'] ?? CarrierContactPosition::Other->value,
+                'preferred_locale' => $contacto['preferred_locale'] ?? 'en',
                 'is_primary' => $indice === 0,
                 'updated_at' => $ahora,
             ];
@@ -969,6 +990,8 @@ final class CarrierController
             'last_name' => (string) $carrier->contact_last_name,
             'email' => $carrier->email,
             'phone' => $carrier->phone,
+            'position' => CarrierContactPosition::Other->value,
+            'preferred_locale' => (string) $carrier->preferred_locale,
         ];
     }
 
@@ -986,13 +1009,15 @@ final class CarrierController
             ->orderByDesc('is_primary')
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'is_primary'])
+            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'position', 'preferred_locale', 'is_primary'])
             ->map(fn ($c): array => [
                 'id' => (string) $c->id,
                 'first_name' => (string) $c->first_name,
                 'last_name' => (string) $c->last_name,
                 'email' => $c->email,
                 'phone' => $c->phone,
+                'position' => (string) $c->position,
+                'preferred_locale' => (string) $c->preferred_locale,
                 'isPrimary' => (bool) $c->is_primary,
             ])
             ->all();

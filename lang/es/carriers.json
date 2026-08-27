@@ -189,7 +189,12 @@
     "contactsHint": "El primero es el principal: su nombre, correo y teléfono son los que salen en la ficha del transportista y los que se usan para el correo de incorporación.",
     "mailingAddress": "Dirección postal",
     "mailingSame": "Igual que la dirección física",
-    "mcNumberHint": "FMCSA no publica número MC de todos los transportistas. Déjelo en blanco si no lo tiene."
+    "mcNumberHint": "FMCSA no publica número MC de todos los transportistas. Déjelo en blanco si no lo tiene.",
+    "position": "Cargo",
+    "positionHint": "Para qué se llama a esta persona.",
+    "contactLocale": "Idioma preferido",
+    "contactLocaleHint": "El idioma en el que se le escribe a esta persona.",
+    "contactLocalePrimaryHint": "También el idioma del transportista en su ficha y en el correo de incorporación."
   },
   "flash": {
     "created": "Se agregó {name}. Queda en borrador: envíe la incorporación cuando estén los documentos.",
@@ -198,5 +203,16 @@
   },
   "errors": {
     "factoringNotFound": "Esa empresa de factoring no existe en esta empresa."
+  },
+  "positions": {
+    "owner": "Dueño",
+    "dispatch": "Despacho",
+    "safety": "Seguridad",
+    "compliance": "Cumplimiento y papeles",
+    "billing": "Facturación",
+    "driver_manager": "Jefe de conductores",
+    "maintenance": "Taller",
+    "after_hours": "Fuera de horario",
+    "other": "Otro"
   }
 }
