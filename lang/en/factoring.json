@@ -1,0 +1,91 @@
+{
+  "index": {
+    "title": "Factoring",
+    "subtitle": "Who advances money to your carriers, and who to call there.",
+    "new": "Add a factoring company",
+    "empty": "No factoring companies yet",
+    "emptyHint": "Add one and it becomes selectable on any carrier that uses factoring.",
+    "noResults": "Nothing matches these filters",
+    "noResultsHint": "Clear the filters to see everything.",
+    "searchLabel": "Search factoring companies",
+    "searchPlaceholder": "Company name or website",
+    "showing": "Showing {from}–{to} of {total}",
+    "note": "This is a directory. The platform does not connect to any factoring API and moves no money here."
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "columns": {
+    "name": "Company",
+    "website": "Website",
+    "location": "Location",
+    "contacts": "Contacts",
+    "carriers": "Carriers",
+    "status": "Status"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "form": {
+    "createTitle": "Add a factoring company",
+    "editTitle": "Edit factoring company",
+    "companyHeading": "Company",
+    "addressHeading": "Address",
+    "contactsHeading": "Contacts",
+    "contactsHint": "Who to call, and for what. The position is what saves someone from ringing collections about a notice of assignment.",
+    "name": "Company name",
+    "website": "Website",
+    "addressLine1": "Address",
+    "addressCity": "City",
+    "addressState": "State",
+    "addressPostalCode": "ZIP",
+    "fundingInstructions": "Funding instructions",
+    "active": "Active",
+    "activeHint": "Inactive companies stay on the carriers already using them, but stop appearing in the dropdown.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "position": "Position",
+    "notes": "Notes",
+    "addContact": "Add a contact",
+    "removeContact": "Remove",
+    "noContacts": "No contacts yet.",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "positions": {
+    "account_manager": "Account manager",
+    "funding": "Funding",
+    "noa": "Notices of assignment",
+    "collections": "Collections",
+    "billing": "Billing",
+    "underwriting": "Underwriting",
+    "operations": "Operations",
+    "owner": "Owner",
+    "other": "Other"
+  },
+  "detail": {
+    "contacts": "Contacts",
+    "carriers": "Carriers using this company",
+    "noCarriers": "No carrier is assigned to this company.",
+    "noContacts": "No contacts on file.",
+    "fundingInstructions": "Funding instructions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back to factoring",
+    "website": "Website",
+    "dot": "USDOT"
+  },
+  "errors": {
+    "inUse": "This company is assigned to a carrier, so it cannot be deleted. Mark it inactive instead — the assignment stays valid and it stops appearing in the dropdown."
+  },
+  "flash": {
+    "created": "{name} was added.",
+    "updated": "The factoring company was updated.",
+    "deleted": "The factoring company was deleted."
+  }
+}

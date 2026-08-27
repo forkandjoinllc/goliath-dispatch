@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Authorization\Actor;
 use App\Authorization\PermissionChecker;
+use App\Enums\Scope;
 
 /**
  * El menú de la aplicación, decidido en el SERVIDOR.
@@ -79,7 +80,21 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring'];
+
+    /**
+     * Entradas que solo tienen sentido con alcance de empresa.
+     *
+     * `factoring:read` también se le concede al rol transportista, con alcance
+     * Carrier, para que pueda ver SU asignación. El directorio de empresas de
+     * factoring, en cambio, es de la casa de despacho entera. Sin esta lista el
+     * menú le pondría al transportista un enlace que el controlador solo puede
+     * contestarle con un 403 — exactamente el enlace roto que esta clase existe
+     * para evitar.
+     *
+     * @var list<string>
+     */
+    private const TENANT_ONLY = ['factoring'];
 
     /**
      * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
@@ -94,6 +109,11 @@ final class Navigation
 
             foreach ($entries as [$route, $label, $permissions]) {
                 if (! $checker->canAny($actor, $permissions, $policy)) {
+                    continue;
+                }
+
+                if (in_array($route, self::TENANT_ONLY, true)
+                    && ! self::atTenantScope($actor, $checker, $permissions, $policy)) {
                     continue;
                 }
 
@@ -119,5 +139,29 @@ final class Navigation
         }
 
         return $groups;
+    }
+
+    /**
+     * Verdadero si alguno de los permisos se concede con alcance de empresa o
+     * más ancho.
+     *
+     * @param  list<string>  $permissions
+     * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
+     */
+    private static function atTenantScope(
+        Actor $actor,
+        PermissionChecker $checker,
+        array $permissions,
+        ?array $policy,
+    ): bool {
+        foreach ($permissions as $permission) {
+            $decision = $checker->can($actor, $permission, null, $policy);
+
+            if ($decision->allowed && $decision->scope?->atLeast(Scope::Tenant) === true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

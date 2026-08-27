@@ -30,6 +30,9 @@ interface CarrierDetail {
 interface Props {
   carrier: CarrierDetail | null
   canSetFee: boolean
+  factoringCompanies: { id: string; name: string }[]
+  /** La factoring que ya tiene asignada, al editar. */
+  factoringCompanyId?: string | null
 }
 
 /**
@@ -43,7 +46,12 @@ interface Props {
  * la defensa: el controlador descarta el campo aunque llegue en la petición. Es
  * cortesía, para que nadie escriba un número que va a desaparecer al guardar.
  */
-export default function CarrierForm({ carrier, canSetFee }: Props) {
+export default function CarrierForm({
+  carrier,
+  canSetFee,
+  factoringCompanies,
+  factoringCompanyId = null,
+}: Props) {
   const { t } = useI18n()
   const editing = carrier !== null
 
@@ -74,6 +82,7 @@ export default function CarrierForm({ carrier, canSetFee }: Props) {
     // correcto sin traducir nombres a mano.
     dispatch_fee_bps: carrier?.dispatchFeeBps ?? 1000,
     uses_factoring: carrier?.usesFactoring ?? false,
+    factoring_company_id: factoringCompanyId ?? '',
     notes: carrier?.notes ?? '',
   })
 
@@ -257,6 +266,40 @@ export default function CarrierForm({ carrier, canSetFee }: Props) {
               onChange={(e) => form.setData('uses_factoring', e.target.checked)}
             />
           </div>
+
+          {/* La lista aparece al marcar la casilla y no antes: un desplegable
+              vacío junto a una casilla sin marcar solo invita a preguntarse qué
+              hace ahí. Solo salen las ACTIVAS — una inactiva sigue valiendo para
+              quien ya la tiene, pero no debe poder elegirse de nuevo. */}
+          {form.data.uses_factoring ? (
+            <div className="sm:col-span-2">
+              <label className="block">
+                <span className="block text-xs font-medium uppercase tracking-wide text-steel-700">
+                  {t('carriers.form.factoringCompany')}
+                </span>
+                <select
+                  value={form.data.factoring_company_id}
+                  onChange={(e) => form.setData('factoring_company_id', e.target.value)}
+                  className="mt-1 w-full rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+                >
+                  <option value="">—</option>
+                  {factoringCompanies.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-xs text-steel-600">
+                  {t('carriers.form.factoringCompanyHint')}
+                </span>
+                {form.errors.factoring_company_id ? (
+                  <span className="mt-1 block text-xs text-danger-700">
+                    {form.errors.factoring_company_id}
+                  </span>
+                ) : null}
+              </label>
+            </div>
+          ) : null}
           <div className="sm:col-span-2">
             <TextArea
               label={t('carriers.form.notes')}

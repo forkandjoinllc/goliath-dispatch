@@ -22,6 +22,7 @@ final class FactoringCompany extends BaseModel
     protected $fillable = [
         'tenant_id',
         'name',
+        'website',
         'contact_name',
         'email',
         'phone',
@@ -44,6 +45,20 @@ final class FactoringCompany extends BaseModel
             'updated_at' => 'immutable_datetime',
             'deleted_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * Las personas concretas de esta empresa, con su cargo.
+     *
+     * Sustituye en la práctica a `contact_name`/`email`/`phone`, que solo
+     * admitían UNA persona. Esas columnas siguen ahí con lo que ya tuvieran:
+     * ver la migración 2026_08_25_100000.
+     *
+     * @return HasMany<FactoringCompanyContact, $this>
+     */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(FactoringCompanyContact::class, 'factoring_company_id');
     }
 
     /** @return HasMany<CarrierSettlement, $this> */

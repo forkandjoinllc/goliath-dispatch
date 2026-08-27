@@ -156,11 +156,16 @@
     "notesHint": "Visibles para su equipo. No se le muestran al transportista.",
     "save": "Guardar transportista",
     "saveChanges": "Guardar cambios",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "factoringCompany": "Empresa de factoring",
+    "factoringCompanyHint": "Aquí solo salen las activas. Se añaden desde Factoring."
   },
   "flash": {
     "created": "Se agregó {name}. Queda en borrador: envíe la incorporación cuando estén los documentos.",
     "updated": "Se actualizó {name}.",
     "deleted": "Se eliminó {name}."
+  },
+  "errors": {
+    "factoringNotFound": "Esa empresa de factoring no existe en esta empresa."
   }
 }

@@ -1,0 +1,91 @@
+{
+  "index": {
+    "title": "Factoring",
+    "subtitle": "Quién le adelanta el dinero a sus transportistas, y a quién llamar allí.",
+    "new": "Añadir empresa de factoring",
+    "empty": "Todavía no hay empresas de factoring",
+    "emptyHint": "Añada una y podrá elegirse en cualquier transportista que use factoring.",
+    "noResults": "Nada coincide con estos filtros",
+    "noResultsHint": "Limpie los filtros para verlo todo.",
+    "searchLabel": "Buscar empresas de factoring",
+    "searchPlaceholder": "Nombre de la empresa o sitio web",
+    "showing": "Mostrando {from}–{to} de {total}",
+    "note": "Esto es un directorio. La plataforma no se conecta a ninguna API de factoring ni mueve dinero por aquí."
+  },
+  "filters": {
+    "all": "Todas",
+    "active": "Activas",
+    "inactive": "Inactivas"
+  },
+  "columns": {
+    "name": "Empresa",
+    "website": "Sitio web",
+    "location": "Ubicación",
+    "contacts": "Contactos",
+    "carriers": "Transportistas",
+    "status": "Estado"
+  },
+  "status": {
+    "active": "Activa",
+    "inactive": "Inactiva"
+  },
+  "form": {
+    "createTitle": "Añadir empresa de factoring",
+    "editTitle": "Editar empresa de factoring",
+    "companyHeading": "Empresa",
+    "addressHeading": "Domicilio",
+    "contactsHeading": "Contactos",
+    "contactsHint": "A quién llamar, y para qué. El cargo es lo que evita que alguien llame a cobros para preguntar por una carta de cesión.",
+    "name": "Nombre de la empresa",
+    "website": "Sitio web",
+    "addressLine1": "Dirección",
+    "addressCity": "Ciudad",
+    "addressState": "Estado",
+    "addressPostalCode": "Código postal",
+    "fundingInstructions": "Instrucciones de financiación",
+    "active": "Activa",
+    "activeHint": "Las inactivas siguen en los transportistas que ya las usan, pero dejan de aparecer en el desplegable.",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "position": "Cargo",
+    "notes": "Notas",
+    "addContact": "Añadir contacto",
+    "removeContact": "Quitar",
+    "noContacts": "Todavía no hay contactos.",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "positions": {
+    "account_manager": "Gestor de la cuenta",
+    "funding": "Financiación",
+    "noa": "Cartas de cesión",
+    "collections": "Cobros",
+    "billing": "Facturación",
+    "underwriting": "Análisis de riesgo",
+    "operations": "Operaciones",
+    "owner": "Propietario",
+    "other": "Otro"
+  },
+  "detail": {
+    "contacts": "Contactos",
+    "carriers": "Transportistas que la usan",
+    "noCarriers": "Ningún transportista está asignado a esta empresa.",
+    "noContacts": "No hay contactos registrados.",
+    "fundingInstructions": "Instrucciones de financiación",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "back": "Volver a factoring",
+    "website": "Sitio web",
+    "dot": "USDOT"
+  },
+  "errors": {
+    "inUse": "Esta empresa está asignada a un transportista, así que no se puede eliminar. Márquela como inactiva: la asignación sigue siendo válida y deja de aparecer en el desplegable."
+  },
+  "flash": {
+    "created": "Se añadió {name}.",
+    "updated": "La empresa de factoring quedó actualizada.",
+    "deleted": "La empresa de factoring quedó eliminada."
+  }
+}

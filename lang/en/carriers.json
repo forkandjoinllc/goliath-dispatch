@@ -156,11 +156,16 @@
     "notesHint": "Visible to your team. Not shown to the carrier.",
     "save": "Save carrier",
     "saveChanges": "Save changes",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "factoringCompany": "Factoring company",
+    "factoringCompanyHint": "Only active companies appear here. Add one under Factoring."
   },
   "flash": {
     "created": "{name} was added. It starts in draft — submit the onboarding when the documents are in.",
     "updated": "{name} was updated.",
     "deleted": "{name} was deleted."
+  },
+  "errors": {
+    "factoringNotFound": "That factoring company does not exist in this company."
   }
 }

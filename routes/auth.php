@@ -9,6 +9,7 @@ use App\Http\Controllers\App\CustomerController;
 use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\EquipmentController;
+use App\Http\Controllers\App\FactoringController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
@@ -148,6 +149,23 @@ Route::middleware(['auth'])->group(function (): void {
     | firmada y temporal, y deja constancia de quién la pidió. El fichero vive
     | fuera de public/ y la ruta que lo sirve exige la firma.
     */
+    /*
+    | Factoring
+    |
+    | Un directorio, no una pasarela: la plataforma no habla con ninguna API de
+    | factoring ni mueve dinero por aquí. Sirve para saber a quién llamar y para
+    | qué, y qué transportistas trabajan con quién.
+    |
+    | `create` va antes de `{factoring}` por lo de siempre.
+    */
+    Route::get('factoring', [FactoringController::class, 'index'])->name('factoring.index');
+    Route::get('factoring/create', [FactoringController::class, 'create'])->name('factoring.create');
+    Route::post('factoring', [FactoringController::class, 'store'])->name('factoring.store');
+    Route::get('factoring/{factoring}', [FactoringController::class, 'show'])->name('factoring.show');
+    Route::get('factoring/{factoring}/edit', [FactoringController::class, 'edit'])->name('factoring.edit');
+    Route::patch('factoring/{factoring}', [FactoringController::class, 'update'])->name('factoring.update');
+    Route::delete('factoring/{factoring}', [FactoringController::class, 'destroy'])->name('factoring.destroy');
+
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');

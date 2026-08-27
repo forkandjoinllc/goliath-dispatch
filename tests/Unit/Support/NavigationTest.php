@@ -97,3 +97,17 @@ it('cada entrada declara si su pantalla existe', function () {
     // clavar una ruta concreta aquí caduca por diseño.
     expect($items->where('ready', false))->not->toBeEmpty();
 });
+
+it('el transportista no ve el directorio de factoring', function () {
+    // `factoring:read` SÍ se le concede al rol transportista, con alcance
+    // Carrier, para que pueda ver SU asignación. Lo que no debe pasar es que el
+    // menú le ponga un enlace al directorio de la casa de despacho: el
+    // controlador solo puede contestarle con un 403, y un enlace que no lleva a
+    // ningún sitio es peor que un enlace ausente.
+    expect(navHrefs(navFor(Role::Carrier)))->not->toContain('/factoring');
+});
+
+it('administración y contabilidad sí lo ven', function () {
+    expect(navHrefs(navFor(Role::Admin)))->toContain('/factoring')
+        ->and(navHrefs(navFor(Role::Accounting)))->toContain('/factoring');
+});

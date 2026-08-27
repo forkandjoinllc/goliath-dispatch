@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\App;
 
+use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
@@ -21,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -176,6 +178,7 @@ final class CarrierController
         return Inertia::render('App/Carriers/Form', [
             'carrier' => null,
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', null, $current->policy())->allowed,
+            'factoringCompanies' => $this->factoringOptions($actor),
         ]);
     }
 
@@ -186,6 +189,13 @@ final class CarrierController
         $checker->authorize($actor, 'carrier:create', null, $policy);
 
         $data = $this->validated($request, null);
+
+        // `factoring_company_id` no es una columna de `carriers`: la asignación
+        // vive en su propia tabla, con fechas y carta de cesión. Sale de $data
+        // ANTES del fill(), porque fuera de producción Eloquent está en modo
+        // estricto y un atributo no rellenable ahí es una excepción, no un
+        // silencio.
+        $factoring = $this->pullFactoring($data);
 
         // La tarifa de despacho es dinero y tiene permiso propio. Quien no lo
         // tenga no la fija ni enviándola en el formulario: se descarta aquí y se
@@ -214,6 +224,8 @@ final class CarrierController
             'updated_at' => now(),
         ]);
 
+        $this->syncFactoring($actor, $carrier, $factoring);
+
         return redirect()
             ->route('carriers.show', $carrier->id)
             ->with('success', __('carriers.flash.created', ['name' => $carrier->legal_name]));
@@ -234,6 +246,8 @@ final class CarrierController
         return Inertia::render('App/Carriers/Form', [
             'carrier' => $this->detail($model),
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', $this->context($model), $current->policy())->allowed,
+            'factoringCompanies' => $this->factoringOptions($actor),
+            'factoringCompanyId' => $this->currentFactoring($actor, (string) $model->id),
         ]);
     }
 
@@ -250,6 +264,13 @@ final class CarrierController
 
         $data = $this->validated($request, $model->id);
 
+        // `factoring_company_id` no es una columna de `carriers`: la asignación
+        // vive en su propia tabla, con fechas y carta de cesión. Sale de $data
+        // ANTES del fill(), porque fuera de producción Eloquent está en modo
+        // estricto y un atributo no rellenable ahí es una excepción, no un
+        // silencio.
+        $factoring = $this->pullFactoring($data);
+
         $feeBefore = (int) $model->dispatch_fee_bps;
         $feeRequested = $data['dispatch_fee_bps'] ?? $feeBefore;
         $mayChangeFee = $checker->can($actor, 'carrier:fee:update', $this->context($model), $policy)->allowed;
@@ -260,6 +281,8 @@ final class CarrierController
 
         $model->fill($data);
         $model->save();
+
+        $this->syncFactoring($actor, $model, $factoring);
 
         // Cambiar el porcentaje de despacho cambia lo que cobra la empresa en
         // cada carga futura de este transportista. Va a la pista de auditoría
@@ -567,8 +590,143 @@ final class CarrierController
             // formulario y no como una excepción de base de datos.
             'dispatch_fee_bps' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'uses_factoring' => ['boolean'],
+            'factoring_company_id' => ['nullable', 'string', 'size:36'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
     }
 
+    /**
+     * Saca del formulario lo que hace falta para la asignación de factoring.
+     *
+     * Devuelve `present: false` cuando el formulario no traía ninguno de los
+     * dos campos: eso es «no toques nada», que no es lo mismo que «desmarcado».
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{present: bool, uses: bool, id: string|null}
+     */
+    private function pullFactoring(array &$data): array
+    {
+        $present = array_key_exists('factoring_company_id', $data)
+            || array_key_exists('uses_factoring', $data);
+
+        $uses = (bool) ($data['uses_factoring'] ?? false);
+        $id = $data['factoring_company_id'] ?? null;
+        $id = ($id === null || $id === '') ? null : (string) $id;
+
+        unset($data['factoring_company_id']);
+
+        return ['present' => $present, 'uses' => $uses, 'id' => $id];
+    }
+
+    /**
+     * Ata —o suelta— la empresa de factoring del transportista.
+     *
+     * La asignación vive en `factoring_assignments` y no en una columna de
+     * `carriers` porque tiene vida propia: fechas de vigencia, la carta de
+     * cesión, el cambio de beneficiario y quién lo verificó. Un transportista
+     * cambia de factoring y las dos asignaciones tienen que poder convivir en el
+     * historial.
+     *
+     * Desmarcar la casilla no borra la fila: la cierra en suave. La carta de
+     * cesión que se firmó el mes pasado siguió existiendo.
+     *
+     * @param  array{present: bool, uses: bool, id: string|null}  $factoring
+     */
+    private function syncFactoring(Actor $actor, Carrier $carrier, array $factoring): void
+    {
+        if (! $factoring['present']) {
+            return;
+        }
+
+        $elegida = $factoring['uses'] ? $factoring['id'] : null;
+
+        $vigente = DB::table('factoring_assignments')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('carrier_id', $carrier->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('created_at')
+            ->first(['id', 'factoring_company_id']);
+
+        if ($elegida !== null) {
+            $existe = DB::table('factoring_companies')
+                ->where('tenant_id', $actor->tenantId)
+                ->where('id', $elegida)
+                ->whereNull('deleted_at')
+                ->exists();
+
+            // Un identificador de otra empresa cliente pasa la validación de
+            // formato: el scope global impide LEERLO, pero no impediría
+            // escribirlo aquí.
+            if (! $existe) {
+                throw ValidationException::withMessages([
+                    'factoring_company_id' => __('carriers.errors.factoringNotFound'),
+                ]);
+            }
+        }
+
+        if ($vigente !== null && (string) $vigente->factoring_company_id === (string) $elegida) {
+            return;
+        }
+
+        if ($vigente !== null) {
+            DB::table('factoring_assignments')->where('id', $vigente->id)->update([
+                'effective_to' => now(),
+                'deleted_at' => now(),
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        if ($elegida === null) {
+            return;
+        }
+
+        DB::table('factoring_assignments')->insert([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'tenant_id' => $actor->tenantId,
+            'carrier_id' => $carrier->id,
+            'factoring_company_id' => $elegida,
+            'verification_status' => 'not_started',
+            'effective_from' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Las empresas de factoring ACTIVAS, para el desplegable del formulario.
+     *
+     * Solo las activas: una empresa marcada inactiva sigue valiendo para los
+     * transportistas que ya la tienen —la carta de cesión no se anula porque
+     * nosotros cambiemos una casilla— pero no debe poder elegirse de nuevo.
+     *
+     * @return list<array<string, string>>
+     */
+    private function factoringOptions(Actor $actor): array
+    {
+        return DB::table('factoring_companies')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->where('active', true)
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'name'])
+            ->map(fn ($f): array => ['id' => (string) $f->id, 'name' => (string) $f->name])
+            ->all();
+    }
+
+    /**
+     * La factoring que este transportista tiene asignada ahora mismo, si alguna.
+     */
+    private function currentFactoring(Actor $actor, string $carrierId): ?string
+    {
+        $id = DB::table('factoring_assignments')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('carrier_id', $carrierId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('created_at')
+            ->value('factoring_company_id');
+
+        return $id === null ? null : (string) $id;
+    }
 }
