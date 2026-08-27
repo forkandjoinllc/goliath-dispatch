@@ -225,3 +225,55 @@ it('un fallo del proveedor no revienta el alta', function () {
     expect($resultado->status->value)->toBe('error')
         ->and($resultado->carrier)->toBeNull();
 });
+
+/* ── El número MC ───────────────────────────────────────────────────────── */
+
+it('trae el MC del endpoint de expedientes al buscar por USDOT', function () {
+    // QCMobile NO devuelve el número MC en la ficha del transportista: vive en
+    // `carriers/{dot}/docket-numbers`, porque una misma empresa puede tener
+    // varios expedientes. Sin esa segunda llamada el campo llegaba en blanco.
+    Http::fake([
+        '*/docket-numbers*' => Http::response([
+            'content' => [
+                ['docketNumber' => ['docketNumber' => 987654, 'prefix' => 'MC', 'status' => 'I']],
+                ['docketNumber' => ['docketNumber' => 445566, 'prefix' => 'MC', 'status' => 'A']],
+                ['docketNumber' => ['docketNumber' => 111222, 'prefix' => 'FF', 'status' => 'A']],
+            ],
+        ], 200),
+        '*' => Http::response([
+            'content' => ['carrier' => ['dotNumber' => 1234567, 'legalName' => 'RIO GRANDE TRUCKING LLC']],
+        ], 200),
+    ]);
+
+    $directorio = new QcMobileDirectory(
+        app(Illuminate\Http\Client\Factory::class),
+        'clave-de-prueba',
+        'https://ejemplo.test/qc/services',
+    );
+
+    // Se prefiere el expediente ACTIVO, y solo los de prefijo MC.
+    expect($directorio->byDot('1234567')->carrier->mcNumber)->toBe('445566');
+});
+
+it('sin expediente MC la ficha llega igual, con el campo vacío', function () {
+    Http::fake([
+        '*/docket-numbers*' => Http::response('', 500),
+        '*' => Http::response([
+            'content' => ['carrier' => ['dotNumber' => 7654321, 'legalName' => 'SIN MC LLC']],
+        ], 200),
+    ]);
+
+    $directorio = new QcMobileDirectory(
+        app(Illuminate\Http\Client\Factory::class),
+        'clave-de-prueba',
+        'https://ejemplo.test/qc/services',
+    );
+
+    $resultado = $directorio->byDot('7654321');
+
+    // Que falle la segunda llamada no puede tirar la primera, que es la que
+    // trae el nombre y la dirección.
+    expect($resultado->status->value)->toBe('found')
+        ->and($resultado->carrier->legalName)->toBe('SIN MC LLC')
+        ->and($resultado->carrier->mcNumber)->toBeNull();
+});

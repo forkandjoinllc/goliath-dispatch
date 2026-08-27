@@ -367,6 +367,7 @@ final class CarrierController
         // estricto y un atributo no rellenable ahí es una excepción, no un
         // silencio.
         $factoring = $this->pullFactoring($data);
+        $contacts = $this->pullContacts($data);
 
         // La tarifa de despacho es dinero y tiene permiso propio. Quien no lo
         // tenga no la fija ni enviándola en el formulario: se descarta aquí y se
@@ -396,6 +397,13 @@ final class CarrierController
         ]);
 
         $this->syncFactoring($actor, $carrier, $factoring);
+
+        // Un transportista siempre tiene al menos un contacto. Si el formulario
+        // no mandó la lista —una integración vieja, una prueba— se fabrica el
+        // principal a partir de las columnas, para que la ficha no se abra con
+        // una lista vacía al lado de un contacto que sí está en la cabecera.
+        $this->syncContacts($actor, $carrier, $contacts ?? [$this->primaryFromColumns($carrier)]);
+
         $this->recordFmcsaSnapshot($carrier, $directory, $verifier);
 
         return redirect()
@@ -442,6 +450,7 @@ final class CarrierController
         // estricto y un atributo no rellenable ahí es una excepción, no un
         // silencio.
         $factoring = $this->pullFactoring($data);
+        $contacts = $this->pullContacts($data);
 
         $feeBefore = (int) $model->dispatch_fee_bps;
         $feeRequested = $data['dispatch_fee_bps'] ?? $feeBefore;
@@ -455,6 +464,11 @@ final class CarrierController
         $model->save();
 
         $this->syncFactoring($actor, $model, $factoring);
+
+        // null es «no toques los contactos», que no es lo mismo que «bórralos».
+        if ($contacts !== null) {
+            $this->syncContacts($actor, $model, $contacts);
+        }
 
         // Cambiar el porcentaje de despacho cambia lo que cobra la empresa en
         // cada carga futura de este transportista. Va a la pista de auditoría
@@ -616,6 +630,16 @@ final class CarrierController
                 'postalCode' => $c->physical_postal_code,
                 'country' => $c->physical_country,
             ],
+            'mailingSameAsPhysical' => (bool) $c->mailing_same_as_physical,
+            'mailing' => [
+                'line1' => $c->mailing_line1,
+                'line2' => $c->mailing_line2,
+                'city' => $c->mailing_city,
+                'state' => $c->mailing_state,
+                'postalCode' => $c->mailing_postal_code,
+                'country' => $c->mailing_country,
+            ],
+            'contacts' => $this->contacts($c),
             'website' => $c->website,
             'usesFactoring' => (bool) $c->uses_factoring,
             'notes' => $c->notes,
@@ -731,6 +755,8 @@ final class CarrierController
      */
     private function validated(Request $request, ?string $ignoreId): array
     {
+        $this->mirrorPrimaryContact($request);
+
         return $request->validate([
             'legal_name' => ['required', 'string', 'max:200'],
             'dba' => ['nullable', 'string', 'max:200'],
@@ -746,10 +772,28 @@ final class CarrierController
                     ->ignore($ignoreId),
             ],
             'mc_number' => ['nullable', 'string', 'max:12', 'regex:/^[0-9]{1,12}$/'],
+            // Estas cuatro son el ESPEJO del contacto principal. Siguen siendo
+            // obligatorias porque las columnas lo son y medio sistema las lee;
+            // lo que ha cambiado es de dónde salen: si el formulario manda
+            // `contacts`, se rellenan solas desde el primero. Ver
+            // mirrorPrimaryContact().
             'contact_first_name' => ['required', 'string', 'max:100'],
             'contact_last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email:rfc', 'max:255'],
             'phone' => ['required', 'string', 'max:32'],
+
+            // La lista completa. El primero es el principal.
+            'contacts' => ['nullable', 'array', 'max:20'],
+            'contacts.*.id' => ['nullable', 'string', 'size:36'],
+            'contacts.*.first_name' => ['required', 'string', 'max:100'],
+            'contacts.*.last_name' => ['required', 'string', 'max:100'],
+            // El correo del principal es obligatorio porque la columna
+            // `carriers.email` lo es. Los demás pueden no tenerlo: el de
+            // guardia a las tres de la mañana es un teléfono, no un buzón.
+            'contacts.0.email' => ['required', 'email:rfc', 'max:255'],
+            'contacts.*.email' => ['nullable', 'email:rfc', 'max:255'],
+            'contacts.*.phone' => ['nullable', 'string', 'max:32'],
+
             'website' => ['nullable', 'url', 'max:255'],
             'preferred_locale' => ['required', Rule::in(Locales::all())],
             'physical_line1' => ['nullable', 'string', 'max:200'],
@@ -758,6 +802,18 @@ final class CarrierController
             'physical_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
             'physical_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('physical_country'))],
             'physical_postal_code' => ['nullable', 'string', 'max:12'],
+
+            // Dirección postal. La casilla viene marcada: lo normal es que sea
+            // la misma, y pedir dos veces la misma dirección es la forma más
+            // segura de que la segunda acabe desactualizada.
+            'mailing_same_as_physical' => ['boolean'],
+            'mailing_line1' => ['nullable', 'string', 'max:200'],
+            'mailing_line2' => ['nullable', 'string', 'max:200'],
+            'mailing_city' => ['nullable', 'string', 'max:120'],
+            'mailing_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'mailing_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('mailing_country'))],
+            'mailing_postal_code' => ['nullable', 'string', 'max:12'],
+
             // 0 a 10.000 puntos básicos = 0 % a 100 %. El mismo rango que impone
             // el CHECK de la columna, para que el error salga como mensaje de
             // formulario y no como una excepción de base de datos.
@@ -766,6 +822,180 @@ final class CarrierController
             'factoring_company_id' => ['nullable', 'string', 'size:36'],
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
+    }
+
+    /**
+     * Copia el primer contacto a las columnas `contact_*` de `carriers`.
+     *
+     * Se hace ANTES de validar, no después, para que un error en el nombre del
+     * contacto principal salga en el campo que el usuario está mirando —el de
+     * la lista— y no en una columna que la pantalla nueva ya no enseña.
+     *
+     * Si el formulario no manda `contacts` no se toca nada: las pruebas y
+     * cualquier integración que siga mandando los cuatro campos sueltos siguen
+     * funcionando igual.
+     */
+    private function mirrorPrimaryContact(Request $request): void
+    {
+        $contacts = $request->input('contacts');
+
+        if (! is_array($contacts) || $contacts === []) {
+            return;
+        }
+
+        $principal = $contacts[array_key_first($contacts)];
+
+        if (! is_array($principal)) {
+            return;
+        }
+
+        $request->merge([
+            'contact_first_name' => $principal['first_name'] ?? null,
+            'contact_last_name' => $principal['last_name'] ?? null,
+            'email' => $principal['email'] ?? null,
+            'phone' => $principal['phone'] ?? null,
+        ]);
+    }
+
+    /**
+     * Saca la lista de contactos de $data antes del fill().
+     *
+     * `contacts` no es una columna de `carriers`. Igual que
+     * `factoring_company_id`, si se queda dentro el modo estricto de Eloquent
+     * convierte el guardado en una excepción.
+     *
+     * Devuelve null cuando el formulario no mandó la lista: eso es «no toques
+     * los contactos», que no es lo mismo que «bórralos todos».
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>|null
+     */
+    private function pullContacts(array &$data): ?array
+    {
+        if (! array_key_exists('contacts', $data)) {
+            return null;
+        }
+
+        $contacts = $data['contacts'];
+        unset($data['contacts']);
+
+        return is_array($contacts) ? array_values($contacts) : [];
+    }
+
+    /**
+     * Deja los contactos como los mandó el formulario.
+     *
+     * Los que traen id se actualizan, los que no se crean, y los que ya no
+     * vienen se borran EN SUAVE: un contacto que aparece en el historial de una
+     * carga o en un correo de incorporación tiene que poder seguir nombrándose.
+     *
+     * El principal se marca primero como no-principal en todos y luego se pone
+     * en uno solo. El índice único de la base de datos no admite dos vivos, así
+     * que hacerlo al revés fallaría a mitad.
+     *
+     * @param  list<array<string, mixed>>  $contacts
+     */
+    private function syncContacts(Actor $actor, Carrier $carrier, array $contacts): void
+    {
+        $ahora = now();
+        $vistos = [];
+
+        DB::table('carrier_contacts')
+            ->where('tenant_id', $carrier->tenant_id)
+            ->where('carrier_id', $carrier->id)
+            ->whereNull('deleted_at')
+            ->update(['is_primary' => false, 'updated_at' => $ahora]);
+
+        foreach (array_values($contacts) as $indice => $contacto) {
+            $columnas = [
+                'first_name' => trim((string) ($contacto['first_name'] ?? '')),
+                'last_name' => trim((string) ($contacto['last_name'] ?? '')),
+                'email' => $contacto['email'] ?? null,
+                'phone' => $contacto['phone'] ?? null,
+                'is_primary' => $indice === 0,
+                'updated_at' => $ahora,
+            ];
+
+            $id = $contacto['id'] ?? null;
+
+            $existente = $id === null ? null : DB::table('carrier_contacts')
+                ->where('tenant_id', $carrier->tenant_id)
+                ->where('carrier_id', $carrier->id)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first(['id']);
+
+            if ($existente !== null) {
+                DB::table('carrier_contacts')->where('id', $existente->id)->update($columnas);
+                $vistos[] = (string) $existente->id;
+
+                continue;
+            }
+
+            $nuevo = (string) \Illuminate\Support\Str::uuid();
+
+            DB::table('carrier_contacts')->insert([
+                ...$columnas,
+                'id' => $nuevo,
+                'tenant_id' => $carrier->tenant_id,
+                'carrier_id' => $carrier->id,
+                'created_at' => $ahora,
+            ]);
+
+            $vistos[] = $nuevo;
+        }
+
+        DB::table('carrier_contacts')
+            ->where('tenant_id', $carrier->tenant_id)
+            ->where('carrier_id', $carrier->id)
+            ->whereNull('deleted_at')
+            ->when($vistos !== [], fn ($q) => $q->whereNotIn('id', $vistos))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => $ahora,
+            ]);
+    }
+
+    /**
+     * El contacto principal reconstruido desde las columnas de `carriers`.
+     *
+     * @return array<string, mixed>
+     */
+    private function primaryFromColumns(Carrier $carrier): array
+    {
+        return [
+            'first_name' => (string) $carrier->contact_first_name,
+            'last_name' => (string) $carrier->contact_last_name,
+            'email' => $carrier->email,
+            'phone' => $carrier->phone,
+        ];
+    }
+
+    /**
+     * Los contactos vivos de un transportista, el principal primero.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function contacts(Carrier $carrier): array
+    {
+        return DB::table('carrier_contacts')
+            ->where('tenant_id', $carrier->tenant_id)
+            ->where('carrier_id', $carrier->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('is_primary')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'is_primary'])
+            ->map(fn ($c): array => [
+                'id' => (string) $c->id,
+                'first_name' => (string) $c->first_name,
+                'last_name' => (string) $c->last_name,
+                'email' => $c->email,
+                'phone' => $c->phone,
+                'isPrimary' => (bool) $c->is_primary,
+            ])
+            ->all();
     }
 
     /**

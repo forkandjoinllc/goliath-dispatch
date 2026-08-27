@@ -181,7 +181,15 @@
     "registryNotAuthorized": "El registro dice que este transportista no está autorizado a operar. Esto no bloquea nada por sí solo: decídalo antes de despacharle una carga.",
     "registryLocked": "Estos campos vienen del registro y están bloqueados.",
     "registryUnlock": "Corregir a mano",
-    "registryUnlocked": "Está editando campos que vinieron del registro. Lo que guarde aquí no coincidirá con FMCSA."
+    "registryUnlocked": "Está editando campos que vinieron del registro. Lo que guarde aquí no coincidirá con FMCSA.",
+    "primaryContact": "Contacto principal",
+    "contactN": "Contacto {n}",
+    "addContact": "Añadir otro contacto",
+    "removeContact": "Quitar",
+    "contactsHint": "El primero es el principal: su nombre, correo y teléfono son los que salen en la ficha del transportista y los que se usan para el correo de incorporación.",
+    "mailingAddress": "Dirección postal",
+    "mailingSame": "Igual que la dirección física",
+    "mcNumberHint": "FMCSA no publica número MC de todos los transportistas. Déjelo en blanco si no lo tiene."
   },
   "flash": {
     "created": "Se agregó {name}. Queda en borrador: envíe la incorporación cuando estén los documentos.",

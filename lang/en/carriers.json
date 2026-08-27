@@ -181,7 +181,15 @@
     "registryNotAuthorized": "The register says this carrier is not allowed to operate. That is not a technical block — decide before you dispatch a load to them.",
     "registryLocked": "These fields come from the register and are locked.",
     "registryUnlock": "Correct by hand",
-    "registryUnlocked": "You are editing fields that came from the register. What you save here will not match FMCSA."
+    "registryUnlocked": "You are editing fields that came from the register. What you save here will not match FMCSA.",
+    "primaryContact": "Primary contact",
+    "contactN": "Contact {n}",
+    "addContact": "Add another contact",
+    "removeContact": "Remove",
+    "contactsHint": "The first one is the primary: its name, email and phone are the ones shown on the carrier record and used for onboarding email.",
+    "mailingAddress": "Mailing address",
+    "mailingSame": "Same as physical address",
+    "mcNumberHint": "FMCSA does not publish an MC number for every carrier. Leave it blank if there is none."
   },
   "flash": {
     "created": "{name} was added. It starts in draft — submit the onboarding when the documents are in.",

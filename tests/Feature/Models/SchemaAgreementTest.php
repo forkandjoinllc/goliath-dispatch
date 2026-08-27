@@ -38,13 +38,13 @@ function allModels(): array
     return $classes;
 }
 
-it('encuentra los 93 modelos esperados', function () {
+it('encuentra los 94 modelos esperados', function () {
     // 90 generados desde information_schema + User y Session escritos a mano,
     // que no encajan en las convenciones de BaseModel.
-    // 93 desde que existe FactoringCompanyContact. El número está a propósito:
-    // un modelo nuevo sin su tabla, o una tabla nueva sin su modelo, se nota
-    // aquí antes que en producción.
-    expect(allModels())->toHaveCount(93);
+    // 94 desde que existen FactoringCompanyContact y CarrierContact. El número
+    // está a propósito: un modelo nuevo sin su tabla, o una tabla nueva sin su
+    // modelo, se nota aquí antes que en producción.
+    expect(allModels())->toHaveCount(94);
 });
 
 it('la tabla de cada modelo existe', function () {

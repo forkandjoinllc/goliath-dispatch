@@ -6,6 +6,23 @@ import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Fo
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
+interface ContactRow {
+  id: string | null
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+}
+
+interface Address {
+  line1: string | null
+  line2: string | null
+  city: string | null
+  state: string | null
+  postalCode: string | null
+  country: string | null
+}
+
 interface CarrierDetail {
   id: string
   legalName: string
@@ -20,14 +37,17 @@ interface CarrierDetail {
   dispatchFeeBps: number
   usesFactoring: boolean
   notes: string | null
-  physical: {
-    line1: string | null
-    line2: string | null
-    city: string | null
-    state: string | null
-    postalCode: string | null
-    country: string | null
-  }
+  physical: Address
+  mailingSameAsPhysical: boolean
+  mailing: Address
+  contacts: {
+    id: string
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    isPrimary: boolean
+  }[]
 }
 
 /** Lo que el registro federal devolvió, tal y como lo manda el servidor. */
@@ -106,18 +126,39 @@ export default function CarrierForm({
   // guardar datos inventados.
   const locked = !editing && found !== null && lookup?.live === true && !manual
 
-  const [firstName, ...restName] = (carrier?.contact ?? '').split(' ')
+  // El registro solo bloquea lo que REALMENTE devolvió. Un campo bloqueado y
+  // vacío —el MC, que FMCSA no siempre publica— es un callejón sin salida: ni
+  // trae el dato ni deja escribirlo.
+  const lockedIf = (value: string | null | undefined): boolean =>
+    locked && value !== null && value !== undefined && value !== ''
+
+  const contactosIniciales: ContactRow[] =
+    carrier !== null && carrier.contacts.length > 0
+      ? carrier.contacts.map((c) => ({
+          id: c.id,
+          first_name: c.first_name,
+          last_name: c.last_name,
+          email: c.email ?? '',
+          phone: c.phone ?? '',
+        }))
+      : [
+          {
+            id: null,
+            first_name: '',
+            last_name: '',
+            email: '',
+            phone: found?.phone ?? '',
+          },
+        ]
 
   const form = useForm({
     legal_name: carrier?.legalName ?? found?.legalName ?? '',
     dba: carrier?.dba ?? found?.dba ?? '',
     dot_number: carrier?.dotNumber ?? found?.dotNumber ?? '',
     mc_number: carrier?.mcNumber ?? found?.mcNumber ?? '',
-    contact_first_name: carrier ? (firstName ?? '') : '',
-    contact_last_name: carrier ? restName.join(' ') : '',
-    email: carrier?.email ?? '',
-    phone: carrier?.phone ?? found?.phone ?? '',
-    website: carrier?.website ?? '',
+    // Los cuatro campos sueltos de contacto ya no viven aquí: el servidor los
+    // rellena desde el primero de esta lista. Ver mirrorPrimaryContact().
+    contacts: contactosIniciales,
     preferred_locale: carrier?.preferredLocale ?? 'en',
     physical_line1: carrier?.physical.line1 ?? found?.line1 ?? '',
     physical_line2: carrier?.physical.line2 ?? '',
@@ -125,6 +166,15 @@ export default function CarrierForm({
     physical_country: carrier?.physical.country ?? found?.country ?? 'US',
     physical_state: carrier?.physical.state ?? found?.state ?? '',
     physical_postal_code: carrier?.physical.postalCode ?? found?.postalCode ?? '',
+    // Marcada por omisión: lo normal es que sea la misma, y pedir dos veces la
+    // misma dirección es la forma más segura de que la segunda envejezca mal.
+    mailing_same_as_physical: carrier?.mailingSameAsPhysical ?? true,
+    mailing_line1: carrier?.mailing.line1 ?? '',
+    mailing_line2: carrier?.mailing.line2 ?? '',
+    mailing_city: carrier?.mailing.city ?? '',
+    mailing_country: carrier?.mailing.country ?? 'US',
+    mailing_state: carrier?.mailing.state ?? '',
+    mailing_postal_code: carrier?.mailing.postalCode ?? '',
     // Puntos básicos, igual que la columna. El campo enseña el porcentaje y
     // convierte al escribir: el dinero se guarda en enteros para que no haya
     // redondeos, pero nadie escribe «1000» queriendo decir diez por ciento.
@@ -137,6 +187,32 @@ export default function CarrierForm({
     factoring_company_id: factoringCompanyId ?? '',
     notes: carrier?.notes ?? '',
   })
+
+  const patchContact = (index: number, patch: Partial<ContactRow>) => {
+    form.setData(
+      'contacts',
+      form.data.contacts.map((c, i) => (i === index ? { ...c, ...patch } : c)),
+    )
+  }
+
+  const addContact = () => {
+    form.setData('contacts', [
+      ...form.data.contacts,
+      { id: null, first_name: '', last_name: '', email: '', phone: '' },
+    ])
+  }
+
+  // El primero no se puede quitar: es el que alimenta las columnas
+  // `contact_*` de `carriers`, que son NOT NULL. Por eso el botón de quitar
+  // solo se pinta a partir del segundo.
+  const removeContact = (index: number) => {
+    if (index === 0) return
+
+    form.setData(
+      'contacts',
+      form.data.contacts.filter((_, i) => i !== index),
+    )
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,9 +264,9 @@ export default function CarrierForm({
         <Section title={t('carriers.form.identity')}>
           <TextField
             label={t('carriers.form.legalName')}
-            hint={locked ? t('carriers.form.fromRegistry') : t('carriers.form.legalNameHint')}
+            hint={lockedIf(found?.legalName) ? t('carriers.form.fromRegistry') : t('carriers.form.legalNameHint')}
             required
-            disabled={locked}
+            disabled={lockedIf(found?.legalName)}
             maxLength={200}
             value={form.data.legal_name}
             onChange={(e) => form.setData('legal_name', e.target.value)}
@@ -198,7 +274,7 @@ export default function CarrierForm({
           />
           <TextField
             label={t('carriers.form.dba')}
-            disabled={locked}
+            disabled={lockedIf(found?.dba)}
             maxLength={200}
             value={form.data.dba}
             onChange={(e) => form.setData('dba', e.target.value)}
@@ -206,9 +282,9 @@ export default function CarrierForm({
           />
           <TextField
             label={t('carriers.form.dotNumber')}
-            hint={locked ? t('carriers.form.fromRegistry') : t('carriers.form.dotNumberHint')}
+            hint={lockedIf(found?.dotNumber) ? t('carriers.form.fromRegistry') : t('carriers.form.dotNumberHint')}
             required
-            disabled={locked}
+            disabled={lockedIf(found?.dotNumber)}
             inputMode="numeric"
             maxLength={12}
             value={form.data.dot_number}
@@ -217,7 +293,8 @@ export default function CarrierForm({
           />
           <TextField
             label={t('carriers.form.mcNumber')}
-            disabled={locked}
+            hint={lockedIf(found?.mcNumber) ? t('carriers.form.fromRegistry') : t('carriers.form.mcNumberHint')}
+            disabled={lockedIf(found?.mcNumber)}
             inputMode="numeric"
             maxLength={12}
             value={form.data.mc_number}
@@ -227,49 +304,79 @@ export default function CarrierForm({
         </Section>
 
         <Section title={t('carriers.form.contact')}>
-          <TextField
-            label={t('carriers.form.firstName')}
-            required
-            maxLength={100}
-            value={form.data.contact_first_name}
-            onChange={(e) => form.setData('contact_first_name', e.target.value)}
-            error={form.errors.contact_first_name}
-          />
-          <TextField
-            label={t('carriers.form.lastName')}
-            required
-            maxLength={100}
-            value={form.data.contact_last_name}
-            onChange={(e) => form.setData('contact_last_name', e.target.value)}
-            error={form.errors.contact_last_name}
-          />
-          <TextField
-            label={t('carriers.form.email')}
-            type="email"
-            required
-            maxLength={255}
-            value={form.data.email}
-            onChange={(e) => form.setData('email', e.target.value)}
-            error={form.errors.email}
-          />
-          <TextField
-            label={t('carriers.form.phone')}
-            type="tel"
-            required
-            maxLength={32}
-            value={form.data.phone}
-            onChange={(e) => form.setData('phone', e.target.value)}
-            error={form.errors.phone}
-          />
-          <TextField
-            label={t('carriers.form.website')}
-            type="url"
-            maxLength={255}
-            placeholder="https://"
-            value={form.data.website}
-            onChange={(e) => form.setData('website', e.target.value)}
-            error={form.errors.website}
-          />
+          <div className="sm:col-span-2 flex flex-col gap-4">
+            {form.data.contacts.map((c, i) => (
+              <div
+                key={i}
+                className="rounded border border-steel-200 bg-steel-50/60 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-safety-600">
+                    {i === 0 ? t('carriers.form.primaryContact') : t('carriers.form.contactN', { n: String(i + 1) })}
+                  </span>
+                  {i > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeContact(i)}
+                      className="text-xs font-medium text-danger-700 underline transition hover:text-danger-900"
+                    >
+                      {t('carriers.form.removeContact')}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <TextField
+                    label={t('carriers.form.firstName')}
+                    required
+                    maxLength={100}
+                    value={c.first_name}
+                    onChange={(e) => patchContact(i, { first_name: e.target.value })}
+                    error={form.errors[`contacts.${i}.first_name` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('carriers.form.lastName')}
+                    required
+                    maxLength={100}
+                    value={c.last_name}
+                    onChange={(e) => patchContact(i, { last_name: e.target.value })}
+                    error={form.errors[`contacts.${i}.last_name` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('carriers.form.email')}
+                    type="email"
+                    /* El del principal es obligatorio porque la columna
+                       `carriers.email` lo es. Los demás pueden no tenerlo. */
+                    required={i === 0}
+                    maxLength={255}
+                    value={c.email}
+                    onChange={(e) => patchContact(i, { email: e.target.value })}
+                    error={form.errors[`contacts.${i}.email` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('carriers.form.phone')}
+                    type="tel"
+                    maxLength={32}
+                    value={c.phone}
+                    onChange={(e) => patchContact(i, { phone: e.target.value })}
+                    error={form.errors[`contacts.${i}.phone` as keyof typeof form.errors] as string | undefined}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div>
+              <button
+                type="button"
+                onClick={addContact}
+                className="rounded border border-steel-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+              >
+                {t('carriers.form.addContact')}
+              </button>
+              <p className="mt-2 text-xs text-steel-600">{t('carriers.form.contactsHint')}</p>
+            </div>
+          </div>
+
           <SelectField
             label={t('carriers.form.preferredLocale')}
             hint={t('carriers.form.preferredLocaleHint')}
@@ -288,8 +395,8 @@ export default function CarrierForm({
           <div className="sm:col-span-2">
             <TextField
               label={t('carriers.form.line1')}
-              hint={locked ? t('carriers.form.fromRegistry') : undefined}
-              disabled={locked}
+              hint={lockedIf(found?.line1) ? t('carriers.form.fromRegistry') : undefined}
+              disabled={lockedIf(found?.line1)}
               maxLength={200}
               value={form.data.physical_line1}
               onChange={(e) => form.setData('physical_line1', e.target.value)}
@@ -305,7 +412,7 @@ export default function CarrierForm({
           />
           <TextField
             label={t('carriers.form.city')}
-            disabled={locked}
+            disabled={lockedIf(found?.city)}
             maxLength={120}
             value={form.data.physical_city}
             onChange={(e) => form.setData('physical_city', e.target.value)}
@@ -319,16 +426,73 @@ export default function CarrierForm({
             }
             countryError={form.errors.physical_country}
             stateError={form.errors.physical_state}
-            disabled={locked}
+            disabled={lockedIf(found?.state)}
           />
           <TextField
             label={t('carriers.form.postalCode')}
-            disabled={locked}
+            disabled={lockedIf(found?.postalCode)}
             maxLength={12}
             value={form.data.physical_postal_code}
             onChange={(e) => form.setData('physical_postal_code', e.target.value)}
             error={form.errors.physical_postal_code}
           />
+        </Section>
+
+        <Section title={t('carriers.form.mailingAddress')}>
+          <div className="sm:col-span-2">
+            <CheckboxField
+              label={t('carriers.form.mailingSame')}
+              checked={form.data.mailing_same_as_physical}
+              onChange={(e) => form.setData('mailing_same_as_physical', e.target.checked)}
+            />
+          </div>
+
+          {/* Los campos aparecen al desmarcar. Enseñarlos siempre, en gris,
+              invita a rellenarlos «por si acaso» y a que acaben discrepando de
+              la física sin que nadie lo haya decidido. */}
+          {form.data.mailing_same_as_physical ? null : (
+            <>
+              <div className="sm:col-span-2">
+                <TextField
+                  label={t('carriers.form.line1')}
+                  maxLength={200}
+                  value={form.data.mailing_line1}
+                  onChange={(e) => form.setData('mailing_line1', e.target.value)}
+                  error={form.errors.mailing_line1}
+                />
+              </div>
+              <TextField
+                label={t('carriers.form.line2')}
+                maxLength={200}
+                value={form.data.mailing_line2}
+                onChange={(e) => form.setData('mailing_line2', e.target.value)}
+                error={form.errors.mailing_line2}
+              />
+              <TextField
+                label={t('carriers.form.city')}
+                maxLength={120}
+                value={form.data.mailing_city}
+                onChange={(e) => form.setData('mailing_city', e.target.value)}
+                error={form.errors.mailing_city}
+              />
+              <CountryStateFields
+                country={form.data.mailing_country}
+                state={form.data.mailing_state}
+                onChange={(v) =>
+                  form.setData((d) => ({ ...d, mailing_country: v.country, mailing_state: v.state }))
+                }
+                countryError={form.errors.mailing_country}
+                stateError={form.errors.mailing_state}
+              />
+              <TextField
+                label={t('carriers.form.postalCode')}
+                maxLength={12}
+                value={form.data.mailing_postal_code}
+                onChange={(e) => form.setData('mailing_postal_code', e.target.value)}
+                error={form.errors.mailing_postal_code}
+              />
+            </>
+          )}
         </Section>
 
         <Section title={t('carriers.form.commercial')}>

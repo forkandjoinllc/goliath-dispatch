@@ -113,6 +113,17 @@ final class Carrier extends BaseModel
         return $this->belongsTo(User::class, 'approved_by_user_id');
     }
 
+    /**
+     * Las personas a las que llamar. La principal es la que se copia a las
+     * columnas `contact_*` de esta misma tabla; ver App\Models\CarrierContact.
+     *
+     * @return HasMany<CarrierContact, $this>
+     */
+    public function carrierContacts(): HasMany
+    {
+        return $this->hasMany(CarrierContact::class, 'carrier_id');
+    }
+
     /** @return HasMany<CarrierDispatcherAssignment, $this> */
     public function carrierDispatcherAssignments(): HasMany
     {

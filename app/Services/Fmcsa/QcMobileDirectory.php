@@ -149,7 +149,101 @@ final class QcMobileDirectory implements FmcsaDirectory
             return FmcsaLookup::notFound(true, $this->name());
         }
 
-        return FmcsaLookup::found($this->mapear($carrier, $mcConocido), true, $this->name());
+        // El número MC no viene en la ficha del transportista. Vive en otro
+        // sitio del servicio, `carriers/{dot}/docket-numbers`, porque una misma
+        // empresa puede tener varios expedientes (MC, FF, MX) y hasta más de uno
+        // del mismo tipo. Sin esta segunda llamada, buscar por USDOT devolvía la
+        // ficha entera con el MC en blanco.
+        $mc = $mcConocido ?? $this->docketNumber((string) ($carrier['dotNumber'] ?? ''));
+
+        return FmcsaLookup::found($this->mapear($carrier, $mc), true, $this->name());
+    }
+
+    /**
+     * El número MC (expediente) de un transportista, si tiene.
+     *
+     * Un fallo aquí NO estropea la búsqueda: se devuelve null y el campo del
+     * formulario queda vacío para que lo escriba quien esté dando el alta. Que
+     * el registro no conteste a la segunda llamada no puede tirar la primera,
+     * que es la que trae el nombre y la dirección.
+     *
+     * Se prefiere un expediente activo. Si hay varios y ninguno se declara
+     * activo, se coge el primero con prefijo MC: es el que aparece en un
+     * contrato de transporte.
+     */
+    private function docketNumber(string $dot): ?string
+    {
+        if ($dot === '') {
+            return null;
+        }
+
+        try {
+            $respuesta = $this->http
+                ->timeout(6)
+                ->connectTimeout(4)
+                ->retry(1, 250, throw: false)
+                ->acceptJson()
+                ->get(rtrim($this->baseUrl, '/')."/carriers/{$dot}/docket-numbers", ['webKey' => $this->webKey]);
+        } catch (Throwable $e) {
+            Log::warning('FMCSA QCMobile: no se pudieron leer los expedientes', [
+                'referencia' => $dot,
+                'excepcion' => $e::class,
+            ]);
+
+            return null;
+        }
+
+        if (! $respuesta->successful()) {
+            return null;
+        }
+
+        $cuerpo = $respuesta->json();
+        $contenido = is_array($cuerpo) ? ($cuerpo['content'] ?? null) : null;
+
+        if (! is_array($contenido)) {
+            return null;
+        }
+
+        $candidatos = [];
+
+        foreach ($contenido as $fila) {
+            if (! is_array($fila)) {
+                continue;
+            }
+
+            $expediente = $fila['docketNumber'] ?? $fila;
+
+            if (! is_array($expediente)) {
+                continue;
+            }
+
+            $prefijo = strtoupper((string) ($expediente['prefix'] ?? 'MC'));
+
+            if ($prefijo !== 'MC') {
+                continue;
+            }
+
+            $numero = self::texto($expediente['docketNumber'] ?? null);
+
+            if ($numero === null) {
+                continue;
+            }
+
+            $activo = strtoupper((string) ($expediente['status'] ?? '')) === 'A';
+            $candidatos[] = ['numero' => $numero, 'activo' => $activo];
+        }
+
+        if ($candidatos === []) {
+            return null;
+        }
+
+        foreach ($candidatos as $c) {
+            if ($c['activo']) {
+                return $c['numero'];
+            }
+        }
+
+        return $candidatos[0]['numero'];
     }
 
     /**
