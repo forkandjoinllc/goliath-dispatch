@@ -16,7 +16,7 @@
   "mc": "An MC number is 5 to 8 digits.",
   "ein": "An EIN is 9 digits (XX-XXXXXXX).",
   "vin": "A VIN is 17 characters and cannot contain I, O or Q.",
-  "state": "Select a US state.",
+  "state": "Select a state or province that belongs to the chosen country.",
   "postalCode": "Enter a valid 5 or 9 digit ZIP code.",
   "percentage": "Enter a percentage between 0 and 100.",
   "money": "Enter an amount in dollars, for example 1,250.00.",
@@ -37,5 +37,6 @@
   "primaryContactRequired": "A primary contact is required.",
   "signatureRequired": "Draw or type your signature to continue.",
   "legalNameRequired": "Enter your full legal name exactly as it should appear.",
-  "hexColor": "Enter a valid hex color, e.g. #062B5C."
+  "hexColor": "Enter a valid hex color, e.g. #062B5C.",
+  "country": "Select a country."
 }

@@ -137,5 +137,10 @@
     "errorDescription": "Ocurrió un error inesperado. El incidente ha sido registrado. Intente de nuevo o comuníquese con su administrador si el problema persiste.",
     "goHome": "Ir al panel principal",
     "tryAgain": "Intentar de nuevo"
+  },
+  "address": {
+    "country": "País",
+    "state": "Estado / provincia",
+    "statePlaceholder": "Seleccione…"
   }
 }

@@ -33,6 +33,7 @@ final class Driver extends BaseModel
         'phone',
         'preferred_locale',
         'license_state',
+        'license_country',
         'license_number_encrypted',
         'license_number_last4',
         'license_number_hash',

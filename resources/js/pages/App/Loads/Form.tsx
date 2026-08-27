@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react'
 import { useState, type ReactNode } from 'react'
+import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -11,6 +12,7 @@ interface StopDraft {
   line1: string
   city: string
   state: string
+  country: string
   postal_code: string
   timezone: string
   appointment_type: string
@@ -47,6 +49,7 @@ function blankStop(type: 'pickup' | 'delivery'): StopDraft {
     line1: '',
     city: '',
     state: '',
+    country: 'US',
     postal_code: '',
     timezone: 'America/Chicago',
     appointment_type: 'window',
@@ -87,6 +90,7 @@ export default function LoadForm({
           line1: (s.line1 as string) ?? '',
           city: (s.city as string) ?? '',
           state: (s.state as string) ?? '',
+          country: (s.country as string) ?? 'US',
           postal_code: (s.postalCode as string) ?? '',
           timezone: (s.timezone as string) ?? 'America/Chicago',
           appointment_type: (s.appointmentType as string) ?? 'window',
@@ -374,11 +378,11 @@ export default function LoadForm({
                     value={stop.city}
                     onChange={(e) => patchStop(index, { city: e.target.value })}
                   />
-                  <TextField
-                    label={t('loads.form.state')}
-                    maxLength={2}
-                    value={stop.state}
-                    onChange={(e) => patchStop(index, { state: e.target.value.toUpperCase() })}
+                  <CountryStateFields
+                    country={stop.country}
+                    state={stop.state}
+                    onChange={(v) => patchStop(index, { country: v.country, state: v.state })}
+                    stateLabel={t('loads.form.state')}
                   />
                   <TextField
                     label={t('loads.form.postalCode')}

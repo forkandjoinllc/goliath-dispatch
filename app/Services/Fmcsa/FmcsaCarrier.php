@@ -89,6 +89,7 @@ final readonly class FmcsaCarrier
             'city' => $this->city,
             'state' => $this->state,
             'postalCode' => $this->postalCode,
+            'country' => $this->country,
             'entityType' => $this->entityType,
             'operatingStatus' => $this->operatingStatus,
             'allowedToOperate' => $this->allowedToOperate,

@@ -14,19 +14,23 @@ use App\Enums\Role;
 use App\Enums\Scope;
 use App\Models\Customer;
 use App\Models\Load;
+use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
 use App\Support\Finance\LoadCalculator;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\Transitions;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -709,6 +713,7 @@ final class LoadController
                 'line1' => $stop['line1'] ?? null,
                 'city' => $stop['city'] ?? null,
                 'state' => $stop['state'] ?? null,
+                'country' => $stop['country'] ?? Regions::DEFAULT_COUNTRY,
                 'postal_code' => $stop['postal_code'] ?? null,
                 'timezone' => $stop['timezone'] ?? 'America/Chicago',
                 'appointment_type' => $stop['appointment_type'] ?? 'window',
@@ -773,7 +778,15 @@ final class LoadController
             'stops.*.customer_location_id' => ['nullable', 'string', 'size:36'],
             'stops.*.line1' => ['nullable', 'string', 'max:200'],
             'stops.*.city' => ['nullable', 'string', 'max:120'],
-            'stops.*.state' => ['nullable', 'string', 'size:2'],
+            'stops.*.country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            // El país de una parada va POR parada: una carga puede recoger en
+            // Laredo y entregar en Nuevo León. Por eso aquí no vale la regla con
+            // el país fijo — hay que mirar el hermano del mismo índice.
+            'stops.*.state' => ['nullable', 'string', 'max:3', function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+                $pais = $request->input(str_replace('.state', '.country', $attribute));
+
+                (new SubdivisionOfCountry(is_string($pais) ? $pais : null))->validate($attribute, $value, $fail);
+            }],
             'stops.*.postal_code' => ['nullable', 'string', 'max:12'],
             'stops.*.timezone' => ['nullable', 'string', 'max:64'],
             'stops.*.appointment_type' => ['nullable', 'in:exact,window,fcfs,open'],
@@ -1067,11 +1080,12 @@ final class LoadController
             ->orderBy('s.sequence')
             ->get([
                 's.id', 's.stop_type', 's.sequence', 's.facility_name', 's.line1', 's.city',
-                's.state', 's.postal_code', 's.timezone', 's.appointment_type',
+                's.state', 's.country', 's.postal_code', 's.timezone', 's.appointment_type',
                 's.window_start', 's.window_end', 's.actual_arrival_at', 's.actual_departure_at',
                 's.detention_minutes', 's.instructions', 's.contact_name', 's.contact_phone',
                 'cl.name as location_name', 'cl.line1 as location_line1', 'cl.city as location_city',
-                'cl.state as location_state', 'cl.postal_code as location_postal',
+                'cl.state as location_state', 'cl.country as location_country',
+                'cl.postal_code as location_postal',
             ])
             ->map(fn ($s): array => [
                 'id' => (string) $s->id,
@@ -1084,6 +1098,7 @@ final class LoadController
                 'line1' => $s->location_line1 ?? $s->line1,
                 'city' => $s->location_city ?? $s->city,
                 'state' => $s->location_state ?? $s->state,
+                'country' => $s->location_country ?? $s->country ?? Regions::DEFAULT_COUNTRY,
                 'postalCode' => $s->location_postal ?? $s->postal_code,
                 'timezone' => (string) $s->timezone,
                 'appointmentType' => (string) $s->appointment_type,

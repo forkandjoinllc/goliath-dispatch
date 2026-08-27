@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
+import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -37,6 +38,7 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
     model: g('model'),
     equipment_type_id: g('equipmentTypeId'),
     plate_number: g('plateNumber'),
+    plate_country: g('plateCountry') || 'US',
     plate_state: g('plateState'),
     registration_number: g('registrationNumber'),
     registration_expires_at: date('registrationExpiresAt'),
@@ -153,12 +155,15 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
             value={form.data.plate_number}
             onChange={(e) => form.setData('plate_number', e.target.value.toUpperCase())}
           />
-          <TextField
-            label={t('equipment.form.plateState')}
-            maxLength={2}
-            value={form.data.plate_state}
-            onChange={(e) => form.setData('plate_state', e.target.value.toUpperCase())}
-            error={form.errors.plate_state}
+          <CountryStateFields
+            country={form.data.plate_country}
+            state={form.data.plate_state}
+            onChange={(v) =>
+              form.setData((d) => ({ ...d, plate_country: v.country, plate_state: v.state }))
+            }
+            countryError={form.errors.plate_country}
+            stateError={form.errors.plate_state}
+            stateLabel={t('equipment.form.plateState')}
           />
           <TextField
             label={t('equipment.form.registrationNumber')}

@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { COUNTRIES, subdivisionsFor } from '@/lib/regions'
 import { useI18n } from '@/lib/i18n'
 
 interface Contact {
@@ -19,6 +20,7 @@ interface Company {
   addressLine1: string | null
   addressCity: string | null
   addressState: string | null
+  addressCountry: string | null
   addressPostalCode: string | null
   fundingInstructions: string | null
   active: boolean
@@ -55,6 +57,7 @@ export default function FactoringForm({ company, positions }: Props) {
     website: company?.website ?? '',
     address_line1: company?.addressLine1 ?? '',
     address_city: company?.addressCity ?? '',
+    address_country: company?.addressCountry ?? 'US',
     address_state: company?.addressState ?? '',
     address_postal_code: company?.addressPostalCode ?? '',
     funding_instructions: company?.fundingInstructions ?? '',
@@ -159,14 +162,39 @@ export default function FactoringForm({ company, positions }: Props) {
               />
             </Field>
 
+            <Field label={t('common.address.country')} error={form.errors.address_country}>
+              <select
+                value={form.data.address_country}
+                onChange={(e) => {
+                  form.setData('address_country', e.target.value)
+                  // Cambiar de país borra el estado: guardar una dirección
+                  // imposible es peor que perder una selección.
+                  form.setData('address_state', '')
+                }}
+                className={input}
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
             <div className="grid grid-cols-2 gap-4">
               <Field label={t('factoring.form.addressState')} error={form.errors.address_state}>
-                <input
-                  maxLength={2}
+                <select
                   value={form.data.address_state}
-                  onChange={(e) => form.setData('address_state', e.target.value.toUpperCase())}
+                  onChange={(e) => form.setData('address_state', e.target.value)}
                   className={input}
-                />
+                >
+                  <option value="">{t('common.address.statePlaceholder')}</option>
+                  {subdivisionsFor(form.data.address_country).map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.code} — {r.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
 
               <Field label={t('factoring.form.addressPostalCode')} error={form.errors.address_postal_code}>

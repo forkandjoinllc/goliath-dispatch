@@ -1,6 +1,7 @@
 import { Link, router, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -25,6 +26,7 @@ interface CarrierDetail {
     city: string | null
     state: string | null
     postalCode: string | null
+    country: string | null
   }
 }
 
@@ -39,6 +41,7 @@ interface FmcsaCarrier {
   city: string | null
   state: string | null
   postalCode: string | null
+  country: string | null
   entityType: string | null
   operatingStatus: string | null
   allowedToOperate: boolean | null
@@ -119,6 +122,7 @@ export default function CarrierForm({
     physical_line1: carrier?.physical.line1 ?? found?.line1 ?? '',
     physical_line2: carrier?.physical.line2 ?? '',
     physical_city: carrier?.physical.city ?? found?.city ?? '',
+    physical_country: carrier?.physical.country ?? found?.country ?? 'US',
     physical_state: carrier?.physical.state ?? found?.state ?? '',
     physical_postal_code: carrier?.physical.postalCode ?? found?.postalCode ?? '',
     // Puntos básicos, igual que la columna. El campo enseña el porcentaje y
@@ -307,13 +311,15 @@ export default function CarrierForm({
             onChange={(e) => form.setData('physical_city', e.target.value)}
             error={form.errors.physical_city}
           />
-          <TextField
-            label={t('carriers.form.state')}
+          <CountryStateFields
+            country={form.data.physical_country}
+            state={form.data.physical_state}
+            onChange={(v) =>
+              form.setData((d) => ({ ...d, physical_country: v.country, physical_state: v.state }))
+            }
+            countryError={form.errors.physical_country}
+            stateError={form.errors.physical_state}
             disabled={locked}
-            maxLength={2}
-            value={form.data.physical_state}
-            onChange={(e) => form.setData('physical_state', e.target.value.toUpperCase())}
-            error={form.errors.physical_state}
           />
           <TextField
             label={t('carriers.form.postalCode')}

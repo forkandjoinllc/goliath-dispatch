@@ -137,5 +137,10 @@
     "errorDescription": "An unexpected error occurred. The incident has been logged. Try again, or contact your administrator if it keeps happening.",
     "goHome": "Go to dashboard",
     "tryAgain": "Try again"
+  },
+  "address": {
+    "country": "Country",
+    "state": "State / province",
+    "statePlaceholder": "Select…"
   }
 }

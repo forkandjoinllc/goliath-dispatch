@@ -29,6 +29,7 @@ final class FactoringCompany extends BaseModel
         'address_line1',
         'address_city',
         'address_state',
+        'address_country',
         'address_postal_code',
         'funding_instructions',
         'active',

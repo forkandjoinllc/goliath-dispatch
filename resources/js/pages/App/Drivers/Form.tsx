@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
+import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -27,6 +28,7 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
     email: g('email'),
     phone: g('phone'),
     preferred_locale: g('preferredLocale') || 'en',
+    license_country: g('licenseCountry') || 'US',
     license_state: g('licenseState'),
     // Nunca se precarga: el número no se puede leer de vuelta. Vacío significa
     // «conserva el que ya está», y el texto de ayuda lo dice.
@@ -139,12 +141,15 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
               error={form.errors.license_number}
             />
           </div>
-          <TextField
-            label={t('drivers.form.licenceState')}
-            maxLength={2}
-            value={form.data.license_state}
-            onChange={(e) => form.setData('license_state', e.target.value.toUpperCase())}
-            error={form.errors.license_state}
+          <CountryStateFields
+            country={form.data.license_country}
+            state={form.data.license_state}
+            onChange={(v) =>
+              form.setData((d) => ({ ...d, license_country: v.country, license_state: v.state }))
+            }
+            countryError={form.errors.license_country}
+            stateError={form.errors.license_state}
+            stateLabel={t('drivers.form.licenceState')}
           />
           <SelectField
             label={t('drivers.form.cdlClass')}

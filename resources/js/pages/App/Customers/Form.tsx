@@ -1,5 +1,6 @@
 import { Link, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
+import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -10,6 +11,7 @@ interface Address {
   city: string | null
   state: string | null
   postalCode: string | null
+  country: string | null
 }
 
 interface CustomerDetail {
@@ -60,12 +62,14 @@ export default function CustomerForm({ customer, canOverrideDuplicate }: Props) 
     physical_line1: customer?.physical.line1 ?? '',
     physical_line2: customer?.physical.line2 ?? '',
     physical_city: customer?.physical.city ?? '',
+    physical_country: customer?.physical.country ?? 'US',
     physical_state: customer?.physical.state ?? '',
     physical_postal_code: customer?.physical.postalCode ?? '',
     billing_same_as_physical: customer?.billingSameAsPhysical ?? true,
     billing_line1: customer?.billing.line1 ?? '',
     billing_line2: customer?.billing.line2 ?? '',
     billing_city: customer?.billing.city ?? '',
+    billing_country: customer?.billing.country ?? 'US',
     billing_state: customer?.billing.state ?? '',
     billing_postal_code: customer?.billing.postalCode ?? '',
     // En centavos por dentro, en dólares en pantalla — igual que la tarifa de
@@ -198,12 +202,14 @@ export default function CustomerForm({ customer, canOverrideDuplicate }: Props) 
             onChange={(e) => form.setData('physical_city', e.target.value)}
             error={form.errors.physical_city}
           />
-          <TextField
-            label={t('customers.form.state')}
-            maxLength={2}
-            value={form.data.physical_state}
-            onChange={(e) => form.setData('physical_state', e.target.value.toUpperCase())}
-            error={form.errors.physical_state}
+          <CountryStateFields
+            country={form.data.physical_country}
+            state={form.data.physical_state}
+            onChange={(v) =>
+              form.setData((d) => ({ ...d, physical_country: v.country, physical_state: v.state }))
+            }
+            countryError={form.errors.physical_country}
+            stateError={form.errors.physical_state}
           />
           <TextField
             label={t('customers.form.postalCode')}
@@ -244,12 +250,14 @@ export default function CustomerForm({ customer, canOverrideDuplicate }: Props) 
                 onChange={(e) => form.setData('billing_city', e.target.value)}
                 error={form.errors.billing_city}
               />
-              <TextField
-                label={t('customers.form.state')}
-                maxLength={2}
-                value={form.data.billing_state}
-                onChange={(e) => form.setData('billing_state', e.target.value.toUpperCase())}
-                error={form.errors.billing_state}
+              <CountryStateFields
+                country={form.data.billing_country}
+                state={form.data.billing_state}
+                onChange={(v) =>
+                  form.setData((d) => ({ ...d, billing_country: v.country, billing_state: v.state }))
+                }
+                countryError={form.errors.billing_country}
+                stateError={form.errors.billing_state}
               />
               <TextField
                 label={t('customers.form.postalCode')}

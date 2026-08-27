@@ -11,7 +11,9 @@ use App\Authorization\ResourceContext;
 use App\Enums\Scope;
 use App\Models\Trailer;
 use App\Models\Truck;
+use App\Rules\SubdivisionOfCountry;
 use App\Support\EnumValue;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -509,6 +512,7 @@ final class EquipmentController
             'model' => $g('model'),
             'plateNumber' => $g('plate_number'),
             'plateState' => $g('plate_state'),
+            'plateCountry' => $g('plate_country'),
             'status' => EnumValue::of($g('status'), 'pending_verification'),
             'nextInspectionDueAt' => $this->iso($g('next_inspection_due_at')),
             'registrationExpiresAt' => $this->iso($g('registration_expires_at')),
@@ -639,6 +643,7 @@ final class EquipmentController
             'equipment_type_id' => $data['equipment_type_id'] ?? null,
             'plate_number' => $data['plate_number'] ?? null,
             'plate_state' => $data['plate_state'] ?? null,
+            'plate_country' => $data['plate_country'] ?? Regions::DEFAULT_COUNTRY,
             'registration_number' => $data['registration_number'] ?? null,
             'registration_expires_at' => $data['registration_expires_at'] ?? null,
             'last_inspection_at' => $data['last_inspection_at'] ?? null,
@@ -677,7 +682,8 @@ final class EquipmentController
             'model' => ['nullable', 'string', 'max:60'],
             'equipment_type_id' => ['nullable', 'string', 'size:36'],
             'plate_number' => ['nullable', 'string', 'max:20'],
-            'plate_state' => ['nullable', 'string', 'size:2'],
+            'plate_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'plate_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('plate_country'))],
             'registration_number' => ['nullable', 'string', 'max:60'],
             'registration_expires_at' => ['nullable', 'date'],
             'last_inspection_at' => ['nullable', 'date'],

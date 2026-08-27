@@ -34,6 +34,7 @@ final class Trailer extends BaseModel
         'equipment_type_id',
         'plate_number',
         'plate_state',
+        'plate_country',
         'length_inches',
         'width_inches',
         'deck_height_inches',

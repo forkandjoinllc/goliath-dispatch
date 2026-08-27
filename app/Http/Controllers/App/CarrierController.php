@@ -13,10 +13,12 @@ use App\Enums\Locale;
 use App\Enums\OnboardingStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Carrier;
+use App\Rules\SubdivisionOfCountry;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
 use App\Support\EnumValue;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Builder;
@@ -753,7 +755,8 @@ final class CarrierController
             'physical_line1' => ['nullable', 'string', 'max:200'],
             'physical_line2' => ['nullable', 'string', 'max:200'],
             'physical_city' => ['nullable', 'string', 'max:120'],
-            'physical_state' => ['nullable', 'string', 'size:2'],
+            'physical_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'physical_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('physical_country'))],
             'physical_postal_code' => ['nullable', 'string', 'max:12'],
             // 0 a 10.000 puntos básicos = 0 % a 100 %. El mismo rango que impone
             // el CHECK de la columna, para que el error salga como mensaje de

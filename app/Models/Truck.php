@@ -34,6 +34,7 @@ final class Truck extends BaseModel
         'equipment_type_id',
         'plate_number',
         'plate_state',
+        'plate_country',
         'status',
         'vin_decode_source',
         'vin_decoded_at',

@@ -10,12 +10,15 @@ use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\Scope;
 use App\Models\Customer;
+use App\Rules\SubdivisionOfCountry;
 use App\Support\Customers\NameKey;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -420,6 +423,7 @@ final class CustomerController
                 'city' => $c->physical_city,
                 'state' => $c->physical_state,
                 'postalCode' => $c->physical_postal_code,
+                'country' => $c->physical_country,
             ],
             'billingSameAsPhysical' => (bool) $c->billing_same_as_physical,
             'billing' => [
@@ -428,6 +432,7 @@ final class CustomerController
                 'city' => $c->billing_city,
                 'state' => $c->billing_state,
                 'postalCode' => $c->billing_postal_code,
+                'country' => $c->billing_country,
             ],
             'creditNotes' => $c->credit_notes,
             'usesFactoring' => (bool) $c->uses_factoring,
@@ -523,13 +528,15 @@ final class CustomerController
             'physical_line1' => ['nullable', 'string', 'max:200'],
             'physical_line2' => ['nullable', 'string', 'max:200'],
             'physical_city' => ['nullable', 'string', 'max:120'],
-            'physical_state' => ['nullable', 'string', 'size:2'],
+            'physical_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'physical_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('physical_country'))],
             'physical_postal_code' => ['nullable', 'string', 'max:12'],
             'billing_same_as_physical' => ['boolean'],
             'billing_line1' => ['nullable', 'string', 'max:200'],
             'billing_line2' => ['nullable', 'string', 'max:200'],
             'billing_city' => ['nullable', 'string', 'max:120'],
-            'billing_state' => ['nullable', 'string', 'size:2'],
+            'billing_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'billing_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('billing_country'))],
             'billing_postal_code' => ['nullable', 'string', 'max:12'],
             // En centavos y entero, igual que la columna. El formulario enseña
             // dólares y convierte al enviar: nada de decimales flotantes para

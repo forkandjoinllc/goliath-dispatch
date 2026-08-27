@@ -11,8 +11,10 @@ use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Enums\Scope;
 use App\Models\Driver;
+use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
 use App\Support\EnumValue;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Security\SensitiveNumber;
 use Carbon\CarbonImmutable;
@@ -21,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -492,6 +495,7 @@ final class DriverController
             'verificationStatus' => EnumValue::of($d->verification_status, 'not_started'),
             'cdlClass' => $d->cdl_class,
             'licenseState' => $d->license_state,
+            'licenseCountry' => $d->license_country,
             // Solo los últimos cuatro. El número entero no sale de la base de
             // datos ni para el admin.
             'licenseLast4' => $d->license_number_last4,
@@ -648,6 +652,7 @@ final class DriverController
             'phone' => $data['phone'] ?? null,
             'preferred_locale' => $data['preferred_locale'] ?? 'en',
             'license_state' => $data['license_state'] ?? null,
+            'license_country' => $data['license_country'] ?? Regions::DEFAULT_COUNTRY,
             'cdl_class' => $data['cdl_class'] ?? null,
             'endorsements' => $data['endorsements'] ?? [],
             'restrictions' => $data['restrictions'] ?? [],
@@ -694,7 +699,8 @@ final class DriverController
             'email' => ['nullable', 'email:rfc', 'max:255'],
             'phone' => ['nullable', 'string', 'max:32'],
             'preferred_locale' => ['nullable', 'in:en,es'],
-            'license_state' => ['nullable', 'string', 'size:2'],
+            'license_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'license_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('license_country'))],
             // El número llega en claro por HTTPS y se cifra antes de tocar la
             // base. No se valida su forma: cada estado tiene la suya y una
             // expresión regular «inteligente» rechazaría licencias válidas.

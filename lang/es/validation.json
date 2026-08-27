@@ -16,7 +16,7 @@
   "mc": "Un número MC tiene de 5 a 8 dígitos.",
   "ein": "Un EIN tiene 9 dígitos (XX-XXXXXXX).",
   "vin": "Un VIN tiene 17 caracteres y no puede contener I, O ni Q.",
-  "state": "Seleccione un estado de EE. UU.",
+  "state": "Seleccione un estado o provincia del país elegido.",
   "postalCode": "Ingrese un código postal válido de 5 o 9 dígitos.",
   "percentage": "Ingrese un porcentaje entre 0 y 100.",
   "money": "Ingrese un monto en dólares, por ejemplo 1,250.00.",
@@ -37,5 +37,6 @@
   "primaryContactRequired": "Se requiere un contacto principal.",
   "signatureRequired": "Dibuje o escriba su firma para continuar.",
   "legalNameRequired": "Ingrese su nombre legal completo tal como debe aparecer.",
-  "hexColor": "Ingrese un color hexadecimal válido, por ejemplo #062B5C."
+  "hexColor": "Ingrese un color hexadecimal válido, por ejemplo #062B5C.",
+  "country": "Seleccione un país."
 }

@@ -12,7 +12,9 @@ use App\Enums\FactoringContactPosition;
 use App\Enums\Scope;
 use App\Exceptions\AuthorizationException;
 use App\Models\FactoringCompany;
+use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -335,7 +337,8 @@ final class FactoringController
             'website' => ['nullable', 'string', 'max:255', 'url'],
             'address_line1' => ['nullable', 'string', 'max:200'],
             'address_city' => ['nullable', 'string', 'max:120'],
-            'address_state' => ['nullable', 'string', 'size:2'],
+            'address_country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            'address_state' => ['nullable', 'string', 'max:3', new SubdivisionOfCountry($request->input('address_country'))],
             'address_postal_code' => ['nullable', 'string', 'max:12'],
             'funding_instructions' => ['nullable', 'string', 'max:5000'],
             'active' => ['nullable', 'boolean'],
@@ -363,6 +366,7 @@ final class FactoringController
             'address_line1' => $data['address_line1'] ?? null,
             'address_city' => $data['address_city'] ?? null,
             'address_state' => isset($data['address_state']) ? strtoupper((string) $data['address_state']) : null,
+            'address_country' => $data['address_country'] ?? Regions::DEFAULT_COUNTRY,
             'address_postal_code' => $data['address_postal_code'] ?? null,
             'funding_instructions' => $data['funding_instructions'] ?? null,
             // Sin decir nada, una empresa nueva está activa: se acaba de dar de
@@ -449,6 +453,7 @@ final class FactoringController
             'addressLine1' => $c->address_line1,
             'addressCity' => $c->address_city,
             'addressState' => $c->address_state,
+            'addressCountry' => $c->address_country,
             'addressPostalCode' => $c->address_postal_code,
             'active' => (bool) $c->active,
         ];
