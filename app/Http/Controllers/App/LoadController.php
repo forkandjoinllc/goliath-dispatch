@@ -9,6 +9,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
+use App\Enums\LoadRequirementType;
 use App\Enums\LoadStatus;
 use App\Enums\Role;
 use App\Enums\Scope;
@@ -168,6 +169,7 @@ final class LoadController
         return Inertia::render('App/Loads/Show', [
             'load' => $this->detail($model),
             'stops' => $this->stops($model),
+            'requirements' => $this->requirements($model),
             'assignments' => $this->assignments($model),
             'history' => $this->history($model),
             // El bloque de dinero NO SE CALCULA si falta el permiso. Enviarlo y
@@ -238,6 +240,7 @@ final class LoadController
             $load->save();
 
             $this->syncStops($load, $data['stops']);
+            $this->syncRequirements($actor, $load, $data['requirements'] ?? null);
 
             return $load;
         });
@@ -281,6 +284,7 @@ final class LoadController
                 'dispatcherCommissionBps' => $canMoney ? (int) $model->dispatcher_commission_bps : null,
             ],
             'stops' => $this->stops($model),
+            'requirements' => $this->requirements($model),
             'choices' => $this->choices($actor),
             'canEditFinancials' => $canMoney,
             'canEditFreight' => $canFreight,
@@ -314,6 +318,7 @@ final class LoadController
             // editar la carga. Contabilidad no las recibe ni las manda.
             if ($canFreight) {
                 $this->syncStops($model, $data['stops']);
+                $this->syncRequirements($actor, $model, $data['requirements'] ?? null);
             }
 
             $after = [
@@ -695,6 +700,129 @@ final class LoadController
      *
      * @param  list<array<string, mixed>>  $stops
      */
+    /**
+     * Deja los requisitos como los mandó el formulario.
+     *
+     * `null` es «no toques nada» —el formulario no mandó la lista— y no es lo
+     * mismo que un array vacío, que sí es «quítalos todos».
+     *
+     * Los que se quitan se borran EN SUAVE: un requisito que estuvo vigente
+     * cuando se asignó al conductor tiene que poder seguir leyéndose cuando
+     * alguien pregunte por qué se asignó a esa persona.
+     *
+     * @param  list<array<string, mixed>>|null  $requirements
+     */
+    private function syncRequirements(Actor $actor, Load $load, ?array $requirements): void
+    {
+        if ($requirements === null) {
+            return;
+        }
+
+        $ahora = now();
+        $vistos = [];
+        $claves = [];
+
+        foreach (array_values($requirements) as $r) {
+            $tipo = (string) ($r['type'] ?? '');
+            $valor = isset($r['value']) && $r['value'] !== '' ? (string) $r['value'] : null;
+
+            // Un requisito de estatus SIN decir de dónde sale no se guarda.
+            // Exigir ciudadanía sin un contrato que la pida por escrito no es
+            // una regla de negocio; ver la migración 2026_08_31_100000. Esto no
+            // es asesoramiento legal.
+            if ($tipo === LoadRequirementType::WorkAuthorization->value
+                && trim((string) ($r['source'] ?? '')) === '') {
+                throw ValidationException::withMessages([
+                    'requirements' => __('loads.errors.requirementNeedsSource'),
+                ]);
+            }
+
+            // El duplicado se impide aquí y no con un índice único porque la
+            // columna generada que haría falta tendría que colgar de `load_id`,
+            // que es columna de una ajena con ON DELETE CASCADE — y MySQL no
+            // admite las dos cosas a la vez. Ver la migración.
+            $clave = $tipo.'|'.($valor ?? '');
+
+            if (isset($claves[$clave])) {
+                throw ValidationException::withMessages([
+                    'requirements' => __('loads.errors.requirementDuplicated'),
+                ]);
+            }
+
+            $claves[$clave] = true;
+
+            $columnas = [
+                'requirement_type' => $tipo,
+                'value' => $valor,
+                'source' => $r['source'] ?? null,
+                'notes' => $r['notes'] ?? null,
+                'updated_at' => $ahora,
+            ];
+
+            $id = $r['id'] ?? null;
+
+            $existente = $id === null ? null : DB::table('load_requirements')
+                ->where('tenant_id', $load->tenant_id)
+                ->where('load_id', $load->id)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first(['id']);
+
+            if ($existente !== null) {
+                DB::table('load_requirements')->where('id', $existente->id)->update($columnas);
+                $vistos[] = (string) $existente->id;
+
+                continue;
+            }
+
+            $nuevo = (string) Str::uuid();
+
+            DB::table('load_requirements')->insert([
+                ...$columnas,
+                'id' => $nuevo,
+                'tenant_id' => $load->tenant_id,
+                'load_id' => $load->id,
+                'created_by_user_id' => $actor->auditUserId(),
+                'created_at' => $ahora,
+            ]);
+
+            $vistos[] = $nuevo;
+        }
+
+        DB::table('load_requirements')
+            ->where('tenant_id', $load->tenant_id)
+            ->where('load_id', $load->id)
+            ->whereNull('deleted_at')
+            ->when($vistos !== [], fn ($q) => $q->whereNotIn('id', $vistos))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => $ahora,
+            ]);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function requirements(Load $l): array
+    {
+        return DB::table('load_requirements')
+            ->where('tenant_id', $l->tenant_id)
+            ->where('load_id', $l->id)
+            ->whereNull('deleted_at')
+            ->orderBy('requirement_type')
+            ->orderBy('value')
+            ->get(['id', 'requirement_type', 'value', 'source', 'notes'])
+            ->map(fn ($r): array => [
+                'id' => (string) $r->id,
+                'type' => (string) $r->requirement_type,
+                'value' => $r->value,
+                'source' => $r->source,
+                'notes' => $r->notes,
+            ])
+            ->all();
+    }
+
     private function syncStops(Load $load, array $stops): void
     {
         $keep = collect($stops)->pluck('id')->filter()->all();
@@ -792,6 +920,15 @@ final class LoadController
             'stops.*.appointment_type' => ['nullable', 'in:exact,window,fcfs,open'],
             'stops.*.window_start' => ['nullable', 'date'],
             'stops.*.window_end' => ['nullable', 'date'],
+            // Lo que la carga EXIGE de quien la lleva. Ver
+            // App\Support\Loads\DriverEligibility.
+            'requirements' => ['nullable', 'array', 'max:20'],
+            'requirements.*.id' => ['nullable', 'string', 'size:36'],
+            'requirements.*.type' => ['required', Rule::in(LoadRequirementType::values())],
+            'requirements.*.value' => ['nullable', 'string', 'max:40'],
+            'requirements.*.source' => ['nullable', 'string', 'max:2000'],
+            'requirements.*.notes' => ['nullable', 'string', 'max:1000'],
+
             'stops.*.contact_name' => ['nullable', 'string', 'max:200'],
             'stops.*.contact_phone' => ['nullable', 'string', 'max:32'],
             'stops.*.instructions' => ['nullable', 'string', 'max:2000'],

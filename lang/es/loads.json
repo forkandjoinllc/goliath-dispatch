@@ -256,5 +256,53 @@
   "flash": {
     "created": "Carga {number} creada.",
     "updated": "Carga {number} actualizada."
+  },
+  "requirements": {
+    "title": "Requisitos del conductor",
+    "hint": "Lo que esta carga exige de quien la lleve. El sistema lo compara con lo que consta en la ficha de cada conductor y dice cumple / no cumple / no consta — nunca elige al conductor por usted.",
+    "add": "Añadir requisito",
+    "remove": "Quitar",
+    "type": "Requisito",
+    "value": "Valor",
+    "source": "De dónde sale",
+    "sourceHint": "El contrato, la base o el cliente que lo exige.",
+    "sourceRequired": "Obligatorio en un requisito de autorización de trabajo.",
+    "notes": "Notas",
+    "chooseEndorsement": "Elija un endorsement",
+    "chooseStatus": "Cualquier estatus que conste",
+    "chooseYears": "Cualquier récord limpio",
+    "empty": "Esta carga no tiene requisitos."
+  },
+  "requirementType": {
+    "twic": "Tarjeta TWIC",
+    "endorsement": "Endorsement de la CDL",
+    "work_authorization": "Autorización de trabajo",
+    "clean_record": "Récord limpio"
+  },
+  "eligibility": {
+    "meets": "Cumple",
+    "fails": "No cumple",
+    "unknown": "No consta",
+    "twicOk": "TWIC en ficha y en vigor.",
+    "twicMissing": "No consta tarjeta TWIC.",
+    "twicNoExpiry": "Tiene TWIC pero no consta la caducidad.",
+    "twicExpired": "La TWIC está caducada.",
+    "endorsementOk": "El endorsement está en la licencia.",
+    "endorsementMissing": "El endorsement no está en la licencia.",
+    "endorsementNoValue": "El requisito no dice qué endorsement.",
+    "licenceMissing": "No consta la licencia, así que los endorsements se desconocen.",
+    "workAuthOk": "El estatus que consta coincide.",
+    "workAuthRecorded": "Consta un estatus.",
+    "workAuthMismatch": "El estatus que consta es otro.",
+    "workAuthUnknown": "No consta ningún estatus.",
+    "recordOk": "El récord limpio cubre el periodo.",
+    "recordShort": "El récord limpio es más corto que el exigido.",
+    "recordUnknown": "El récord no se ha revisado.",
+    "stale": "La revisión tiene más de un año.",
+    "sourceMissing": "Este requisito no dice de dónde sale."
+  },
+  "errors": {
+    "requirementNeedsSource": "Un requisito de autorización de trabajo tiene que decir de dónde sale: el contrato o la base que lo exige.",
+    "requirementDuplicated": "Ese requisito ya está en la carga."
   }
 }

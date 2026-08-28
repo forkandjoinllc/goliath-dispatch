@@ -23,9 +23,18 @@ interface StopDraft {
   instructions: string
 }
 
+interface RequirementDraft {
+  id: string | null
+  type: string
+  value: string
+  source: string
+  notes: string
+}
+
 interface Props {
   load: Record<string, unknown> | null
   stops: Record<string, unknown>[]
+  requirements?: Record<string, unknown>[]
   choices: {
     customers: { id: string; name: string }[]
     carriers: { id: string; name: string; dispatchFeeBps: number }[]
@@ -34,6 +43,21 @@ interface Props {
   canEditFinancials: boolean
   canEditFreight?: boolean
 }
+
+/** Espejo de App\Enums\LoadRequirementType. */
+const REQUIREMENT_TYPES = ['twic', 'endorsement', 'work_authorization', 'clean_record']
+
+/** Espejo de App\Enums\WorkAuthorization. */
+const WORK_AUTHORIZATIONS = [
+  'us_citizen',
+  'permanent_resident',
+  'employment_authorization',
+  'other',
+]
+
+const ENDORSEMENT_CODES = ['H', 'N', 'T', 'P', 'X', 'S']
+
+const RECORD_YEARS = [1, 2, 3, 5, 10, 15, 20, 25, 30]
 
 const TIMEZONES = [
   'America/New_York', 'America/Chicago', 'America/Denver',
@@ -68,7 +92,7 @@ function toLocalInput(value: unknown): string {
 }
 
 export default function LoadForm({
-  load, stops, choices, canEditFinancials, canEditFreight = true,
+  load, stops, requirements, choices, canEditFinancials, canEditFreight = true,
 }: Props) {
   const { t, locale } = useI18n()
   const editing = load !== null
@@ -103,7 +127,36 @@ export default function LoadForm({
       : [blankStop('pickup'), blankStop('delivery')],
   )
 
+  const requisitosIniciales: RequirementDraft[] = (requirements ?? []).map((r) => ({
+    id: (r.id as string) ?? null,
+    type: (r.type as string) ?? 'twic',
+    value: (r.value as string) ?? '',
+    source: (r.source as string) ?? '',
+    notes: (r.notes as string) ?? '',
+  }))
+
+  const [reqList, setReqList] = useState<RequirementDraft[]>(requisitosIniciales)
+
+  const patchReq = (index: number, patch: Partial<RequirementDraft>) => {
+    const next = reqList.map((r, i) => (i === index ? { ...r, ...patch } : r))
+    setReqList(next)
+    form.setData('requirements', next)
+  }
+
+  const addReq = () => {
+    const next = [...reqList, { id: null, type: 'twic', value: '', source: '', notes: '' }]
+    setReqList(next)
+    form.setData('requirements', next)
+  }
+
+  const removeReq = (index: number) => {
+    const next = reqList.filter((_, i) => i !== index)
+    setReqList(next)
+    form.setData('requirements', next)
+  }
+
   const form = useForm({
+    requirements: requisitosIniciales,
     customer_id: g('customer') ? String((load?.customer as { id: string })?.id ?? '') : '',
     customer_reference: g('customerReference'),
     po_number: g('poNumber'),
@@ -461,6 +514,121 @@ export default function LoadForm({
           </div>
         </fieldset>
         ) : null}
+
+        <Section title={t('loads.requirements.title')}>
+          <div className="sm:col-span-2">
+            <p className="text-xs text-steel-600">{t('loads.requirements.hint')}</p>
+          </div>
+
+          <div className="sm:col-span-2 flex flex-col gap-4">
+            {reqList.length === 0 ? (
+              <p className="text-sm text-steel-600">{t('loads.requirements.empty')}</p>
+            ) : null}
+
+            {reqList.map((r, i) => (
+              <div key={i} className="rounded border border-steel-200 bg-steel-50/60 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-safety-600">
+                    {t(`loads.requirementType.${r.type}`)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeReq(i)}
+                    className="text-xs font-medium text-danger-700 underline transition hover:text-danger-900"
+                  >
+                    {t('loads.requirements.remove')}
+                  </button>
+                </div>
+
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <SelectField
+                    label={t('loads.requirements.type')}
+                    value={r.type}
+                    onChange={(e) => patchReq(i, { type: e.target.value, value: '' })}
+                    options={REQUIREMENT_TYPES.map((v) => ({
+                      value: v,
+                      label: t(`loads.requirementType.${v}`),
+                    }))}
+                  />
+
+                  {/* La TWIC no lleva valor: o se exige o no. Los otros tres sí,
+                      y cada uno con su propia lista. */}
+                  {r.type === 'endorsement' ? (
+                    <SelectField
+                      label={t('loads.requirements.value')}
+                      value={r.value}
+                      onChange={(e) => patchReq(i, { value: e.target.value })}
+                      options={[
+                        { value: '', label: t('loads.requirements.chooseEndorsement') },
+                        ...ENDORSEMENT_CODES.map((c) => ({ value: c, label: c })),
+                      ]}
+                    />
+                  ) : null}
+
+                  {r.type === 'work_authorization' ? (
+                    <SelectField
+                      label={t('loads.requirements.value')}
+                      value={r.value}
+                      onChange={(e) => patchReq(i, { value: e.target.value })}
+                      options={[
+                        { value: '', label: t('loads.requirements.chooseStatus') },
+                        ...WORK_AUTHORIZATIONS.map((v) => ({
+                          value: v,
+                          label: t(`drivers.workAuthorization.${v}`),
+                        })),
+                      ]}
+                    />
+                  ) : null}
+
+                  {r.type === 'clean_record' ? (
+                    <SelectField
+                      label={t('loads.requirements.value')}
+                      value={r.value}
+                      onChange={(e) => patchReq(i, { value: e.target.value })}
+                      options={[
+                        { value: '', label: t('loads.requirements.chooseYears') },
+                        ...RECORD_YEARS.map((y) => ({ value: String(y), label: String(y) })),
+                      ]}
+                    />
+                  ) : null}
+
+                  <div className="sm:col-span-2">
+                    <TextField
+                      label={t('loads.requirements.source')}
+                      /* En un requisito de estatus el servidor lo EXIGE: sin un
+                         contrato que lo pida por escrito, esto no es una regla
+                         de negocio. */
+                      hint={
+                        r.type === 'work_authorization'
+                          ? t('loads.requirements.sourceRequired')
+                          : t('loads.requirements.sourceHint')
+                      }
+                      required={r.type === 'work_authorization'}
+                      maxLength={2000}
+                      value={r.source}
+                      onChange={(e) => patchReq(i, { source: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div>
+              <button
+                type="button"
+                onClick={addReq}
+                className="rounded border border-steel-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+              >
+                {t('loads.requirements.add')}
+              </button>
+              {form.errors.requirements ? (
+                <p role="alert" className="mt-2 text-xs font-medium text-safety-700">
+                  {form.errors.requirements}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </Section>
 
         <Section title={t('loads.form.money')}>
           {canEditFreight ? (

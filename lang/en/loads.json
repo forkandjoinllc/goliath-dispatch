@@ -256,5 +256,53 @@
   "flash": {
     "created": "Load {number} created.",
     "updated": "Load {number} updated."
+  },
+  "requirements": {
+    "title": "Driver requirements",
+    "hint": "What this load demands of whoever runs it. The system compares it against what is on each driver's record and reports meets / does not meet / not recorded — it never picks the driver for you.",
+    "add": "Add requirement",
+    "remove": "Remove",
+    "type": "Requirement",
+    "value": "Value",
+    "source": "Where it comes from",
+    "sourceHint": "The contract, base or customer that demands it.",
+    "sourceRequired": "Required for a work-authorization requirement.",
+    "notes": "Notes",
+    "chooseEndorsement": "Choose an endorsement",
+    "chooseStatus": "Any recorded status",
+    "chooseYears": "Any clean record",
+    "empty": "This load has no requirements."
+  },
+  "requirementType": {
+    "twic": "TWIC card",
+    "endorsement": "CDL endorsement",
+    "work_authorization": "Work authorization",
+    "clean_record": "Clean record"
+  },
+  "eligibility": {
+    "meets": "Meets",
+    "fails": "Does not meet",
+    "unknown": "Not recorded",
+    "twicOk": "TWIC on file and in date.",
+    "twicMissing": "No TWIC card on file.",
+    "twicNoExpiry": "TWIC on file but no expiry recorded.",
+    "twicExpired": "The TWIC has expired.",
+    "endorsementOk": "The endorsement is on the licence.",
+    "endorsementMissing": "The endorsement is not on the licence.",
+    "endorsementNoValue": "The requirement does not say which endorsement.",
+    "licenceMissing": "No licence on file, so the endorsements are unknown.",
+    "workAuthOk": "Recorded status matches.",
+    "workAuthRecorded": "A status is on file.",
+    "workAuthMismatch": "Recorded status is a different one.",
+    "workAuthUnknown": "No status recorded.",
+    "recordOk": "Clean record covers the period.",
+    "recordShort": "Clean record is shorter than required.",
+    "recordUnknown": "The record has not been checked.",
+    "stale": "The check is over a year old.",
+    "sourceMissing": "This requirement does not say where it comes from."
+  },
+  "errors": {
+    "requirementNeedsSource": "A work-authorization requirement has to say where it comes from — the contract or base that demands it.",
+    "requirementDuplicated": "That requirement is already on the load."
   }
 }

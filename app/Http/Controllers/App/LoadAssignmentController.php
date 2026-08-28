@@ -10,6 +10,8 @@ use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Loads\DriverEligibility;
+use App\Support\Loads\DriverFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -177,7 +179,7 @@ final class LoadAssignmentController
                 // Se guarda el estado de cumplimiento TAL COMO ESTABA al
                 // asignar. Si dentro de un año se pregunta «¿sabíais que tenía
                 // la licencia vencida?», esta columna responde.
-                'compliance_snapshot' => json_encode($this->snapshot($data['resource_type'], $data['resource_id'])),
+                'compliance_snapshot' => json_encode($this->snapshot($model, $data['resource_type'], $data['resource_id'])),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -303,11 +305,21 @@ final class LoadAssignmentController
     /**
      * @return array<string, mixed>
      */
-    private function snapshot(string $type, string $id): array
+    private function snapshot(Load $load, string $type, string $id): array
     {
         if ($type === 'driver') {
             $d = DB::table('drivers')->where('id', $id)
-                ->first(['status', 'license_expires_at', 'medical_card_expires_at', 'verification_status']);
+                ->first([
+                    'status', 'license_expires_at', 'medical_card_expires_at', 'verification_status',
+                    'cdl_class', 'license_state', 'endorsements',
+                    'twic_card', 'twic_expires_at', 'work_authorization',
+                    'record_clean_years', 'record_checked_at',
+                ]);
+
+            $requisitos = $this->requirementsOf($load);
+            $veredicto = $d === null
+                ? []
+                : DriverEligibility::evaluate($requisitos, DriverFacts::fromRow($d));
 
             return [
                 'checked_at' => now()->toIso8601String(),
@@ -315,6 +327,13 @@ final class LoadAssignmentController
                 'license_expires_at' => $d->license_expires_at ?? null,
                 'medical_card_expires_at' => $d->medical_card_expires_at ?? null,
                 'verification_status' => $d->verification_status ?? null,
+                // Lo que la carga exigía y cómo quedaba este conductor frente a
+                // ello EN ESE MOMENTO. Si dentro de un año alguien pregunta por
+                // qué se le asignó esta carga, esta columna responde — y
+                // responde con lo que se sabía entonces, no con lo que se sabe
+                // ahora.
+                'requirements' => $veredicto,
+                'requirements_summary' => DriverEligibility::summarize($veredicto),
             ];
         }
 
@@ -326,6 +345,26 @@ final class LoadAssignmentController
             'status' => $u->status ?? null,
             'next_inspection_due_at' => $u->next_inspection_due_at ?? null,
         ];
+    }
+
+    /**
+     * Los requisitos vivos de una carga, en la forma que espera la comparación.
+     *
+     * @return list<array{type: string, value: string|null, source: string|null}>
+     */
+    private function requirementsOf(Load $load): array
+    {
+        return DB::table('load_requirements')
+            ->where('tenant_id', $load->tenant_id)
+            ->where('load_id', $load->id)
+            ->whereNull('deleted_at')
+            ->get(['requirement_type', 'value', 'source'])
+            ->map(fn ($r): array => [
+                'type' => (string) $r->requirement_type,
+                'value' => $r->value,
+                'source' => $r->source,
+            ])
+            ->all();
     }
 
     private function context(Load $load): ResourceContext
