@@ -10,6 +10,7 @@ use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\FactoringController;
+use App\Http\Controllers\App\InvoiceController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
@@ -165,6 +166,23 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('factoring/{factoring}/edit', [FactoringController::class, 'edit'])->name('factoring.edit');
     Route::patch('factoring/{factoring}', [FactoringController::class, 'update'])->name('factoring.update');
     Route::delete('factoring/{factoring}', [FactoringController::class, 'destroy'])->name('factoring.destroy');
+
+    /*
+    | Facturas
+    |
+    | Lo que la casa de despacho le cobra al TRANSPORTISTA: la tarifa de
+    | despacho. Al cliente lo factura el transportista, no nosotros.
+    |
+    | Una factura emitida no se edita: se anula con motivo y se hace otra. Por
+    | eso no hay `edit` ni `update` aquí — no es un olvido.
+    */
+    Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
+    Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+    Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'pay'])->name('invoices.pay');
+    Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');
