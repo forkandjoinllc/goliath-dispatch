@@ -134,10 +134,32 @@
     "save": "Agregar conductor",
     "saveChanges": "Guardar cambios",
     "cancel": "Cancelar",
-    "notesSection": "Notas"
+    "notesSection": "Notas",
+    "qualification": "Aptitud",
+    "qualificationHint": "Nada de esto se comprueba solo. Alguien mira el documento y anota lo que vio — el guardado sella quién y cuándo. Las cargas llevan los requisitos; este lado lleva los hechos.",
+    "twicCard": "Tiene tarjeta TWIC",
+    "twicLast4": "TWIC — últimos 4 dígitos",
+    "twicLast4Hint": "Solo se guardan los cuatro últimos, igual que de la licencia.",
+    "twicExpires": "La TWIC caduca",
+    "workAuthorization": "Autorización de trabajo",
+    "workAuthorizationHint": "Opcional, y sigue siéndolo. Solo algunas cargas lo exigen, y solo cuando un contrato lo pide por escrito.",
+    "recordCleanYears": "Récord limpio",
+    "recordCleanYearsHint": "Hasta dónde salió limpio el récord. En blanco es «no se ha mirado»; 0 es «se miró y hay algo dentro del último año».",
+    "recordCheckedAt": "Récord revisado el",
+    "recordNotes": "Notas del récord",
+    "recordNotesHint": "Qué se revisó y dónde. No pegue aquí el historial completo.",
+    "notRecorded": "No consta",
+    "moreThan30": "Más de 30 años",
+    "nYears": "{n} años"
   },
   "flash": {
     "created": "Se agregó a {name}.",
     "updated": "Se actualizó a {name}."
+  },
+  "workAuthorization": {
+    "us_citizen": "Ciudadano estadounidense",
+    "permanent_resident": "Residente permanente",
+    "employment_authorization": "Autorización de empleo (EAD)",
+    "other": "Otra"
   }
 }

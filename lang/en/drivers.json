@@ -134,10 +134,32 @@
     "save": "Add driver",
     "saveChanges": "Save changes",
     "cancel": "Cancel",
-    "notesSection": "Notes"
+    "notesSection": "Notes",
+    "qualification": "Qualification",
+    "qualificationHint": "Nothing here is checked automatically. Someone looks at the document and records what they saw — the save stamps who and when. Loads carry the requirements; this side carries the facts.",
+    "twicCard": "Has a TWIC card",
+    "twicLast4": "TWIC — last 4 digits",
+    "twicLast4Hint": "Only the last four are stored, same as the licence.",
+    "twicExpires": "TWIC expires",
+    "workAuthorization": "Work authorization",
+    "workAuthorizationHint": "Optional, and it stays optional. Only some loads require it, and only when a contract says so in writing.",
+    "recordCleanYears": "Clean record",
+    "recordCleanYearsHint": "How far back the record came back clean. Blank is «not checked»; 0 is «checked, and there is something within the last year».",
+    "recordCheckedAt": "Record checked on",
+    "recordNotes": "Record notes",
+    "recordNotesHint": "What was checked and where. Do not paste the full history here.",
+    "notRecorded": "Not recorded",
+    "moreThan30": "More than 30 years",
+    "nYears": "{n} years"
   },
   "flash": {
     "created": "{name} was added.",
     "updated": "{name} was updated."
+  },
+  "workAuthorization": {
+    "us_citizen": "US citizen",
+    "permanent_resident": "Permanent resident",
+    "employment_authorization": "Employment authorization (EAD)",
+    "other": "Other"
   }
 }

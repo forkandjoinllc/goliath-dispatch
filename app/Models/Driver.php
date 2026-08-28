@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\DriverStatus;
 use App\Enums\Locale;
 use App\Enums\VerificationStatus;
+use App\Enums\WorkAuthorization;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,6 +40,18 @@ final class Driver extends BaseModel
         'license_number_hash',
         'cdl_class',
         'endorsements',
+        'twic_card',
+        'twic_number_last4',
+        'twic_expires_at',
+        'twic_verified_at',
+        'twic_verified_by_user_id',
+        'work_authorization',
+        'work_authorization_verified_at',
+        'work_authorization_verified_by_user_id',
+        'record_clean_years',
+        'record_checked_at',
+        'record_verified_by_user_id',
+        'record_notes',
         'restrictions',
         'license_expires_at',
         'medical_card_expires_at',
@@ -73,6 +86,13 @@ final class Driver extends BaseModel
     protected function casts(): array
     {
         return [
+            'twic_card' => 'boolean',
+            'twic_expires_at' => 'immutable_datetime',
+            'twic_verified_at' => 'immutable_datetime',
+            'work_authorization' => WorkAuthorization::class,
+            'work_authorization_verified_at' => 'immutable_datetime',
+            'record_clean_years' => 'integer',
+            'record_checked_at' => 'immutable_datetime',
             'date_of_birth' => 'immutable_date',
             'preferred_locale' => Locale::class,
             'license_number_encrypted' => 'encrypted',

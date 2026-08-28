@@ -1,7 +1,7 @@
 import { Link, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
-import { SelectField, TextArea, TextField } from '@/components/Form/Field'
+import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
@@ -13,6 +13,17 @@ interface Props {
 
 /** Los endosos de una CDL. Son cinco y no cambian. */
 const ENDORSEMENTS = ['H', 'N', 'T', 'P', 'X', 'S']
+
+/** Espejo de App\Enums\WorkAuthorization. */
+const WORK_AUTHORIZATIONS = [
+  'us_citizen',
+  'permanent_resident',
+  'employment_authorization',
+  'other',
+]
+
+/** Los tramos que piden los clientes. 31 se pinta como «más de 30». */
+const RECORD_YEARS = [0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 31]
 
 export default function DriverForm({ driver, carriers, selectedCarriers }: Props) {
   const { t } = useI18n()
@@ -38,6 +49,17 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
     restrictions: (driver?.restrictions as string[]) ?? [],
     license_expires_at: String(driver?.licenseExpiresAt ?? '').slice(0, 10),
     medical_card_expires_at: String(driver?.medicalCardExpiresAt ?? '').slice(0, 10),
+    twic_card: Boolean(driver?.twicCard ?? false),
+    twic_number_last4: g('twicNumberLast4'),
+    twic_expires_at: String(driver?.twicExpiresAt ?? '').slice(0, 10),
+    work_authorization: g('workAuthorization'),
+    // Vacío es «no se ha mirado». Cero es «se miró y hay algo dentro del último
+    // año». No son lo mismo y el desplegable los distingue.
+    record_clean_years: driver?.recordCleanYears === null || driver?.recordCleanYears === undefined
+      ? ''
+      : String(driver.recordCleanYears),
+    record_checked_at: String(driver?.recordCheckedAt ?? '').slice(0, 10),
+    record_notes: g('recordNotes'),
     status: g('status') || 'available',
     notes: g('notes'),
     carrier_ids: selectedCarriers,
@@ -233,6 +255,93 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
             </>
           )}
         </fieldset>
+
+        <Section title={t('drivers.form.qualification')}>
+          <div className="sm:col-span-2">
+            <p className="text-xs text-steel-600">{t('drivers.form.qualificationHint')}</p>
+          </div>
+
+          <div className="self-end">
+            <CheckboxField
+              label={t('drivers.form.twicCard')}
+              checked={form.data.twic_card}
+              onChange={(e) => form.setData('twic_card', e.target.checked)}
+            />
+          </div>
+          <div className="hidden sm:block" />
+
+          {/* Los campos de la tarjeta salen al marcarla. Del número solo se
+              guardan los cuatro últimos, igual que de la licencia: nadie
+              necesita el número entero para saber que existe y cuándo caduca. */}
+          {form.data.twic_card ? (
+            <>
+              <TextField
+                label={t('drivers.form.twicLast4')}
+                hint={t('drivers.form.twicLast4Hint')}
+                inputMode="numeric"
+                maxLength={4}
+                value={form.data.twic_number_last4}
+                onChange={(e) => form.setData('twic_number_last4', e.target.value.replace(/\D/g, ''))}
+                error={form.errors.twic_number_last4}
+              />
+              <TextField
+                label={t('drivers.form.twicExpires')}
+                type="date"
+                value={form.data.twic_expires_at}
+                onChange={(e) => form.setData('twic_expires_at', e.target.value)}
+                error={form.errors.twic_expires_at}
+              />
+            </>
+          ) : null}
+
+          <SelectField
+            label={t('drivers.form.workAuthorization')}
+            hint={t('drivers.form.workAuthorizationHint')}
+            value={form.data.work_authorization}
+            onChange={(e) => form.setData('work_authorization', e.target.value)}
+            options={[
+              { value: '', label: t('drivers.form.notRecorded') },
+              ...WORK_AUTHORIZATIONS.map((v) => ({
+                value: v,
+                label: t(`drivers.workAuthorization.${v}`),
+              })),
+            ]}
+            error={form.errors.work_authorization}
+          />
+          <div className="hidden sm:block" />
+
+          <SelectField
+            label={t('drivers.form.recordCleanYears')}
+            hint={t('drivers.form.recordCleanYearsHint')}
+            value={form.data.record_clean_years}
+            onChange={(e) => form.setData('record_clean_years', e.target.value)}
+            options={[
+              { value: '', label: t('drivers.form.notRecorded') },
+              ...RECORD_YEARS.map((y) => ({
+                value: String(y),
+                label: y === 31 ? t('drivers.form.moreThan30') : t('drivers.form.nYears', { n: String(y) }),
+              })),
+            ]}
+            error={form.errors.record_clean_years}
+          />
+          <TextField
+            label={t('drivers.form.recordCheckedAt')}
+            type="date"
+            value={form.data.record_checked_at}
+            onChange={(e) => form.setData('record_checked_at', e.target.value)}
+            error={form.errors.record_checked_at}
+          />
+          <div className="sm:col-span-2">
+            <TextArea
+              label={t('drivers.form.recordNotes')}
+              hint={t('drivers.form.recordNotesHint')}
+              maxLength={2000}
+              value={form.data.record_notes}
+              onChange={(e) => form.setData('record_notes', e.target.value)}
+              error={form.errors.record_notes}
+            />
+          </div>
+        </Section>
 
         <Section title={t('drivers.form.notesSection')}>
           <div className="sm:col-span-2">

@@ -10,6 +10,7 @@ use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Enums\Scope;
+use App\Enums\WorkAuthorization;
 use App\Models\Driver;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
@@ -160,7 +161,7 @@ final class DriverController
 
         $driver = DB::transaction(function () use ($data, $actor): Driver {
             $driver = new Driver;
-            $driver->fill($this->columns($data));
+            $driver->fill($this->stampVerifications($actor, null, $this->columns($data)));
             // Nace SIN verificar, diga lo que diga el formulario. Verificar es
             // un acto aparte con su propio permiso, igual que aprobar un alta
             // de transportista.
@@ -209,7 +210,7 @@ final class DriverController
         $isSelf = ! $checker->can($actor, 'driver:update', $this->context($model), $current->policy())->allowed;
 
         DB::transaction(function () use ($model, $data, $actor, $isSelf): void {
-            $columns = $this->columns($data);
+            $columns = $this->stampVerifications($actor, $model, $this->columns($data));
 
             if ($isSelf) {
                 unset($columns['status']);
@@ -495,6 +496,15 @@ final class DriverController
             'verificationStatus' => EnumValue::of($d->verification_status, 'not_started'),
             'cdlClass' => $d->cdl_class,
             'licenseState' => $d->license_state,
+            'twicCard' => (bool) $d->twic_card,
+            'twicNumberLast4' => $d->twic_number_last4,
+            'twicExpiresAt' => $d->twic_expires_at?->toDateString(),
+            'twicVerifiedAt' => $d->twic_verified_at?->toIso8601String(),
+            'workAuthorization' => EnumValue::of($d->work_authorization),
+            'workAuthorizationVerifiedAt' => $d->work_authorization_verified_at?->toIso8601String(),
+            'recordCleanYears' => $d->record_clean_years,
+            'recordCheckedAt' => $d->record_checked_at?->toDateString(),
+            'recordNotes' => $d->record_notes,
             'licenseCountry' => $d->license_country,
             // Solo los últimos cuatro. El número entero no sale de la base de
             // datos ni para el admin.
@@ -640,6 +650,66 @@ final class DriverController
     }
 
     /**
+     * Quién miró el papel, y cuándo.
+     *
+     * La plataforma NO consulta al TSA ni pide un MVR: alguien mira el
+     * documento y deja constancia. Por eso el sello lo pone el guardado, con el
+     * usuario que está guardando, y solo cuando el dato CAMBIA — si se
+     * re-sellara en cada guardado, la fecha diría «hoy» para siempre y dejaría
+     * de significar nada.
+     *
+     * @param  array<string, mixed>  $columns
+     * @return array<string, mixed>
+     */
+    private function stampVerifications(Actor $actor, ?Driver $antes, array $columns): array
+    {
+        $ahora = now();
+        $usuario = $actor->auditUserId();
+
+        $cambia = static function (?Driver $d, array $campos, array $columns): bool {
+            if ($d === null) {
+                // Alta: se sella lo que venga con contenido, y nada más.
+                foreach ($campos as $campo) {
+                    $v = $columns[$campo] ?? null;
+
+                    if ($v !== null && $v !== false && $v !== '') {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            foreach ($campos as $campo) {
+                $viejo = EnumValue::of($d->{$campo});
+                $nuevo = EnumValue::of($columns[$campo] ?? null);
+
+                if ($viejo !== $nuevo) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        if ($cambia($antes, ['twic_card', 'twic_number_last4', 'twic_expires_at'], $columns)) {
+            $columns['twic_verified_at'] = $ahora;
+            $columns['twic_verified_by_user_id'] = $usuario;
+        }
+
+        if ($cambia($antes, ['work_authorization'], $columns)) {
+            $columns['work_authorization_verified_at'] = $ahora;
+            $columns['work_authorization_verified_by_user_id'] = $usuario;
+        }
+
+        if ($cambia($antes, ['record_clean_years', 'record_checked_at'], $columns)) {
+            $columns['record_verified_by_user_id'] = $usuario;
+        }
+
+        return $columns;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
@@ -655,6 +725,13 @@ final class DriverController
             'license_country' => $data['license_country'] ?? Regions::DEFAULT_COUNTRY,
             'cdl_class' => $data['cdl_class'] ?? null,
             'endorsements' => $data['endorsements'] ?? [],
+            'twic_card' => (bool) ($data['twic_card'] ?? false),
+            'twic_number_last4' => ($data['twic_card'] ?? false) ? ($data['twic_number_last4'] ?? null) : null,
+            'twic_expires_at' => ($data['twic_card'] ?? false) ? ($data['twic_expires_at'] ?? null) : null,
+            'work_authorization' => $data['work_authorization'] ?? null,
+            'record_clean_years' => $data['record_clean_years'] ?? null,
+            'record_checked_at' => $data['record_checked_at'] ?? null,
+            'record_notes' => $data['record_notes'] ?? null,
             'restrictions' => $data['restrictions'] ?? [],
             'license_expires_at' => $data['license_expires_at'] ?? null,
             'medical_card_expires_at' => $data['medical_card_expires_at'] ?? null,
@@ -708,6 +785,19 @@ final class DriverController
             'cdl_class' => ['nullable', 'in:A,B,C'],
             'endorsements' => ['array'],
             'endorsements.*' => ['string', 'max:4'],
+
+            // Aptitud. Todo opcional: se puede dar de alta, verificar, asignar
+            // y pagar a un conductor sin rellenar nada de esto.
+            'twic_card' => ['boolean'],
+            'twic_number_last4' => ['nullable', 'string', 'regex:/^[0-9]{4}$/'],
+            'twic_expires_at' => ['nullable', 'date'],
+            'work_authorization' => ['nullable', Rule::in(WorkAuthorization::values())],
+            // Cero es «se miró y hay algo dentro del último año», que NO es lo
+            // mismo que no rellenarlo, que es «no se ha mirado». 31 significa
+            // «más de treinta».
+            'record_clean_years' => ['nullable', 'integer', 'min:0', 'max:31'],
+            'record_checked_at' => ['nullable', 'date'],
+            'record_notes' => ['nullable', 'string', 'max:2000'],
             'restrictions' => ['array'],
             'restrictions.*' => ['string', 'max:4'],
             'license_expires_at' => ['nullable', 'date'],
