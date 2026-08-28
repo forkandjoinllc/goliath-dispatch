@@ -37,56 +37,84 @@ use Illuminate\Support\Facades\Schema;
  *    como una lista de incidentes. Es lo que preguntan los clientes y es lo
  *    único que el que mira el MVR puede afirmar sin copiarse el historial
  *    entero a una base de datos que se conserva siete años.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * POR QUÉ ESTA MIGRACIÓN SE PUEDE VOLVER A EJECUTAR
+ *
+ * MySQL no tiene DDL transaccional. Laravel manda un `alter table` POR COLUMNA,
+ * así que una migración que muera a mitad deja la mitad de las columnas puestas
+ * y no se registra en `migrations` — y al reintentarla, la primera columna que
+ * ya existe la mata con un 1060.
+ *
+ * Eso fue exactamente lo que pasó en el despliegue del 28 de agosto. La salida
+ * no es adivinar dónde se quedó: es que cada paso mire antes si ya está hecho.
+ * Doce columnas, dos CHECK, tres claves ajenas y un índice, cada uno con su
+ * comprobación. Ejecutarla dos veces seguidas da el mismo resultado que
+ * ejecutarla una.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 return new class extends Migration
 {
+    /**
+     * columna => definición SQL, en el orden en que se añaden.
+     *
+     * @var array<string, string>
+     */
+    private array $columnas = [
+        'twic_card' => "tinyint(1) not null default '0' after `endorsements`",
+        'twic_number_last4' => 'varchar(4) null after `twic_card`',
+        'twic_expires_at' => 'datetime(3) null after `twic_number_last4`',
+        'twic_verified_at' => 'datetime(3) null after `twic_expires_at`',
+        'twic_verified_by_user_id' => 'char(36) null after `twic_verified_at`',
+        'work_authorization' => 'varchar(30) null after `twic_verified_by_user_id`',
+        'work_authorization_verified_at' => 'datetime(3) null after `work_authorization`',
+        'work_authorization_verified_by_user_id' => 'char(36) null after `work_authorization_verified_at`',
+        'record_clean_years' => 'tinyint unsigned null after `work_authorization_verified_by_user_id`',
+        'record_checked_at' => 'datetime(3) null after `record_clean_years`',
+        'record_verified_by_user_id' => 'char(36) null after `record_checked_at`',
+        'record_notes' => 'text null after `record_verified_by_user_id`',
+    ];
+
     public function up(): void
     {
-        Schema::table('drivers', function (Blueprint $table): void {
-            // ── TWIC ────────────────────────────────────────────────────────
-            $table->boolean('twic_card')->default(false)->after('endorsements');
-            $table->string('twic_number_last4', 4)->nullable()->after('twic_card');
-            $table->dateTime('twic_expires_at', 3)->nullable()->after('twic_number_last4');
-            $table->dateTime('twic_verified_at', 3)->nullable()->after('twic_expires_at');
-            $table->char('twic_verified_by_user_id', 36)->nullable()->after('twic_verified_at');
+        foreach ($this->columnas as $columna => $definicion) {
+            if (Schema::hasColumn('drivers', $columna)) {
+                continue;
+            }
 
-            // ── Autorización de trabajo ─────────────────────────────────────
-            $table->string('work_authorization', 30)->nullable()->after('twic_verified_by_user_id');
-            $table->dateTime('work_authorization_verified_at', 3)->nullable()->after('work_authorization');
-            $table->char('work_authorization_verified_by_user_id', 36)->nullable()->after('work_authorization_verified_at');
+            DB::statement("alter table `drivers` add `{$columna}` {$definicion}");
+        }
 
-            // ── Récord ──────────────────────────────────────────────────────
-            $table->unsignedTinyInteger('record_clean_years')->nullable()->after('work_authorization_verified_by_user_id');
-            $table->dateTime('record_checked_at', 3)->nullable()->after('record_clean_years');
-            $table->char('record_verified_by_user_id', 36)->nullable()->after('record_checked_at');
-            $table->text('record_notes')->nullable()->after('record_verified_by_user_id');
-        });
-
-        // Solo el número de TWIC completo NO se guarda: se guardan los cuatro
-        // últimos, igual que con la licencia y el EIN. Nadie necesita el número
-        // entero para saber que la tarjeta existe y cuándo caduca.
-        DB::statement("
-            alter table drivers
-            add constraint chk_drivers_work_authorization
-            check (`work_authorization` is null or `work_authorization` in (
-                'us_citizen','permanent_resident','employment_authorization','other'
-            ))
-        ");
+        if (! $this->tieneRestriccion('chk_drivers_work_authorization')) {
+            DB::statement("
+                alter table drivers
+                add constraint chk_drivers_work_authorization
+                check (`work_authorization` is null or `work_authorization` in (
+                    'us_citizen','permanent_resident','employment_authorization','other'
+                ))
+            ");
+        }
 
         // Cero es «se miró y hay algo dentro del último año», que NO es lo mismo
         // que NULL, que es «no se ha mirado». Treinta y uno significa «más de
         // treinta»: la lista del formulario acaba ahí.
-        DB::statement('
-            alter table drivers
-            add constraint chk_drivers_record_clean_years
-            check (`record_clean_years` is null or `record_clean_years` between 0 and 31)
-        ');
+        if (! $this->tieneRestriccion('chk_drivers_record_clean_years')) {
+            DB::statement('
+                alter table drivers
+                add constraint chk_drivers_record_clean_years
+                check (`record_clean_years` is null or `record_clean_years` between 0 and 31)
+            ');
+        }
 
         foreach ([
             'twic_verified_by_user_id' => 'fk_drivers_twic_verified_by_user',
             'work_authorization_verified_by_user_id' => 'fk_drivers_work_auth_verified_by_user',
             'record_verified_by_user_id' => 'fk_drivers_record_verified_by_user',
         ] as $columna => $nombre) {
+            if ($this->tieneRestriccion($nombre)) {
+                continue;
+            }
+
             // `set null` y no `cascade`: que un usuario se dé de baja no puede
             // borrar al conductor cuyo TWIC verificó. Se pierde el nombre, no
             // el hecho — y la pista de auditoría sigue teniéndolo.
@@ -97,33 +125,61 @@ return new class extends Migration
             ");
         }
 
-        DB::statement('create index drivers_twic_expiry_idx on drivers (tenant_id, twic_expires_at)');
+        if (! $this->tieneIndice('drivers_twic_expiry_idx')) {
+            DB::statement('create index drivers_twic_expiry_idx on drivers (tenant_id, twic_expires_at)');
+        }
+    }
+
+    /** CHECK o clave ajena, que en information_schema viven en la misma tabla. */
+    private function tieneRestriccion(string $nombre): bool
+    {
+        return DB::table('information_schema.table_constraints')
+            ->where('constraint_schema', DB::getDatabaseName())
+            ->where('table_name', 'drivers')
+            ->where('constraint_name', $nombre)
+            ->exists();
+    }
+
+    private function tieneIndice(string $nombre): bool
+    {
+        return DB::table('information_schema.statistics')
+            ->where('table_schema', DB::getDatabaseName())
+            ->where('table_name', 'drivers')
+            ->where('index_name', $nombre)
+            ->exists();
     }
 
     public function down(): void
     {
-        DB::statement('drop index drivers_twic_expiry_idx on drivers');
+        if ($this->tieneIndice('drivers_twic_expiry_idx')) {
+            DB::statement('drop index drivers_twic_expiry_idx on drivers');
+        }
 
         foreach ([
             'fk_drivers_twic_verified_by_user',
             'fk_drivers_work_auth_verified_by_user',
             'fk_drivers_record_verified_by_user',
         ] as $nombre) {
-            DB::statement("alter table drivers drop foreign key {$nombre}");
+            if ($this->tieneRestriccion($nombre)) {
+                DB::statement("alter table drivers drop foreign key {$nombre}");
+            }
         }
 
-        DB::statement('alter table drivers drop check chk_drivers_record_clean_years');
-        DB::statement('alter table drivers drop check chk_drivers_work_authorization');
+        foreach (['chk_drivers_record_clean_years', 'chk_drivers_work_authorization'] as $nombre) {
+            if ($this->tieneRestriccion($nombre)) {
+                DB::statement("alter table drivers drop check {$nombre}");
+            }
+        }
 
-        Schema::table('drivers', function (Blueprint $table): void {
-            $table->dropColumn([
-                'twic_card', 'twic_number_last4', 'twic_expires_at',
-                'twic_verified_at', 'twic_verified_by_user_id',
-                'work_authorization', 'work_authorization_verified_at',
-                'work_authorization_verified_by_user_id',
-                'record_clean_years', 'record_checked_at',
-                'record_verified_by_user_id', 'record_notes',
-            ]);
-        });
+        $presentes = array_values(array_filter(
+            array_keys($this->columnas),
+            fn (string $c): bool => Schema::hasColumn('drivers', $c),
+        ));
+
+        if ($presentes !== []) {
+            Schema::table('drivers', function (Blueprint $table) use ($presentes): void {
+                $table->dropColumn($presentes);
+            });
+        }
     }
 };
