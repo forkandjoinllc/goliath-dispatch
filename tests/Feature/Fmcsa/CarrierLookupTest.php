@@ -87,9 +87,17 @@ it('el aviso de duplicado no cruza empresas', function () {
     $otro = Scenario::create();
     app(TenantContext::class)->forget();
 
-    signIn($this->scenario, Role::Admin);
+    // Un DOT que SOLO existe en la otra empresa. Scenario reparte el mismo
+    // número fijo a todas las que monta, así que sin esto la prueba buscaba un
+    // DOT que el propio actor también tiene, encontraba el SUYO —lo correcto— y
+    // se leía como una fuga entre empresas.
+    $dot = '7099001';
 
-    $dot = (string) $otro->assignedCarrier->dot_number;
+    DB::table('carriers')
+        ->where('id', $otro->assignedCarrier->id)
+        ->update(['dot_number' => $dot, 'updated_at' => now()]);
+
+    signIn($this->scenario, Role::Admin);
 
     $this->get("/carriers/create?dot={$dot}")
         ->assertInertia(fn (Assert $page) => $page->where('lookup.existing', null));

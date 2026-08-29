@@ -793,7 +793,15 @@ final class CarrierController
             // El correo del principal es obligatorio porque la columna
             // `carriers.email` lo es. Los demás pueden no tenerlo: el de
             // guardia a las tres de la mañana es un teléfono, no un buzón.
-            'contacts.0.email' => ['required', 'email:rfc', 'max:255'],
+            //
+            // `required_with:contacts` y NO `required` a secas. Con un índice
+            // explícito —`contacts.0.email`, no el comodín— Laravel exige el
+            // campo aunque `contacts` no venga en la petición: quien mandara
+            // solo los cuatro campos sueltos recibía «The contacts.0.email
+            // field is required» y no había forma de contentarlo. Los comodines
+            // `contacts.*` no tienen ese problema porque solo se expanden sobre
+            // lo que llega.
+            'contacts.0.email' => ['required_with:contacts', 'email:rfc', 'max:255'],
             'contacts.*.email' => ['nullable', 'email:rfc', 'max:255'],
             'contacts.*.phone' => ['nullable', 'string', 'max:32'],
             // El cargo responde «¿a quién llamo para esto?». Lista cerrada:
@@ -991,7 +999,11 @@ final class CarrierController
             'email' => $carrier->email,
             'phone' => $carrier->phone,
             'position' => CarrierContactPosition::Other->value,
-            'preferred_locale' => (string) $carrier->preferred_locale,
+            // ->value: aquí `$carrier` es un modelo de Eloquent y
+            // `preferred_locale` está casteado a Locale. Un `(string)` sobre un
+            // enum es un Error en ejecución. Ojo: en contacts(), justo debajo,
+            // las filas vienen de DB::table() y ahí (string) SÍ es lo correcto.
+            'preferred_locale' => $carrier->preferred_locale->value,
         ];
     }
 

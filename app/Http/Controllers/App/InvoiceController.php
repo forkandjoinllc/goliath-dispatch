@@ -196,7 +196,7 @@ final class InvoiceController
             ],
             'can' => [
                 'send' => $checker->can($actor, 'invoice:send', $this->context($model), $policy)->allowed,
-                'pay' => $checker->can($actor, 'invoice:pay', $this->context($model), $policy)->allowed,
+                'pay' => $checker->can($actor, 'payment:record', $this->context($model), $policy)->allowed,
                 'changeStatus' => $checker->can($actor, 'invoice:status:update', $this->context($model), $policy)->allowed,
             ],
         ]);
@@ -214,7 +214,10 @@ final class InvoiceController
 
         $checker->authorize($actor, 'invoice:send', $this->context($model), $policy);
 
-        if ($model->status !== 'draft') {
+        // ->value: `status` está casteado a InvoiceStatus, y un enum nunca es
+        // idéntico a una cadena. Tal cual estaba, esta condición era SIEMPRE
+        // cierta y no se podía enviar ninguna factura, nunca.
+        if ($model->status->value !== 'draft') {
             throw ValidationException::withMessages([
                 'status' => __('invoices.errors.onlyDraftCanBeSent'),
             ]);
@@ -260,9 +263,16 @@ final class InvoiceController
         $scope = $checker->authorize($actor, 'invoice:read', null, $policy);
         $model = $this->find($checker, $actor, $scope, $invoice);
 
-        $checker->authorize($actor, 'invoice:pay', $this->context($model), $policy);
+        // `payment:record` y NO `invoice:pay`. Este endpoint ANOTA lo cobrado,
+        // que es un acto de la oficina; `invoice:pay` («pagar una factura») solo
+        // lo tiene el rol transportista, así que tal cual estaba ni el
+        // administrador ni contabilidad podían registrar un cobro — y en cambio
+        // el transportista podía dar por pagada su propia factura.
+        $checker->authorize($actor, 'payment:record', $this->context($model), $policy);
 
-        if (in_array($model->status, ['draft', 'voided'], true)) {
+        // Y aquí al revés: era SIEMPRE falsa, así que se podían anotar cobros
+        // contra una factura en borrador o anulada.
+        if (in_array($model->status->value, ['draft', 'voided'], true)) {
             throw ValidationException::withMessages([
                 'amount_cents' => __('invoices.errors.cannotPayThis'),
             ]);

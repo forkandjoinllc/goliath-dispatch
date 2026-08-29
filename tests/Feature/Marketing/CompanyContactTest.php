@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\Locale;
 use App\Support\Company;
-use App\Support\Site;
+use App\Support\Marketing\Site;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

@@ -19,7 +19,11 @@ use App\Support\Geo\Regions;
  */
 function regionesDelNavegador(): array
 {
-    $ruta = base_path('resources/js/lib/regions.ts');
+    // dirname(__DIR__, 3) y no base_path(): las pruebas de tests/Unit no
+    // arrancan la aplicación, así que el contenedor no sabe dónde está la raíz
+    // y `base_path()` muere con «Call to undefined method
+    // Container::basePath()». Esta comparación no necesita Laravel para nada.
+    $ruta = dirname(__DIR__, 3).'/resources/js/lib/regions.ts';
 
     expect(file_exists($ruta))->toBeTrue('Falta resources/js/lib/regions.ts');
 
@@ -52,7 +56,7 @@ function regionesDelNavegador(): array
 }
 
 it('el navegador y el servidor tienen los mismos países', function () {
-    $fuente = file_get_contents(base_path('resources/js/lib/regions.ts'));
+    $fuente = file_get_contents(dirname(__DIR__, 3).'/resources/js/lib/regions.ts');
 
     // Se corta en el corchete que cierra COUNTRIES. Sin eso el bloque se comería
     // el principio de SUBDIVISIONS y la prueba pasaría contando estados.

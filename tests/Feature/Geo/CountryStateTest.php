@@ -91,6 +91,10 @@ it('el estado del cliente y el de facturación se validan por separado', functio
 
     $this->post('/customers', [
         'company_name' => 'Clientes del Norte SA',
+        // `status` es obligatorio en el alta de cliente. Faltaba aquí, y el
+        // fallo se leía como un problema de estados/provincias porque en
+        // español el atributo se llama «estado» igual que la subdivisión.
+        'status' => 'active',
         'physical_country' => 'MX',
         'physical_state' => 'NLE',
         'billing_same_as_physical' => false,

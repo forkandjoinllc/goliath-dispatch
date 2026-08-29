@@ -134,7 +134,15 @@ it('una revisión vieja se marca pero no cambia el veredicto', function () {
 /* ── El resumen ─────────────────────────────────────────────────────────── */
 
 it('un solo «no cumple» manda sobre todo lo demás', function () {
-    $facts = new DriverFacts(twicCard: true, twicExpiresAt: CarbonImmutable::parse('2029-01-01'));
+    // `licenceOnFile` importa: sin licencia registrada, una lista de endosos
+    // vacía significa «nadie ha metido la licencia», no «no tiene el endoso», y
+    // el veredicto correcto es «no consta». Para probar que un fallo manda sobre
+    // el resto hace falta un fallo DE VERDAD, y eso exige licencia en el sistema.
+    $facts = new DriverFacts(
+        twicCard: true,
+        twicExpiresAt: CarbonImmutable::parse('2029-01-01'),
+        licenceOnFile: true,
+    );
 
     // Cumple la TWIC, no consta el récord, y falla el endorsement.
     expect(veredicto([req('twic'), req('clean_record', '3'), req('endorsement', 'H')], $facts))

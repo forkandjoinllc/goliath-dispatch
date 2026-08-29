@@ -19,17 +19,18 @@ segundos —246 claves foráneas, 47 triggers, 89 CHECK— y hacerlo por cada cl
 convertiría la suite en algo que nadie ejecuta. Se construye una vez por proceso
 y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 
-## Estado: la suite entera, ejecutada
+## Estado: la suite entera, en verde
 
-**29 de agosto de 2026**, contra MySQL 8.0.46 real, con `vendor/` instalado y el
-frontend construido:
+**29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-Tests: 632, Assertions: 4151, Errors: 12, Failures: 16
+OK (632 tests, 4300 assertions)
 ```
 
-Es decir **604 en verde de 632**. Antes de esta sesión la suite no llegaba ni a
-arrancar, y llevaba así desde hacía varios lotes sin que se notara.
+Se llegó aquí en dos pasos el mismo día. Primero la suite ni siquiera arrancaba
+—llevaba varios lotes así sin que se notara— y al conseguir ejecutarla salieron
+28 problemas. Al arreglarlos, **la mayoría eran de la aplicación, no de las
+pruebas**, y varios de ellos en el dinero.
 
 ### Tres fatales que impedían ejecutar NADA
 
@@ -59,7 +60,7 @@ La lección de los tres es la misma y merece conservarse: **un fichero de prueba
 que pasa en solitario no dice nada sobre la suite**. Estos tres solo aparecen al
 ejecutarlo todo junto.
 
-### Y cinco defectos de la aplicación, no de las pruebas
+### Los primeros cinco defectos de la aplicación, no de las pruebas
 
 Al contrario que en el arranque de agosto —donde 118 de 119 fallos eran de las
 pruebas—, esta vez la mayoría eran del código:
@@ -80,25 +81,28 @@ rompería los otros — y de hecho pasó al intentarlo: `CarrierSettlement` **no
 castea `status` a enum aunque `Invoice` sí. Dos modelos del mismo dominio que no
 se parecen tanto como aparentan.
 
-### Lo que queda por mirar
+### Y los que salieron al arreglar los 28 restantes
 
-Los 28 restantes, por fichero:
+Además de los cinco de la primera pasada (comparaciones de enum en gastos y
+facturas, la columna `carriers.dba_name` inexistente y la fecha de inicio de las
+asignaciones), la segunda pasada destapó estos, todos reales:
 
-```
-tests/Feature/Marketing/CompanyContactTest.php   6   Class "App\Support\Site" not found
-                                                      (la clase real es App\Support\Marketing\Site)
-tests/Feature/Carriers/CarrierAccessTest.php     3   edición de transportista y lookup
-tests/Feature/Documents/*                        3   insert en `documents` con columna `status` inexistente
-tests/Feature/Finance/InvoiceTest.php            4   cobros parciales, saldo y anulación
-tests/Feature/Factoring/FactoringTest.php        2   validación de contactos
-tests/Unit/Loads/DriverEligibilityTest.php       1   espera 'fails', obtiene 'unknown'
-resto                                            9   varios
-```
+| Dónde | Qué |
+|---|---|
+| `InvoiceController::send()` | `if ($model->status !== 'draft')` sobre un enum: **siempre cierto**. No se podía enviar ninguna factura, nunca. |
+| `InvoiceController::pay()` | `in_array($model->status, [...], true)` sobre un enum: **siempre falso**. Se podían anotar cobros contra una factura en borrador o anulada. |
+| `InvoiceController::pay()` | Exigía `invoice:pay`, que solo tiene el rol **transportista**. Ni el administrador ni contabilidad podían registrar un cobro — y el transportista sí podía dar por pagada su propia factura. Ahora exige `payment:record`. |
+| `CarrierController` (validación) | `contacts.0.email => required` con índice explícito: Laravel lo exige **aunque `contacts` no venga en la petición**. Quien mandara solo los cuatro campos sueltos recibía un error imposible de contentar. Ahora es `required_with:contacts`. |
+| `CarrierController::primaryFromColumns()` | `(string)` sobre `preferred_locale`, casteado a enum. 500 en el alta sin `contacts` — que era el camino que la validación anterior bloqueaba, así que los dos fallos se tapaban mutuamente. |
 
-Ninguno se ha investigado a fondo. La regla del arranque de agosto sigue
-sirviendo para triarlos: si falla por la **forma** (método que no existe, firma
-cambiada, fixture incompleto) suele ser la prueba; si falla por el **valor
-esperado**, mírese, que puede ser una regresión.
+El resto eran pruebas caducadas: un fixture que insertaba `documents.status`
+cuando la columna es `review_status`, otro que olvidaba el `status` obligatorio
+del alta de cliente, un `use App\Support\Site` cuando la clase es
+`App\Support\Marketing\Site`, dos `base_path()` en una prueba de `tests/Unit`
+—que no arranca la aplicación y por tanto no tiene raíz—, un caso de aptitud de
+conductor que esperaba «no cumple» cuando lo correcto es «no consta» sin
+licencia registrada, y una prueba de duplicados entre empresas que buscaba un
+DOT que el propio actor también tenía.
 
 ### Cómo montar el entorno de ejecución
 
