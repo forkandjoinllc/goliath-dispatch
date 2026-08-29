@@ -26,6 +26,8 @@ use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\Transitions;
+use App\Support\Tenancy\TenantPolicy;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -705,8 +707,19 @@ final class LoadController
 
         if ($canMoney) {
             $columns['carrier_gross_rate_cents'] = $data['carrier_gross_rate_cents'] ?? 0;
-            $columns['carrier_dispatch_fee_bps'] = $data['carrier_dispatch_fee_bps'] ?? 1000;
-            $columns['dispatcher_commission_bps'] = $data['dispatcher_commission_bps'] ?? 2500;
+            // Los valores por defecto salen de la POLÍTICA DE LA EMPRESA, no de
+            // constantes. Antes eran `?? 1000` y `?? 2500` y las columnas
+            // `default_carrier_dispatch_fee_bps` y
+            // `default_dispatcher_commission_bps` no las leía nadie: una empresa
+            // con otra política recibía la mía en cada carga, en silencio.
+            $policy = TenantPolicy::for(app(TenantContext::class)->id());
+
+            $columns['carrier_dispatch_fee_bps'] = $data['carrier_dispatch_fee_bps']
+                ?? $policy->carrierDispatchFeeBps;
+            $columns['dispatcher_commission_bps'] = $data['dispatcher_commission_bps']
+                ?? $policy->dispatcherCommissionBps;
+            $columns['dispatcher_commission_basis'] = $data['dispatcher_commission_basis']
+                ?? $policy->dispatcherCommissionBasis->value;
         }
 
         return $columns;

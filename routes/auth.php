@@ -19,6 +19,7 @@ use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\SettlementController;
+use App\Http\Controllers\App\TenantSettingController;
 use App\Http\Controllers\App\UserController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\SignupController;
@@ -270,6 +271,15 @@ Route::middleware(['auth'])->group(function (): void {
     | Una invitación pendiente es una pertenencia en estado `invited`, así que
     | reenviarla y retirarla van por el id de la pertenencia y no por uno propio.
     */
+    /*
+    | Ajustes de la empresa
+    |
+    | La POLÍTICA con la que nacen las cargas y las facturas. Seis sitios leen
+    | esta fila en vivo; hasta ahora solo se cambiaba entrando a MySQL.
+    */
+    Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
+    Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users', [UserController::class, 'store'])->name('users.invite');
     Route::post('users/{membership}/resend', [UserController::class, 'resend'])->name('users.resend');

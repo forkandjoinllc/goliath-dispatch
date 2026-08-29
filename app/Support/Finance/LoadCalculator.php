@@ -6,6 +6,7 @@ namespace App\Support\Finance;
 
 use App\Enums\CommissionBasis;
 use App\Models\Load;
+use App\Support\Tenancy\TenantPolicy;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -57,11 +58,7 @@ final class LoadCalculator
      */
     private function feeBase(string $tenantId): FeeBase
     {
-        $value = DB::table('tenant_settings')
-            ->where('tenant_id', $tenantId)
-            ->value('dispatch_fee_base');
-
-        return FeeBase::tryFrom((string) $value) ?? FeeBase::Commissionable;
+        return TenantPolicy::for($tenantId)->dispatchFeeBase;
     }
 
     /**

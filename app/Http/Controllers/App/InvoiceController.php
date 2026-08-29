@@ -16,6 +16,7 @@ use App\Support\Audit;
 use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\InvoiceBuilder;
 use App\Support\InertiaPage;
+use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -160,7 +161,9 @@ final class InvoiceController
             $actor,
             (string) $data['carrier_id'],
             $loads,
-            (int) ($data['payment_terms_days'] ?? 30),
+            // El plazo por defecto es el de la EMPRESA. Antes era un `?? 30` y
+            // `default_payment_terms_days` no lo leía nadie.
+            (int) ($data['payment_terms_days'] ?? TenantPolicy::for($actor->tenantId)->paymentTermsDays),
         ));
 
         $invoice = Invoice::query()->findOrFail($invoiceId);
