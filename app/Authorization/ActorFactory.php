@@ -108,14 +108,67 @@ final class ActorFactory
                 ->values()
                 ->all();
 
+            $groupIds = $by('group');
+            // Un grupo asignado tiene que CONCEDER lo que hay dentro. Antes se
+            // recogían los ids de grupo y no se abrían nunca: asignar un grupo
+            // a un despachador no le daba acceso a nada, aunque el comentario de
+            // AssignmentScope ya prometía «directamente o vía grupo».
+            $viaGrupo = $this->groupMembers($tenantId, $groupIds);
+
+            $unir = static fn (array $directos, string $tipo): array => array_values(array_unique(
+                [...$directos, ...($viaGrupo[$tipo] ?? [])]
+            ));
+
             return new AssignmentScope(
-                carrierIds: $by('carrier'),
-                truckIds: $by('truck'),
-                trailerIds: $by('trailer'),
-                driverIds: $by('driver'),
-                groupIds: $by('group'),
+                carrierIds: $unir($by('carrier'), 'carrier'),
+                truckIds: $unir($by('truck'), 'truck'),
+                trailerIds: $unir($by('trailer'), 'trailer'),
+                driverIds: $unir($by('driver'), 'driver'),
+                groupIds: $groupIds,
             );
         });
+    }
+
+    /**
+     * Lo que hay dentro de los grupos asignados, agrupado por tipo.
+     *
+     * Un grupo es una bolsa de transportistas, camiones, remolques y
+     * conductores; asignarlo concede a la vez todo lo que contiene. Se resuelve
+     * aquí, al construir el Actor, y no dentro de `can()`: una comprobación de
+     * permiso tiene que poder llamarse en un bucle de renderizado sin tocar la
+     * base de datos.
+     *
+     * Solo los grupos ACTIVOS y sus miembros vivos. Un grupo desactivado deja de
+     * conceder, que es para lo que sirve poder desactivarlo.
+     *
+     * @param  list<string>  $groupIds
+     * @return array<string, list<string>>
+     */
+    private function groupMembers(string $tenantId, array $groupIds): array
+    {
+        if ($groupIds === []) {
+            return [];
+        }
+
+        $filas = DB::table('group_members as m')
+            ->join('dispatcher_groups as g', 'g.id', '=', 'm.group_id')
+            ->where('m.tenant_id', $tenantId)
+            ->whereIn('m.group_id', $groupIds)
+            ->whereNull('m.deleted_at')
+            ->whereNull('g.deleted_at')
+            ->where('g.active', true)
+            ->get(['m.member_type', 'm.member_id']);
+
+        $salida = [];
+
+        foreach ($filas as $f) {
+            $salida[(string) $f->member_type][] = (string) $f->member_id;
+        }
+
+        return array_map(
+            static fn (array $ids): array => array_values(array_unique($ids)),
+            $salida,
+        );
     }
 
     /**

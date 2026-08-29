@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\App\DashboardController;
+use App\Http\Controllers\App\AssignmentController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CustomerController;
@@ -238,6 +239,24 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
     Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
     Route::post('expenses/{expense}/reimburse', [ExpenseController::class, 'reimburse'])->name('expenses.reimburse');
+
+    /*
+    | Asignaciones de despachador
+    |
+    | Lo que hace funcionar el ámbito `assigned`: sin una fila aquí, un
+    | despachador entra con todos sus permisos y ve las listas vacías.
+    |
+    | Retirar una asignación le pone fecha de fin en vez de borrarla, así que va
+    | por POST y no por DELETE — no se está borrando nada.
+    */
+    Route::get('assignments', [AssignmentController::class, 'index'])->name('assignments.index');
+    Route::post('assignments', [AssignmentController::class, 'store'])->name('assignments.store');
+    Route::post('assignments/{assignment}/end', [AssignmentController::class, 'end'])->name('assignments.end');
+    Route::post('assignments/commission', [AssignmentController::class, 'commission'])->name('assignments.commission');
+    Route::post('assignment-groups', [AssignmentController::class, 'storeGroup'])->name('assignments.groups.store');
+    Route::post('assignment-groups/{group}/toggle', [AssignmentController::class, 'toggleGroup'])->name('assignments.groups.toggle');
+    Route::post('assignment-groups/{group}/members', [AssignmentController::class, 'addMember'])->name('assignments.groups.members.add');
+    Route::delete('assignment-groups/{group}/members/{member}', [AssignmentController::class, 'removeMember'])->name('assignments.groups.members.remove');
 
     /*
     | Usuarios de la empresa

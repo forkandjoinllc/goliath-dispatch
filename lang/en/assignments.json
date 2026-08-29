@@ -1,0 +1,65 @@
+{
+  "index": {
+    "title": "Dispatcher assignments",
+    "subtitle": "What each dispatcher is responsible for. This is what they can see.",
+    "explainer": "A dispatcher only sees the loads, carriers, equipment, drivers and expenses assigned here. With nothing assigned they sign in with all their permissions and every list comes back empty — which looks like a fault, and is not one.",
+    "dispatchers": "Dispatchers",
+    "mine": "What you are carrying",
+    "noDispatchers": "No dispatchers yet. Invite one from Users.",
+    "nothingAssigned": "Nothing assigned. This person sees empty lists.",
+    "assignType": "Type",
+    "assignWhat": "Assign",
+    "search": "Type to search",
+    "noneLeft": "Nothing left to assign of this type.",
+    "until": "until {date}",
+    "end": "End this assignment"
+  },
+  "types": {
+    "carrier": "Carrier",
+    "truck": "Truck",
+    "trailer": "Trailer",
+    "driver": "Driver",
+    "group": "Group"
+  },
+  "memberStatus": {
+    "invited": "invited, not in yet",
+    "active": "active",
+    "suspended": "suspended",
+    "deactivated": "deactivated",
+    "pending_verification": "pending verification"
+  },
+  "commission": {
+    "label": "Commission %",
+    "save": "Save"
+  },
+  "groups": {
+    "title": "Groups",
+    "hint": "A bag of carriers, trucks, trailers and drivers. Assigning the group to a dispatcher grants everything inside it at once — and turning the group off takes it back from everyone who has it.",
+    "name": "Name",
+    "description": "Description",
+    "create": "Create group",
+    "empty": "This group is empty, so it grants nothing.",
+    "addMember": "Add to the group",
+    "remove": "Remove from the group",
+    "activate": "Turn on",
+    "deactivate": "Turn off",
+    "inactive": "Turned off: it grants nothing to anyone right now."
+  },
+  "unknownResource": "(deleted)",
+  "errors": {
+    "notADispatcher": "That person is not a dispatcher in your company.",
+    "resourceNotFound": "That does not exist or is not yours.",
+    "alreadyAssigned": "That dispatcher already has this assigned.",
+    "groupExists": "There is already a group with that name."
+  },
+  "flash": {
+    "assigned": "{name} assigned.",
+    "ended": "Assignment ended. Their access changes the next time they sign in.",
+    "commissionSaved": "Commission saved. It applies to new loads — the ones already agreed keep the percentage frozen on them.",
+    "groupCreated": "Group created.",
+    "groupOn": "Group turned on.",
+    "groupOff": "Group turned off. It no longer grants anything.",
+    "memberAdded": "{name} added to the group.",
+    "memberRemoved": "Removed from the group."
+  }
+}

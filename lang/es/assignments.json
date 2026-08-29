@@ -1,0 +1,65 @@
+{
+  "index": {
+    "title": "Asignaciones de despachador",
+    "subtitle": "De qué se ocupa cada despachador. Esto es lo que puede ver.",
+    "explainer": "Un despachador solo ve las cargas, transportistas, equipos, conductores y gastos que se le asignen aquí. Sin nada asignado entra con todos sus permisos y todas las listas le salen vacías — que parece una avería, y no lo es.",
+    "dispatchers": "Despachadores",
+    "mine": "Lo que usted lleva",
+    "noDispatchers": "Todavía no hay despachadores. Invite a uno desde Usuarios.",
+    "nothingAssigned": "Sin nada asignado. Esta persona ve las listas vacías.",
+    "assignType": "Tipo",
+    "assignWhat": "Asignar",
+    "search": "Escriba para buscar",
+    "noneLeft": "No queda nada de este tipo por asignar.",
+    "until": "hasta el {date}",
+    "end": "Retirar esta asignación"
+  },
+  "types": {
+    "carrier": "Transportista",
+    "truck": "Camión",
+    "trailer": "Remolque",
+    "driver": "Conductor",
+    "group": "Grupo"
+  },
+  "memberStatus": {
+    "invited": "invitado, todavía sin entrar",
+    "active": "activo",
+    "suspended": "suspendido",
+    "deactivated": "desactivado",
+    "pending_verification": "pendiente de verificar"
+  },
+  "commission": {
+    "label": "Comisión %",
+    "save": "Guardar"
+  },
+  "groups": {
+    "title": "Grupos",
+    "hint": "Una bolsa de transportistas, camiones, remolques y conductores. Asignarle el grupo a un despachador le concede de golpe todo lo que hay dentro — y apagar el grupo se lo quita a la vez a todos los que lo tengan.",
+    "name": "Nombre",
+    "description": "Descripción",
+    "create": "Crear grupo",
+    "empty": "Este grupo está vacío, así que no concede nada.",
+    "addMember": "Añadir al grupo",
+    "remove": "Quitar del grupo",
+    "activate": "Encender",
+    "deactivate": "Apagar",
+    "inactive": "Apagado: ahora mismo no le concede nada a nadie."
+  },
+  "unknownResource": "(borrado)",
+  "errors": {
+    "notADispatcher": "Esa persona no es despachadora en su empresa.",
+    "resourceNotFound": "Eso no existe o no es suyo.",
+    "alreadyAssigned": "Ese despachador ya tiene esto asignado.",
+    "groupExists": "Ya hay un grupo con ese nombre."
+  },
+  "flash": {
+    "assigned": "{name} asignado.",
+    "ended": "Asignación retirada. Su acceso cambia la próxima vez que inicie sesión.",
+    "commissionSaved": "Comisión guardada. Se aplica a las cargas nuevas — las ya acordadas conservan congelado su porcentaje.",
+    "groupCreated": "Grupo creado.",
+    "groupOn": "Grupo encendido.",
+    "groupOff": "Grupo apagado. Ya no concede nada.",
+    "memberAdded": "{name} añadido al grupo.",
+    "memberRemoved": "Quitado del grupo."
+  }
+}
