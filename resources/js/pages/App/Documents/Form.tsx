@@ -1,17 +1,24 @@
-import { Link, useForm } from '@inertiajs/react'
+import { Link, router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
 type OwnerType = 'carrier' | 'driver' | 'truck' | 'trailer'
 
+interface UsedType {
+  type: string
+  documentId: string
+}
+
 interface Props {
   owners: Record<OwnerType, { id: string; name: string }[]>
   typesByOwner: Record<OwnerType, string[]>
   requiredTypes: Record<OwnerType, string[]>
+  /** Los tipos que el dueño elegido YA tiene. Llega por recarga parcial. */
+  usedTypes?: UsedType[]
 }
 
-export default function DocumentForm({ owners, typesByOwner, requiredTypes }: Props) {
+export default function DocumentForm({ owners, typesByOwner, requiredTypes, usedTypes = [] }: Props) {
   const { t } = useI18n()
   const [ownerType, setOwnerType] = useState<OwnerType>('carrier')
 
@@ -33,7 +40,24 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes }: Pr
   const changeOwnerType = (next: OwnerType) => {
     setOwnerType(next)
     form.setData((data) => ({ ...data, owner_type: next, owner_id: '', document_type: '' }))
+    // Cambiar de clase de dueño invalida la lista de lo ya subido.
+    router.reload({ only: ['usedTypes'], data: { owner_type: next, owner_id: '' } })
   }
+
+  /**
+   * Al elegir dueño se pregunta al servidor qué tipos ya tiene.
+   *
+   * Recarga parcial y no un mapa de todos los dueños en la primera respuesta:
+   * una empresa con doscientos transportistas mandaría kilos de JSON para usar
+   * una fila.
+   */
+  const changeOwner = (id: string) => {
+    form.setData((data) => ({ ...data, owner_id: id, document_type: '' }))
+    router.reload({ only: ['usedTypes'], data: { owner_type: ownerType, owner_id: id } })
+  }
+
+  const usadoPor = (type: string): string | undefined =>
+    usedTypes.find((u) => u.type === type)?.documentId
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,7 +105,7 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes }: Pr
           <select
             id="owner"
             value={form.data.owner_id}
-            onChange={(e) => form.setData('owner_id', e.target.value)}
+            onChange={(e) => changeOwner(e.target.value)}
             className="mt-1 w-full rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
           >
             <option value="">{t('documents.form.chooseOwner')}</option>
@@ -108,15 +132,32 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes }: Pr
           >
             <option value="">{t('documents.form.chooseType')}</option>
             {typesByOwner[ownerType].map((type) => (
-              <option key={type} value={type}>
+              <option key={type} value={type} disabled={usadoPor(type) !== undefined}>
                 {t(`documents.types.${type}`)}
                 {/* Se marca cuál es obligatorio en el propio desplegable: es la
                     diferencia entre subir lo que hace falta y subir lo que
                     había a mano. */}
                 {requiredTypes[ownerType].includes(type) ? ' ★' : ''}
+                {/* Y cuál ya está. Subir dos veces el mismo tipo no crea dos
+                    documentos: crea uno bueno y uno que nadie sabe si mirar. */}
+                {usadoPor(type) !== undefined ? ` — ${t('documents.form.alreadyUploaded')}` : ''}
               </option>
             ))}
           </select>
+
+          {form.data.owner_id !== '' && usedTypes.length > 0 ? (
+            <p className="mt-1 text-xs text-steel-600">
+              {t('documents.form.replaceHint')}{' '}
+              {usedTypes.map((u, i) => (
+                <span key={u.documentId}>
+                  {i > 0 ? ', ' : ''}
+                  <Link href={`/documents/${u.documentId}`} className="text-navy-700 underline">
+                    {t(`documents.types.${u.type}`)}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          ) : null}
           {form.errors.document_type ? (
             <p role="alert" className="mt-1 text-sm text-danger-700">
               {form.errors.document_type}

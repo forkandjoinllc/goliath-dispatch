@@ -150,7 +150,12 @@
     "recordNotesHint": "Qué se revisó y dónde. No pegue aquí el historial completo.",
     "notRecorded": "No consta",
     "moreThan30": "Más de 30 años",
-    "nYears": "{n} años"
+    "nYears": "{n} años",
+    "addCarrier": "Añadir un transportista",
+    "carrierSearchPlaceholder": "Escriba para buscar…",
+    "noCarrierMatches": "Ningún transportista coincide.",
+    "noneChosen": "Todavía no hay ningún transportista elegido.",
+    "removeCarrier": "Quitar"
   },
   "flash": {
     "created": "Se agregó a {name}.",

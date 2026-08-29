@@ -299,7 +299,11 @@
     "recordShort": "Clean record is shorter than required.",
     "recordUnknown": "The record has not been checked.",
     "stale": "The check is over a year old.",
-    "sourceMissing": "This requirement does not say where it comes from."
+    "sourceMissing": "This requirement does not say where it comes from.",
+    "title": "Against this load's requirements",
+    "failsShort": "{n} not met",
+    "unknownShort": "{n} not recorded",
+    "notABlock": "This does not stop you assigning. It is what is on file today — go and check whatever is missing."
   },
   "errors": {
     "requirementNeedsSource": "A work-authorization requirement has to say where it comes from — the contract or base that demands it.",

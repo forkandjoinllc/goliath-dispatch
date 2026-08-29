@@ -154,8 +154,59 @@ final class DocumentController
                 'truck' => DocumentTypes::requiredFor('truck'),
                 'trailer' => DocumentTypes::requiredFor('trailer'),
             ],
+            // Los tipos que ESE dueño ya tiene. Llega por recarga parcial en
+            // cuanto se elige el dueño: mandar el mapa de todos los dueños de
+            // la empresa sería kilos de JSON para usar una fila.
+            'usedTypes' => $this->usedTypes(
+                $actor,
+                $scope,
+                (string) $request->query('owner_type', ''),
+                (string) $request->query('owner_id', ''),
+            ),
             'document' => null,
         ]);
+    }
+
+    /**
+     * Los tipos de documento que este dueño YA tiene, con el documento donde
+     * están.
+     *
+     * Sirve para apagarlos en el desplegable. Subir «certificado de seguro» dos
+     * veces no crea dos documentos: crea uno bueno y uno que nadie sabe si mirar.
+     * Lo que se quiere en ese caso es una VERSIÓN NUEVA del que ya está, y eso
+     * se hace desde su ficha — por eso la opción apagada dice cuál es.
+     *
+     * Se comprueba el ámbito igual que en el resto: pedir por la URL el dueño de
+     * otra empresa no devuelve nada.
+     *
+     * @return list<array{type: string, documentId: string}>
+     */
+    private function usedTypes(Actor $actor, Scope $scope, string $ownerType, string $ownerId): array
+    {
+        if ($ownerType === '' || $ownerId === '') {
+            return [];
+        }
+
+        if (! in_array($ownerType, ['carrier', 'driver', 'truck', 'trailer'], true)) {
+            return [];
+        }
+
+        if (! DocumentScope::ownsTarget($actor, $scope, $ownerType, $ownerId)) {
+            return [];
+        }
+
+        return DB::table('documents')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('owner_type', $ownerType)
+            ->where('owner_id', $ownerId)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->get(['id', 'document_type'])
+            ->map(fn ($d): array => [
+                'type' => (string) $d->document_type,
+                'documentId' => (string) $d->id,
+            ])
+            ->all();
     }
 
     /**

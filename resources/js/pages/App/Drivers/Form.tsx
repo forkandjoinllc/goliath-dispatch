@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react'
 import type { ReactNode } from 'react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
+import { SearchableSelect } from '@/components/Form/SearchableSelect'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -232,27 +233,54 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
           {carriers.length === 0 ? (
             <p className="mt-2 text-sm text-steel-700">{t('drivers.form.noCarriers')}</p>
           ) : (
-            <>
-              <p className="mt-2 text-xs text-steel-600">{t('drivers.form.carriersHint')}</p>
-              <div className="mt-2 flex flex-col gap-1.5">
-                {carriers.map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={form.data.carrier_ids.includes(c.id)}
-                      onChange={() => toggleCarrier(c.id)}
-                      className="h-4 w-4 rounded border-steel-300 text-navy-700 focus:ring-navy-500"
-                    />
-                    {c.name}
-                    {form.data.carrier_ids[0] === c.id ? (
-                      <span className="rounded-full bg-navy-100 px-2 py-0.5 text-[11px] font-medium text-navy-800">
-                        {t('drivers.detail.primary')}
-                      </span>
-                    ) : null}
-                  </label>
-                ))}
-              </div>
-            </>
+            <div className="mt-2 flex flex-col gap-3">
+              {/* Se escribe y se elige de uno en uno. La lista de casillas
+                  dejaba de servir alrededor de los treinta transportistas y era
+                  hostil a los doscientos. */}
+              <SearchableSelect
+                label={t('drivers.form.addCarrier')}
+                choices={carriers}
+                exclude={form.data.carrier_ids}
+                onPick={(id) => form.setData('carrier_ids', [...form.data.carrier_ids, id])}
+                placeholder={t('drivers.form.carrierSearchPlaceholder')}
+                hint={t('drivers.form.carriersHint')}
+                emptyText={t('drivers.form.noCarrierMatches')}
+              />
+
+              {form.data.carrier_ids.length === 0 ? (
+                <p className="text-sm text-steel-600">{t('drivers.form.noneChosen')}</p>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {form.data.carrier_ids.map((id, i) => {
+                    const c = carriers.find((x) => x.id === id)
+
+                    return (
+                      <li
+                        key={id}
+                        className="flex items-center justify-between gap-3 rounded border border-steel-200 bg-steel-50/60 px-3 py-2 text-sm"
+                      >
+                        <span className="flex items-center gap-2">
+                          {c?.name ?? id}
+                          {/* El primero es el principal, igual que antes. */}
+                          {i === 0 ? (
+                            <span className="rounded-full bg-navy-100 px-2 py-0.5 text-[11px] font-medium text-navy-800">
+                              {t('drivers.detail.primary')}
+                            </span>
+                          ) : null}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleCarrier(id)}
+                          className="text-xs font-medium text-danger-700 underline transition hover:text-danger-900"
+                        >
+                          {t('drivers.form.removeCarrier')}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
           )}
         </fieldset>
 

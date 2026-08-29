@@ -20,6 +20,8 @@ use App\Support\Audit;
 use App\Support\Finance\LoadCalculator;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Loads\DriverEligibility;
+use App\Support\Loads\DriverFacts;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
@@ -540,6 +542,15 @@ final class LoadController
             ])
             ->all();
 
+        // Los requisitos se piden UNA vez para toda la lista. La comparación es
+        // una función pura y no toca la base, así que veinte conductores son
+        // dos consultas, no cuarenta.
+        $requisitos = $this->requirements($load);
+        $requisitosParaComparar = array_map(
+            fn (array $r): array => ['type' => $r['type'], 'value' => $r['value'], 'source' => $r['source']],
+            $requisitos,
+        );
+
         $drivers = DB::table('drivers as d')
             ->join('driver_carrier_relationships as r', 'r.driver_id', '=', 'd.id')
             ->where('d.tenant_id', $load->tenant_id)
@@ -551,8 +562,11 @@ final class LoadController
             ->get([
                 'd.id', 'd.first_name', 'd.last_name', 'd.status',
                 'd.license_expires_at', 'd.medical_card_expires_at',
+                'd.cdl_class', 'd.license_state', 'd.endorsements',
+                'd.twic_card', 'd.twic_expires_at', 'd.work_authorization',
+                'd.record_clean_years', 'd.record_checked_at',
             ])
-            ->map(function ($d) use ($today): array {
+            ->map(function ($d) use ($today, $requisitosParaComparar): array {
                 $problem = match (true) {
                     $d->status === 'inactive' => 'driverInactive',
                     $d->license_expires_at !== null && $d->license_expires_at < $today => 'licenseExpired',
@@ -560,13 +574,26 @@ final class LoadController
                     default => null,
                 };
 
+                $veredicto = DriverEligibility::evaluate(
+                    $requisitosParaComparar,
+                    DriverFacts::fromRow($d),
+                );
+
                 return [
                     'id' => (string) $d->id,
                     'label' => trim("{$d->first_name} {$d->last_name}"),
+                    // `ok` sigue siendo lo de siempre: licencia, tarjeta médica
+                    // y estado. Los requisitos de la carga NO lo tocan — no
+                    // descartan a nadie, se enseñan aparte y decide quien
+                    // despacha.
                     'ok' => $problem === null,
                     'problem' => $problem,
                     'licenseExpiresAt' => $d->license_expires_at,
                     'medicalCardExpiresAt' => $d->medical_card_expires_at,
+                    'eligibility' => $requisitosParaComparar === [] ? null : [
+                        ...DriverEligibility::summarize($veredicto),
+                        'items' => $veredicto,
+                    ],
                 ];
             })
             ->all();
@@ -576,6 +603,9 @@ final class LoadController
             'trucks' => $units('trucks'),
             'trailers' => $units('trailers'),
             'drivers' => $drivers,
+            // Para que el panel pueda decir QUÉ pide la carga, no solo si se
+            // cumple.
+            'requirements' => $requisitos,
         ];
     }
 

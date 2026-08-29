@@ -150,7 +150,12 @@
     "recordNotesHint": "What was checked and where. Do not paste the full history here.",
     "notRecorded": "Not recorded",
     "moreThan30": "More than 30 years",
-    "nYears": "{n} years"
+    "nYears": "{n} years",
+    "addCarrier": "Add a carrier",
+    "carrierSearchPlaceholder": "Type to search…",
+    "noCarrierMatches": "No carrier matches.",
+    "noneChosen": "No carrier chosen yet.",
+    "removeCarrier": "Remove"
   },
   "flash": {
     "created": "{name} was added.",

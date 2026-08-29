@@ -117,7 +117,9 @@
     "ownerNotAllowed": "No puede subir documentos para ese dueño.",
     "ownerNotFound": "Ese dueño no existe en esta empresa.",
     "upload": "Subir",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "alreadyUploaded": "ya está subido",
+    "replaceHint": "Ya subidos — para sustituir uno, ábralo y añada una versión nueva:"
   },
   "download": {
     "missing": "El archivo no está en el almacenamiento. Puede que la subida no terminara."

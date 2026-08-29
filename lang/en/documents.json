@@ -117,7 +117,9 @@
     "ownerNotAllowed": "You cannot upload documents for that owner.",
     "ownerNotFound": "That owner does not exist in this company.",
     "upload": "Upload",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "alreadyUploaded": "already on file",
+    "replaceHint": "Already uploaded — to replace one, open it and add a new version:"
   },
   "download": {
     "missing": "The file is not in storage. It may not have finished uploading."

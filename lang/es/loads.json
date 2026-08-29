@@ -299,7 +299,11 @@
     "recordShort": "El récord limpio es más corto que el exigido.",
     "recordUnknown": "El récord no se ha revisado.",
     "stale": "La revisión tiene más de un año.",
-    "sourceMissing": "Este requisito no dice de dónde sale."
+    "sourceMissing": "Este requisito no dice de dónde sale.",
+    "title": "Frente a los requisitos de esta carga",
+    "failsShort": "{n} sin cumplir",
+    "unknownShort": "{n} sin constar",
+    "notABlock": "Esto no impide asignar. Es lo que consta hoy: si falta algo, hay que ir a mirarlo."
   },
   "errors": {
     "requirementNeedsSource": "Un requisito de autorización de trabajo tiene que decir de dónde sale: el contrato o la base que lo exige.",

@@ -2,6 +2,23 @@ import { router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 
+interface EligibilityItem {
+  type: string
+  value: string | null
+  outcome: 'meets' | 'fails' | 'unknown'
+  reason: string
+  stale: boolean
+  sourceMissing: boolean
+}
+
+interface Eligibility {
+  verdict: 'meets' | 'fails' | 'unknown'
+  meets: number
+  fails: number
+  unknown: number
+  items: EligibilityItem[]
+}
+
 interface Option {
   id: string
   label: string
@@ -9,6 +26,16 @@ interface Option {
   problem: string | null
   licenseExpiresAt?: string | null
   medicalCardExpiresAt?: string | null
+  /** Solo en conductores, y solo si la carga tiene requisitos. */
+  eligibility?: Eligibility | null
+}
+
+interface Requirement {
+  id: string
+  type: string
+  value: string | null
+  source: string | null
+  notes: string | null
 }
 
 /** Solo la fecha: la columna es datetime(3) y los milisegundos son ruido. */
@@ -21,6 +48,7 @@ export interface Assignable {
   trucks: Option[]
   trailers: Option[]
   drivers: Option[]
+  requirements?: Requirement[]
 }
 
 interface Props {
@@ -71,7 +99,12 @@ export function AssignPanel({ loadId, carrierId, carrierRateCents, assignable, c
             <>
               <ResourcePicker loadId={loadId} type="truck" options={assignable.trucks} />
               <ResourcePicker loadId={loadId} type="trailer" options={assignable.trailers} />
-              <ResourcePicker loadId={loadId} type="driver" options={assignable.drivers} />
+              <ResourcePicker
+                loadId={loadId}
+                type="driver"
+                options={assignable.drivers}
+                requirements={assignable.requirements ?? []}
+              />
             </>
           )
         ) : null}
@@ -149,8 +182,13 @@ function CarrierPicker({
 }
 
 function ResourcePicker({
-  loadId, type, options,
-}: { loadId: string; type: 'truck' | 'trailer' | 'driver'; options: Option[] }) {
+  loadId, type, options, requirements = [],
+}: {
+  loadId: string
+  type: 'truck' | 'trailer' | 'driver'
+  options: Option[]
+  requirements?: Requirement[]
+}) {
   const { t } = useI18n()
   const [choice, setChoice] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -182,7 +220,7 @@ function ResourcePicker({
                 {/* El motivo va en la propia opción: quien abre el desplegable
                     ve de una vez quién está en regla y quién no. */}
                 {o.ok
-                  ? o.label
+                  ? `${o.label}${verdictTag(o.eligibility, t)}`
                   : `${o.label} — ${t(`loads.assign.${o.problem}`, {
                       name: o.label,
                       date: day(o.licenseExpiresAt ?? o.medicalCardExpiresAt),
@@ -198,6 +236,12 @@ function ResourcePicker({
                 date: day(chosen.licenseExpiresAt ?? chosen.medicalCardExpiresAt),
               })}
             </p>
+          ) : null}
+
+          {/* Los requisitos de la carga NO descartan a nadie: se enseñan, y
+              decide quien despacha. Por eso esto es un informe, no un bloqueo. */}
+          {chosen?.eligibility ? (
+            <EligibilityReport eligibility={chosen.eligibility} requirements={requirements} />
           ) : null}
 
           {error ? (
@@ -226,6 +270,76 @@ function ResourcePicker({
           </button>
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * La marca corta que va pegada al nombre en el desplegable.
+ *
+ * Tres palabras como mucho: el desplegable tiene que poder leerse de un
+ * vistazo. El detalle está debajo, al elegir.
+ */
+function verdictTag(
+  e: Eligibility | null | undefined,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  if (!e || e.items.length === 0) return ''
+
+  if (e.verdict === 'meets') return ` — ${t('loads.eligibility.meets')}`
+  if (e.verdict === 'fails') return ` — ${t('loads.eligibility.failsShort', { n: String(e.fails) })}`
+
+  return ` — ${t('loads.eligibility.unknownShort', { n: String(e.unknown) })}`
+}
+
+/**
+ * Qué pide la carga y cómo queda este conductor, requisito a requisito.
+ *
+ * «No consta» se pinta distinto de «no cumple» a propósito. Lo primero se
+ * arregla mirando un papel; lo segundo, buscando a otra persona. Pintarlos
+ * igual haría que se ignoraran los dos.
+ */
+function EligibilityReport({
+  eligibility, requirements,
+}: { eligibility: Eligibility; requirements: Requirement[] }) {
+  const { t } = useI18n()
+
+  const tono: Record<string, string> = {
+    meets: 'border-steel-300 bg-steel-50 text-steel-800',
+    unknown: 'border-safety-400 bg-safety-50 text-safety-800',
+    fails: 'border-danger-500 bg-danger-50 text-danger-800',
+  }
+
+  return (
+    <div className="rounded border border-steel-200 bg-white p-2.5">
+      <p className="text-xs font-semibold text-carbon">{t('loads.eligibility.title')}</p>
+
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {eligibility.items.map((item, i) => {
+          const fuente = requirements.find(
+            (r) => r.type === item.type && (r.value ?? '') === (item.value ?? ''),
+          )?.source
+
+          return (
+            <li key={i} className={`rounded border-l-4 px-2 py-1.5 text-xs ${tono[item.outcome]}`}>
+              <span className="font-semibold">
+                {t(`loads.requirementType.${item.type}`)}
+                {item.value ? ` · ${item.value}` : ''}
+              </span>
+              {' — '}
+              {t(item.reason)}
+              {item.stale ? ` ${t('loads.eligibility.stale')}` : ''}
+              {item.sourceMissing ? (
+                <span className="mt-1 block font-medium">{t('loads.eligibility.sourceMissing')}</span>
+              ) : fuente ? (
+                <span className="mt-1 block text-steel-600">{fuente}</span>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+
+      <p className="mt-2 text-xs text-steel-600">{t('loads.eligibility.notABlock')}</p>
     </div>
   )
 }
