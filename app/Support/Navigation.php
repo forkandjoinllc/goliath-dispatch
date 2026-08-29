@@ -53,6 +53,9 @@ final class Navigation
             ['settlements', 'settlements', ['settlement:read']],
             ['expenses', 'expenses', ['expense:read', 'expense:submit']],
             ['payments', 'payments', ['payment:record', 'invoice:read']],
+            // `assignment:read` y no un permiso de dinero: al despachador se le
+            // concede con alcance `own`, que es justo «puedo ver lo mío».
+            ['commissions', 'commissions', ['assignment:read']],
             ['factoring', 'factoring', ['factoring:read']],
         ],
         'insight' => [
@@ -80,7 +83,7 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions'];
 
     /**
      * Entradas que solo tienen sentido con alcance de empresa.

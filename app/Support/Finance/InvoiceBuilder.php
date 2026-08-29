@@ -6,6 +6,7 @@ namespace App\Support\Finance;
 
 use App\Authorization\Actor;
 use App\Models\Load;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -53,6 +54,12 @@ final class InvoiceBuilder
         foreach ($loads as $load) {
             $financials = $this->calculator->for($load);
             $snapshotId = $this->snapshots->freeze($actor, $load, $financials, $ahora);
+
+            // La comisión del despachador se DEVENGA aquí, con la instantánea
+            // recién congelada: facturar es el momento en que la casa gana su
+            // tarifa, y por tanto en que el despachador gana su parte. El
+            // esquema impide devengarla dos veces sobre la misma instantánea.
+            CommissionLedger::accrue($actor, $load, $snapshotId, $financials, CarbonImmutable::parse($ahora));
 
             $importe = $financials->dispatchFee;
             $subtotal += $importe;

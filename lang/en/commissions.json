@@ -1,0 +1,29 @@
+{
+  "index": {
+    "title": "Dispatcher commissions",
+    "subtitle": "What each dispatcher has earned, and what is still owed to them.",
+    "subtitleOwn": "What you have earned, and what is still owed to you.",
+    "status": "Status",
+    "from": "From",
+    "to": "To",
+    "rows": "{n} loads",
+    "empty": "Nothing here for this period. Commissions are accrued when a load is invoiced.",
+    "noLoad": "(load deleted)",
+    "formula": "{pct}% of {basis} — {amount}",
+    "pay": "Mark {amount} as paid"
+  },
+  "status": {
+    "accrued": "Owed",
+    "approved": "Approved",
+    "paid": "Paid",
+    "voided": "Voided"
+  },
+  "basis": {
+    "dispatch_fee_amount": "the dispatch fee",
+    "carrier_gross_rate": "the carrier gross rate",
+    "commissionable_base": "the commissionable base"
+  },
+  "flash": {
+    "paid": "{n} commissions marked as paid."
+  }
+}

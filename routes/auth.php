@@ -6,6 +6,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\AssignmentController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
+use App\Http\Controllers\App\CommissionController;
 use App\Http\Controllers\App\CustomerController;
 use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DriverController;
@@ -286,6 +287,16 @@ Route::middleware(['auth'])->group(function (): void {
     | No hay ruta para borrar un cobro. Si entró mal se reembolsa o se marca en
     | disputa — las dos cosas que de verdad le pasan al dinero.
     */
+    /*
+    | Comisiones del despachador
+    |
+    | Se DEVENGAN solas al facturar (ver CommissionLedger); aquí solo se miran y
+    | se marcan pagadas. No hay ruta para crearlas a mano: una comisión que
+    | alguien teclea no está respaldada por ninguna instantánea.
+    */
+    Route::get('commissions', [CommissionController::class, 'index'])->name('commissions.index');
+    Route::post('commissions/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+
     Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
     Route::post('payments/{payment}/dispute', [PaymentController::class, 'dispute'])->name('payments.dispute');

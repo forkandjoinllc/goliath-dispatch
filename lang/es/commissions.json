@@ -1,0 +1,29 @@
+{
+  "index": {
+    "title": "Comisiones del despachador",
+    "subtitle": "Lo que ha ganado cada despachador y lo que todavía se le debe.",
+    "subtitleOwn": "Lo que ha ganado usted y lo que todavía se le debe.",
+    "status": "Estado",
+    "from": "Desde",
+    "to": "Hasta",
+    "rows": "{n} cargas",
+    "empty": "Nada en este periodo. Las comisiones se devengan al facturar la carga.",
+    "noLoad": "(carga borrada)",
+    "formula": "{pct} % de {basis} — {amount}",
+    "pay": "Marcar {amount} como pagado"
+  },
+  "status": {
+    "accrued": "Debido",
+    "approved": "Aprobado",
+    "paid": "Pagado",
+    "voided": "Anulado"
+  },
+  "basis": {
+    "dispatch_fee_amount": "la tarifa de despacho",
+    "carrier_gross_rate": "el bruto del transportista",
+    "commissionable_base": "la base comisionable"
+  },
+  "flash": {
+    "paid": "{n} comisiones marcadas como pagadas."
+  }
+}

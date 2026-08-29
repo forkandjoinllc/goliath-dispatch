@@ -33,3 +33,4 @@ Thumbs.db
 # codigo. Una vez aplicados no tienen que quedarse en el historial.
 /lote*.php
 /_to_delete
+/_*.tar.gz
