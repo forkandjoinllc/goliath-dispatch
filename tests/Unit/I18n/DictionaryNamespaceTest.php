@@ -92,7 +92,10 @@ function namespacesDeclaradosPorControlador(): array
 it('ninguna pantalla usa un diccionario que su controlador no manda', function () {
     // Estos van SIEMPRE en el armazón o en las respuestas de error, así que no
     // hace falta declararlos por pantalla.
-    $globales = ['nav', 'common', 'errors', 'validation', 'auth'];
+    // `notifications` es global desde que la campana vive en la barra superior:
+    // ver Dictionary::ALWAYS. Sin añadirlo aquí, esta prueba exigiría que las
+    // treinta y tantas páginas lo declarasen una a una.
+    $globales = ['nav', 'common', 'errors', 'validation', 'auth', 'notifications'];
 
     $usados = namespacesUsadosPorPagina();
     $declarados = namespacesDeclaradosPorControlador();

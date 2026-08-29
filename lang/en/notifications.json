@@ -1,0 +1,70 @@
+{
+  "index": {
+    "title": "Notifications",
+    "subtitle": "What the system noticed while nobody was looking.",
+    "unreadOnly": "Unread only",
+    "all": "All",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "empty": "Nothing to report.",
+    "emptyUnread": "Nothing unread.",
+    "open": "Open"
+  },
+  "bell": {
+    "label": "Notifications",
+    "unread": "{n} unread",
+    "none": "No unread notifications"
+  },
+  "preferences": {
+    "title": "What you get told about",
+    "hint": "Applies to you only, in this company. In-app and email are on unless you turn them off.",
+    "inApp": "In the app",
+    "email": "Email",
+    "saved": "Saved.",
+    "save": "Save"
+  },
+  "events": {
+    "document": {
+      "expiring": {
+        "title": "Document expiring: {title}",
+        "body": "“{title}” expires on {date}. Check it and renew it."
+      }
+    },
+    "carrier": {
+      "reverification_due": {
+        "title": "Carrier due for re-verification: {name}",
+        "body": "{name} has no FMCSA check within the period your company set."
+      }
+    },
+    "invoice": {
+      "overdue": {
+        "title": "Invoice overdue: {number}",
+        "body": "Invoice {number} was due on {date} and still has a balance."
+      }
+    },
+    "lead": {
+      "assigned": {
+        "title": "A lead was assigned to you",
+        "body": "{name} is now yours to follow up."
+      }
+    }
+  },
+  "eventNames": {
+    "document": {
+      "expiring": "Documents expiring"
+    },
+    "carrier": {
+      "reverification_due": "Carriers due for re-verification"
+    },
+    "invoice": {
+      "overdue": "Overdue invoices"
+    },
+    "lead": {
+      "assigned": "A lead assigned to you"
+    }
+  },
+  "flash": {
+    "read": "Marked as read.",
+    "allRead": "All marked as read."
+  }
+}

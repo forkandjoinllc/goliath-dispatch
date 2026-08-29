@@ -42,6 +42,8 @@ export interface Shell {
   tenant: ShellTenant | null
   memberships: ShellMembership[]
   nav: NavGroup[]
+  /** Avisos sin leer de ESTA persona en ESTA empresa. Sostiene la campana. */
+  unreadNotifications: number
 }
 
 /** Props que trae toda página autenticada. `shell` es null en el sitio público. */

@@ -41,7 +41,13 @@ class HandleInertiaRequests extends Middleware
             // para por qué no se manda el diccionario entero.
             'dictionary' => fn (): array => Dictionary::for(
                 $locale,
-                (array) $request->attributes->get('dictionaryNamespaces', []),
+                [
+                    ...(array) $request->attributes->get('dictionaryNamespaces', []),
+                    // Los espacios del armazón autenticado solo viajan si hay
+                    // sesión: el sitio público no tiene campana y no debe pagar
+                    // por su diccionario.
+                    ...($request->user() === null ? [] : Dictionary::AUTHENTICATED),
+                ],
             ),
 
             'auth' => [

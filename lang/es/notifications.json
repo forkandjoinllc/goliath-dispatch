@@ -1,0 +1,70 @@
+{
+  "index": {
+    "title": "Avisos",
+    "subtitle": "Lo que el sistema ha visto mientras nadie miraba.",
+    "unreadOnly": "Solo sin leer",
+    "all": "Todos",
+    "markRead": "Marcar como leído",
+    "markAllRead": "Marcar todos como leídos",
+    "empty": "Nada que contar.",
+    "emptyUnread": "Nada sin leer.",
+    "open": "Abrir"
+  },
+  "bell": {
+    "label": "Avisos",
+    "unread": "{n} sin leer",
+    "none": "Ningún aviso sin leer"
+  },
+  "preferences": {
+    "title": "De qué se le avisa",
+    "hint": "Solo para usted, y en esta empresa. Dentro de la aplicación y por correo van activados salvo que los apague.",
+    "inApp": "En la aplicación",
+    "email": "Correo",
+    "saved": "Guardado.",
+    "save": "Guardar"
+  },
+  "events": {
+    "document": {
+      "expiring": {
+        "title": "Caduca un documento: {title}",
+        "body": "«{title}» caduca el {date}. Compruébelo y renuévelo."
+      }
+    },
+    "carrier": {
+      "reverification_due": {
+        "title": "Transportista por revalidar: {name}",
+        "body": "{name} no tiene comprobación en FMCSA dentro del plazo que fijó su empresa."
+      }
+    },
+    "invoice": {
+      "overdue": {
+        "title": "Factura vencida: {number}",
+        "body": "La factura {number} venció el {date} y sigue con saldo pendiente."
+      }
+    },
+    "lead": {
+      "assigned": {
+        "title": "Le han asignado un prospecto",
+        "body": "{name} pasa a ser suyo para darle seguimiento."
+      }
+    }
+  },
+  "eventNames": {
+    "document": {
+      "expiring": "Documentos que caducan"
+    },
+    "carrier": {
+      "reverification_due": "Transportistas por revalidar"
+    },
+    "invoice": {
+      "overdue": "Facturas vencidas"
+    },
+    "lead": {
+      "assigned": "Un prospecto asignado a usted"
+    }
+  },
+  "flash": {
+    "read": "Marcado como leído.",
+    "allRead": "Todos marcados como leídos."
+  }
+}

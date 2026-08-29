@@ -23,6 +23,21 @@ final class Dictionary
     public const ALWAYS = ['common', 'nav', 'errors'];
 
     /**
+     * Espacios que necesita todo lo que va DENTRO de la aplicación.
+     *
+     * `notifications` está aquí por la campana, que vive en la barra superior y
+     * por tanto envuelve todas las pantallas autenticadas. Si dependiera de que
+     * cada controlador lo declarase, un olvido dejaría la campana con la clave
+     * en crudo en su etiqueta accesible — invisible para quien mira y roto para
+     * quien usa un lector de pantalla.
+     *
+     * Y está SEPARADO de `ALWAYS` porque el sitio público no tiene campana y no
+     * debe pagar por ella: lo pilló `PublicSiteTest`, que comprueba que a una
+     * página de marketing solo le viajan los espacios que pidió.
+     */
+    public const AUTHENTICATED = ['notifications'];
+
+    /**
      * @param  list<string>  $namespaces
      * @return array<string, mixed>
      */

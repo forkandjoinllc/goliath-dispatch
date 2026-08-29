@@ -181,3 +181,34 @@ curl -s  https://goliathdispatch.com/es | grep -o '<h1[^>]*>[^<]\{0,40\}'
 
 Si el `<h1>` sale vacío pero la página carga en el navegador, el demonio de SSR
 no está corriendo (paso 3).
+
+## El planificador
+
+Desde el lote de avisos la aplicación tiene trabajo que ocurre solo: un barrido
+diario que avisa de documentos que caducan, transportistas por revalidar y
+facturas vencidas, y que además pone al día el estado de esas facturas.
+
+Para que corra hace falta **una línea de cron en el servidor**. Forge la añade
+sola al activar el planificador en el panel del sitio (Scheduler → Add Scheduled
+Job → `php artisan schedule:run`, cada minuto). Si se hace a mano:
+
+    * * * * * cd /home/forge/goliathdispatch.com && php artisan schedule:run >> /dev/null 2>&1
+
+Sin esa línea, `routes/console.php` no se ejecuta NUNCA y no lo dice nadie: la
+aplicación sigue funcionando y simplemente deja de avisar. Conviene comprobarlo
+después de cada despliegue nuevo de servidor:
+
+    php artisan schedule:list
+
+El barrido es idempotente —lo deduplica el índice único de `notifications`— así
+que se puede lanzar a mano sin miedo para comprobarlo:
+
+    php artisan notifications:sweep --dry-run
+    php artisan notifications:sweep --tenant=<id>
+
+**El correo.** Sin credenciales SMTP, `MAIL_MAILER=log` escribe los mensajes en
+el registro en vez de mandarlos: la aplicación arranca y se puede enseñar entera
+sin una sola clave de tercero. Ojo con un detalle que despista: el transporte
+`log` escribe a nivel DEBUG y en producción `LOG_LEVEL=warning`, así que el
+correo «se manda» —la fila queda en `sent`— y no aparece en el registro. Para
+verlo hay que bajar `LOG_LEVEL` a `debug`.

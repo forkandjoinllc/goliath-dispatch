@@ -19,6 +19,7 @@ use App\Http\Controllers\App\LeadController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
+use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
@@ -294,6 +295,22 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+
+    /*
+    | Avisos
+    |
+    | Sin permiso propio, y no por olvido: un aviso está dirigido a una persona
+    | concreta y no hay ningún rol al que le corresponda leer los de otra. La
+    | frontera aquí es la identidad, no el permiso.
+    |
+    | No hay ruta de alta: los avisos los escribe el barrido o un suceso de la
+    | aplicación. Uno que alguien pudiera crear a mano no sería un aviso, sería
+    | un mensaje — y los mensajes son otro dominio.
+    */
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('notification-preferences', [NotificationController::class, 'savePreferences'])->name('notifications.preferences');
 
     /*
     | Prospectos

@@ -11,6 +11,7 @@ use App\Enums\AuditAction;
 use App\Support\Audit;
 use App\Support\Customers\NameKey;
 use App\Support\InertiaPage;
+use App\Support\Notifications\Notifier;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -247,6 +248,22 @@ final class LeadController
             before: ['assigned_to' => $antes === null ? null : ($nombres[$antes] ?? $antes)],
             after: ['assigned_to' => $nuevo === null ? null : ($nombres[$nuevo] ?? $nuevo)],
         );
+
+        // Asignarle a alguien un prospecto y no decírselo convierte la
+        // asignación en un apunte contable. El aviso va a quien lo RECIBE, no a
+        // quien lo reparte, y solo cuando hay alguien a quien avisar.
+        if ($nuevo !== null) {
+            Notifier::toUser(
+                tenantId: (string) $actor->tenantId,
+                userId: $nuevo,
+                eventKey: 'lead.assigned',
+                dedupeKey: "lead.assigned:{$fila->id}",
+                params: ['name' => $this->label($fila)],
+                actionUrl: '/leads/'.$fila->id,
+                subjectType: 'lead',
+                subjectId: (string) $fila->id,
+            );
+        }
 
         return back()->with('success', __('leads.flash.assigned'));
     }

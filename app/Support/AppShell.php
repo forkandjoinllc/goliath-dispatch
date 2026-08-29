@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Http\Controllers\App\NotificationController;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -58,6 +59,11 @@ final class AppShell
             'tenant' => $this->tenant($actor->tenantId),
             'memberships' => $this->memberships($actor->userId),
             'nav' => Navigation::for($actor, $this->checker, $policy),
+            // La campana. Va en el armazón porque se pinta en TODAS las
+            // pantallas: si dependiera del controlador, un olvido dejaría la
+            // campana a cero sin que nadie lo notara — y una campana que miente
+            // es peor que no tenerla.
+            'unreadNotifications' => NotificationController::unreadCount($actor),
         ];
     }
 

@@ -259,6 +259,45 @@ function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   )
 }
 
+/**
+ * La campana.
+ *
+ * Un enlace, no un desplegable: al pulsarla se va a la pantalla de avisos. Un
+ * panel flotante con los últimos cinco obliga a decidir cuáles caben y deja al
+ * resto escondido detrás de un «ver todos» que casi nadie pulsa.
+ *
+ * El número se lee del armazón, que lo trae en TODAS las páginas: así la
+ * campana no depende de que cada controlador se acuerde de contarlos.
+ */
+function NotificationBell({ shell }: { shell: Shell }) {
+  const { t } = useI18n()
+  const sinLeer = shell.unreadNotifications
+
+  return (
+    <Link
+      href="/notifications"
+      aria-label={
+        sinLeer > 0 ? t('notifications.bell.unread', { n: String(sinLeer) }) : t('notifications.bell.none')
+      }
+      className="relative rounded p-2 text-navy-700 transition hover:bg-navy-50"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className="h-5 w-5">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M13.7 21a2 2 0 0 1-3.4 0" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+
+      {sinLeer > 0 ? (
+        <span
+          aria-hidden="true"
+          className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-safety-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+        >
+          {sinLeer > 99 ? '99+' : sinLeer}
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
 export function Topbar({
   shell,
   crumbs,
@@ -286,6 +325,7 @@ export function Topbar({
       <Breadcrumbs crumbs={crumbs} />
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <NotificationBell shell={shell} />
         <TenantSwitcher shell={shell} />
         <LocaleMenu />
         <AccountMenu shell={shell} />
