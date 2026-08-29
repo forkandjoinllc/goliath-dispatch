@@ -28,3 +28,8 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Los instaladores de cada lote: son el vehiculo para traer el codigo, no
+# codigo. Una vez aplicados no tienen que quedarse en el historial.
+/lote*.php
+/_to_delete
