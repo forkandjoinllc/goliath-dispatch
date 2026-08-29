@@ -35,10 +35,20 @@ interface Props {
     voidReason: string | null
     lines: Line[]
   }
+  methods: string[]
+  payments: {
+    id: string
+    amountCents: number
+    refundedCents: number
+    method: string
+    status: string
+    reference: string | null
+    receivedOn: string | null
+  }[]
   can: { send: boolean; pay: boolean; changeStatus: boolean }
 }
 
-export default function InvoiceShow({ invoice, can }: Props) {
+export default function InvoiceShow({ invoice, methods, payments, can }: Props) {
   const { t, locale } = useI18n()
   const anulada = invoice.status === 'voided'
 
@@ -105,18 +115,33 @@ export default function InvoiceShow({ invoice, can }: Props) {
           <Item label={t('invoices.show.carrier')}>{invoice.carrierName ?? '—'}</Item>
         </dl>
 
-        <Actions invoice={invoice} can={can} />
+        <Actions invoice={invoice} methods={methods} can={can} />
+
+        <PaymentHistory payments={payments} />
       </div>
     </AppLayout>
   )
 }
 
-function Actions({ invoice, can }: Props) {
+function Actions({
+  invoice,
+  methods,
+  can,
+}: Pick<Props, 'invoice' | 'methods' | 'can'>) {
   const { t } = useI18n()
   const [abierto, setAbierto] = useState<'pay' | 'void' | null>(null)
 
   const enviar = useForm({})
-  const cobro = useForm({ amount_cents: '' })
+  const cobro = useForm({
+    amount_cents: '',
+    method: 'check',
+    // Se anota como cobrado por defecto. «Pendiente» es para el cheque que ya
+    // está en la mesa y todavía no ha compensado: queda registrado y NO cuenta.
+    status: 'succeeded',
+    reference: '',
+    received_at: '',
+    notes: '',
+  })
   const anular = useForm({ reason: '' })
 
   if (invoice.status === 'voided') return null
@@ -160,7 +185,10 @@ function Actions({ invoice, can }: Props) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            cobro.transform((d) => ({ amount_cents: Math.round(Number(d.amount_cents || 0) * 100) }))
+            cobro.transform((d) => ({
+              ...d,
+              amount_cents: Math.round(Number(d.amount_cents || 0) * 100),
+            }))
             cobro.post(`/invoices/${invoice.id}/payments`, {
               preserveScroll: true,
               onSuccess: () => { cobro.reset(); setAbierto(null) },
@@ -181,6 +209,54 @@ function Actions({ invoice, can }: Props) {
               className="rounded border border-steel-300 px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
             />
           </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-steel-700">{t('payments.fields.method')}</span>
+            <select
+              value={cobro.data.method}
+              onChange={(e) => cobro.setData('method', e.target.value)}
+              className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500"
+            >
+              {methods.map((m) => (
+                <option key={m} value={m}>{t(`payments.methods.${m}`)}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1">
+            {/* La referencia es lo que permite encontrar este cobro en el
+                extracto: número de cheque, de transferencia, de operación. */}
+            <span className="text-xs font-medium text-steel-700">{t('payments.fields.reference')}</span>
+            <input
+              type="text"
+              maxLength={120}
+              value={cobro.data.reference}
+              onChange={(e) => cobro.setData('reference', e.target.value)}
+              className="rounded border border-steel-300 px-3 py-2 text-sm outline-none focus:border-navy-500"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            {/* La fecha del banco, no la del teclado: los cobros se anotan con
+                días de retraso y un mes se cuadra por la fecha en que entró. */}
+            <span className="text-xs font-medium text-steel-700">{t('payments.fields.receivedOn')}</span>
+            <input
+              type="date"
+              value={cobro.data.received_at}
+              onChange={(e) => cobro.setData('received_at', e.target.value)}
+              className="rounded border border-steel-300 px-3 py-2 text-sm outline-none focus:border-navy-500"
+            />
+          </label>
+
+          <label className="flex items-center gap-2 pb-2 text-xs text-steel-700">
+            <input
+              type="checkbox"
+              checked={cobro.data.status === 'pending'}
+              onChange={(e) => cobro.setData('status', e.target.checked ? 'pending' : 'succeeded')}
+              className="rounded border-steel-300"
+            />
+            {t('payments.fields.notCleared')}
+          </label>
+
           <button
             type="submit"
             disabled={cobro.processing}
@@ -190,6 +266,9 @@ function Actions({ invoice, can }: Props) {
           </button>
           {cobro.errors.amount_cents ? (
             <p role="alert" className="w-full text-sm text-danger-700">{cobro.errors.amount_cents}</p>
+          ) : null}
+          {cobro.errors.method ? (
+            <p role="alert" className="w-full text-sm text-danger-700">{cobro.errors.method}</p>
           ) : null}
         </form>
       ) : null}
@@ -244,6 +323,44 @@ function Item({ label, children }: { label: string; children: React.ReactNode })
     <div className="flex justify-between gap-4 text-sm">
       <dt className="text-steel-600">{label}</dt>
       <dd className="font-medium text-carbon">{children}</dd>
+    </div>
+  )
+}
+
+/**
+ * Lo que ya entró contra esta factura.
+ *
+ * Un saldo sin historia obliga a creerse un número. Con las fechas, los métodos
+ * y las referencias delante, la pregunta «¿esto cuadra con el banco?» se
+ * contesta mirando, no confiando.
+ */
+function PaymentHistory({ payments }: { payments: Props['payments'] }) {
+  const { t, locale } = useI18n()
+
+  if (payments.length === 0) return null
+
+  return (
+    <div className="rounded border border-steel-200 bg-white p-4">
+      <h2 className="uppercase-heading text-xs text-steel-600">{t('payments.show.history')}</h2>
+      <ul className="mt-3 flex flex-col gap-2">
+        {payments.map((p) => (
+          <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 border-b border-steel-100 pb-2 text-sm last:border-0">
+            <span>
+              <span className="font-medium tabular-nums text-carbon">{formatCents(p.amountCents, locale)}</span>
+              <span className="ml-2 text-steel-600">{t(`payments.methods.${p.method}`)}</span>
+              {p.reference ? <span className="ml-2 text-steel-600">{p.reference}</span> : null}
+            </span>
+            <span className="text-xs text-steel-600">
+              {p.receivedOn ?? ''}
+              {' · '}
+              {t(`payments.status.${p.status}`)}
+              {p.refundedCents > 0
+                ? ` · ${t('payments.show.refunded', { amount: formatCents(p.refundedCents, locale) })}`
+                : ''}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

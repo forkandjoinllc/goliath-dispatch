@@ -1,0 +1,63 @@
+{
+  "index": {
+    "title": "Cobros",
+    "subtitle": "Lo que entró, cuándo y por dónde. Esta es la lista con la que se cuadra contra el banco.",
+    "settled": "En casa",
+    "pending": "Anotado, sin compensar",
+    "disputed": "En disputa",
+    "status": "Estado",
+    "anyStatus": "Cualquier estado",
+    "anyMethod": "Cualquier método",
+    "invoice": "Factura",
+    "invoicePlaceholder": "Número de factura",
+    "empty": "Ningún cobro coincide.",
+    "count": "{n} cobros",
+    "noInvoice": "(factura borrada)",
+    "recordedBy": "anotado por {name}",
+    "refund": "Reembolsar",
+    "refundAmount": "Importe a devolver (hasta {max})",
+    "confirmRefund": "Reembolsar",
+    "dispute": "Marcar en disputa",
+    "disputeWarning": "Un cobro en disputa deja de contar como dinero en casa: la factura vuelve a deber lo que ese cobro cubría.",
+    "confirmDispute": "Confirmar la disputa",
+    "reason": "Motivo"
+  },
+  "fields": {
+    "method": "Método",
+    "reference": "Referencia",
+    "receivedOn": "Fecha de entrada",
+    "notCleared": "Todavía sin compensar"
+  },
+  "methods": {
+    "card": "Tarjeta",
+    "ach": "ACH",
+    "check": "Cheque",
+    "wire": "Transferencia",
+    "cash": "Efectivo",
+    "offset": "Compensación",
+    "other": "Otro"
+  },
+  "status": {
+    "pending": "Sin compensar",
+    "processing": "En curso",
+    "succeeded": "Recibido",
+    "failed": "Fallido",
+    "refunded": "Reembolsado",
+    "partially_refunded": "Reembolsado en parte",
+    "disputed": "En disputa",
+    "cancelled": "Cancelado"
+  },
+  "show": {
+    "history": "Cobros recibidos",
+    "refunded": "{amount} devueltos"
+  },
+  "errors": {
+    "refundTooBig": "Eso es más de lo que queda en este cobro.",
+    "notRefundable": "Este cobro no está en un estado en el que se pueda devolver dinero.",
+    "alreadyDisputed": "Este cobro ya está marcado en disputa."
+  },
+  "flash": {
+    "refunded": "Reembolso anotado. El saldo de la factura se ha recalculado desde sus cobros.",
+    "disputed": "Cobro marcado en disputa. Deja de contar como dinero en casa."
+  }
+}

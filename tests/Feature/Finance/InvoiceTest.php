@@ -153,13 +153,15 @@ it('anota cobros parciales y cierra al llegar al total', function () {
     $id = facturar($this->scenario);
     $this->post("/invoices/{$id}/send");
 
-    $this->post("/invoices/{$id}/payments", ['amount_cents' => 10000])->assertRedirect();
+    // `method` y `status` son obligatorios desde que anotar un cobro escribe
+    // una fila en `payments`: sin ellos no se sabría con qué entró el dinero.
+    $this->post("/invoices/{$id}/payments", ['amount_cents' => 10000, 'method' => 'check', 'status' => 'succeeded'])->assertRedirect();
 
     $f = DB::table('invoices')->where('id', $id)->first();
     expect((int) $f->balance_cents)->toBe(15000)
         ->and($f->status)->toBe('sent');
 
-    $this->post("/invoices/{$id}/payments", ['amount_cents' => 15000])->assertRedirect();
+    $this->post("/invoices/{$id}/payments", ['amount_cents' => 15000, 'method' => 'check', 'status' => 'succeeded'])->assertRedirect();
 
     $f = DB::table('invoices')->where('id', $id)->first();
     expect((int) $f->balance_cents)->toBe(0)
@@ -172,7 +174,7 @@ it('no se cobra más que el saldo', function () {
     $id = facturar($this->scenario);
     $this->post("/invoices/{$id}/send");
 
-    $this->post("/invoices/{$id}/payments", ['amount_cents' => 99999])
+    $this->post("/invoices/{$id}/payments", ['amount_cents' => 99999, 'method' => 'check', 'status' => 'succeeded'])
         ->assertSessionHasErrors('amount_cents');
 });
 
@@ -180,7 +182,7 @@ it('una factura con cobros no se anula', function () {
     signIn($this->scenario, Role::Admin);
     $id = facturar($this->scenario);
     $this->post("/invoices/{$id}/send");
-    $this->post("/invoices/{$id}/payments", ['amount_cents' => 5000]);
+    $this->post("/invoices/{$id}/payments", ['amount_cents' => 5000, 'method' => 'check', 'status' => 'succeeded']);
 
     $this->post("/invoices/{$id}/void", ['reason' => 'Me he equivocado en el importe.'])
         ->assertSessionHasErrors('reason');

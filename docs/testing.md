@@ -24,7 +24,7 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (632 tests, 4300 assertions)
+OK (648 tests, 4421 assertions)
 ```
 
 Se llegó aquí en dos pasos el mismo día. Primero la suite ni siquiera arrancaba

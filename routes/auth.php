@@ -16,6 +16,7 @@ use App\Http\Controllers\App\InvoiceController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
+use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\UserController;
 use App\Http\Controllers\Auth\InvitationController;
@@ -274,6 +275,20 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('users/{membership}/role', [UserController::class, 'updateRole'])->name('users.role');
     Route::post('users/{membership}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
     Route::delete('users/{membership}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    /*
+    | Cobros
+    |
+    | El alta de un cobro vive en la factura (`invoices/{invoice}/payments`),
+    | que es donde se anota. Aquí está el LIBRO: lo que entró, por dónde y
+    | cuándo, que es con lo que se cuadra contra el banco.
+    |
+    | No hay ruta para borrar un cobro. Si entró mal se reembolsa o se marca en
+    | disputa — las dos cosas que de verdad le pasan al dinero.
+    */
+    Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
+    Route::post('payments/{payment}/dispute', [PaymentController::class, 'dispute'])->name('payments.dispute');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');

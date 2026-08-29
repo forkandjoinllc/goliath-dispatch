@@ -9,9 +9,11 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
+use App\Enums\PaymentMethod;
 use App\Models\Invoice;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\InvoiceBuilder;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -194,6 +197,8 @@ final class InvoiceController
                 'voidReason' => $model->void_reason,
                 'lines' => $this->lines($model),
             ],
+            'methods' => PaymentMethod::values(),
+            'payments' => $this->payments($actor, (string) $model->id),
             'can' => [
                 'send' => $checker->can($actor, 'invoice:send', $this->context($model), $policy)->allowed,
                 'pay' => $checker->can($actor, 'payment:record', $this->context($model), $policy)->allowed,
@@ -280,36 +285,39 @@ final class InvoiceController
 
         $data = $request->validate([
             'amount_cents' => ['required', 'integer', 'min:1'],
+            'method' => ['required', 'string', Rule::in(PaymentMethod::values())],
+            // Un cheque anotado el día que llega y todavía sin compensar es
+            // `pending`: queda registrado y NO cuenta como cobrado.
+            'status' => ['required', 'string', Rule::in(['pending', 'succeeded'])],
+            'reference' => ['nullable', 'string', 'max:120'],
+            'received_at' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $cobrado = (int) $model->amount_paid_cents + (int) $data['amount_cents'];
+        // El tope se calcula sobre lo que YA cuenta más lo que se anota ahora, y
+        // solo si lo que se anota cuenta. Un cobro pendiente no puede pasarse de
+        // la factura porque todavía no suma.
+        $suma = (int) $model->amount_paid_cents
+            + ($data['status'] === 'succeeded' ? (int) $data['amount_cents'] : 0);
 
-        if ($cobrado > (int) $model->total_cents) {
+        if ($suma > (int) $model->total_cents) {
             throw ValidationException::withMessages([
                 'amount_cents' => __('invoices.errors.overpaid'),
             ]);
         }
 
-        $ahora = CarbonImmutable::now();
-        $saldo = (int) $model->total_cents - $cobrado;
-
-        DB::table('invoices')->where('id', $model->id)->update([
-            'amount_paid_cents' => $cobrado,
-            'balance_cents' => $saldo,
-            'status' => $saldo === 0 ? 'paid' : $model->status,
-            'paid_at' => $saldo === 0 ? $ahora : null,
-            'updated_at' => $ahora,
+        // Se ANOTA UNA FILA en `payments` y la factura se recalcula desde sus
+        // cobros. Antes esto sumaba sobre la columna y no escribía nada: la
+        // factura decía cuánto se había cobrado y no había forma de saber
+        // cuándo, cómo, con qué referencia ni quién lo anotó.
+        PaymentLedger::record($actor, $model, [
+            'amount_cents' => (int) $data['amount_cents'],
+            'method' => (string) $data['method'],
+            'status' => (string) $data['status'],
+            'reference' => $data['reference'] ?? null,
+            'received_at' => $data['received_at'] ?? null,
+            'notes' => $data['notes'] ?? null,
         ]);
-
-        Audit::record(
-            $actor,
-            AuditAction::FinancialChanged,
-            entityType: 'invoice',
-            entityId: (string) $model->id,
-            entityLabel: (string) $model->invoice_number,
-            before: ['amount_paid_cents' => (int) $model->amount_paid_cents],
-            after: ['amount_paid_cents' => $cobrado, 'balance_cents' => $saldo],
-        );
 
         return back()->with('success', __('invoices.flash.paid'));
     }
@@ -397,6 +405,35 @@ final class InvoiceController
     private function context(Invoice $i): ResourceContext
     {
         return new ResourceContext(tenantId: $i->tenant_id, carrierId: $i->carrier_id);
+    }
+
+    /**
+     * Los cobros de esta factura, el más reciente primero.
+     *
+     * Se enseñan aquí y no solo en el libro de cobros porque la pregunta «¿esta
+     * factura está cobrada?» y la pregunta «¿cuándo y cómo?» se hacen en el
+     * mismo momento y delante del mismo papel.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function payments(Actor $actor, string $invoiceId): array
+    {
+        return DB::table('payments')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('invoice_id', $invoiceId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('received_at')
+            ->get(['id', 'amount_cents', 'refunded_amount_cents', 'method', 'status', 'reference', 'received_at'])
+            ->map(static fn ($p): array => [
+                'id' => (string) $p->id,
+                'amountCents' => (int) $p->amount_cents,
+                'refundedCents' => (int) $p->refunded_amount_cents,
+                'method' => (string) $p->method,
+                'status' => (string) $p->status,
+                'reference' => $p->reference,
+                'receivedOn' => $p->received_at === null ? null : substr((string) $p->received_at, 0, 10),
+            ])
+            ->all();
     }
 
     /**

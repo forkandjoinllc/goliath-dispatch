@@ -1,0 +1,63 @@
+{
+  "index": {
+    "title": "Payments",
+    "subtitle": "What came in, when, and by what route. This is the list you reconcile against the bank.",
+    "settled": "In hand",
+    "pending": "Recorded, not cleared",
+    "disputed": "In dispute",
+    "status": "Status",
+    "anyStatus": "Any status",
+    "anyMethod": "Any method",
+    "invoice": "Invoice",
+    "invoicePlaceholder": "Invoice number",
+    "empty": "No payments match.",
+    "count": "{n} payments",
+    "noInvoice": "(invoice deleted)",
+    "recordedBy": "recorded by {name}",
+    "refund": "Refund",
+    "refundAmount": "Amount to refund (up to {max})",
+    "confirmRefund": "Refund",
+    "dispute": "Mark disputed",
+    "disputeWarning": "A disputed payment stops counting as money in hand: the invoice goes back to owing what this payment covered.",
+    "confirmDispute": "Confirm dispute",
+    "reason": "Reason"
+  },
+  "fields": {
+    "method": "Method",
+    "reference": "Reference",
+    "receivedOn": "Date received",
+    "notCleared": "Not cleared yet"
+  },
+  "methods": {
+    "card": "Card",
+    "ach": "ACH",
+    "check": "Check",
+    "wire": "Wire",
+    "cash": "Cash",
+    "offset": "Offset",
+    "other": "Other"
+  },
+  "status": {
+    "pending": "Not cleared",
+    "processing": "Processing",
+    "succeeded": "Received",
+    "failed": "Failed",
+    "refunded": "Refunded",
+    "partially_refunded": "Partly refunded",
+    "disputed": "Disputed",
+    "cancelled": "Cancelled"
+  },
+  "show": {
+    "history": "Payments received",
+    "refunded": "{amount} refunded"
+  },
+  "errors": {
+    "refundTooBig": "That is more than this payment still holds.",
+    "notRefundable": "This payment is not in a state where money can be returned.",
+    "alreadyDisputed": "This payment is already marked as disputed."
+  },
+  "flash": {
+    "refunded": "Refund recorded. The invoice balance has been recalculated from its payments.",
+    "disputed": "Payment marked as disputed. It no longer counts as money in hand."
+  }
+}

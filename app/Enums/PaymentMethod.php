@@ -11,4 +11,10 @@ enum PaymentMethod: string
     case Cash = 'cash';
     case Offset = 'offset';
     case Other = 'other';
+
+    /** @return list<string> */
+    public static function values(): array
+    {
+        return array_map(static fn (self $m): string => $m->value, self::cases());
+    }
 }
