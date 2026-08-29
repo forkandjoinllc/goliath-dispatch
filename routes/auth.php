@@ -18,6 +18,7 @@ use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\PaymentController;
+use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\TenantSettingController;
 use App\Http\Controllers\App\UserController;
@@ -277,6 +278,18 @@ Route::middleware(['auth'])->group(function (): void {
     | La POLÍTICA con la que nacen las cargas y las facturas. Seis sitios leen
     | esta fila en vivo; hasta ahora solo se cambiaba entrando a MySQL.
     */
+    /*
+    | Informes
+    |
+    | Salen de lo FACTURADO y de las instantáneas congeladas, nunca de un
+    | recálculo: un periodo cerrado tiene que decir siempre lo mismo.
+    |
+    | La exportación tiene permiso propio y deja rastro: sacar los números a un
+    | fichero no es lo mismo que mirarlos en pantalla.
+    */
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
 

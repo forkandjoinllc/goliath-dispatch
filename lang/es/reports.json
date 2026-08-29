@@ -1,0 +1,55 @@
+{
+  "index": {
+    "title": "Informes",
+    "subtitle": "Qué se facturó, qué dejó, y qué le siguen debiendo.",
+    "basis": "Estas cifras salen del trabajo FACTURADO y de la instantánea congelada que usó cada factura — nunca de un recálculo. Un periodo cerrado dice siempre lo mismo, y una carga entregada y todavía sin facturar aún no aparece aquí.",
+    "from": "Desde",
+    "to": "Hasta",
+    "export": "Exportar CSV",
+    "empty": "Nada en este periodo."
+  },
+  "summary": {
+    "fee": "Tarifas de despacho facturadas",
+    "margin": "Margen bruto",
+    "loads": "Cargas facturadas",
+    "outstanding": "Pendiente de cobro"
+  },
+  "aging": {
+    "title": "Antigüedad del cobro",
+    "note": "Facturas abiertas según cuánto llevan vencidas. El saldo sale de los cobros anotados en cada factura.",
+    "current": "Todavía sin vencer",
+    "d1_30": "1–30 días",
+    "d31_60": "31–60 días",
+    "d61_90": "61–90 días",
+    "d90plus": "Más de 90 días",
+    "invoices": "{n} facturas"
+  },
+  "carriers": {
+    "title": "Por transportista",
+    "carrier": "Transportista",
+    "loads": "Cargas",
+    "gross": "Bruto",
+    "fee": "Tarifa de despacho",
+    "net": "Neto al transportista",
+    "margin": "Margen bruto"
+  },
+  "customers": {
+    "title": "Por cliente",
+    "customer": "Cliente",
+    "charge": "Cobro al cliente",
+    "none": "(sin cliente)"
+  },
+  "commissions": {
+    "title": "Comisiones del despachador",
+    "dispatcher": "Despachador",
+    "accrued": "Devengado",
+    "paid": "Pagado",
+    "owed": "Debido"
+  },
+  "expenses": {
+    "title": "Gastos aprobados por tratamiento"
+  },
+  "loads": {
+    "title": "Cargas por estado"
+  }
+}

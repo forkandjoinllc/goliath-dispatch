@@ -1,0 +1,55 @@
+{
+  "index": {
+    "title": "Reports",
+    "subtitle": "What was billed, what it earned, and what is still owed to you.",
+    "basis": "These figures come from invoiced work and the frozen snapshot each invoice used — never from a recalculation. A closed period always says the same thing, and a load that has been delivered but not invoiced does not appear here yet.",
+    "from": "From",
+    "to": "To",
+    "export": "Export CSV",
+    "empty": "Nothing in this period."
+  },
+  "summary": {
+    "fee": "Dispatch fees billed",
+    "margin": "Gross margin",
+    "loads": "Loads billed",
+    "outstanding": "Still owed to you"
+  },
+  "aging": {
+    "title": "Receivables ageing",
+    "note": "Open invoices by how long they have been due. Balances come from the payments recorded against each invoice.",
+    "current": "Not due yet",
+    "d1_30": "1–30 days",
+    "d31_60": "31–60 days",
+    "d61_90": "61–90 days",
+    "d90plus": "Over 90 days",
+    "invoices": "{n} invoices"
+  },
+  "carriers": {
+    "title": "By carrier",
+    "carrier": "Carrier",
+    "loads": "Loads",
+    "gross": "Gross rate",
+    "fee": "Dispatch fee",
+    "net": "Net to carrier",
+    "margin": "Gross margin"
+  },
+  "customers": {
+    "title": "By customer",
+    "customer": "Customer",
+    "charge": "Customer charge",
+    "none": "(no customer)"
+  },
+  "commissions": {
+    "title": "Dispatcher commissions",
+    "dispatcher": "Dispatcher",
+    "accrued": "Accrued",
+    "paid": "Paid",
+    "owed": "Owed"
+  },
+  "expenses": {
+    "title": "Approved expenses by treatment"
+  },
+  "loads": {
+    "title": "Loads by status"
+  }
+}
