@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
+import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
 
 interface InvoiceRow {
@@ -20,7 +21,7 @@ interface InvoiceRow {
 interface Props {
   invoices: {
     data: InvoiceRow[]
-    meta: { total: number; perPage: number; currentPage: number; lastPage: number }
+    meta: PageMeta
   }
   filters: { search: string; status: string }
   statuses: string[]
@@ -139,9 +140,7 @@ export default function InvoicesIndex({ invoices, filters, statuses, totals, can
           </table>
         </div>
 
-        <p className="text-xs text-steel-600">
-          {t('invoices.index.count', { n: String(invoices.meta.total) })}
-        </p>
+        <Pager meta={invoices.meta} path="/invoices" params={{ ...filters }} />
       </div>
     </AppLayout>
   )

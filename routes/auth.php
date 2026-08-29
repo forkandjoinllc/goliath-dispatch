@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\AssignmentController;
+use App\Http\Controllers\App\AuditController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CommissionController;
@@ -292,6 +293,20 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+
+    /*
+    | Pista de auditoría
+    |
+    | Solo lectura, y no por prudencia: `audit_events` tiene dos disparadores
+    | que rechazan UPDATE y DELETE. Una ruta de escritura aquí no podría hacer
+    | otra cosa que devolver un error de base de datos.
+    |
+    | No hay ruta de exportación. Sacar la pista a un fichero es una acción con
+    | su propio permiso (`report:export`) y su propio rastro, y mezclarla con la
+    | de mirar convertiría un permiso de lectura en uno de extracción.
+    */
+    Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+    Route::get('audit/{event}', [AuditController::class, 'show'])->name('audit.show');
 
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users', [UserController::class, 'store'])->name('users.invite');

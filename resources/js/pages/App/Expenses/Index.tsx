@@ -2,6 +2,7 @@ import { Link, router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
+import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
 
 interface Row {
@@ -21,7 +22,7 @@ interface Row {
 }
 
 interface Props {
-  expenses: { data: Row[]; meta: { total: number } }
+  expenses: { data: Row[]; meta: PageMeta }
   filters: { status: string; load: string }
   statuses: string[]
   totals: { pendingCents: number; countingCents: number }
@@ -86,7 +87,7 @@ export default function ExpensesIndex({ expenses, filters, statuses, totals, can
           ))}
         </div>
 
-        <p className="text-xs text-steel-600">{t('expenses.index.count', { n: String(expenses.meta.total) })}</p>
+        <Pager meta={expenses.meta} path="/expenses" params={{ ...filters }} />
       </div>
     </AppLayout>
   )

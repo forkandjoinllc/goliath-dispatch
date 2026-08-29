@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
+import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
 
 interface Row {
@@ -15,7 +16,7 @@ interface Row {
 }
 
 interface Props {
-  settlements: { data: Row[]; meta: { total: number } }
+  settlements: { data: Row[]; meta: PageMeta }
   filters: { search: string; status: string }
   statuses: string[]
   totals: { netCents: number; dispatchFeesCents: number }
@@ -105,9 +106,7 @@ export default function SettlementsIndex({ settlements, filters, statuses, total
           </table>
         </div>
 
-        <p className="text-xs text-steel-600">
-          {t('settlements.index.count', { n: String(settlements.meta.total) })}
-        </p>
+        <Pager meta={settlements.meta} path="/settlements" params={{ ...filters }} />
       </div>
     </AppLayout>
   )

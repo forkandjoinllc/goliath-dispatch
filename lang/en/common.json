@@ -142,5 +142,8 @@
     "country": "Country",
     "state": "State / province",
     "statePlaceholder": "Select…"
+  },
+  "pager": {
+    "showing": "Showing {from}–{to} of {total}"
   }
 }

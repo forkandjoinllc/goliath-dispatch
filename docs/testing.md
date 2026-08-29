@@ -24,8 +24,12 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (648 tests, 4421 assertions)
+OK (717 tests, 4965 assertions)
 ```
+
+(Cifra del 29 de agosto por la tarde, tras el lote de la pista de auditoría.
+Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
+la suite pasó de no arrancar a estar entera en verde.)
 
 Se llegó aquí en dos pasos el mismo día. Primero la suite ni siquiera arrancaba
 —llevaba varios lotes así sin que se notara— y al conseguir ejecutarla salieron
@@ -104,6 +108,31 @@ conductor que esperaba «no cumple» cuando lo correcto es «no consta» sin
 licencia registrada, y una prueba de duplicados entre empresas que buscaba un
 DOT que el propio actor también tenía.
 
+### Dos defectos que solo se ven abriendo el navegador
+
+Se repiten aquí porque los dos pasaron TODAS las pruebas y los encontró abrir la
+pantalla:
+
+1. **Cuatro listas paginadas sin paginador.** Facturas, cobros, gastos y
+   liquidaciones paginaban de veinticinco o treinta en el servidor y no pintaban
+   un solo enlace de página. El servidor contestaba perfectamente a `?page=2`;
+   nadie tenía por dónde pedirlo. Lo cubre ahora
+   `tests/Unit/Ui/PagerContractTest.php`, que cruza «este método pagina» con
+   «esta pantalla pinta el paginador».
+
+2. **Claves de diccionario con punto dentro.** Los valores de `AuditAction` son
+   `financial.changed`, `auth.login`… y la pantalla compone la clave:
+   `t("audit.action.{$accion}")`. El buscador del cliente parte las claves por
+   puntos para bajar por el árbol, así que un diccionario plano
+   `{"financial.changed": "…"}` no se encuentra nunca y la tabla pinta la clave
+   en crudo. Lo cubre `tests/Unit/I18n/EnumLabelsTest.php`, que busca **igual
+   que el cliente**: replicar ahí `lookup()` es deliberado, porque una prueba
+   que buscara de otra manera pasaría en verde con diccionarios que el navegador
+   no sabe leer.
+
+La regla general que dejan los dos: **una prueba verde no dice que la pantalla
+se vea**. Lo que no se renderiza no falla.
+
 ### Cómo montar el entorno de ejecución
 
 Packagist está bloqueado en el contenedor donde se escribe este código, pero
@@ -117,6 +146,12 @@ Además:
 
 - MySQL necesita `set global log_bin_trust_function_creators = 1` antes de
   migrar, o los triggers `SIGNAL` fallan con `ERROR 1419`.
+- `storage/framework/{views,cache,sessions}` y `bootstrap/cache` tienen que
+  existir. Si se trae el código sin ellos, toda página Inertia da 500 con
+  «Please provide a valid cache path», que no menciona el directorio que falta.
+- Para servir la demo hace falta `SESSION_DRIVER=database`: la empresa activa
+  vive en la columna `sessions.active_tenant_id`, así que con sesiones en
+  fichero se entra bien y todas las pantallas contestan «Sin empresa activa».
 - Hay que ejecutar `npm run build` antes de la suite: sin
   `public/build/manifest.json`, toda prueba que renderice una página Inertia da
   500 y la suite parece rota de arriba abajo. Fueron unos 160 fallos de golpe.

@@ -105,6 +105,7 @@ final class PaymentController
                     ->all(),
                 'meta' => [
                     'total' => $page->total(),
+                    'perPage' => $page->perPage(),
                     'currentPage' => $page->currentPage(),
                     'lastPage' => $page->lastPage(),
                 ],
