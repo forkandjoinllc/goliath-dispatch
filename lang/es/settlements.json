@@ -1,0 +1,65 @@
+{
+  "index": {
+    "title": "Liquidaciones",
+    "subtitle": "Lo que se le paga al transportista: sus cargas, menos la tarifa de despacho y sus descuentos, más los reembolsos.",
+    "status": "Estado",
+    "anyStatus": "Cualquier estado",
+    "create": "Nueva liquidación",
+    "number": "Número",
+    "carrier": "Transportista",
+    "period": "Periodo",
+    "net": "Neto",
+    "empty": "No hay liquidaciones que coincidan.",
+    "count": "{n} liquidaciones",
+    "netTotal": "Neto a transportistas",
+    "feesTotal": "Tarifas de despacho"
+  },
+  "create": {
+    "title": "Nueva liquidación",
+    "subtitle": "Elija transportista y marque las cargas entregadas que entran.",
+    "carrier": "Transportista",
+    "chooseCarrier": "Elija un transportista",
+    "nothingToSettle": "Este transportista no tiene nada que liquidar ahora mismo.",
+    "load": "Carga",
+    "delivered": "Entregada",
+    "gross": "Tarifa bruta",
+    "grossNote": "Bruto seleccionado: {amount}. El neto sale de la instantánea congelada — con la tarifa de despacho, los descuentos y los reembolsos.",
+    "submit": "Crear liquidación",
+    "cancel": "Cancelar"
+  },
+  "show": {
+    "gross": "Bruto",
+    "reimbursements": "Reembolsado",
+    "fees": "Tarifa de despacho",
+    "deductions": "Descuentos",
+    "net": "Neto",
+    "load": "Carga",
+    "issue": "Entregar al transportista",
+    "markPaid": "Marcar como pagada",
+    "sentToFactoring": "Enviada a la empresa de factoring",
+    "void": "Anular",
+    "voidReason": "Por qué se anula",
+    "confirmVoid": "Anular esta liquidación",
+    "factoring": "Se paga a través de {name}",
+    "factoringNote": "La plataforma lo registra. No mueve dinero.",
+    "frozenNote": "Estas cifras salen de la instantánea que se congeló al facturar o liquidar la carga —lo que ocurriera primero—. No cambian después."
+  },
+  "status": {
+    "draft": "Borrador",
+    "issued": "Entregada",
+    "paid": "Pagada",
+    "voided": "Anulada"
+  },
+  "flash": {
+    "created": "Se creó la liquidación {number} en borrador.",
+    "issued": "Se entregó la liquidación.",
+    "paid": "Se marcó la liquidación como pagada.",
+    "voided": "Se anuló la liquidación."
+  },
+  "errors": {
+    "nothingToSettle": "Ninguna de esas cargas se puede liquidar: no están entregadas, son de otro transportista, o ya están en una liquidación viva.",
+    "onlyDraftCanBeIssued": "Solo se puede entregar un borrador.",
+    "onlyIssuedCanBePaid": "Solo se marca como pagada una liquidación entregada.",
+    "cannotVoidPaid": "Una liquidación pagada no se puede anular."
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "index": {
+    "title": "Settlements",
+    "subtitle": "What the carrier gets paid: its loads, less the dispatch fee and its deductions, plus reimbursements.",
+    "status": "Status",
+    "anyStatus": "Any status",
+    "create": "New settlement",
+    "number": "Number",
+    "carrier": "Carrier",
+    "period": "Period",
+    "net": "Net",
+    "empty": "No settlements match.",
+    "count": "{n} settlements",
+    "netTotal": "Net to carriers",
+    "feesTotal": "Dispatch fees"
+  },
+  "create": {
+    "title": "New settlement",
+    "subtitle": "Pick a carrier, then tick the delivered loads that go on it.",
+    "carrier": "Carrier",
+    "chooseCarrier": "Choose a carrier",
+    "nothingToSettle": "This carrier has nothing to settle right now.",
+    "load": "Load",
+    "delivered": "Delivered",
+    "gross": "Gross rate",
+    "grossNote": "Gross selected: {amount}. The net comes from the frozen snapshot — dispatch fee, deductions and reimbursements included.",
+    "submit": "Create settlement",
+    "cancel": "Cancel"
+  },
+  "show": {
+    "gross": "Gross",
+    "reimbursements": "Reimbursed",
+    "fees": "Dispatch fee",
+    "deductions": "Deductions",
+    "net": "Net",
+    "load": "Load",
+    "issue": "Issue to carrier",
+    "markPaid": "Mark as paid",
+    "sentToFactoring": "Sent to the factoring company",
+    "void": "Void",
+    "voidReason": "Why it is being voided",
+    "confirmVoid": "Void this settlement",
+    "factoring": "Paid through {name}",
+    "factoringNote": "The platform records this. It does not move any money.",
+    "frozenNote": "These figures come from the snapshot frozen when the load was invoiced or settled — whichever happened first. They do not change afterwards."
+  },
+  "status": {
+    "draft": "Draft",
+    "issued": "Issued",
+    "paid": "Paid",
+    "voided": "Voided"
+  },
+  "flash": {
+    "created": "Settlement {number} was created as a draft.",
+    "issued": "The settlement was issued.",
+    "paid": "The settlement was marked as paid.",
+    "voided": "The settlement was voided."
+  },
+  "errors": {
+    "nothingToSettle": "None of those loads can be settled: they are not delivered, belong to another carrier, or are already on a live settlement.",
+    "onlyDraftCanBeIssued": "Only a draft can be issued.",
+    "onlyIssuedCanBePaid": "Only an issued settlement can be marked as paid.",
+    "cannotVoidPaid": "A settlement that was paid cannot be voided."
+  }
+}

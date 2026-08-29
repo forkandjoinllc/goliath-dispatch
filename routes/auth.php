@@ -14,6 +14,7 @@ use App\Http\Controllers\App\InvoiceController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
+use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
 
@@ -183,6 +184,24 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'pay'])->name('invoices.pay');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+
+    /*
+    | Liquidaciones
+    |
+    | Lo que se le PAGA al transportista: sus cargas, menos la tarifa de
+    | despacho que se le cobra, menos sus descuentos, más lo reembolsable. Las
+    | cifras salen de la instantánea congelada, no de un cálculo nuevo.
+    |
+    | Tampoco hay `edit` ni `update`: una liquidación entregada se anula y se
+    | hace otra.
+    */
+    Route::get('settlements', [SettlementController::class, 'index'])->name('settlements.index');
+    Route::get('settlements/create', [SettlementController::class, 'create'])->name('settlements.create');
+    Route::post('settlements', [SettlementController::class, 'store'])->name('settlements.store');
+    Route::get('settlements/{settlement}', [SettlementController::class, 'show'])->name('settlements.show');
+    Route::post('settlements/{settlement}/issue', [SettlementController::class, 'issue'])->name('settlements.issue');
+    Route::post('settlements/{settlement}/pay', [SettlementController::class, 'pay'])->name('settlements.pay');
+    Route::post('settlements/{settlement}/void', [SettlementController::class, 'void'])->name('settlements.void');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');

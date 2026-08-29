@@ -31,7 +31,10 @@ use Illuminate\Support\Str;
  */
 final class InvoiceBuilder
 {
-    public function __construct(private readonly LoadCalculator $calculator) {}
+    public function __construct(
+        private readonly LoadCalculator $calculator,
+        private readonly SnapshotStore $snapshots,
+    ) {}
 
     /**
      * @param  list<Load>  $loads  cargas del MISMO transportista
@@ -49,7 +52,7 @@ final class InvoiceBuilder
 
         foreach ($loads as $load) {
             $financials = $this->calculator->for($load);
-            $snapshotId = $this->freeze($actor, $load, $financials, $ahora);
+            $snapshotId = $this->snapshots->freeze($actor, $load, $financials, $ahora);
 
             $importe = $financials->dispatchFee;
             $subtotal += $importe;
@@ -59,6 +62,11 @@ final class InvoiceBuilder
                 'tenant_id' => $actor->tenantId,
                 'invoice_id' => $invoiceId,
                 'load_id' => $load->id,
+                // Qué instantánea se usó. Sin esto, la liquidación de esta
+                // misma carga podría descontar una tarifa calculada otro día
+                // —la diferencia es pequeña y constante, que es la peor clase
+                // de error—. Ver SettlementBuilder.
+                'financial_snapshot_id' => $snapshotId,
                 'sequence' => ++$secuencia,
                 // Las dos descripciones se escriben AHORA y se guardan. Traducir
                 // al pintar haría que una factura emitida en marzo cambiara de
@@ -78,7 +86,6 @@ final class InvoiceBuilder
             // es donde está el hecho. Una columna paralela solo puede
             // desincronizarse: se anula una factura y la carga se queda marcada
             // como facturada para siempre.
-            unset($snapshotId);
         }
 
         DB::table('invoices')->insert([
@@ -101,37 +108,5 @@ final class InvoiceBuilder
         DB::table('invoice_line_items')->insert($lineas);
 
         return $invoiceId;
-    }
-
-    /**
-     * Congela el cálculo de una carga y devuelve el id de la instantánea.
-     */
-    private function freeze(Actor $actor, Load $load, LoadFinancials $financials, mixed $ahora): string
-    {
-        // La versión se calcula con la fila bloqueada: dos personas facturando a
-        // la vez la misma carga no pueden escribir dos veces la versión 1.
-        $version = 1 + (int) DB::table('financial_snapshots')
-            ->where('tenant_id', $actor->tenantId)
-            ->where('load_id', $load->id)
-            ->lockForUpdate()
-            ->max('version');
-
-        $id = (string) Str::uuid();
-
-        DB::table('financial_snapshots')->insert([
-            ...$financials->toSnapshotColumns(),
-            'id' => $id,
-            'tenant_id' => $actor->tenantId,
-            'load_id' => $load->id,
-            'version' => $version,
-            // Quién calculó esto y cuándo. La instantánea es la respuesta a
-            // «¿de dónde salió esta cifra?», y media respuesta no sirve.
-            'computed_by_user_id' => $actor->auditUserId(),
-            'computed_at' => $ahora,
-            'created_at' => $ahora,
-            'updated_at' => $ahora,
-        ]);
-
-        return $id;
     }
 }
