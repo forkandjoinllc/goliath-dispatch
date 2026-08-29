@@ -172,9 +172,15 @@ final class PeriodReport
 
         $this->narrowByCarrier($query, 'e.carrier_id');
 
+        // selectRaw con alias y NO pluck(DB::raw(...)): con una expresión cruda,
+        // `pluck` intenta leer del resultado una propiedad con el nombre de la
+        // expresión y revienta con «Undefined property: stdClass::$amount_cents»
+        // en cuanto hay una sola fila. Con cero filas no falla — por eso la
+        // suite estaba verde y la pantalla daba 500 en cuanto había un gasto.
         return $query
+            ->selectRaw('e.treatment_snapshot as treatment, sum(e.amount_cents) as total')
             ->groupBy('e.treatment_snapshot')
-            ->pluck(DB::raw('sum(e.amount_cents)'), 'e.treatment_snapshot')
+            ->pluck('total', 'treatment')
             ->map(static fn ($v): int => (int) $v)
             ->all();
     }
@@ -229,9 +235,11 @@ final class PeriodReport
 
         $this->narrowByCarrier($query, 'l.carrier_id');
 
+        // Mismo motivo que en expensesByTreatment: alias, no expresión cruda.
         return $query
+            ->selectRaw('l.status as estado, count(*) as total')
             ->groupBy('l.status')
-            ->pluck(DB::raw('count(*)'), 'l.status')
+            ->pluck('total', 'estado')
             ->map(static fn ($v): int => (int) $v)
             ->all();
     }

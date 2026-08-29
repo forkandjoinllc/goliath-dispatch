@@ -1197,6 +1197,12 @@ class DemoDataSeeder extends Seeder
             ['GD-24005', 'other', 4000, 'Reimpresión de documentación'],
             ['GD-24006', 'permit', 96000, 'Permiso de altura, corredor de Illinois'],
             ['GD-24006', 'repair', 21000, 'Cambio de neumático en ruta'],
+            // Uno que LO ASUME LA CASA sobre una carga que sí se factura. Sin él,
+            // el margen bruto salía idéntico a la tarifa de despacho en todas
+            // las filas del informe, y dos columnas con el mismo número siempre
+            // parecen un fallo aunque sean correctas.
+            ['GD-24009', 'other', 18000, 'Cortesía al cliente por una demora nuestra'],
+            ['GD-24010', 'fuel', 34000, 'Combustible adelantado en Monterrey'],
         ];
 
         foreach ($rows as [$loadNumber, $code, $cents, $description]) {

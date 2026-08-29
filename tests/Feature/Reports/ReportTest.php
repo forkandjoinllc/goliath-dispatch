@@ -97,6 +97,47 @@ it('las cifras NO se recalculan cuando cambia algo después', function () {
         ->assertInertia(fn (Assert $page) => $page->where('summary.feeCents', 25000));
 });
 
+it('desglosa gastos y cargas cuando HAY filas', function () {
+    signIn($this->scenario, Role::Admin);
+    facturaDelPeriodo($this->scenario);
+
+    // Con la carga ya facturada, se le aprueba un gasto para que el desglose
+    // tenga algo que agrupar.
+    // El escenario monta la empresa con modelos, no con ProvisionTenant, así
+    // que las categorías hay que pedirlas.
+    App\Support\Finance\DefaultExpenseCategories::ensureFor((string) $this->scenario->tenant->id);
+
+    $categoria = DB::table('expense_categories')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->where('code', 'fuel')
+        ->first(['id', 'treatment']);
+
+    DB::table('expenses')->insert([
+        'id' => (string) Illuminate\Support\Str::uuid(),
+        'tenant_id' => $this->scenario->tenant->id,
+        'load_id' => $this->scenario->load->id,
+        'carrier_id' => $this->scenario->assignedCarrier->id,
+        'category_id' => $categoria->id,
+        'treatment_snapshot' => $categoria->treatment,
+        'amount_cents' => 12345,
+        'status' => 'approved',
+        'submitted_by_user_id' => $this->scenario->user(Role::Admin)->id,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    // ESTA es la prueba que faltaba. Los desgloses usaban `pluck` sobre una
+    // expresión cruda, que revienta en cuanto hay UNA fila y no falla con cero
+    // — así que la suite pasaba y la pantalla daba 500 en cuanto un gasto
+    // aprobado entraba en el periodo. Lo encontró abrir la aplicación, no la
+    // suite.
+    $this->get('/reports')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('expensesByTreatment.reimbursable_to_carrier', 12345)
+            ->has('loadsByStatus'));
+});
+
 /* ── Antigüedad del cobro ──────────────────────────────────────────────── */
 
 it('una factura recién enviada está sin vencer', function () {
