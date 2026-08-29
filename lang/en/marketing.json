@@ -609,6 +609,9 @@
     },
     "hours247": "Open 24 hours a day, every day.",
     "directions": "Get directions →",
-    "mapTitle": "Map of our office location"
+    "mapTitle": "Map of our office location",
+    "mapConsent": "The map is served by Google. Loading it sends them your IP address. Nothing is requested until you ask for it.",
+    "mapLoad": "Show the map",
+    "mapOpenExternal": "Or open it in Google Maps"
   }
 }

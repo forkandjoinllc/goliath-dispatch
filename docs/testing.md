@@ -19,51 +19,104 @@ segundos —246 claves foráneas, 47 triggers, 89 CHECK— y hacerlo por cada cl
 convertiría la suite en algo que nadie ejecuta. Se construye una vez por proceso
 y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 
-## Estado: parte de la suite NUNCA se ha ejecutado
+## Estado: qué se ha ejecutado y qué no
 
-Esto hay que decirlo antes que nada.
+La suite **se ejecutó y quedó en verde** el 25 de agosto de 2026:
 
-Los ficheros de `tests/Feature/Carriers`, `tests/Feature/Customers`,
-`tests/Feature/Loads`, `tests/Feature/Fleet`, `tests/Feature/Documents`,
-`tests/Unit/Customers`,
-`tests/Unit/Finance`, `tests/Unit/Security`, `tests/Unit/Support` y
-`tests/Unit/I18n/NavigationLabelsTest`
-se escribieron en un entorno donde **Pest no se puede instalar**: composer exige
-autenticarse contra GitHub para las dependencias de desarrollo, y ese entorno no
-podía hacerlo. Llevan un aviso en su cabecera.
+```
+Tests:  433 passed (3187 assertions)
+```
 
-Lo que sí está comprobado, y conviene distinguirlo:
+Antes de eso, buena parte se había escrito sin poder ejecutarse. Aquel primer
+arranque dejó una lección que conviene conservar, porque no es la que se espera:
+de los 119 fallos iniciales, **uno solo** era un defecto de la aplicación —los
+milisegundos que se perdían en las escrituras crudas, hoy resueltos con
+`App\Support\Database\MillisecondGrammar`—. El resto eran defectos de las
+propias pruebas: dos fallos en `signIn()`, diez `assertForbidden()` mal puestas,
+un fixture al que le faltaban documentos obligatorios y varios números mágicos
+caducados. Dos fallos que parecían agujeros de seguridad resultaron ser efectos
+del segundo defecto de `signIn()`.
 
-| Qué | Cómo se comprobó |
+### Lo que se ha añadido DESPUÉS y no he ejecutado nunca
+
+Estos once ficheros son posteriores a aquel arranque en verde:
+
+```
+tests/Feature/Carriers/CarrierContactsTest.php
+tests/Feature/Documents/UsedDocumentTypesTest.php
+tests/Feature/Factoring/FactoringTest.php
+tests/Feature/Finance/InvoiceTest.php
+tests/Feature/Finance/SettlementTest.php
+tests/Feature/Fleet/DriverQualificationTest.php
+tests/Feature/Fmcsa/CarrierLookupTest.php
+tests/Feature/Geo/CountryStateTest.php
+tests/Feature/Loads/LoadRequirementsTest.php
+tests/Unit/Geo/RegionParityTest.php
+tests/Unit/Loads/DriverEligibilityTest.php
+```
+
+Más los retoques a `SchemaAgreementTest` (el recuento de modelos) y a
+`NavigationTest`.
+
+**No los he ejecutado ni una vez.** El entorno donde se escriben no alcanza
+packagist, así que no hay `vendor/`, y sin `vendor/` no hay `artisan` ni Pest.
+Eso no ha cambiado.
+
+### Lo que sí se comprueba antes de entregar cada lote
+
+| Qué | Cómo |
 |---|---|
-| El comportamiento que afirman | A mano, con peticiones HTTP reales y con navegador, contra la aplicación en marcha |
-| Que las 16 rutas que usan existen | Resolviéndolas contra el enrutador |
-| Que los componentes Inertia existen | Comprobando los ficheros en `resources/js/pages` |
-| Que las columnas consultadas existen | `Schema::hasColumn` sobre las 9 tablas implicadas |
-| Que las clases y métodos existen | `class_exists` / `method_exists` |
-| Los valores de `NameKeyTest` | Llamando a `NameKey::for()` con cada par del dataset |
-| Las aserciones de `NavigationTest` | Ejecutando `Navigation::for()` con los seis roles |
-| **Las 26 aserciones de `CalculatorTest`** | Ejecutando `Calculator` y `Money` con cada caso, una por una |
-| Las del grafo en `LoadTransitionTest` | Ejecutando `Transitions` con los trece estados |
-| Las claves de `loads.blocking.*` y `loads.assign.*` | Comprobadas en los dos diccionarios |
-| El ciclo completo de `LoadFormTest` | Recorrido por HTTP: carga creada, asignada, despachada y entregada |
-| Los dos permisos de edición | Probados en las dos direcciones con despachador y contabilidad |
-| **Las 12 aserciones de `SensitiveNumberTest`** | Ejecutando `SensitiveNumber` con cada caso, una por una |
-| Que la licencia no viaje al cliente | Inspeccionando la respuesta HTTP con los cinco roles |
-| El arranque en frío | Conductor y camión creados por HTTP y usados en una carga despachada |
-| La subida y la descarga de un fichero | Un PDF real subido, descargado por URL firmada y comparado byte a byte |
-| Que la firma sea la credencial | Sin firma 403, firma manipulada 403, firma válida sin sesión 200 |
-| Los mensajes de validación en español | Tres formularios distintos, comprobados tras crear `lang/es/validation.php` |
-| Sintaxis PHP | `php -l` sobre cada fichero |
+| Sintaxis PHP | `php -l` sobre cada fichero tocado |
+| Tipos de TypeScript | `tsc --noEmit` sobre cada `.tsx` tocado |
+| Paridad de diccionarios | EN y ES comparados clave a clave |
+| Claves usadas y no traducidas | Extraídas del TSX y del PHP y cruzadas con el diccionario |
+| **El DDL de cada migración** | Ejecutado contra un **MySQL 8.0.46 real** con los quince ficheros del esquema cargados: 93 tablas, 47 triggers, 246 claves foráneas |
+| Que la migración se pueda reanudar | Ejecutada desde cero, sobre lo ya aplicado, y desde estados a medias |
+| Que el instalador del lote acierte | Aplicado sobre una copia limpia y comparado byte a byte; y ejecutado dos veces para comprobar que es idempotente |
 
-Lo que **no** está comprobado es la mecánica de Pest: la firma exacta de una
-aserción, un `->with()` mal formado, un helper que no existe en la versión
-instalada.
+Ese banco de MySQL existe desde el lote 18, y nació de un fallo: el lote 15
+tumbó un despliegue con un `ERROR 1215` que se reproduce en segundos con la base
+delante. Ver más abajo.
 
-**Al ejecutarlas por primera vez, distinga los dos tipos de fallo.** Si algo se
-rompe por la FORMA —método desconocido, aserción con otra firma— es una errata
-mía y se arregla. Si algo falla por el VALOR esperado, eso sí es una regresión
-de verdad y hay que mirarla.
+### Al ejecutar los once, distinga los dos tipos de fallo
+
+Si algo se rompe por la **forma** —un método que no existe, una aserción con
+otra firma, un fixture al que le falta un campo obligatorio del escenario— es
+una errata mía y se arregla en el fichero de pruebas. Si algo falla por el
+**valor esperado**, eso sí merece mirarse: puede ser una regresión de verdad.
+
+La proporción del primer arranque (118 de 119 fallos eran de las pruebas, no de
+la aplicación) sugiere qué esperar, pero no lo garantiza.
+
+## Migraciones: por qué todas son reanudables
+
+MySQL no tiene DDL transaccional, y Laravel manda **un `alter table` por
+columna**. Una migración que muera a mitad deja media tabla puesta y **no se
+registra** en `migrations`: al reintentarla se estrella contra lo que ya está
+(`ERROR 1060 Duplicate column`).
+
+Pasó dos veces en despliegues reales, en agosto de 2026. La primera se arregló
+como caso particular; la segunda obligó a sacar la regla:
+
+> Toda migración comprueba, paso a paso, si lo que va a hacer ya está hecho —
+> columnas con `Schema::hasColumn`, CHECK y claves foráneas contra
+> `information_schema.table_constraints`, índices contra
+> `information_schema.statistics`.
+
+Ejecutar una dos veces seguidas tiene que dar el mismo resultado que ejecutarla
+una. `down()` va igual de protegido.
+
+Y una restricción de MySQL que costó un despliegue entero, por si vuelve a
+aparecer:
+
+> Una clave foránea con `ON DELETE CASCADE` **no puede** estar sobre una columna
+> que sea base de una columna generada **STORED**.
+
+El esquema emula índices únicos parciales con columnas generadas STORED por todas
+partes, así que el choque es fácil de provocar. La salida es que la columna
+generada no dependa de la columna de la clave foránea: se mete esa columna en el
+ÍNDICE, que no está sujeto a la restricción. Ver
+`2026_08_28_100000_create_carrier_contacts.php`.
 
 ## Cómo están organizadas
 
@@ -100,5 +153,8 @@ problema de autorización cuando sería el limitador haciendo su trabajo.
   sido con navegador a mano.
 - `tests/Support/Scenario.php` vive bajo el espacio `Tests\`, que está en
   `autoload-dev`. Con las dependencias de desarrollo ausentes no se autocarga;
-  se comprobó cargando el fichero a mano. Con `composer install` completo, se
-  resuelve solo.
+  con `composer install` completo, se resuelve solo.
+- No hay pruebas del adaptador REAL de FMCSA contra el servicio de verdad.
+  `QcMobileDirectory` se prueba con `Http::fake()`, lo que demuestra el mapeo de
+  la respuesta, **no** el contrato del proveedor. La primera consulta con clave
+  de verdad puede exigir ajustar nombres de campo.

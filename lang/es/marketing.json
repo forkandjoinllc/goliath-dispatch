@@ -609,6 +609,9 @@
     },
     "hours247": "Abierto 24 horas al día, todos los días.",
     "directions": "Cómo llegar →",
-    "mapTitle": "Mapa de la ubicación de nuestra oficina"
+    "mapTitle": "Mapa de la ubicación de nuestra oficina",
+    "mapConsent": "El mapa lo sirve Google. Cargarlo les envía su dirección IP. No se pide nada hasta que usted lo pida.",
+    "mapLoad": "Ver el mapa",
+    "mapOpenExternal": "O abrirlo en Google Maps"
   }
 }
