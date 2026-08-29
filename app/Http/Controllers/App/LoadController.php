@@ -206,7 +206,10 @@ final class LoadController
         $policy = $current->policy();
         $checker->authorize($actor, 'load:create', null, $policy);
 
-        $this->usesDictionary($request, ['loads', 'nav', 'validation']);
+        // `drivers` por las etiquetas de autorización de trabajo del bloque de
+        // requisitos de la carga (`drivers.workAuthorization.*`). Sin él ese
+        // desplegable enseñaba la clave en crudo.
+        $this->usesDictionary($request, ['loads', 'drivers', 'nav', 'validation']);
 
         return Inertia::render('App/Loads/Form', [
             'load' => null,
@@ -273,7 +276,10 @@ final class LoadController
 
         abort_unless($canFreight || $canMoney, 403);
 
-        $this->usesDictionary($request, ['loads', 'nav', 'validation']);
+        // `drivers` por las etiquetas de autorización de trabajo del bloque de
+        // requisitos de la carga (`drivers.workAuthorization.*`). Sin él ese
+        // desplegable enseñaba la clave en crudo.
+        $this->usesDictionary($request, ['loads', 'drivers', 'nav', 'validation']);
 
         return Inertia::render('App/Loads/Form', [
             'load' => [

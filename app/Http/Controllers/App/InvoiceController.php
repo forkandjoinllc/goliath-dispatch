@@ -190,7 +190,11 @@ final class InvoiceController
 
         $model = $this->find($checker, $actor, $scope, $invoice);
 
-        $this->usesDictionary($request, ['invoices', 'nav', 'common']);
+        // `payments` porque la ficha pinta el formulario de anotar un cobro y el
+        // historial de cobros con las claves de ESE diccionario. Sin él la
+        // pantalla enseñaba «payments.fields.method» en crudo — y no se veía en
+        // el primer render porque el formulario está detrás de un botón.
+        $this->usesDictionary($request, ['invoices', 'payments', 'nav', 'common']);
 
         return Inertia::render('App/Invoices/Show', [
             'invoice' => [
