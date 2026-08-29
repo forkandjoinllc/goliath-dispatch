@@ -18,6 +18,7 @@ use App\Models\TenantSetting;
 use App\Models\TenantSubscription;
 use App\Models\User;
 use App\Models\UserTenantMembership;
+use App\Support\Finance\DefaultExpenseCategories;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -73,6 +74,13 @@ final class ProvisionTenant
             return $this->context->runAs($tenant->id, function () use ($tenant, $plan, $locale, $input): array {
                 TenantSetting::create([]);
                 TenantBranding::create([]);
+
+                // Sin categorías de gasto nadie puede dar de alta un gasto:
+                // `expenses.category_id` es NOT NULL. Hasta ahora solo las creaba
+                // el sembrador de demostración, así que una empresa dada de alta
+                // por el formulario público se quedaba con la pantalla de gastos
+                // inservible.
+                DefaultExpenseCategories::ensureFor((string) $tenant->id);
 
                 TenantSubscription::create([
                     'plan_id' => $plan->id,

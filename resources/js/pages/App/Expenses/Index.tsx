@@ -1,0 +1,215 @@
+import { Link, router, useForm } from '@inertiajs/react'
+import { useState } from 'react'
+import { AppLayout } from '@/layouts/AppLayout'
+import { formatCents } from '@/lib/format'
+import { useI18n } from '@/lib/i18n'
+
+interface Row {
+  id: string
+  loadId: string | null
+  loadNumber: string | null
+  categoryEn: string | null
+  categoryEs: string | null
+  amountCents: number
+  treatment: string
+  status: string
+  description: string | null
+  incurredOn: string | null
+  rejectionReason: string | null
+  /** La carga ya tiene cifras congeladas: este gasto no las cambia. */
+  loadFrozen?: boolean
+}
+
+interface Props {
+  expenses: { data: Row[]; meta: { total: number } }
+  filters: { status: string; load: string }
+  statuses: string[]
+  totals: { pendingCents: number; countingCents: number }
+  can: { submit: boolean; approve: boolean }
+}
+
+export default function ExpensesIndex({ expenses, filters, statuses, totals, can }: Props) {
+  const { t, locale } = useI18n()
+
+  return (
+    <AppLayout
+      title={t('expenses.index.title')}
+      description={t('expenses.index.subtitle')}
+      crumbs={[{ label: t('expenses.index.title') }]}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Tile label={t('expenses.index.pending')} value={formatCents(totals.pendingCents, locale)} />
+          {/* Lo que de verdad importa: cuánto ya entra en facturas y
+              liquidaciones. Un gasto presentado no mueve un céntimo. */}
+          <Tile label={t('expenses.index.counting')} value={formatCents(totals.countingCents, locale)} />
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-steel-700">{t('expenses.index.status')}</span>
+            <select
+              value={filters.status}
+              onChange={(e) =>
+                router.get('/expenses', { status: e.target.value, load: filters.load }, { preserveState: true, replace: true })
+              }
+              className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+            >
+              <option value="">{t('expenses.index.anyStatus')}</option>
+              {statuses.map((s) => (
+                <option key={s} value={s}>
+                  {t(`expenses.status.${s}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {can.submit ? (
+            <Link
+              href="/expenses/create"
+              className="ml-auto rounded bg-safety-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-safety-700"
+            >
+              {t('expenses.index.create')}
+            </Link>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {expenses.data.length === 0 ? (
+            <p className="rounded border border-steel-200 bg-white p-8 text-center text-sm text-steel-600">
+              {t('expenses.index.empty')}
+            </p>
+          ) : null}
+
+          {expenses.data.map((e) => (
+            <ExpenseCard key={e.id} expense={e} canApprove={can.approve} />
+          ))}
+        </div>
+
+        <p className="text-xs text-steel-600">{t('expenses.index.count', { n: String(expenses.meta.total) })}</p>
+      </div>
+    </AppLayout>
+  )
+}
+
+function ExpenseCard({ expense: e, canApprove }: { expense: Row; canApprove: boolean }) {
+  const { t, locale } = useI18n()
+  const [rechazando, setRechazando] = useState(false)
+
+  const decidir = useForm({})
+  const rechazo = useForm({ reason: '' })
+
+  return (
+    <div className="rounded border border-steel-200 bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-carbon">
+            {locale === 'es' && e.categoryEs ? e.categoryEs : (e.categoryEn ?? '—')}
+            <span className="ml-2 text-steel-600">
+              {e.loadId ? (
+                <Link href={`/loads/${e.loadId}`} className="underline">
+                  {e.loadNumber}
+                </Link>
+              ) : null}
+            </span>
+          </p>
+          <p className="mt-0.5 text-xs text-steel-600">
+            {t(`expenses.treatment.${e.treatment}`)}
+            {e.incurredOn ? ` · ${e.incurredOn}` : ''}
+          </p>
+          {e.description ? <p className="mt-1 text-sm text-steel-700">{e.description}</p> : null}
+          {e.rejectionReason ? (
+            <p className="mt-1 text-sm text-danger-700">{e.rejectionReason}</p>
+          ) : null}
+        </div>
+
+        <div className="text-right">
+          <p className="text-lg font-semibold tabular-nums text-carbon">{formatCents(e.amountCents, locale)}</p>
+          <p className="text-xs text-steel-600">{t(`expenses.status.${e.status}`)}</p>
+        </div>
+      </div>
+
+      {/* Si la carga ya está facturada o liquidada, aprobar esto no cambia esos
+          documentos: sus cifras están congeladas. Se dice antes de pulsar. */}
+      {e.loadFrozen && e.status === 'submitted' ? (
+        <p className="mt-3 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
+          {t('expenses.index.frozenWarning')}
+        </p>
+      ) : null}
+
+      {canApprove ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-steel-100 pt-3">
+          {e.status === 'submitted' ? (
+            <>
+              <button
+                type="button"
+                disabled={decidir.processing}
+                onClick={() => decidir.post(`/expenses/${e.id}/approve`, { preserveScroll: true })}
+                className="rounded bg-safety-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
+              >
+                {t('expenses.index.approve')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRechazando(!rechazando)}
+                className="rounded border border-danger-300 px-3 py-1.5 text-xs font-medium text-danger-700 transition hover:bg-danger-50"
+              >
+                {t('expenses.index.reject')}
+              </button>
+            </>
+          ) : null}
+
+          {e.status === 'approved' ? (
+            <button
+              type="button"
+              disabled={decidir.processing}
+              onClick={() => decidir.post(`/expenses/${e.id}/reimburse`, { preserveScroll: true })}
+              className="rounded border border-steel-300 px-3 py-1.5 text-xs font-medium text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('expenses.index.reimburse')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {rechazando ? (
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault()
+            rechazo.post(`/expenses/${e.id}/reject`, { preserveScroll: true })
+          }}
+          className="mt-3 flex flex-col gap-2"
+        >
+          <textarea
+            rows={2}
+            value={rechazo.data.reason}
+            onChange={(ev) => rechazo.setData('reason', ev.target.value)}
+            placeholder={t('expenses.index.rejectReason')}
+            className="rounded border border-steel-300 px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+          />
+          <div>
+            <button
+              type="submit"
+              disabled={rechazo.processing}
+              className="rounded bg-danger-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-danger-700 disabled:opacity-50"
+            >
+              {t('expenses.index.confirmReject')}
+            </button>
+          </div>
+          {rechazo.errors.reason ? (
+            <p role="alert" className="text-xs text-danger-700">{rechazo.errors.reason}</p>
+          ) : null}
+        </form>
+      ) : null}
+    </div>
+  )
+}
+
+function Tile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-steel-200 bg-white p-4">
+      <p className="text-xs uppercase tracking-wide text-steel-600">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-carbon">{value}</p>
+    </div>
+  )
+}

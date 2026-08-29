@@ -9,6 +9,7 @@ use App\Http\Controllers\App\CustomerController;
 use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\EquipmentController;
+use App\Http\Controllers\App\ExpenseController;
 use App\Http\Controllers\App\FactoringController;
 use App\Http\Controllers\App\InvoiceController;
 use App\Http\Controllers\App\LoadAssignmentController;
@@ -202,6 +203,23 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('settlements/{settlement}/issue', [SettlementController::class, 'issue'])->name('settlements.issue');
     Route::post('settlements/{settlement}/pay', [SettlementController::class, 'pay'])->name('settlements.pay');
     Route::post('settlements/{settlement}/void', [SettlementController::class, 'void'])->name('settlements.void');
+
+    /*
+    | Gastos
+    |
+    | La mitad que le faltaba al cálculo del dinero: `LoadCalculator` ya buscaba
+    | gastos aprobados por tratamiento, pero sin pantalla para darlos de alta los
+    | cuatro cubos salían siempre en cero.
+    |
+    | Presentar y decidir son actos distintos con permisos distintos: un
+    | conductor presenta, alguien con `expense:approve` decide.
+    */
+    Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+    Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+    Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+    Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+    Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+    Route::post('expenses/{expense}/reimburse', [ExpenseController::class, 'reimburse'])->name('expenses.reimburse');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');

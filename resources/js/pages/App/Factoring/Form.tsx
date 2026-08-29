@@ -91,7 +91,7 @@ export default function FactoringForm({ company, positions }: Props) {
       return
     }
 
-    form.transform((data) => data).patch(`/factoring/${company.id}`)
+    form.patch(`/factoring/${company.id}`)
   }
 
   return (
