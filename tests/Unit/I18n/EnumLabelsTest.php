@@ -14,7 +14,7 @@ use App\Enums\Role;
  * hasta que se ejecuta. Un caso de enum sin traducir no da error: pinta la
  * clave en crudo en medio de la tabla.
  *
- * Ya pasó, y por partida doble. `AuditAction` lleva el punto DENTRO del valor
+ * Ya pasó tres veces. `AuditAction` lleva el punto DENTRO del valor
  * (`financial.changed`), y el buscador del diccionario parte las claves por
  * puntos para bajar por el árbol: con `{"financial.changed": "..."}` en plano,
  * buscaba una rama `financial` que no existía y devolvía la clave. Se ve en
@@ -52,7 +52,7 @@ function lookupLikeClient(array $diccionario, string $clave): mixed
     return $nodo;
 }
 
-it('traduce las 57 acciones de auditoría en los dos idiomas', function () {
+it('traduce todas las acciones de auditoría en los dos idiomas', function () {
     foreach (['en', 'es'] as $locale) {
         $diccionario = dictionaryFile($locale, 'audit');
         $faltan = [];

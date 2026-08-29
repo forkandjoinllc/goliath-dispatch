@@ -154,6 +154,10 @@
     },
     "security": {
       "rate_limited": "Rate limit reached"
+    },
+    "lead": {
+      "status_changed": "Lead status changed",
+      "assigned": "Lead assigned"
     }
   },
   "entity": {
@@ -168,6 +172,7 @@
     "expense": "Expense",
     "factoring_company": "Factoring company",
     "invoice": "Invoice",
+    "lead": "Lead",
     "load": "Load",
     "payment": "Payment",
     "report": "Report",

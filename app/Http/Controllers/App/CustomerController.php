@@ -157,6 +157,7 @@ final class CustomerController
 
         return Inertia::render('App/Customers/Form', [
             'customer' => null,
+            'prefill' => $this->prefillFromLead($request, $actor),
             'canOverrideDuplicate' => $checker->can($actor, 'customer:duplicate:override', null, $current->policy())->allowed,
         ]);
     }
@@ -553,4 +554,48 @@ final class CustomerController
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
     }
+
+    /**
+     * Lo que un prospecto ya nos contó, para no teclearlo otra vez.
+     *
+     * Se lee el prospecto POR ID desde la base, no se aceptan los valores por
+     * la URL. La diferencia importa: con los valores en la dirección,
+     * cualquiera podría mandarle a otra persona un enlace de alta de cliente
+     * con los campos rellenos a su gusto, y el nombre de la empresa es
+     * exactamente el campo del que depende la detección de duplicados.
+     *
+     * Va acotado a la empresa del actor y no comprueba `lead:read`: quien no
+     * puede ver prospectos simplemente no tiene de dónde sacar el id, y exigir
+     * aquí un permiso de otra pantalla acabaría concediéndoselo a quien solo
+     * tiene que dar de alta clientes.
+     *
+     * @return array<string, string>|null
+     */
+    private function prefillFromLead(Request $request, Actor $actor): ?array
+    {
+        $leadId = trim((string) $request->query('fromLead', ''));
+
+        if ($leadId === '') {
+            return null;
+        }
+
+        $lead = DB::table('leads')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('id', $leadId)
+            ->whereNull('deleted_at')
+            ->first(['company_name', 'email', 'phone', 'first_name', 'last_name']);
+
+        if ($lead === null) {
+            return null;
+        }
+
+        return [
+            // Sin nombre de empresa se cae al nombre de la persona: es lo que
+            // hay, y dejarlo vacío obliga a volver al prospecto a copiarlo.
+            'company_name' => (string) ($lead->company_name ?: trim("{$lead->first_name} {$lead->last_name}")),
+            'email' => (string) ($lead->email ?? ''),
+            'phone' => (string) ($lead->phone ?? ''),
+        ];
+    }
+
 }

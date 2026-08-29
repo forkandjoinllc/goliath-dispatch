@@ -22,8 +22,15 @@ use Symfony\Component\HttpFoundation\Response;
  *     mismo enlace verían páginas distintas — y Google indexaría una de las dos.
  *  2. **La preferencia del usuario autenticado** (`users.locale`).
  *  3. **La cookie**, para quien ya eligió sin tener cuenta.
- *  4. **La cabecera Accept-Language**.
- *  5. Inglés.
+ *  4. **El prefijo de la URL DE LA QUE VIENE** (el referente). Solo importa en
+ *     los envíos de formulario: los tres formularios públicos van a `/leads`,
+ *     `/quote-requests` y `/carrier-signup`, sin prefijo de idioma, así que sin
+ *     esto un visitante que rellena la página en español entra en la base con
+ *     `locale = 'en'` — y `leads.locale` es justo la columna que decide en qué
+ *     idioma se le contesta. Se mira por debajo de la cookie: quien eligió
+ *     idioma a mano eligió, y la página en la que estaba no le contradice.
+ *  5. **La cabecera Accept-Language**.
+ *  6. Inglés.
  */
 final class SetLocale
 {
@@ -62,6 +69,39 @@ final class SetLocale
             return Locales::normalize($cookie);
         }
 
+        $referente = $this->localeDelReferente($request);
+        if ($referente !== null) {
+            return $referente;
+        }
+
         return Locales::negotiate($request->header('Accept-Language'));
+    }
+
+    /**
+     * El idioma del prefijo de la página desde la que se envió el formulario.
+     *
+     * Se comprueba que el referente sea del MISMO host antes de mirarle el
+     * camino. Un referente lo pone el navegador y puede venir de cualquier
+     * sitio; sin esta comprobación, una página ajena podría decidir en qué
+     * idioma se guarda un prospecto. No es grave —lo peor es contestar en el
+     * idioma equivocado— pero es gratis no dejarlo abierto.
+     */
+    private function localeDelReferente(Request $request): ?Locale
+    {
+        $referente = (string) $request->headers->get('referer');
+
+        if ($referente === '') {
+            return null;
+        }
+
+        $partes = parse_url($referente);
+
+        if (! is_array($partes) || ($partes['host'] ?? null) !== $request->getHost()) {
+            return null;
+        }
+
+        $primerSegmento = explode('/', trim((string) ($partes['path'] ?? ''), '/'))[0] ?? '';
+
+        return Locales::isSupported($primerSegmento) ? Locales::normalize($primerSegmento) : null;
     }
 }

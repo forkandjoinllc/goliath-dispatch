@@ -15,6 +15,7 @@ use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\ExpenseController;
 use App\Http\Controllers\App\FactoringController;
 use App\Http\Controllers\App\InvoiceController;
+use App\Http\Controllers\App\LeadController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
@@ -293,6 +294,23 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+
+    /*
+    | Prospectos
+    |
+    | Lo escriben tres formularios PÚBLICOS —contacto, presupuesto y alta de
+    | transportista— y hasta ahora nadie podía leerlo. `tenant_id` lo pone el
+    | dominio por el que entró el formulario, nunca el formulario: por eso aquí
+    | no hay ruta de alta. Un prospecto que se pudiera crear a mano desde dentro
+    | sería un prospecto sin origen.
+    |
+    | Tampoco hay ruta de borrado: «perdido» es un estado del embudo y conserva
+    | de dónde vino y qué se hizo con él.
+    */
+    Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+    Route::post('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
+    Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
 
     /*
     | Pista de auditoría

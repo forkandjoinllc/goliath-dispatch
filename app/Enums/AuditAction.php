@@ -62,4 +62,11 @@ enum AuditAction: string
     case IntegrationUpdated = 'integration.updated';
     case TrackingConsentChanged = 'tracking.consent_changed';
     case SecurityRateLimited = 'security.rate_limited';
+
+    /**
+     * Trabajo comercial sobre un prospecto. Añadidos, no portados — ver la
+     * migración que amplía el vocabulario.
+     */
+    case LeadStatusChanged = 'lead.status_changed';
+    case LeadAssigned = 'lead.assigned';
 }

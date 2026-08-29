@@ -154,6 +154,10 @@
     },
     "security": {
       "rate_limited": "Alcanzó el límite de peticiones"
+    },
+    "lead": {
+      "status_changed": "Cambió el estado de un prospecto",
+      "assigned": "Asignó un prospecto"
     }
   },
   "entity": {
@@ -168,6 +172,7 @@
     "expense": "Gasto",
     "factoring_company": "Empresa de factoring",
     "invoice": "Factura",
+    "lead": "Prospecto",
     "load": "Carga",
     "payment": "Cobro",
     "report": "Informe",

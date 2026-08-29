@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (717 tests, 4965 assertions)
+OK (748 tests, 5190 assertions)
 ```
 
-(Cifra del 29 de agosto por la tarde, tras el lote de la pista de auditoría.
+(Cifra del 29 de agosto por la tarde, tras el lote de prospectos.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -132,6 +132,35 @@ pantalla:
 
 La regla general que dejan los dos: **una prueba verde no dice que la pantalla
 se vea**. Lo que no se renderiza no falla.
+
+### La base de pruebas y las migraciones nuevas
+
+`TestCase::ensureSchema()` **no migra**, y conviene saber por qué antes de
+«arreglarlo».
+
+Ese método corre desde `setUp`, es decir DENTRO de la transacción que abre
+`DatabaseTransactions`. MySQL hace **commit implícito** en cuanto ve DDL, así que
+migrar ahí confirma a mitad la transacción de la primera prueba y sus datos
+—una empresa, un cliente, un usuario por rol— quedan grabados en la base para
+siempre. Las pruebas siguientes empiezan a contar de más y fallan por sitios que
+no tienen nada que ver: pasó al añadir las acciones de auditoría de los
+prospectos, y se manifestó como cinco fallos en `CustomerAccessTest`, que no
+tenía nada que ver con el lote.
+
+Antes la comprobación era «si hay menos de 90 tablas, migra», que construía el
+esquema la primera vez y no volvía a mirar nunca: una migración nueva no llegaba
+a la base de pruebas y la suite seguía **en verde contra un esquema viejo**. Los
+dos extremos son malos, así que ahora la comprobación se para y dice el comando
+que falta:
+
+```
+php artisan migrate --env=testing
+```
+
+Si al ejecutar la suite aparece «La base de pruebas no está al día», ese es el
+comando. Y si alguna vez la base de pruebas queda con datos residuales —porque
+alguien migró dentro de una transacción—, se limpia borrando las filas; no hace
+falta reconstruir el esquema.
 
 ### Cómo montar el entorno de ejecución
 

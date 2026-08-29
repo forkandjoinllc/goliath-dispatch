@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -33,7 +33,7 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Construye el esquema de pruebas si falta.
+     * Comprueba que el esquema de pruebas está al día. NO lo migra.
      *
      * No se usa RefreshDatabase. Construir estas 99 tablas cuesta unos seis
      * segundos —246 claves foráneas, 47 triggers, 89 CHECK— y hacerlo por cada
@@ -41,8 +41,21 @@ abstract class TestCase extends BaseTestCase
      * se construye una vez y cada prueba que escribe se envuelve en una
      * transacción (ver RefreshesDatabase).
      *
-     * La comprobación es por proceso, no por prueba: una consulta a
-     * information_schema por suite.
+     * La comprobación es por proceso, no por prueba: una consulta por suite.
+     *
+     * Aquí NO se migra, y la razón es cara de aprender: este método corre desde
+     * `setUp`, o sea DENTRO de la transacción que abre `DatabaseTransactions`, y
+     * MySQL hace COMMIT IMPLÍCITO en cuanto ve una sentencia de DDL. Migrar aquí
+     * confirma la transacción de la primera prueba a mitad, y sus datos de
+     * prueba —una empresa, un cliente, un usuario por rol— quedan grabados para
+     * siempre en la base. Las pruebas siguientes empiezan a contar de más y
+     * fallan por sitios que no tienen nada que ver.
+     *
+     * Antes de esto la comprobación era «si hay menos de 90 tablas, migra», que
+     * construía el esquema la primera vez y no volvía a mirar nunca: una
+     * migración nueva no llegaba a la base de pruebas y la suite seguía en verde
+     * contra un esquema viejo. Los dos extremos son malos. Lo que se hace es
+     * pararse y decir qué comando falta.
      */
     private function ensureSchema(): void
     {
@@ -52,12 +65,42 @@ abstract class TestCase extends BaseTestCase
 
         self::$schemaChecked = true;
 
-        $tables = DB::table('information_schema.tables')
-            ->where('table_schema', DB::getDatabaseName())
-            ->count();
+        $pendientes = $this->pendingMigrations();
 
-        if ($tables < 90) {
-            Artisan::call('migrate', ['--force' => true]);
+        if ($pendientes === []) {
+            return;
         }
+
+        $this->fail(
+            "La base de pruebas no está al día: faltan ".count($pendientes)." migración(es).\n\n"
+            ."    php artisan migrate --env=testing\n\n"
+            ."Pendientes: ".implode(', ', array_slice($pendientes, 0, 5))
+            .(count($pendientes) > 5 ? ', …' : '')
+        );
+    }
+
+    /**
+     * Las migraciones que la base de pruebas todavía no tiene.
+     *
+     * Se compara el directorio contra la tabla `migrations` en vez de llamar a
+     * `migrate:status`, que imprime en vez de devolver. Si la tabla ni existe,
+     * están todas pendientes: es una base recién creada.
+     *
+     * @return list<string>
+     */
+    private function pendingMigrations(): array
+    {
+        $enDisco = array_map(
+            static fn (string $ruta): string => basename($ruta, '.php'),
+            glob(database_path('migrations/*.php')) ?: [],
+        );
+
+        if (! Schema::hasTable('migrations')) {
+            return $enDisco;
+        }
+
+        $aplicadas = DB::table('migrations')->pluck('migration')->all();
+
+        return array_values(array_diff($enDisco, $aplicadas));
     }
 }

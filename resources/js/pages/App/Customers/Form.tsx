@@ -35,6 +35,12 @@ interface CustomerDetail {
 
 interface Props {
   customer: CustomerDetail | null
+  /**
+   * Lo que un prospecto ya nos contó. Lo resuelve el SERVIDOR leyendo el
+   * prospecto por id; nunca llega por la URL, porque el nombre de empresa es el
+   * campo del que depende la detección de duplicados.
+   */
+  prefill?: { company_name: string; email: string; phone: string } | null
   canOverrideDuplicate: boolean
 }
 
@@ -50,15 +56,16 @@ interface Props {
  * duplicado» visible desde el principio invita a rellenarlo por costumbre, y
  * entonces deja de significar nada.
  */
-export default function CustomerForm({ customer, canOverrideDuplicate }: Props) {
+export default function CustomerForm({ customer, prefill = null, canOverrideDuplicate }: Props) {
   const { t } = useI18n()
+  // `customer` va primero en cada `??`: al editar, el prospecto no pinta nada.
   const editing = customer !== null
 
   const form = useForm({
-    company_name: customer?.companyName ?? '',
+    company_name: customer?.companyName ?? prefill?.company_name ?? '',
     website: customer?.website ?? '',
-    email: customer?.email ?? '',
-    phone: customer?.phone ?? '',
+    email: customer?.email ?? prefill?.email ?? '',
+    phone: customer?.phone ?? prefill?.phone ?? '',
     physical_line1: customer?.physical.line1 ?? '',
     physical_line2: customer?.physical.line2 ?? '',
     physical_city: customer?.physical.city ?? '',
