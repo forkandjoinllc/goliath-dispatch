@@ -55,7 +55,13 @@ function gasto(Scenario $scenario, string $code, int $cents, ?string $loadId = n
     return (string) $id;
 }
 
-function cargaEntregada(Scenario $scenario): object
+/**
+ * Nombre propio: Pest carga todos los ficheros de prueba en el MISMO espacio
+ * global, así que dos ficheros con una función homónima no chocan al ejecutar
+ * uno — chocan al ejecutar la suite entera, con un fatal que impide correr
+ * TODAS las pruebas.
+ */
+function cargaEntregadaConGastos(Scenario $scenario): object
 {
     DB::table('loads')->where('id', $scenario->load->id)->update([
         'carrier_id' => $scenario->assignedCarrier->id,
@@ -129,7 +135,7 @@ it('congela el tratamiento de la categoría en el gasto', function () {
 
 it('copia el transportista de la carga al gasto', function () {
     signIn($this->scenario, Role::Admin);
-    cargaEntregada($this->scenario);
+    cargaEntregadaConGastos($this->scenario);
     $id = gasto($this->scenario, 'fuel', 10000);
 
     expect(DB::table('expenses')->where('id', $id)->value('carrier_id'))
@@ -164,7 +170,7 @@ it('no acepta un importe de cero', function () {
 
 it('un gasto PRESENTADO no mueve el dinero; uno APROBADO sí', function () {
     signIn($this->scenario, Role::Admin);
-    $carga = cargaEntregada($this->scenario);
+    $carga = cargaEntregadaConGastos($this->scenario);
 
     // Combustible: reembolsable al transportista, 40.000.
     $id = gasto($this->scenario, 'fuel', 40000);
@@ -189,7 +195,7 @@ it('un gasto PRESENTADO no mueve el dinero; uno APROBADO sí', function () {
 
 it('reembolsado cuenta igual que aprobado', function () {
     signIn($this->scenario, Role::Admin);
-    $carga = cargaEntregada($this->scenario);
+    $carga = cargaEntregadaConGastos($this->scenario);
     $id = gasto($this->scenario, 'fuel', 40000);
 
     $this->post("/expenses/{$id}/approve")->assertRedirect();
@@ -203,7 +209,7 @@ it('reembolsado cuenta igual que aprobado', function () {
 
 it('avisa cuando la carga ya está facturada y no toca la factura', function () {
     signIn($this->scenario, Role::Admin);
-    $carga = cargaEntregada($this->scenario);
+    $carga = cargaEntregadaConGastos($this->scenario);
 
     $this->post('/invoices', [
         'carrier_id' => $this->scenario->assignedCarrier->id,
@@ -260,7 +266,7 @@ it('no se reembolsa lo que nadie aprobó', function () {
 
 it('el transportista ve sus gastos y no los de otro', function () {
     signIn($this->scenario, Role::Admin);
-    cargaEntregada($this->scenario);
+    cargaEntregadaConGastos($this->scenario);
     gasto($this->scenario, 'fuel', 10000);
     // Uno de la carga del transportista que el escenario NO asigna.
     gasto($this->scenario, 'tolls', 5000, (string) $this->scenario->otherLoad->id);
@@ -275,13 +281,14 @@ it('el transportista ve sus gastos y no los de otro', function () {
 
 it('el transportista no puede aprobar sus propios gastos', function () {
     signIn($this->scenario, Role::Admin);
-    cargaEntregada($this->scenario);
+    cargaEntregadaConGastos($this->scenario);
     $id = gasto($this->scenario, 'fuel', 10000);
 
     app(TenantContext::class)->forget();
     signIn($this->scenario, Role::Carrier);
 
-    $this->post("/expenses/{$id}/approve")->assertForbidden();
+    // Ver bootstrap/app.php: una acción denegada vuelve atrás con el motivo.
+    $this->post("/expenses/{$id}/approve")->assertRedirect()->assertSessionHas('error');
 
     expect(DB::table('expenses')->where('id', $id)->value('status'))->toBe('submitted');
 });

@@ -18,10 +18,18 @@ beforeEach(function () {
 afterEach(fn () => app(TenantContext::class)->forget());
 
 /**
+ * El alta de un transportista CON varios contactos.
+ *
+ * Nombre propio y no `carrierPayload()` porque Pest carga todos los ficheros de
+ * prueba en el MISMO espacio de nombres global: dos ficheros con una función del
+ * mismo nombre no chocan al ejecutar uno, chocan al ejecutar la suite entera, y
+ * el error es un fatal que impide correr TODAS las pruebas. Que es exactamente
+ * lo que pasaba.
+ *
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
-function carrierPayload(array $overrides = []): array
+function carrierConContactos(array $overrides = []): array
 {
     return [
         'legal_name' => 'Cuatro Vientos Trucking LLC',
@@ -40,7 +48,7 @@ function carrierPayload(array $overrides = []): array
 it('guarda todos los contactos y marca principal al primero', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload())->assertRedirect()->assertSessionHasNoErrors();
+    $this->post('/carriers', carrierConContactos())->assertRedirect()->assertSessionHasNoErrors();
 
     $carrier = DB::table('carriers')->where('dot_number', '7412580')->first();
 
@@ -65,7 +73,7 @@ it('guarda todos los contactos y marca principal al primero', function () {
 it('valida el correo de cada contacto', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
             ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'esto-no-es-un-correo', 'phone' => '', 'position' => 'owner', 'preferred_locale' => 'en'],
@@ -80,7 +88,7 @@ it('el correo del principal es obligatorio', function () {
 
     // La columna `carriers.email` es NOT NULL: sin correo en el principal no
     // hay nada que copiar.
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => '', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
@@ -91,7 +99,7 @@ it('un contacto de más puede no tener correo', function () {
     signIn($this->scenario, Role::Admin);
 
     // El de guardia a las tres de la mañana es un teléfono, no un buzón.
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
             ['first_name' => 'Noche', 'last_name' => 'Guardia', 'email' => '', 'phone' => '+15550199', 'position' => 'after_hours', 'preferred_locale' => 'es'],
@@ -101,12 +109,12 @@ it('un contacto de más puede no tener correo', function () {
 
 it('quitar un contacto lo borra en suave', function () {
     signIn($this->scenario, Role::Admin);
-    $this->post('/carriers', carrierPayload());
+    $this->post('/carriers', carrierConContactos());
 
     $carrier = DB::table('carriers')->where('dot_number', '7412580')->first();
     $principal = DB::table('carrier_contacts')->where('carrier_id', $carrier->id)->where('is_primary', true)->first();
 
-    $this->patch("/carriers/{$carrier->id}", carrierPayload([
+    $this->patch("/carriers/{$carrier->id}", carrierConContactos([
         'contacts' => [
             ['id' => $principal->id, 'first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
         ],
@@ -118,11 +126,11 @@ it('quitar un contacto lo borra en suave', function () {
 
 it('cambiar el orden cambia el principal y las columnas espejo', function () {
     signIn($this->scenario, Role::Admin);
-    $this->post('/carriers', carrierPayload());
+    $this->post('/carriers', carrierConContactos());
 
     $carrier = DB::table('carriers')->where('dot_number', '7412580')->first();
 
-    $this->patch("/carriers/{$carrier->id}", carrierPayload([
+    $this->patch("/carriers/{$carrier->id}", carrierConContactos([
         'contacts' => [
             ['first_name' => 'Beto', 'last_name' => 'Ruiz', 'email' => 'beto@cuatrovientos.test', 'phone' => '+15550101', 'position' => 'owner', 'preferred_locale' => 'en'],
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
@@ -172,7 +180,7 @@ it('el alta con los cuatro campos sueltos sigue creando el principal', function 
 it('la dirección postal viene marcada como igual a la física', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'physical_line1' => '4474 Weston Rd',
         'physical_city' => 'Davie',
         'physical_country' => 'US',
@@ -186,7 +194,7 @@ it('la dirección postal viene marcada como igual a la física', function () {
 it('al desmarcarla guarda su propia dirección', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'physical_country' => 'US',
         'physical_state' => 'FL',
         'mailing_same_as_physical' => false,
@@ -208,7 +216,7 @@ it('al desmarcarla guarda su propia dirección', function () {
 it('el estado postal también tiene que ser de su país', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'mailing_same_as_physical' => false,
         'mailing_country' => 'MX',
         'mailing_state' => 'FL',
@@ -220,7 +228,7 @@ it('el estado postal también tiene que ser de su país', function () {
 it('guarda el cargo y el idioma de cada contacto', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],
             ['first_name' => 'Noche', 'last_name' => 'Guardia', 'email' => '', 'phone' => '+15550199', 'position' => 'after_hours', 'preferred_locale' => 'es'],
@@ -245,7 +253,7 @@ it('el cargo es una lista cerrada', function () {
     signIn($this->scenario, Role::Admin);
 
     // Con texto libre acaban conviviendo «dispatch», «Despacho» y «OPS».
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'el que coge el telefono', 'preferred_locale' => 'en'],
         ],
@@ -259,7 +267,7 @@ it('el idioma del principal manda sobre el que venga suelto', function () {
     // principal en inglés. Gana el contacto: un solo control. Dos —uno de
     // empresa y otro por persona— garantizaban que un día dijeran cosas
     // distintas y nadie supiera cuál manda.
-    $this->post('/carriers', carrierPayload([
+    $this->post('/carriers', carrierConContactos([
         'preferred_locale' => 'es',
         'contacts' => [
             ['first_name' => 'Ana', 'last_name' => 'Diaz', 'email' => 'ana@cuatrovientos.test', 'phone' => '+15550100', 'position' => 'owner', 'preferred_locale' => 'en'],

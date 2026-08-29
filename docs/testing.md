@@ -19,74 +19,120 @@ segundos —246 claves foráneas, 47 triggers, 89 CHECK— y hacerlo por cada cl
 convertiría la suite en algo que nadie ejecuta. Se construye una vez por proceso
 y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 
-## Estado: qué se ha ejecutado y qué no
+## Estado: la suite entera, ejecutada
 
-La suite **se ejecutó y quedó en verde** el 25 de agosto de 2026:
-
-```
-Tests:  433 passed (3187 assertions)
-```
-
-Antes de eso, buena parte se había escrito sin poder ejecutarse. Aquel primer
-arranque dejó una lección que conviene conservar, porque no es la que se espera:
-de los 119 fallos iniciales, **uno solo** era un defecto de la aplicación —los
-milisegundos que se perdían en las escrituras crudas, hoy resueltos con
-`App\Support\Database\MillisecondGrammar`—. El resto eran defectos de las
-propias pruebas: dos fallos en `signIn()`, diez `assertForbidden()` mal puestas,
-un fixture al que le faltaban documentos obligatorios y varios números mágicos
-caducados. Dos fallos que parecían agujeros de seguridad resultaron ser efectos
-del segundo defecto de `signIn()`.
-
-### Lo que se ha añadido DESPUÉS y no he ejecutado nunca
-
-Estos once ficheros son posteriores a aquel arranque en verde:
+**29 de agosto de 2026**, contra MySQL 8.0.46 real, con `vendor/` instalado y el
+frontend construido:
 
 ```
-tests/Feature/Carriers/CarrierContactsTest.php
-tests/Feature/Documents/UsedDocumentTypesTest.php
-tests/Feature/Factoring/FactoringTest.php
-tests/Feature/Finance/InvoiceTest.php
-tests/Feature/Finance/SettlementTest.php
-tests/Feature/Fleet/DriverQualificationTest.php
-tests/Feature/Fmcsa/CarrierLookupTest.php
-tests/Feature/Geo/CountryStateTest.php
-tests/Feature/Loads/LoadRequirementsTest.php
-tests/Unit/Geo/RegionParityTest.php
-tests/Unit/Loads/DriverEligibilityTest.php
+Tests: 632, Assertions: 4151, Errors: 12, Failures: 16
 ```
 
-Más los retoques a `SchemaAgreementTest` (el recuento de modelos) y a
-`NavigationTest`.
+Es decir **604 en verde de 632**. Antes de esta sesión la suite no llegaba ni a
+arrancar, y llevaba así desde hacía varios lotes sin que se notara.
 
-**No los he ejecutado ni una vez.** El entorno donde se escriben no alcanza
-packagist, así que no hay `vendor/`, y sin `vendor/` no hay `artisan` ni Pest.
-Eso no ha cambiado.
+### Tres fatales que impedían ejecutar NADA
 
-### Lo que sí se comprueba antes de entregar cada lote
+No eran fallos de pruebas: eran errores que mataban el proceso, en algunos casos
+sin imprimir un solo mensaje.
+
+1. **Dos funciones auxiliares repetidas.** Pest carga todos los ficheros de
+   prueba en el mismo espacio global. `carrierPayload()` estaba en
+   `CarrierAccessTest` y en `CarrierContactsTest`; `cargaEntregada()` en
+   `InvoiceTest` y en `ExpenseTest`; `driverPayload()` en `DriverAccessTest` y en
+   `DriverQualificationTest`. Ejecutar un fichero suelto funcionaba. Ejecutar la
+   suite entera era un `Cannot redeclare function` y cero pruebas.
+
+2. **`App\Models\LoadRequirement` no se podía ni autocargar.** Su relación se
+   llamaba `load()`, y `Eloquent\Model` ya declara `load($relations)`.
+   Redeclararla con otra firma es un fatal al cargar la clase. Cualquier código
+   que tocara ese modelo reventaba el proceso — y `SchemaAgreementTest`, que
+   recorre los 95 modelos, lo tocaba siempre.
+
+3. **`App\Notifications\UserInvitation` redeclaraba `$locale`.**
+   `Illuminate\Notifications\Notification` ya tiene esa propiedad; volver a
+   declararla como `readonly` es otro fatal de carga. Bajo Pest, ese fatal mata
+   el proceso **sin imprimir nada**: el síntoma era la suite parándose en seco a
+   mitad, en silencio.
+
+La lección de los tres es la misma y merece conservarse: **un fichero de pruebas
+que pasa en solitario no dice nada sobre la suite**. Estos tres solo aparecen al
+ejecutarlo todo junto.
+
+### Y cinco defectos de la aplicación, no de las pruebas
+
+Al contrario que en el arranque de agosto —donde 118 de 119 fallos eran de las
+pruebas—, esta vez la mayoría eran del código:
+
+| Dónde | Qué |
+|---|---|
+| `ExpenseController::decide()` | Comparaba `$model->status` (casteado a enum) con la cadena `'submitted'`. Siempre falso: **aprobar, rechazar y reembolsar fallaban todos**, siempre, con «transición inválida». |
+| `ExpenseController::row()` | `(string)` sobre dos columnas casteadas a enum. Un `Error` en ejecución: la pantalla de gastos reventaba en cuanto había un gasto que enseñar. |
+| `InvoiceController` (dos sitios) | Lo mismo con `InvoiceStatus`. |
+| `UserController` y `AssignmentController` | Leían una columna `carriers.dba_name` que **no existe** — se llama `dba`. Las dos pantallas daban 500. |
+| `AssignmentController::store()` | Guardaba `start_date` con la hora actual, y `ActorFactory` compara contra la medianoche de hoy: una asignación hecha por la tarde no concedía nada hasta el día siguiente. |
+
+`(string)` sobre un enum es el patrón que más veces apareció. Hay unos treinta
+sitios más con esa forma, pero **casi todos son correctos**: operan sobre filas
+de `DB::table()`, que son cadenas de verdad. Solo es un fallo cuando el objeto es
+un modelo de Eloquent con esa columna en `casts()`. Cambiarlos en bloque
+rompería los otros — y de hecho pasó al intentarlo: `CarrierSettlement` **no**
+castea `status` a enum aunque `Invoice` sí. Dos modelos del mismo dominio que no
+se parecen tanto como aparentan.
+
+### Lo que queda por mirar
+
+Los 28 restantes, por fichero:
+
+```
+tests/Feature/Marketing/CompanyContactTest.php   6   Class "App\Support\Site" not found
+                                                      (la clase real es App\Support\Marketing\Site)
+tests/Feature/Carriers/CarrierAccessTest.php     3   edición de transportista y lookup
+tests/Feature/Documents/*                        3   insert en `documents` con columna `status` inexistente
+tests/Feature/Finance/InvoiceTest.php            4   cobros parciales, saldo y anulación
+tests/Feature/Factoring/FactoringTest.php        2   validación de contactos
+tests/Unit/Loads/DriverEligibilityTest.php       1   espera 'fails', obtiene 'unknown'
+resto                                            9   varios
+```
+
+Ninguno se ha investigado a fondo. La regla del arranque de agosto sigue
+sirviendo para triarlos: si falla por la **forma** (método que no existe, firma
+cambiada, fixture incompleto) suele ser la prueba; si falla por el **valor
+esperado**, mírese, que puede ser una regresión.
+
+### Cómo montar el entorno de ejecución
+
+Packagist está bloqueado en el contenedor donde se escribe este código, pero
+GitHub no. Con `composer.lock` delante, `composer install --prefer-source` clona
+cada paquete de su repositorio en vez de bajar el zip de la API. La única
+excepción es `phpstan/phpstan`, que en el lock **no tiene `source`**, solo
+`dist`, y esa descarga sí pasa por `api.github.com`. Para ejecutar Pest no hace
+falta, así que se instala sin él (y sin `larastan`, que lo requiere).
+
+Además:
+
+- MySQL necesita `set global log_bin_trust_function_creators = 1` antes de
+  migrar, o los triggers `SIGNAL` fallan con `ERROR 1419`.
+- Hay que ejecutar `npm run build` antes de la suite: sin
+  `public/build/manifest.json`, toda prueba que renderice una página Inertia da
+  500 y la suite parece rota de arriba abajo. Fueron unos 160 fallos de golpe.
+
+### Las 19 migraciones, desde cero
+
+También el 29 de agosto: `php artisan migrate` sobre una base vacía, las
+diecinueve en verde, incluidas las dos que tumbaron despliegues en Forge.
+
+### Lo que se comprueba antes de entregar cada lote
 
 | Qué | Cómo |
 |---|---|
 | Sintaxis PHP | `php -l` sobre cada fichero tocado |
-| Tipos de TypeScript | `tsc --noEmit` sobre cada `.tsx` tocado |
+| Tipos de TypeScript | `tsc --noEmit` sobre **todo** el frontend |
 | Paridad de diccionarios | EN y ES comparados clave a clave |
 | Claves usadas y no traducidas | Extraídas del TSX y del PHP y cruzadas con el diccionario |
-| **El DDL de cada migración** | Ejecutado contra un **MySQL 8.0.46 real** con los quince ficheros del esquema cargados: 93 tablas, 47 triggers, 246 claves foráneas |
-| Que la migración se pueda reanudar | Ejecutada desde cero, sobre lo ya aplicado, y desde estados a medias |
-| Que el instalador del lote acierte | Aplicado sobre una copia limpia y comparado byte a byte; y ejecutado dos veces para comprobar que es idempotente |
-
-Ese banco de MySQL existe desde el lote 18, y nació de un fallo: el lote 15
-tumbó un despliegue con un `ERROR 1215` que se reproduce en segundos con la base
-delante. Ver más abajo.
-
-### Al ejecutar los once, distinga los dos tipos de fallo
-
-Si algo se rompe por la **forma** —un método que no existe, una aserción con
-otra firma, un fixture al que le falta un campo obligatorio del escenario— es
-una errata mía y se arregla en el fichero de pruebas. Si algo falla por el
-**valor esperado**, eso sí merece mirarse: puede ser una regresión de verdad.
-
-La proporción del primer arranque (118 de 119 fallos eran de las pruebas, no de
-la aplicación) sugiere qué esperar, pero no lo garantiza.
+| El DDL de cada migración | Ejecutado contra un MySQL 8 real |
+| Que la migración se pueda reanudar | Desde cero, sobre lo ya aplicado, y desde estados a medias |
+| **La suite** | `./vendor/bin/pest`, entera |
 
 ## Migraciones: por qué todas son reanudables
 

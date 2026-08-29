@@ -353,6 +353,9 @@ final class SettlementController
             'id' => (string) $s->id,
             'number' => (string) $s->settlement_number,
             'carrierId' => (string) $s->carrier_id,
+            // (string) y no ->value: OJO, CarrierSettlement NO castea `status`
+            // a enum —Invoice sí—, así que aquí llega una cadena. Los dos
+            // modelos del mismo dominio no se parecen tanto como aparentan.
             'status' => (string) $s->status,
             'grossRateCents' => (int) $s->gross_rate_cents,
             'reimbursementsCents' => (int) $s->reimbursements_cents,

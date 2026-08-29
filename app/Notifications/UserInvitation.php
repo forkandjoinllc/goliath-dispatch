@@ -28,7 +28,12 @@ final class UserInvitation extends Notification
         private readonly string $companyName,
         private readonly string $inviterName,
         private readonly string $roleLabelKey,
-        private readonly string $locale,
+        // `$idioma` y no `$locale`: Notification ya declara una propiedad
+        // `$locale` (la que usa `->locale()` de Laravel), y volver a declararla
+        // aquí como readonly es un FATAL al cargar la clase. Bajo Pest ese fatal
+        // mata el proceso sin imprimir nada, así que el síntoma era la suite
+        // entera parándose en seco a mitad, sin un solo mensaje.
+        private readonly string $idioma,
     ) {}
 
     /** @return list<string> */
@@ -62,6 +67,6 @@ final class UserInvitation extends Notification
      */
     private function t(string $key, array $replace = []): string
     {
-        return (string) __($key, $replace, $this->locale);
+        return (string) __($key, $replace, $this->idioma);
     }
 }

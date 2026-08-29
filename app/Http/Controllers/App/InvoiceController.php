@@ -346,7 +346,7 @@ final class InvoiceController
             entityType: 'invoice',
             entityId: (string) $model->id,
             entityLabel: (string) $model->invoice_number,
-            before: ['status' => (string) $model->status],
+            before: ['status' => $model->status->value],
             after: ['status' => 'voided'],
             reason: $data['reason'],
         );
@@ -398,7 +398,10 @@ final class InvoiceController
             'id' => (string) $i->id,
             'number' => (string) $i->invoice_number,
             'carrierId' => (string) $i->carrier_id,
-            'status' => (string) $i->status,
+            // ->value y no (string): la columna está CASTEADA a enum en el
+            // modelo, y convertir un enum a cadena con (string) es un Error en
+            // ejecución. Ver docs/testing.md — la suite lo destapó.
+            'status' => $i->status->value,
             'subtotalCents' => (int) $i->subtotal_cents,
             'totalCents' => (int) $i->total_cents,
             'amountPaidCents' => (int) $i->amount_paid_cents,

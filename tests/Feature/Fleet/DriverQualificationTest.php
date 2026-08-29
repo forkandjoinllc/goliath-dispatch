@@ -21,7 +21,7 @@ afterEach(fn () => app(TenantContext::class)->forget());
  * @param  array<string, mixed>  $overrides
  * @return array<string, mixed>
  */
-function driverPayload(array $overrides = []): array
+function driverConRequisitos(array $overrides = []): array
 {
     return [
         'first_name' => 'Ana',
@@ -41,7 +41,7 @@ function ultimoConductor(): object
 it('un conductor se da de alta sin ningún dato de aptitud', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload())->assertRedirect()->assertSessionHasNoErrors();
+    $this->post('/drivers', driverConRequisitos())->assertRedirect()->assertSessionHasNoErrors();
 
     $d = ultimoConductor();
 
@@ -56,7 +56,7 @@ it('un conductor se da de alta sin ningún dato de aptitud', function () {
 it('guarda la TWIC y sella quién la miró', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload([
+    $this->post('/drivers', driverConRequisitos([
         'twic_card' => true,
         'twic_number_last4' => '4821',
         'twic_expires_at' => '2029-06-30',
@@ -75,7 +75,7 @@ it('guarda la TWIC y sella quién la miró', function () {
 it('del número de TWIC solo se guardan cuatro dígitos', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload([
+    $this->post('/drivers', driverConRequisitos([
         'twic_card' => true,
         'twic_number_last4' => '482100999',
     ]))->assertSessionHasErrors('twic_number_last4');
@@ -84,7 +84,7 @@ it('del número de TWIC solo se guardan cuatro dígitos', function () {
 it('desmarcar la casilla borra los datos de la tarjeta', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload([
+    $this->post('/drivers', driverConRequisitos([
         'twic_card' => true,
         'twic_number_last4' => '4821',
         'twic_expires_at' => '2029-06-30',
@@ -94,7 +94,7 @@ it('desmarcar la casilla borra los datos de la tarjeta', function () {
 
     // Una caducidad huérfana de una tarjeta que ya no está es un dato que
     // dentro de un año alguien lee como si significara algo.
-    $this->patch("/drivers/{$id}", driverPayload(['twic_card' => false]))
+    $this->patch("/drivers/{$id}", driverConRequisitos(['twic_card' => false]))
         ->assertRedirect()->assertSessionHasNoErrors();
 
     $d = ultimoConductor();
@@ -109,14 +109,14 @@ it('desmarcar la casilla borra los datos de la tarjeta', function () {
 it('el estatus es una lista cerrada', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload(['work_authorization' => 'ciudadano']))
+    $this->post('/drivers', driverConRequisitos(['work_authorization' => 'ciudadano']))
         ->assertSessionHasErrors('work_authorization');
 });
 
 it('guarda el estatus y sella quién lo miró', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload(['work_authorization' => 'permanent_resident']))
+    $this->post('/drivers', driverConRequisitos(['work_authorization' => 'permanent_resident']))
         ->assertRedirect()->assertSessionHasNoErrors();
 
     $d = ultimoConductor();
@@ -131,7 +131,7 @@ it('distingue «no se ha mirado» de «se miró y hay algo»', function () {
     signIn($this->scenario, Role::Admin);
 
     // Cero NO es lo mismo que vacío, y esa diferencia es todo el valor del campo.
-    $this->post('/drivers', driverPayload([
+    $this->post('/drivers', driverConRequisitos([
         'record_clean_years' => 0,
         'record_checked_at' => '2026-08-01',
     ]))->assertRedirect()->assertSessionHasNoErrors();
@@ -147,7 +147,7 @@ it('no admite más de treinta y un años', function () {
 
     // 31 es «más de treinta». Por encima no significa nada y el CHECK de la
     // columna tampoco lo admite.
-    $this->post('/drivers', driverPayload(['record_clean_years' => 45]))
+    $this->post('/drivers', driverConRequisitos(['record_clean_years' => 45]))
         ->assertSessionHasErrors('record_clean_years');
 });
 
@@ -156,12 +156,12 @@ it('no admite más de treinta y un años', function () {
 it('guardar sin tocar la aptitud no vuelve a sellar la fecha', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->post('/drivers', driverPayload(['work_authorization' => 'us_citizen']));
+    $this->post('/drivers', driverConRequisitos(['work_authorization' => 'us_citizen']));
 
     $antes = ultimoConductor();
     $id = $antes->id;
 
-    $this->patch("/drivers/{$id}", driverPayload([
+    $this->patch("/drivers/{$id}", driverConRequisitos([
         'work_authorization' => 'us_citizen',
         'notes' => 'Cambio que no toca la aptitud.',
     ]))->assertRedirect();

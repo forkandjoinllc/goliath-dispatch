@@ -288,11 +288,13 @@ it('el despachador se ve solo a sí mismo y no puede asignar', function () {
             // niega en todas las demás pantallas.
             ->where('resources', null));
 
+    // Una ACCIÓN denegada vuelve atrás con el motivo, no da 403: quien la
+    // intentó venía de una página a la que sí puede volver. Ver bootstrap/app.php.
     $this->post('/assignments', [
         'dispatcher_user_id' => despachador($this->scenario),
         'resource_type' => 'carrier',
         'resource_id' => $this->scenario->otherCarrier->id,
-    ])->assertForbidden();
+    ])->assertRedirect()->assertSessionHas('error');
 });
 
 it('el transportista no entra en asignaciones', function () {

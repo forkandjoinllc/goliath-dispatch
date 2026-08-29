@@ -172,7 +172,7 @@ final class UserController
             companyName: $this->companyName($actor),
             inviterName: $actor->fullName(),
             roleLabelKey: 'users.roles.'.$m->role->value,
-            locale: $user->locale->value,
+            idioma: $user->locale->value,
         ));
 
         return back()->with('success', __('users.flash.resent', ['email' => (string) $user->email]));
@@ -494,11 +494,11 @@ final class UserController
             ->whereNull('deleted_at')
             ->orderBy('legal_name')
             ->limit(500)
-            ->get(['id', 'legal_name', 'dba_name'])
+            ->get(['id', 'legal_name', 'dba'])
             ->map(fn ($c): array => [
                 'id' => (string) $c->id,
-                'name' => (string) ($c->dba_name ?: $c->legal_name),
-                'hint' => $c->dba_name ? (string) $c->legal_name : null,
+                'name' => (string) ($c->dba ?: $c->legal_name),
+                'hint' => $c->dba ? (string) $c->legal_name : null,
             ])
             ->all();
     }

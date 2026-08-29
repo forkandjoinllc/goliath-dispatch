@@ -99,7 +99,7 @@ final class InviteUser
                 inviterName: $actor->fullName(),
                 roleLabelKey: 'users.roles.'.$input['role']->value,
                 // El idioma de la persona invitada, no el de quien invita.
-                locale: $nueva ? $input['locale'] : $user->locale->value,
+                idioma: $nueva ? $input['locale'] : $user->locale->value,
             ));
 
             Audit::record(

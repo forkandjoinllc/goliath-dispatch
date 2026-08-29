@@ -42,8 +42,18 @@ final class LoadRequirement extends BaseModel
         ];
     }
 
-    /** @return BelongsTo<Load, $this> */
-    public function load(): BelongsTo
+    /**
+     * La carga a la que pertenece este requisito.
+     *
+     * NO se puede llamar `load()`: Eloquent\Model ya declara `load($relations)`
+     * —la de cargar relaciones a posteriori— y redeclararla con otra firma es un
+     * FATAL al cargar la clase, no un aviso. Con ese nombre, `LoadRequirement`
+     * era una clase que no se podía ni autocargar: cualquier código que la
+     * tocara reventaba el proceso entero, y bajo Pest sin imprimir nada.
+     *
+     * @return BelongsTo<Load, $this>
+     */
+    public function parentLoad(): BelongsTo
     {
         return $this->belongsTo(Load::class, 'load_id');
     }

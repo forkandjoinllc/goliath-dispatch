@@ -103,9 +103,14 @@ final class AssignmentController
         $etiqueta = $this->requireResource($actor, $data['resource_type'], $data['resource_id']);
 
         $ahora = CarbonImmutable::now();
+        // A COMIENZO DEL DÍA, no a la hora actual. ActorFactory compara
+        // `start_date <= now()->toDateString()`, es decir contra la medianoche de
+        // hoy: una asignación creada a las tres de la tarde con su hora dentro
+        // quedaría fuera de ese filtro y no concedería nada hasta mañana. Se
+        // asigna hoy, vale hoy.
         $inicio = isset($data['start_date'])
-            ? CarbonImmutable::parse($data['start_date'])
-            : $ahora;
+            ? CarbonImmutable::parse($data['start_date'])->startOfDay()
+            : $ahora->startOfDay();
 
         // Ya la lleva: no se crea una segunda fila. La clave única incluye
         // start_date, así que la base de datos NO lo impediría — dejaría dos
@@ -541,8 +546,8 @@ final class AssignmentController
     private function catalogue(Actor $actor, string $tipo, ?array $ids): array
     {
         [$tabla, $columnas, $nombre] = match ($tipo) {
-            'carrier' => ['carriers', ['id', 'legal_name', 'dba_name'],
-                static fn ($r): string => (string) ($r->dba_name ?: $r->legal_name)],
+            'carrier' => ['carriers', ['id', 'legal_name', 'dba'],
+                static fn ($r): string => (string) ($r->dba ?: $r->legal_name)],
             'truck' => ['trucks', ['id', 'unit_number', 'make', 'model'],
                 static fn ($r): string => (string) $r->unit_number],
             'trailer' => ['trailers', ['id', 'unit_number', 'make', 'model'],
@@ -551,7 +556,7 @@ final class AssignmentController
                 static fn ($r): string => trim("{$r->first_name} {$r->last_name}")],
             'group' => ['dispatcher_groups', ['id', 'name', 'description'],
                 static fn ($r): string => (string) $r->name],
-            default => ['carriers', ['id', 'legal_name', 'dba_name'],
+            default => ['carriers', ['id', 'legal_name', 'dba'],
                 static fn ($r): string => (string) $r->legal_name],
         };
 

@@ -271,9 +271,14 @@ final class ExpenseController
 
         $checker->authorize($actor, 'expense:approve', $this->resourceContext($model), $policy);
 
+        // `$model->status` viene CASTEADO al enum ExpenseStatus, así que
+        // compararlo con la cadena 'submitted' es siempre falso y todas las
+        // decisiones se rechazaban con «badTransition». Se compara por ->value.
+        $actual = $model->status->value;
+
         $permitido = match ($nuevo) {
-            'approved', 'rejected' => $model->status === 'submitted',
-            'reimbursed' => $model->status === 'approved',
+            'approved', 'rejected' => $actual === 'submitted',
+            'reimbursed' => $actual === 'approved',
             default => false,
         };
 
@@ -284,7 +289,7 @@ final class ExpenseController
         }
 
         $ahora = CarbonImmutable::now();
-        $antes = (string) $model->status;
+        $antes = $actual;
 
         DB::table('expenses')->where('id', $model->id)->update([
             'status' => $nuevo,
@@ -372,8 +377,12 @@ final class ExpenseController
             'id' => (string) $e->id,
             'loadId' => $e->load_id === null ? null : (string) $e->load_id,
             'amountCents' => (int) $e->amount_cents,
-            'treatment' => (string) $e->treatment_snapshot,
-            'status' => (string) $e->status,
+            // ->value y no (string): las dos columnas están CASTEADAS a enum en
+            // el modelo, y convertir un enum a cadena con (string) es un Error
+            // en tiempo de ejecución, no un aviso. Reventaba la pantalla entera
+            // en cuanto había un solo gasto que enseñar.
+            'treatment' => $e->treatment_snapshot->value,
+            'status' => $e->status->value,
             'description' => $e->description,
             'incurredOn' => $e->incurred_on?->toDateString(),
             'rejectionReason' => $e->rejection_reason,
