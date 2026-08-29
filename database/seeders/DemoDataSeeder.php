@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Authorization\Actor;
 use App\Enums\DocumentType;
 use App\Enums\DriverStatus;
 use App\Enums\EquipmentStatus;
+use App\Enums\Locale;
 use App\Enums\LoadStatus;
 use App\Enums\OnboardingStatus;
 use App\Enums\Role;
 use App\Enums\StopType;
 use App\Enums\VerificationStatus;
+use App\Models\Load;
 use App\Support\Customers\NameKey;
+use App\Support\Finance\CommissionLedger;
+use App\Support\Finance\InvoiceBuilder;
+use App\Support\Finance\PaymentLedger;
+use App\Support\Finance\SettlementBuilder;
+use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -104,6 +112,11 @@ class DemoDataSeeder extends Seeder
                 $this->linkDemoUsers($carriers, $drivers);
                 $this->loads($carriers, $customers, $drivers, $equipment);
                 $this->expenses();
+                // El dinero va DESPUÉS de los gastos a propósito: la
+                // instantánea que congela cada factura tiene que incluirlos, y
+                // si se factura antes los cuatro cubos salen en cero — que es
+                // exactamente el fallo que el lote 26 vino a arreglar.
+                $this->money();
             });
         });
 
@@ -772,6 +785,18 @@ class DemoDataSeeder extends Seeder
             ['GD-24006', 'greatlakes', 'atlas', LoadStatus::Invoiced, 'double_drop', 'Transformer housing', 62_400, -34, true, 545, 7_250_00, 5_800_00],
             ['GD-24007', 'delgado', null, LoadStatus::Draft, 'flatbed', 'Perfiles estructurales', 41_000, 9, false, 288, 1_950_00, null],
             ['GD-24008', 'harborworks', 'bluewater', LoadStatus::Cancelled, 'flatbed', 'Deck plating', 38_000, -8, false, 190, 1_400_00, 1_120_00],
+
+            // Entregadas y sin facturar, repartidas entre transportistas y en el
+            // tiempo. Son las que le dan material a la mitad del dinero: con una
+            // sola entregada salía UNA factura, un cobro y una comisión, y las
+            // pantallas de facturas, cobros, liquidaciones e informes parecían
+            // vacías en una demostración. `delivered` y no `pod_received` ni
+            // `invoiced` porque es el único estado que la aplicación considera
+            // facturable — un sembrador que se salte esa regla enseña un
+            // producto que no existe.
+            ['GD-24009', 'permian', 'atlas', LoadStatus::Delivered, 'rgn', 'Excavator, tracked', 71_000, -46, true, 690, 8_600_00, 6_880_00],
+            ['GD-24010', 'delgado', 'cordillera', LoadStatus::Delivered, 'flatbed', 'Bobinas de aluminio', 44_500, -30, false, 340, 2_480_00, 1_984_00],
+            ['GD-24011', 'greatlakes', 'bluewater', LoadStatus::Delivered, 'step_deck', 'Press brake frame', 58_200, -18, false, 415, 3_950_00, 3_160_00],
         ];
 
         foreach ($rows as [$number, $customerKey, $carrierKey, $status, $equipType, $commodity, $weight, $dayOffset, $oversize, $miles, $charge, $carrierRate]) {
@@ -1205,11 +1230,229 @@ class DemoDataSeeder extends Seeder
         }
     }
 
+    /**
+     * La mitad del dinero: facturar, cobrar, liquidar y devengar comisiones.
+     *
+     * LLAMA AL CÓDIGO REAL —InvoiceBuilder, PaymentLedger, SettlementBuilder,
+     * CommissionLedger— en vez de meter filas a mano. Dos motivos:
+     *
+     *  1. Un sembrador que fabrica sus propias facturas se separa de la
+     *     aplicación en cuanto alguien cambia una regla, y entonces la
+     *     demostración enseña un producto que no existe.
+     *  2. Así sembrar es también una prueba de humo del circuito entero: si
+     *     algo de la cadena está roto, `db:seed` lo dice.
+     *
+     * Sin esto la demostración enseñaba facturas, cobros, liquidaciones y
+     * comisiones VACÍAS, y los informes todos a cero — que es peor que no
+     * tenerlos.
+     */
+    private function money(): void
+    {
+        $adminId = DB::table('user_tenant_memberships')
+            ->where('tenant_id', $this->tenantId)
+            ->where('role', 'admin')
+            ->value('user_id');
+
+        if ($adminId === null) {
+            // Igual que en expenses(): sin usuarios de demostración no hay a
+            // quién atribuir nada, y las columnas de autor no admiten nulo.
+            return;
+        }
+
+        $actor = $this->actorFor((string) $adminId);
+
+        $porTransportista = Load::query()
+            ->where('tenant_id', $this->tenantId)
+            ->where('status', 'delivered')
+            ->whereNotNull('carrier_id')
+            ->where('carrier_gross_rate_cents', '>', 0)
+            ->orderBy('load_number')
+            ->get()
+            ->groupBy('carrier_id');
+
+        if ($porTransportista->isEmpty()) {
+            return;
+        }
+
+        $facturas = [];
+
+        foreach ($porTransportista as $carrierId => $cargas) {
+            $yaFacturadas = DB::table('invoice_line_items')
+                ->whereIn('load_id', $cargas->pluck('id')->all())
+                ->whereNull('deleted_at')
+                ->pluck('load_id')
+                ->all();
+
+            $pendientes = $cargas->reject(fn (Load $l): bool => in_array($l->id, $yaFacturadas, true))->values();
+
+            if ($pendientes->isEmpty()) {
+                continue;
+            }
+
+            // Una factura por transportista, con el plazo de la empresa.
+            $facturas[] = app(InvoiceBuilder::class)->fromLoads(
+                $actor,
+                (string) $carrierId,
+                $pendientes->all(),
+                TenantPolicy::for($this->tenantId)->paymentTermsDays,
+            );
+        }
+
+        $this->sendAndCollect($actor, $facturas);
+        $this->settle($actor, $porTransportista);
+        $this->paySomeCommissions($actor);
+    }
+
+    /**
+     * Emite las facturas y cobra algunas.
+     *
+     * Se reparten a propósito: una cobrada entera, una a medias, y una vencida
+     * hace tres meses y sin cobrar. Sin ese reparto la antigüedad del cobro
+     * enseña un solo tramo y no se ve para qué sirve.
+     *
+     * @param  list<string>  $facturas
+     */
+    private function sendAndCollect(Actor $actor, array $facturas): void
+    {
+        foreach (array_values($facturas) as $i => $invoiceId) {
+            $factura = DB::table('invoices')->where('id', $invoiceId)->first();
+
+            if ($factura === null || $factura->status !== 'draft') {
+                continue;
+            }
+
+            // La tercera se deja vencida y sin cobrar; las demás salen hoy.
+            $emitida = $i === 2 ? Carbon::now()->subDays(100) : Carbon::now()->subDays(3);
+            $vence = $emitida->copy()->addDays((int) $factura->payment_terms_days);
+
+            // Espejo de InvoiceController::send(). Aquí no hay petición HTTP que
+            // pueda llamarlo, y son tres columnas; el DINERO, que es lo que
+            // puede desviarse, sí sale del código real.
+            DB::table('invoices')->where('id', $invoiceId)->update([
+                'status' => 'sent',
+                'issue_date' => $emitida,
+                'sent_at' => $emitida,
+                'due_date' => $vence,
+                'updated_at' => Carbon::now(),
+            ]);
+
+            $total = (int) $factura->total_cents;
+
+            $cobro = match ($i % 3) {
+                0 => $total,                        // cobrada entera
+                1 => (int) round($total * 0.4),     // a medias
+                default => 0,                       // vencida y sin cobrar
+            };
+
+            if ($cobro <= 0) {
+                continue;
+            }
+
+            PaymentLedger::record($actor, (object) [
+                'id' => $invoiceId,
+                'invoice_number' => $factura->invoice_number,
+            ], [
+                'amount_cents' => $cobro,
+                'method' => $i % 2 === 0 ? 'wire' : 'check',
+                'status' => 'succeeded',
+                'reference' => sprintf('DEMO-%04d', 1000 + $i),
+                'received_at' => $emitida->copy()->addDays(2)->toDateString(),
+                'notes' => null,
+            ]);
+        }
+    }
+
+    /**
+     * Liquida al primer transportista, para que la pantalla no salga vacía.
+     *
+     * @param  \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, Load>>  $porTransportista
+     */
+    private function settle(Actor $actor, $porTransportista): void
+    {
+        $carrierId = (string) $porTransportista->keys()->first();
+        $cargas = $porTransportista->get($carrierId);
+
+        $yaLiquidadas = DB::table('carrier_settlement_lines')
+            ->whereIn('load_id', $cargas->pluck('id')->all())
+            ->whereNull('deleted_at')
+            ->pluck('load_id')
+            ->all();
+
+        $pendientes = $cargas->reject(fn (Load $l): bool => in_array($l->id, $yaLiquidadas, true))->values();
+
+        if ($pendientes->isEmpty()) {
+            return;
+        }
+
+        // Reutiliza la instantánea que congeló la factura: es el punto entero de
+        // SettlementBuilder y conviene que la demostración lo enseñe.
+        app(SettlementBuilder::class)->fromLoads($actor, $carrierId, $pendientes->all());
+    }
+
+    /**
+     * Marca pagada la mitad de lo devengado, para que la pantalla de comisiones
+     * enseñe las dos caras.
+     */
+    private function paySomeCommissions(Actor $actor): void
+    {
+        $ids = DB::table('dispatcher_commissions')
+            ->where('tenant_id', $this->tenantId)
+            ->where('status', 'accrued')
+            ->orderBy('created_at')
+            ->pluck('id')
+            ->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        CommissionLedger::markPaid($actor, array_map(
+            static fn ($id): string => (string) $id,
+            array_slice($ids, 0, (int) ceil(count($ids) / 2)),
+        ));
+    }
+
+    /**
+     * Un Actor de verdad para el administrador de la demostración.
+     *
+     * Los constructores de dinero piden un Actor porque de él sacan la empresa y
+     * a quién atribuir cada apunte. En un sembrador no hay petición, así que se
+     * arma a mano con los mismos datos que tendría en una.
+     */
+    private function actorFor(string $userId): Actor
+    {
+        $u = app(TenantContext::class)->withoutTenant(fn () => DB::table('users')
+            ->where('id', $userId)
+            ->first(['email', 'first_name', 'last_name', 'locale', 'timezone']));
+
+        return new Actor(
+            userId: $userId,
+            email: (string) ($u->email ?? ''),
+            firstName: (string) ($u->first_name ?? ''),
+            lastName: (string) ($u->last_name ?? ''),
+            locale: Locale::tryFrom((string) ($u->locale ?? 'en')) ?? Locale::En,
+            timezone: (string) ($u->timezone ?? 'America/New_York'),
+            isPlatformSuperAdmin: false,
+            tenantId: $this->tenantId,
+            role: Role::Admin,
+        );
+    }
+
     private function report(): void
     {
         $counts = [];
 
-        foreach (['carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents', 'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'loads', 'load_stops'] as $table) {
+        $tablas = [
+            'carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents',
+            'trucks', 'trailers', 'drivers', 'customers', 'customer_locations',
+            'loads', 'load_stops',
+            // La mitad del dinero. Sin estas filas la demostración enseñaba
+            // facturas, cobros y comisiones vacías, y los informes a cero.
+            'expenses', 'financial_snapshots', 'invoices', 'invoice_line_items',
+            'payments', 'carrier_settlements', 'dispatcher_commissions',
+        ];
+
+        foreach ($tablas as $table) {
             $counts[] = [$table, DB::table($table)->where('tenant_id', $this->tenantId)->count()];
         }
 
