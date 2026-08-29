@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Listeners\ActivateVerifiedUser;
 use App\Services\Fmcsa\DirectoryFmcsaVerifier;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
@@ -18,8 +19,10 @@ use App\Translation\BraceTranslator;
 use App\Support\Storage\DocumentStore;
 use App\Support\Storage\LocalDocumentStore;
 use App\Translation\JsonNamespaceLoader;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
@@ -113,6 +116,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->preserveMilliseconds();
 
+        // Verificar el correo tiene que ACTIVAR la cuenta. Ver el listener: sin
+        // esto, quien se da de alta por el formulario público verifica su correo
+        // y sigue sin poder entrar, porque AttemptLogin mira `status` y la
+        // verificación de Laravel solo tocaba `email_verified_at`.
+        Event::listen(Verified::class, ActivateVerifiedUser::class);
     }
 
     /**
