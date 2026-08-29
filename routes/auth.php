@@ -16,6 +16,8 @@ use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\SettlementController;
+use App\Http\Controllers\App\UserController;
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\SignupController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +46,22 @@ Route::post('signup', [SignupController::class, 'store'])
     ->name('signup.store');
 
 Route::get('signup/done', [SignupController::class, 'done'])->name('signup.done');
+
+/*
+| Invitaciones
+|
+| Públicas: quien llega todavía no tiene sesión — es justo lo que viene a
+| conseguir. El vale va en la URL porque llega por correo y no hay otro sitio
+| donde ponerlo; en la base de datos solo está su sha256.
+|
+| Con límite porque el `show` es un oráculo: sin él se pueden probar vales a
+| ritmo de máquina. Un vale caducado y uno inventado contestan lo mismo, así que
+| lo único que queda por cortar es el ritmo.
+*/
+Route::middleware('throttle:10,60')->group(function (): void {
+    Route::get('invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+    Route::post('invitations/{token}', [InvitationController::class, 'store'])->name('invitations.accept');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -220,6 +238,23 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
     Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
     Route::post('expenses/{expense}/reimburse', [ExpenseController::class, 'reimburse'])->name('expenses.reimburse');
+
+    /*
+    | Usuarios de la empresa
+    |
+    | Lo que se lista son PERTENENCIAS, no cuentas: la misma persona puede
+    | trabajar para dos casas de despacho. Por eso `destroy` retira la
+    | pertenencia y jamás borra al usuario.
+    |
+    | Una invitación pendiente es una pertenencia en estado `invited`, así que
+    | reenviarla y retirarla van por el id de la pertenencia y no por uno propio.
+    */
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+    Route::post('users', [UserController::class, 'store'])->name('users.invite');
+    Route::post('users/{membership}/resend', [UserController::class, 'resend'])->name('users.resend');
+    Route::post('users/{membership}/role', [UserController::class, 'updateRole'])->name('users.role');
+    Route::post('users/{membership}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
+    Route::delete('users/{membership}', [UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');

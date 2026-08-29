@@ -1,0 +1,98 @@
+{
+  "index": {
+    "title": "Usuarios",
+    "subtitle": "Quién trabaja aquí y qué puede hacer cada uno. Una persona puede pertenecer a más de una empresa — lo que se gestiona aquí es su acceso a la suya.",
+    "invite": "Invitar a alguien",
+    "cancelInvite": "Cancelar",
+    "sendInvite": "Enviar invitación",
+    "inviteNote": "Recibe un correo con un enlace que dura siete días. Nadie entra hasta que lo abre y elige su propia contraseña.",
+    "pending": "Invitados, todavía sin entrar",
+    "pendingHint": "Ya tienen el acceso concedido. Empieza en cuanto abran su correo.",
+    "members": "En la empresa",
+    "empty": "Todavía no hay nadie más.",
+    "you": "usted",
+    "lastLogin": "último acceso {date}",
+    "invitedOn": "invitado el {date}",
+    "resend": "Reenviar",
+    "revoke": "Retirar invitación",
+    "suspend": "Suspender",
+    "reactivate": "Reactivar"
+  },
+  "fields": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "emailHint": "Si ya tiene cuenta, esto le añade su empresa a la que tiene — no crea una segunda.",
+    "locale": "Idioma",
+    "role": "Papel",
+    "carrier": "Transportista",
+    "carrierHint": "A qué transportista pertenece esta persona. Solo verá el trabajo de ese transportista.",
+    "chooseCarrier": "Elija un transportista"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "accounting": "Contabilidad",
+    "dispatcher": "Despachador",
+    "carrier": "Transportista",
+    "driver": "Conductor",
+    "platform_super_admin": "Administrador de la plataforma"
+  },
+  "roleHelp": {
+    "admin": "Todo, incluidos usuarios, ajustes y dinero.",
+    "accounting": "Facturas, liquidaciones, gastos e informes. No despacha.",
+    "dispatcher": "Las cargas de los transportistas que lleva asignados, y nada más.",
+    "carrier": "El portal del transportista: sus cargas, conductores, equipos y documentos.",
+    "driver": "Solo sus propias cargas y documentos."
+  },
+  "status": {
+    "invited": "Invitado",
+    "pending_verification": "Pendiente de verificar",
+    "active": "Activo",
+    "suspended": "Suspendido",
+    "deactivated": "Desactivado"
+  },
+  "locales": {
+    "en": "Inglés",
+    "es": "Español"
+  },
+  "accept": {
+    "title": "Entrar en {company}",
+    "subtitle": "Le han invitado como {role} en {company}.",
+    "email": "Invitación enviada a",
+    "password": "Elija una contraseña",
+    "passwordConfirm": "Repita la contraseña",
+    "existingAccount": "Ya tiene cuenta. Entre con la contraseña que ya usa — esta invitación solo le añade esta empresa.",
+    "submit": "Aceptar y entrar",
+    "welcome": "Ya está dentro.",
+    "invalidTitle": "Este enlace ya no sirve",
+    "invalid": "El enlace de invitación no es válido, ya se usó o ha caducado. Pida a quien le invitó que se lo mande otra vez.",
+    "goToLogin": "Ir a iniciar sesión"
+  },
+  "mail": {
+    "subject": "Le han invitado a {company}",
+    "greeting": "Hola:",
+    "intro": "{inviter} le ha invitado a unirse a {company} en Goliath Dispatch como {role}.",
+    "action": "Aceptar la invitación",
+    "expiry": "El enlace funciona durante siete días.",
+    "ignore": "Si no esperaba este mensaje, puede ignorarlo — no ocurre nada hasta que abra el enlace."
+  },
+  "errors": {
+    "alreadyMember": "Esa persona ya tiene ese papel en su empresa.",
+    "alreadyInvited": "A esa persona ya se le invitó y todavía no ha contestado. Reenvíele la invitación en lugar de crear otra.",
+    "notPending": "Esa invitación ya no está pendiente.",
+    "notActive": "Esa pertenencia no está en un estado donde esto se pueda hacer.",
+    "notYourself": "No puede cambiarse a sí mismo el papel ni el acceso. Pídaselo a otro administrador.",
+    "lastAdmin": "Es el último administrador activo. Ascienda antes a otra persona, o la empresa se queda sin nadie que pueda gestionarla.",
+    "carrierRequired": "Elija a qué transportista pertenece esta persona.",
+    "carrierNotFound": "Ese transportista no existe o no es suyo."
+  },
+  "flash": {
+    "invited": "Invitación enviada a {email}.",
+    "invitedExisting": "{email} ya tenía cuenta. Se le ha añadido su empresa y la invitación va en camino.",
+    "resent": "Invitación reenviada a {email}. El enlace anterior ya no sirve.",
+    "revoked": "Invitación retirada. El enlace de ese correo ya no sirve.",
+    "roleChanged": "Papel cambiado.",
+    "suspended": "Acceso suspendido.",
+    "reactivated": "Acceso restablecido."
+  }
+}

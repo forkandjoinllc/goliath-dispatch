@@ -1,0 +1,98 @@
+{
+  "index": {
+    "title": "Users",
+    "subtitle": "Who works here and what each of them can do. A person can belong to more than one company — what you manage here is their access to yours.",
+    "invite": "Invite someone",
+    "cancelInvite": "Cancel",
+    "sendInvite": "Send invitation",
+    "inviteNote": "They get an email with a link that works for seven days. Nobody gets in until they open it and set their own password.",
+    "pending": "Invited, not in yet",
+    "pendingHint": "They already have access granted. It starts the moment they open their email.",
+    "members": "In the company",
+    "empty": "Nobody else yet.",
+    "you": "you",
+    "lastLogin": "last signed in {date}",
+    "invitedOn": "invited {date}",
+    "resend": "Resend",
+    "revoke": "Withdraw invitation",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate"
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "emailHint": "If they already have an account, this adds your company to it — it does not create a second one.",
+    "locale": "Language",
+    "role": "Role",
+    "carrier": "Carrier",
+    "carrierHint": "Which carrier this person belongs to. They will only see that carrier's work.",
+    "chooseCarrier": "Choose a carrier"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "accounting": "Accounting",
+    "dispatcher": "Dispatcher",
+    "carrier": "Carrier",
+    "driver": "Driver",
+    "platform_super_admin": "Platform administrator"
+  },
+  "roleHelp": {
+    "admin": "Everything, including users, settings and money.",
+    "accounting": "Invoices, settlements, expenses and reports. Does not dispatch.",
+    "dispatcher": "The loads of the carriers assigned to them, and nothing else.",
+    "carrier": "The carrier portal: their own loads, drivers, equipment and documents.",
+    "driver": "Only their own loads and documents."
+  },
+  "status": {
+    "invited": "Invited",
+    "pending_verification": "Pending verification",
+    "active": "Active",
+    "suspended": "Suspended",
+    "deactivated": "Deactivated"
+  },
+  "locales": {
+    "en": "English",
+    "es": "Spanish"
+  },
+  "accept": {
+    "title": "Join {company}",
+    "subtitle": "You have been invited as {role} at {company}.",
+    "email": "Invitation sent to",
+    "password": "Choose a password",
+    "passwordConfirm": "Repeat the password",
+    "existingAccount": "You already have an account. Sign in with the password you already use — this invitation just adds this company to it.",
+    "submit": "Accept and enter",
+    "welcome": "You are in.",
+    "invalidTitle": "This link no longer works",
+    "invalid": "The invitation link is not valid, has already been used, or has expired. Ask whoever invited you to send it again.",
+    "goToLogin": "Go to sign in"
+  },
+  "mail": {
+    "subject": "You have been invited to {company}",
+    "greeting": "Hello,",
+    "intro": "{inviter} has invited you to join {company} on Goliath Dispatch as {role}.",
+    "action": "Accept the invitation",
+    "expiry": "The link works for seven days.",
+    "ignore": "If you were not expecting this, you can ignore this message — nothing happens until you open the link."
+  },
+  "errors": {
+    "alreadyMember": "That person already has this role in your company.",
+    "alreadyInvited": "That person has already been invited and has not answered yet. Resend the invitation instead.",
+    "notPending": "That invitation is no longer pending.",
+    "notActive": "That membership is not in a state where this can be done.",
+    "notYourself": "You cannot change your own role or access. Ask another administrator.",
+    "lastAdmin": "This is the last active administrator. Promote someone else first, or the company is left with nobody who can manage it.",
+    "carrierRequired": "Choose which carrier this person belongs to.",
+    "carrierNotFound": "That carrier does not exist or is not yours."
+  },
+  "flash": {
+    "invited": "Invitation sent to {email}.",
+    "invitedExisting": "{email} already had an account. Your company has been added to it and the invitation is on its way.",
+    "resent": "Invitation resent to {email}. The previous link no longer works.",
+    "revoked": "Invitation withdrawn. The link in that email no longer works.",
+    "roleChanged": "Role changed.",
+    "suspended": "Access suspended.",
+    "reactivated": "Access restored."
+  }
+}
