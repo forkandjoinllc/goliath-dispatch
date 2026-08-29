@@ -52,7 +52,7 @@ export default function AuditShow({ event, siblings }: Props) {
     >
       <div className="flex flex-col gap-4">
         {event.impersonated ? (
-          <div className="rounded border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="rounded border border-warning-300 bg-warning-50 p-4 text-sm text-warning-800">
             <p className="font-semibold">{t('audit.show.impersonation')}</p>
             <p className="mt-1">{t('audit.show.impersonationHint')}</p>
             {event.effectiveUserName ? (

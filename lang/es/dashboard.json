@@ -1,0 +1,68 @@
+{
+  "title": "Qué hay pendiente",
+  "subtitle": "Todo lo de abajo es un recuento real. Púlselo y va a la lista de donde salió.",
+  "groups": {
+    "operations": "Operaciones",
+    "compliance": "Cumplimiento",
+    "finance": "Dinero",
+    "commercial": "Comercial"
+  },
+  "cards": {
+    "loadsAvailable": {
+      "label": "Cargas sin transportista",
+      "hint": "Aceptadas y todavía sin quien las lleve."
+    },
+    "loadsInTransit": {
+      "label": "En ruta",
+      "hint": "Recogidas y aún sin entregar."
+    },
+    "loadsDelivered": {
+      "label": "Entregadas",
+      "hint": "Entregadas y todavía sin cerrar."
+    },
+    "loadsUninvoiced": {
+      "label": "Entregadas y sin facturar",
+      "hint": "Trabajo hecho que nadie ha facturado. No sale en ningún informe, porque los informes cuentan lo facturado."
+    },
+    "documentsExpiring": {
+      "label": "Documentos que caducan",
+      "hint": "Ya caducados o dentro del plazo de aviso que fijó su empresa."
+    },
+    "carriersFmcsaStale": {
+      "label": "Transportistas por revalidar",
+      "hint": "Sin comprobación en FMCSA dentro del plazo que fijó su empresa, incluidos los que no se han comprobado nunca."
+    },
+    "invoicesOverdue": {
+      "label": "Facturas vencidas",
+      "hint": "Pasada su fecha de vencimiento y con saldo pendiente."
+    },
+    "expensesPending": {
+      "label": "Gastos por aprobar",
+      "hint": "Presentados y esperando a alguien."
+    },
+    "settlementsDraft": {
+      "label": "Liquidaciones en borrador",
+      "hint": "Preparadas y todavía sin emitir al transportista."
+    },
+    "commissionsAccrued": {
+      "label": "Comisiones por pagar",
+      "hint": "Ganadas en cargas ya facturadas y todavía sin pagar."
+    },
+    "leadsUnassigned": {
+      "label": "Prospectos sin responsable",
+      "hint": "Alguien escribió y nadie lo ha cogido."
+    }
+  },
+  "empty": {
+    "title": "Nada pendiente",
+    "body": "Nada de lo que su rol alcanza a ver necesita atención ahora mismo."
+  },
+  "nothing": "Nada",
+  "permissions": {
+    "title": "Lo que puede hacer este usuario",
+    "hint": "La matriz de permisos vive en el código. Se enseña aquí para que se pueda señalar un ámbito mal puesto.",
+    "show": "Ver",
+    "hide": "Ocultar",
+    "granted": "{n} de {catalog} permisos"
+  }
+}

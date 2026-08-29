@@ -1,0 +1,68 @@
+{
+  "title": "What needs doing",
+  "subtitle": "Everything below is a real count. Click any of them to go to the list it came from.",
+  "groups": {
+    "operations": "Operations",
+    "compliance": "Compliance",
+    "finance": "Money",
+    "commercial": "Commercial"
+  },
+  "cards": {
+    "loadsAvailable": {
+      "label": "Loads without a carrier",
+      "hint": "Booked and nobody is hauling them yet."
+    },
+    "loadsInTransit": {
+      "label": "On the road",
+      "hint": "Picked up and not yet delivered."
+    },
+    "loadsDelivered": {
+      "label": "Delivered",
+      "hint": "Delivered and not yet moved on."
+    },
+    "loadsUninvoiced": {
+      "label": "Delivered, not invoiced",
+      "hint": "Work done that nobody has billed. It does not show up in any report, because reports count what was invoiced."
+    },
+    "documentsExpiring": {
+      "label": "Documents expiring",
+      "hint": "Already expired or inside the warning window your company set."
+    },
+    "carriersFmcsaStale": {
+      "label": "Carriers to re-verify",
+      "hint": "No FMCSA check within the period your company set — including those never checked."
+    },
+    "invoicesOverdue": {
+      "label": "Overdue invoices",
+      "hint": "Past their due date with money still owed."
+    },
+    "expensesPending": {
+      "label": "Expenses to approve",
+      "hint": "Submitted and waiting on someone."
+    },
+    "settlementsDraft": {
+      "label": "Settlements in draft",
+      "hint": "Prepared and not issued to the carrier yet."
+    },
+    "commissionsAccrued": {
+      "label": "Commissions owed",
+      "hint": "Earned on invoiced loads and not paid out yet."
+    },
+    "leadsUnassigned": {
+      "label": "Leads with no owner",
+      "hint": "Somebody wrote in and nobody has taken it."
+    }
+  },
+  "empty": {
+    "title": "Nothing pending",
+    "body": "Nothing your role can see needs attention right now."
+  },
+  "nothing": "Nothing",
+  "permissions": {
+    "title": "What this user can do",
+    "hint": "The permission matrix lives in code. It is shown here so that a wrong scope can be pointed at.",
+    "show": "Show",
+    "hide": "Hide",
+    "granted": "{n} of {catalog} permissions"
+  }
+}

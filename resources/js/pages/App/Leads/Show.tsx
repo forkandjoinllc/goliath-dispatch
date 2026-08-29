@@ -268,7 +268,7 @@ export default function LeadShow({ lead, quotes, matches, statuses, assignees, c
                   </dl>
 
                   {q.oversizeSuspected ? (
-                    <p className="mt-2 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                    <p className="mt-2 inline-block rounded bg-warning-100 px-2 py-0.5 text-xs text-warning-800">
                       {t('leads.show.oversize')}
                     </p>
                   ) : null}

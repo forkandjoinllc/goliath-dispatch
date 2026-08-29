@@ -4,7 +4,7 @@
 
 ```bash
 composer install                 # con dependencias de desarrollo
-php artisan migrate --env=testing # crea goliath_l_test la primera vez
+DB_DATABASE=goliath_l_test php artisan migrate --force  # la primera vez
 composer test                     # o: ./vendor/bin/pest
 ```
 
@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (748 tests, 5190 assertions)
+OK (767 tests, 5413 assertions)
 ```
 
-(Cifra del 29 de agosto por la tarde, tras el lote de prospectos.
+(Cifra del 29 de agosto por la tarde, tras el lote del panel.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -133,6 +133,24 @@ pantalla:
 La regla general que dejan los dos: **una prueba verde no dice que la pantalla
 se vea**. Lo que no se renderiza no falla.
 
+### Clases de color sin token: se pintan sin color y nadie avisa
+
+En Tailwind v4 las utilidades de color se generan a partir de las variables del
+bloque `@theme`. Una clase que pide un escalón inexistente —`bg-danger-600`
+cuando `danger` solo definía 50, 500 y 700— **no se genera**: la clase se queda
+en el HTML, el navegador la ignora y el elemento se pinta sin ese color. No hay
+error, ni en compilación ni en consola, ni prueba que falle.
+
+Así estuvieron cuatro botones destructivos —rechazar un gasto, anular una
+factura, disputar un cobro, anular una liquidación— pidiendo fondo rojo y sin
+fondo ninguno: texto blanco sobre blanco. Lo encontró mirar el CSS compilado.
+
+`tests/Unit/Ui/BrandColorsTest.php` lo cierra por los dos lados: toda clase de
+una familia de la marca tiene que tener su token, y no se usan las paletas de
+Tailwind por defecto —mezclar `amber-100` con `warning-100` deja dos amarillos
+casi iguales decididos en dos sitios, y el día que cambie el de la marca solo
+cambia la mitad de la interfaz.
+
 ### La base de pruebas y las migraciones nuevas
 
 `TestCase::ensureSchema()` **no migra**, y conviene saber por qué antes de
@@ -154,11 +172,17 @@ dos extremos son malos, así que ahora la comprobación se para y dice el comand
 que falta:
 
 ```
-php artisan migrate --env=testing
+DB_DATABASE=goliath_l_test php artisan migrate --force
 ```
 
-Si al ejecutar la suite aparece «La base de pruebas no está al día», ese es el
-comando. Y si alguna vez la base de pruebas queda con datos residuales —porque
+Si al ejecutar la suite aparece «La base de pruebas no está al día», el mensaje
+trae ese comando ya con el nombre de la base que toca.
+
+**`--env=testing` no sirve**, aunque lo pareciera: no hay `.env.testing` en el
+repositorio, así que Laravel se queda con `.env` y migra la base de DESARROLLO.
+La de pruebas se queda igual de vacía y quien lo ejecutó se queda convencido de
+que ya está. El nombre de la base de pruebas vive en `phpunit.xml`, no en un
+fichero de entorno, y por eso hay que pasarlo por delante. Y si alguna vez la base de pruebas queda con datos residuales —porque
 alguien migró dentro de una transacción—, se limpia borrando las filas; no hace
 falta reconstruir el esquema.
 

@@ -158,7 +158,7 @@ export default function AuditIndex({ events, filters, actions, entityTypes, acto
                         cómo se lee la fila entera, así que va junto al nombre y
                         no escondido en el detalle. */}
                     {e.impersonated ? (
-                      <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                      <span className="ml-2 rounded bg-warning-100 px-1.5 py-0.5 text-xs text-warning-800">
                         {t('audit.index.impersonated')}
                       </span>
                     ) : null}

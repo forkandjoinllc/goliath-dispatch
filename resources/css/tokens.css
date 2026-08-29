@@ -81,13 +81,36 @@
   --color-success-500: #16A34A;
   --color-success-700: #15803D;
 
+  /* Las escalas semánticas nacieron con tres escalones —50, 500 y 700— y el
+   * código fue pidiendo los que faltaban. En Tailwind v4 una utilidad sin
+   * token detrás NO se genera y NO avisa: la clase queda en el HTML, el
+   * navegador la ignora y el elemento se pinta sin ese color. Así estuvieron
+   * cuatro botones destructivos (rechazar un gasto, anular una factura,
+   * disputar un cobro, anular una liquidación) con `bg-danger-600` y, por
+   * tanto, SIN FONDO — texto blanco sobre blanco. Se completan aquí los
+   * escalones que el código usa de verdad.
+   *
+   * Los tres originales no se tocan aunque su numeración vaya desplazada
+   * respecto al rojo de Tailwind (500 es su 600): están en muchas pantallas y
+   * renumerarlos las cambiaría todas. Los nuevos se eligen para que la rampa
+   * quede monótona de 300 a 900.
+   *
+   * `tests/Unit/Ui/BrandColorsTest.php` impide que vuelva a colarse una clase
+   * de color sin token. */
   --color-warning-50: #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-300: #FCD34D;
   --color-warning-500: #F59E0B;
   --color-warning-700: #A16207;
+  --color-warning-800: #854D0E;
 
   --color-danger-50: #FEF2F2;
+  --color-danger-300: #FCA5A5;
   --color-danger-500: #DC2626;
+  --color-danger-600: #C81E1E;
   --color-danger-700: #B91C1C;
+  --color-danger-800: #991B1B;
+  --color-danger-900: #7F1D1D;
 
   --color-info-50: #F0F9FF;
   --color-info-500: #0284C7;

@@ -11,6 +11,7 @@ use App\Authorization\PermissionDescriptionsEs;
 use App\Authorization\RoleMatrix;
 use App\Enums\Locale;
 use App\Models\Session;
+use App\Support\Dashboard\Panel;
 use App\Support\InertiaPage;
 use App\Support\Locales;
 use App\Support\TenantContext;
@@ -23,13 +24,20 @@ use Inertia\Response;
 /**
  * La pantalla que se ve justo después de entrar.
  *
- * No es el panel definitivo. Es la respuesta honesta a «¿qué puedo hacer con
- * este usuario?»: el rol, la empresa en la que se está actuando y la lista
- * exacta de permisos que eso concede, con su ámbito.
+ * Contesta dos preguntas distintas, y en este orden:
  *
- * Que sea visible importa más de lo que parece. La matriz de permisos vive en
- * PHP, pero hasta que alguien la ve en pantalla junto al rol que la produjo,
- * nadie puede señalar «ese ámbito está mal».
+ *  1. **«¿Qué me falta por hacer?»** — las tarjetas de `Support\Dashboard\Panel`,
+ *     que es con lo que se abre la aplicación por la mañana. Todas esas cifras
+ *     ya existían en la base; lo que no existía era un sitio donde mirarlas
+ *     juntas, así que cada una solo se veía si alguien se acordaba de abrir su
+ *     pantalla.
+ *  2. **«¿Qué puedo hacer con este usuario?»** — el rol, la empresa en la que
+ *     se está actuando y la lista exacta de permisos que eso concede, con su
+ *     ámbito. Sigue estando, ahora debajo y plegado.
+ *
+ * Lo segundo importa más de lo que parece, y por eso no se ha quitado. La
+ * matriz de permisos vive en PHP, pero hasta que alguien la ve en pantalla
+ * junto al rol que la produjo, nadie puede señalar «ese ámbito está mal».
  *
  * Quién eres y en qué empresa estás ya no se calcula aquí: eso lo aporta el
  * armazón compartido (App\Support\AppShell) para TODAS las páginas.
@@ -47,7 +55,7 @@ final class DashboardController
 
         /** @var Locale $locale */
         $locale = $request->attributes->get('locale', Locales::default());
-        $this->usesDictionary($request, ['auth', 'nav']);
+        $this->usesDictionary($request, ['dashboard', 'auth', 'nav']);
 
         $spanish = $locale === Locale::Es;
 
@@ -77,6 +85,7 @@ final class DashboardController
         ksort($granted);
 
         return Inertia::render('App/Dashboard', [
+            'cards' => Panel::cards($actor, $checker, $policy),
             'permissions' => $granted,
             'totals' => [
                 'granted' => array_sum(array_map('count', $granted)),

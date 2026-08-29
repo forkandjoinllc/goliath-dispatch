@@ -13,6 +13,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Invoice;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Finance\Billable;
 use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\InvoiceBuilder;
 use App\Support\InertiaPage;
@@ -64,6 +65,7 @@ final class InvoiceController
             'status' => in_array($request->query('status'), self::STATUSES, true)
                 ? (string) $request->query('status')
                 : '',
+            'overdue' => $request->query('overdue') === '1' ? '1' : '',
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
@@ -75,6 +77,10 @@ final class InvoiceController
 
         if ($filters['status'] !== '') {
             $query->where('invoices.status', $filters['status']);
+        }
+
+        if ($filters['overdue'] === '1') {
+            self::applyOverdue($query);
         }
 
         $page = $query
@@ -627,15 +633,42 @@ final class InvoiceController
      * No hay columna «facturada» en `loads` a propósito: una columna paralela se
      * desincroniza en cuanto se anula una factura.
      */
+    /**
+     * La regla vive en `Support\Finance\Billable`, no aquí.
+     *
+     * El panel cuenta lo mismo, y dos copias de esta regla se separan: el día
+     * que difieran, el panel diría que hay tres cargas por facturar y esta
+     * pantalla ofrecería dos.
+     */
     private function invoicedExists(\Illuminate\Database\Query\Builder $q, Actor $actor): void
     {
-        $q->select(DB::raw(1))
-            ->from('invoice_line_items as li')
-            ->join('invoices as inv', 'inv.id', '=', 'li.invoice_id')
-            ->whereColumn('li.load_id', 'l.id')
-            ->where('li.tenant_id', $actor->tenantId)
-            ->whereNull('li.deleted_at')
-            ->whereNull('inv.deleted_at')
-            ->where('inv.status', '!=', 'voided');
+        Billable::invoicedExists($q, (string) $actor->tenantId, 'l.id');
     }
+
+    /**
+     * Lo que de verdad está vencido, calculado por fecha y no por el estado.
+     *
+     * `invoices.status` solo pasa a `overdue` cuando `PaymentLedger::resync()`
+     * corre, y eso solo ocurre al anotar o reembolsar un cobro. Una factura que
+     * simplemente cruza su fecha de vencimiento sin que nadie la toque se queda
+     * en `sent` para siempre: en los datos de demostración hay una vencida y
+     * ninguna con el estado `overdue`. Contar por estado diría cero.
+     *
+     * Mientras no haya nada que corra solo —hoy `routes/console.php` no tiene ni
+     * un comando programado— este cálculo por fecha es la única respuesta
+     * honesta, y es la que usan por igual esta pantalla y el panel.
+     *
+     * @param  Builder<Invoice>  $query
+     */
+    public static function applyOverdue(Builder $query): Builder
+    {
+        return $query
+            ->where('invoices.balance_cents', '>', 0)
+            ->whereNotNull('invoices.due_date')
+            ->whereDate('invoices.due_date', '<', CarbonImmutable::now()->toDateString())
+            // Una anulada o un borrador no deben nada aunque tengan fecha; una
+            // incobrable ya se dio por perdida y no es trabajo pendiente.
+            ->whereNotIn('invoices.status', ['draft', 'voided', 'paid', 'uncollectable']);
+    }
+
 }

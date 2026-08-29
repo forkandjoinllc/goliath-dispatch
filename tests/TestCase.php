@@ -71,10 +71,18 @@ abstract class TestCase extends BaseTestCase
             return;
         }
 
+        // El comando lleva DB_DATABASE delante a propósito. `--env=testing` NO
+        // vale: sin un fichero `.env.testing` —que no está en el repositorio—
+        // Laravel se queda con `.env` y migra la base de DESARROLLO, dejando la
+        // de pruebas igual de vacía y a quien lo ejecutó convencido de que ya
+        // está. El nombre se saca de la conexión viva, así que el comando que
+        // se imprime es siempre el correcto para esta configuración.
+        $base = DB::connection()->getDatabaseName();
+
         $this->fail(
-            "La base de pruebas no está al día: faltan ".count($pendientes)." migración(es).\n\n"
-            ."    php artisan migrate --env=testing\n\n"
-            ."Pendientes: ".implode(', ', array_slice($pendientes, 0, 5))
+            'La base de pruebas no está al día: faltan '.count($pendientes)." migración(es).\n\n"
+            ."    DB_DATABASE={$base} php artisan migrate --force\n\n"
+            .'Pendientes: '.implode(', ', array_slice($pendientes, 0, 5))
             .(count($pendientes) > 5 ? ', …' : '')
         );
     }
