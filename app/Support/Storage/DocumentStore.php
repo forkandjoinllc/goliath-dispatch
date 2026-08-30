@@ -39,6 +39,18 @@ interface DocumentStore
     public function put(string $tenantId, UploadedFile $file): string;
 
     /**
+     * Guarda bytes que ha generado la aplicación, no un fichero subido.
+     *
+     * Existe aparte de `put()` porque un PDF firmado o la imagen de una firma
+     * no vienen de un formulario y no tienen `UploadedFile` que envolver.
+     * Envolverlos en uno artificial obligaría a escribirlos primero en un
+     * fichero temporal solo para volver a leerlos, y a heredar de paso la
+     * comprobación de extensión, que aquí no aplica: quien llama sabe
+     * exactamente qué generó.
+     */
+    public function putBytes(string $tenantId, string $bytes, string $extension, string $prefix = 'documents'): string;
+
+    /**
      * Una URL temporal para descargar el fichero.
      *
      * Temporal y no permanente: un enlace que no caduca acaba pegado en un

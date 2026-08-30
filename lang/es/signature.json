@@ -47,7 +47,13 @@
     "needsResignature": "Requiere nueva firma",
     "needsResignatureDescription": "Firmados bajo una versión del documento que ya fue reemplazada. Envíe una nueva solicitud para actualizarlos.",
     "needsResignatureEmpty": "No hay solicitudes pendientes de nueva firma.",
-    "sendForSignature": "Enviar para firma"
+    "sendForSignature": "Enviar para firma",
+    "signerColumn": "Firmante",
+    "documentColumn": "Documento",
+    "sentColumn": "Enviado",
+    "open": "Abrir",
+    "carrierColumn": "Transportista",
+    "linkOnce": "Esta es la única vez que se mostrará este enlace. Cópielo antes de salir de esta página."
   },
   "detail": {
     "title": "Solicitud de firma",
@@ -69,7 +75,14 @@
     "voidDialogTitle": "Anular esta solicitud de firma",
     "voidDialogDescription": "El enlace del firmante dejará de funcionar de inmediato. Esta acción no se puede deshacer.",
     "reasonLabel": "Motivo",
-    "reasonPlaceholder": "Explique el motivo de la anulación…"
+    "reasonPlaceholder": "Explique el motivo de la anulación…",
+    "voided": "Solicitud anulada.",
+    "derivedKeyWarning": "El sello se está haciendo con una clave derivada de APP_KEY. Funciona, pero rotar APP_KEY invalidaría los sellos anteriores. Ponga SIGNATURE_HASH_PEPPER en el servidor.",
+    "documentUnavailable": "No se puede comprobar el documento: el fichero firmado no está donde debería. Eso no significa que la firma esté mal, significa que no se ha podido mirar.",
+    "ipAddress": "Dirección IP",
+    "userAgent": "Navegador",
+    "method": "Cómo firmó",
+    "hashes": "Huellas"
   },
   "templates": {
     "title": "Plantillas de firma",
@@ -100,7 +113,12 @@
       "templateKeyInvalid": "Use solo minúsculas, números y guiones bajos."
     },
     "created": "Plantilla creada.",
-    "versionCreated": "Nueva versión publicada."
+    "versionCreated": "Nueva versión publicada.",
+    "installed": "Se crearon {count} plantillas de partida.",
+    "installAction": "Crear las plantillas de partida",
+    "installHint": "Tres acuerdos de ejemplo en los dos idiomas. Están para que vea qué forma tiene una plantilla — revíselas con su abogado antes de mandárselas a nadie.",
+    "contentHashHint": "Se copia dentro de cada firma. Es lo que permite decir «esto se firmó sobre este texto y no sobre el de ahora».",
+    "retireSuccess": "Plantilla retirada."
   },
   "sendDialog": {
     "title": "Enviar para firma",
@@ -119,7 +137,10 @@
     "localeOptions": {
       "en": "Inglés",
       "es": "Español"
-    }
+    },
+    "carrier": "Transportista",
+    "selectCarrierPlaceholder": "Seleccione un transportista",
+    "expiryHint": "Cero o vacío = sin vencimiento."
   },
   "email": {
     "requestSubject": "{tenant}: por favor revise y firme",
@@ -189,5 +210,21 @@
     "voided": "Esta solicitud de firma fue anulada.",
     "superseded": "Este documento fue actualizado y debe firmarse nuevamente.",
     "cannotVoidSigned": "Una solicitud ya firmada no puede anularse."
+  },
+  "events": {
+    "requested": "Solicitud creada",
+    "emailed": "Enlace enviado",
+    "opened": "Enlace abierto",
+    "viewed": "Documento visto",
+    "consent_shown": "Consentimiento mostrado",
+    "consent_accepted": "Consentimiento aceptado",
+    "signature_captured": "Firma capturada",
+    "document_generated": "Documento generado",
+    "sealed": "Registro sellado",
+    "emailed_copy": "Copia enviada",
+    "declined": "Firma rechazada",
+    "voided": "Solicitud anulada",
+    "superseded": "Plantilla reemplazada",
+    "certificate_downloaded": "Certificado descargado"
   }
 }

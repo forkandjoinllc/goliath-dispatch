@@ -47,7 +47,13 @@
     "needsResignature": "Needs re-signature",
     "needsResignatureDescription": "Signed under a template version that has since been superseded. Send a new request to bring these current.",
     "needsResignatureEmpty": "Nothing needs re-signature.",
-    "sendForSignature": "Send for signature"
+    "sendForSignature": "Send for signature",
+    "signerColumn": "Signer",
+    "documentColumn": "Document",
+    "sentColumn": "Sent",
+    "open": "Open",
+    "carrierColumn": "Carrier",
+    "linkOnce": "This is the only time this link will be shown. Copy it before you leave this page."
   },
   "detail": {
     "title": "Signature request",
@@ -69,7 +75,14 @@
     "voidDialogTitle": "Void this signature request",
     "voidDialogDescription": "The signer's link will stop working immediately. This cannot be undone.",
     "reasonLabel": "Reason",
-    "reasonPlaceholder": "Explain why this request is being voided…"
+    "reasonPlaceholder": "Explain why this request is being voided…",
+    "voided": "Request voided.",
+    "derivedKeyWarning": "The seal is being made with a key derived from APP_KEY. It works, but rotating APP_KEY would invalidate earlier seals. Set SIGNATURE_HASH_PEPPER on the server.",
+    "documentUnavailable": "The document cannot be checked: the signed file is not where it should be. That does not mean the signature is bad, it means it could not be looked at.",
+    "ipAddress": "IP address",
+    "userAgent": "Browser",
+    "method": "How they signed",
+    "hashes": "Hashes"
   },
   "templates": {
     "title": "Signature templates",
@@ -100,7 +113,12 @@
       "templateKeyInvalid": "Use lowercase letters, numbers and underscores only."
     },
     "created": "Template created.",
-    "versionCreated": "New version published."
+    "versionCreated": "New version published.",
+    "installed": "{count} starter templates created.",
+    "installAction": "Create the starter templates",
+    "installHint": "Three example agreements in both languages. They are here so you can see the shape of a template — have your attorney review them before you send them to anyone.",
+    "contentHashHint": "Copied into every signature. It is what lets you say \"this was signed against this text, not against the current one\".",
+    "retireSuccess": "Template retired."
   },
   "sendDialog": {
     "title": "Send for signature",
@@ -119,7 +137,10 @@
     "localeOptions": {
       "en": "English",
       "es": "Spanish"
-    }
+    },
+    "carrier": "Carrier",
+    "selectCarrierPlaceholder": "Select a carrier",
+    "expiryHint": "Zero or blank = no expiry."
   },
   "email": {
     "requestSubject": "{tenant}: please review and sign",
@@ -189,5 +210,21 @@
     "voided": "This signature request was voided.",
     "superseded": "This agreement has been updated and must be signed again.",
     "cannotVoidSigned": "A signed request cannot be voided."
+  },
+  "events": {
+    "requested": "Request created",
+    "emailed": "Link sent",
+    "opened": "Link opened",
+    "viewed": "Document viewed",
+    "consent_shown": "Consent shown",
+    "consent_accepted": "Consent accepted",
+    "signature_captured": "Signature captured",
+    "document_generated": "Document generated",
+    "sealed": "Record sealed",
+    "emailed_copy": "Copy sent",
+    "declined": "Signature declined",
+    "voided": "Request voided",
+    "superseded": "Template superseded",
+    "certificate_downloaded": "Certificate downloaded"
   }
 }

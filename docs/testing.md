@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (841 tests, 5864 assertions)
+OK (872 tests, 6081 assertions)
 ```
 
-(Cifra del 30 de agosto, tras el lote de seguimiento.
+(Cifra del 30 de agosto, tras el lote de firmas.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -299,6 +299,35 @@ nunca pisaba el camino que recorre la aplicación de verdad.**
 La conclusión operativa no es «escribir más pruebas»: es que **una prueba que
 inserta sus propias filas prueba el controlador, no el sistema.** Cuando el dato
 puede llegar por dos caminos, la prueba tiene que usar el que usa la aplicación.
+
+### Lo mismo otra vez, en el lote de firmas
+
+Treinta pruebas en verde y el navegador encontró dos fallos más. Los dos son
+otra vez de la misma familia, y ya van tres lotes seguidos:
+
+- **La página de firma no enseñaba el documento.** La bolsa `flash` compartida
+  se arma con closures que devuelven `session()->get('success')`, y eso es NULL
+  —no ausente— cuando no hay mensaje. La pantalla comprobaba `!== undefined`, que
+  con NULL da verdadero: TODO el que abría su enlace veía la pantalla de
+  «firmado» con el título vacío, y el acuerdo no aparecía por ninguna parte. Los
+  props del servidor eran correctos; la pantalla estaba rota.
+- **Tras firmar, el enlace decía «no encontrado».** Se borraba el token al
+  firmar, y la redirección posterior caía en el rechazo genérico. El estado
+  `already_signed` existía en el diccionario portado desde el principio,
+  esperando a que alguien no borrara el token.
+
+Del primero salió la única prueba de este módulo que mira el HTML renderizado y
+no los props. Es la lección repetida: **una prueba que comprueba lo que el
+servidor manda no comprueba lo que la persona ve.**
+
+Y un tercero, este autoinfligido y contra la propia suite: la primera versión de
+la prueba de la cadena de auditoría hacía `drop trigger` para poder borrar un
+evento. Eso es DDL, MySQL confirma la transacción abierta al ejecutarlo, y los
+datos de esa prueba quedaron escritos para siempre en la base de pruebas —
+rompiendo cinco pruebas de `CustomerAccessTest` que no tenían nada que ver. Es
+exactamente la trampa que ya está contada más arriba, y la volví a pisar. La
+prueba ahora INSERTA un evento con un eslabón que no cuadra, que recorre el
+mismo camino de código sin tocar el esquema.
 
 ## Migraciones: por qué todas son reanudables
 

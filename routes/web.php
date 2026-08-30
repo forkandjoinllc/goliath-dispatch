@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Marketing\CarrierSignupController;
 use App\Http\Controllers\Marketing\LeadController;
 use App\Http\Controllers\Marketing\PageController;
+use App\Http\Controllers\Public\SignatureController as PublicSignatureController;
 use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
 use App\Support\Locales;
 use App\Support\Marketing\Site;
@@ -100,5 +101,32 @@ foreach (Locales::all() as $code) {
         ->get('t/{token}', PublicTrackingController::class)
         ->name("public.tracking.{$code}");
 }
+
+/*
+|--------------------------------------------------------------------------
+| Ceremonia de firma
+|--------------------------------------------------------------------------
+|
+| Sin sesión, como el rastreo público, y con la misma regla de prefijo de
+| idioma: quien abre el enlace llega desde un correo, sin cookie que diga en qué
+| idioma habla. Aquí importa más todavía — el idioma en que se manda un acuerdo
+| lo decidió quien lo mandó, y la solicitud lo lleva guardado en `locale`.
+|
+| El límite es más estrecho que el del rastreo porque estas rutas ESCRIBEN, y
+| una de ellas sella un registro que no se puede deshacer.
+*/
+Route::middleware('throttle:20,1')->group(function (): void {
+    Route::get('s/{token}', [PublicSignatureController::class, 'show'])->name('public.signature');
+    Route::post('s/{token}/sign', [PublicSignatureController::class, 'sign'])->name('public.signature.sign');
+    Route::post('s/{token}/decline', [PublicSignatureController::class, 'decline'])->name('public.signature.decline');
+
+    foreach (Locales::all() as $code) {
+        Route::prefix($code)->group(function () use ($code): void {
+            Route::get('s/{token}', [PublicSignatureController::class, 'show'])->name("public.signature.{$code}");
+            Route::post('s/{token}/sign', [PublicSignatureController::class, 'sign'])->name("public.signature.sign.{$code}");
+            Route::post('s/{token}/decline', [PublicSignatureController::class, 'decline'])->name("public.signature.decline.{$code}");
+        });
+    }
+});
 
 require __DIR__.'/auth.php';

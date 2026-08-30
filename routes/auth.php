@@ -25,6 +25,7 @@ use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
+use App\Http\Controllers\App\SignatureController;
 use App\Http\Controllers\App\TenantSettingController;
 use App\Http\Controllers\App\TrackingController;
 use App\Http\Controllers\App\UserController;
@@ -351,6 +352,30 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+
+    /*
+    | Firmas
+    |
+    | Las plantillas van por su propia ruta y no bajo una solicitud porque son
+    | de la casa, no de ninguna firma en concreto: se publican una vez y las
+    | usan todas las solicitudes que vengan después.
+    |
+    | Publicar una versión es POST a `templates` y no PATCH sobre una plantilla
+    | existente, y eso NO es un descuido: publicar escribe una fila nueva. El
+    | texto de una versión ya firmada no se puede editar sin invalidar la huella
+    | que viaja dentro de cada firma hecha sobre ella.
+    |
+    | Anular es POST y no DELETE por el mismo motivo que revocar un enlace de
+    | rastreo: la solicitud no se borra, se le pone `voided_at` y se queda.
+    */
+    Route::get('signatures', [SignatureController::class, 'index'])->name('signatures.index');
+    Route::get('signatures/templates', [SignatureController::class, 'templates'])->name('signatures.templates');
+    Route::post('signatures/templates', [SignatureController::class, 'publishTemplate'])->name('signatures.templates.publish');
+    Route::post('signatures/templates/install', [SignatureController::class, 'installTemplates'])->name('signatures.templates.install');
+    Route::post('signatures/templates/{templateKey}/retire', [SignatureController::class, 'retireTemplate'])->name('signatures.templates.retire');
+    Route::post('signatures/requests', [SignatureController::class, 'store'])->name('signatures.store');
+    Route::get('signatures/{signatureRequest}', [SignatureController::class, 'show'])->name('signatures.show');
+    Route::post('signatures/{signatureRequest}/void', [SignatureController::class, 'void'])->name('signatures.void');
 
     /*
     | Seguimiento

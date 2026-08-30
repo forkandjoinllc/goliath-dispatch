@@ -54,6 +54,22 @@ final class LocalDocumentStore implements DocumentStore
         return $key;
     }
 
+    public function putBytes(string $tenantId, string $bytes, string $extension, string $prefix = 'documents'): string
+    {
+        $key = sprintf(
+            '%s/%s/%s/%s.%s',
+            trim($prefix, '/'),
+            $tenantId,
+            now()->format('Y/m'),
+            (string) Str::uuid(),
+            preg_replace('/[^a-z0-9]/', '', mb_strtolower($extension)) ?: 'bin',
+        );
+
+        Storage::disk(self::DISK)->put($key, $bytes);
+
+        return $key;
+    }
+
     public function temporaryUrl(string $storageKey, int $minutes = 5): string
     {
         // El disco local no sabe firmar URLs —eso lo hace S3— así que se firma
