@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Marketing\CarrierSignupController;
 use App\Http\Controllers\Marketing\LeadController;
 use App\Http\Controllers\Marketing\PageController;
+use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
 use App\Support\Locales;
 use App\Support\Marketing\Site;
 use Illuminate\Support\Facades\Route;
@@ -69,5 +70,35 @@ Route::middleware('throttle:6,60')->group(function (): void {
     Route::post('quote-requests', [LeadController::class, 'storeQuote'])->name('marketing.quotes.store');
     Route::post('carrier-signup', CarrierSignupController::class)->name('marketing.carrierSignup.store');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Rastreo público
+|--------------------------------------------------------------------------
+|
+| Sin sesión: el enlace se le manda a un cliente que no tiene cuenta y que puede
+| abrirlo desde cualquier parte.
+|
+| CON prefijo de idioma, al revés que los formularios públicos, y por un motivo
+| concreto: al formulario llega alguien que ya está navegando y trae su idioma
+| en la cabecera o en la cookie; este enlace lo abre alguien que llega desde un
+| correo, sin contexto ninguno, y acabaría leyendo lo que diga el navegador de
+| su oficina. Quien reparte el enlace sabe en qué idioma habla su cliente, así
+| que el idioma va en la URL que se le entrega. La forma sin prefijo se queda
+| viva porque los enlaces ya repartidos la usan, y ahí sí negocia la cabecera.
+|
+| El límite es por IP y deliberadamente holgado para una persona y estrecho para
+| una máquina: el token son 48 caracteres al azar y adivinarlo es inviable, pero
+| esto corta de raíz que alguien lo intente a ritmo de máquina.
+*/
+Route::middleware('throttle:30,1')->get('t/{token}', PublicTrackingController::class)
+    ->name('public.tracking');
+
+foreach (Locales::all() as $code) {
+    Route::middleware('throttle:30,1')
+        ->prefix($code)
+        ->get('t/{token}', PublicTrackingController::class)
+        ->name("public.tracking.{$code}");
+}
 
 require __DIR__.'/auth.php';

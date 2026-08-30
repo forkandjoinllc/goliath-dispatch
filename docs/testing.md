@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (820 tests, 5673 assertions)
+OK (841 tests, 5864 assertions)
 ```
 
-(Cifra del 30 de agosto, tras el lote de consolidación.
+(Cifra del 30 de agosto, tras el lote de seguimiento.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -272,6 +272,33 @@ diecinueve en verde, incluidas las dos que tumbaron despliegues en Forge.
 | El DDL de cada migración | Ejecutado contra un MySQL 8 real |
 | Que la migración se pueda reanudar | Desde cero, sobre lo ya aplicado, y desde estados a medias |
 | **La suite** | `./vendor/bin/pest`, entera |
+
+### Lo que la suite verde no ve
+
+Tres de los cuatro fallos del lote de seguimiento los encontró el navegador con
+las veintiuna pruebas del módulo ya en verde. Vale la pena nombrarlos porque los
+tres son de la misma familia: **la prueba montaba sus propios datos y por eso
+nunca pisaba el camino que recorre la aplicación de verdad.**
+
+- **La ciudad de la parada.** La prueba escribía `city` directamente en
+  `load_stops`. Las cargas creadas desde el panel guardan `customer_location_id`
+  y dejan `city` en NULL: la dirección buena vive en `customer_locations`. Sin
+  el `leftJoin`, la página pública —cuyo único trabajo es decir de dónde a dónde
+  va la carga— salía sin ciudades. `LoadController::stops()` ya hacía el join
+  bien; el módulo nuevo no lo copió.
+- **El enlace que no se podía copiar.** El controlador dejaba el token en el
+  flash y la pantalla lo leía de la bolsa `flash` compartida, que a propósito
+  solo lleva `success` y `error`. Resultado: el panel decía «cópielo ahora, no
+  se mostrará de nuevo» y no había nada que copiar. La prueba comprobaba que el
+  enlace se creaba, no que llegara a la pantalla. Ahora viaja como prop propia,
+  igual que `signupEmail` en `SignupController`, y hay una prueba que mira el
+  prop y otra que comprueba que a la recarga siguiente ya no está.
+- **«Visto 0 vez/veces».** El plural de barra que la regla del lote anterior
+  existe para eliminar. Ninguna prueba mira el texto renderizado.
+
+La conclusión operativa no es «escribir más pruebas»: es que **una prueba que
+inserta sus propias filas prueba el controlador, no el sistema.** Cuando el dato
+puede llegar por dos caminos, la prueba tiene que usar el que usa la aplicación.
 
 ## Migraciones: por qué todas son reanudables
 

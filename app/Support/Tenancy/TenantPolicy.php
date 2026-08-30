@@ -45,6 +45,10 @@ final class TenantPolicy
         public readonly int $paymentTermsDays,
         public readonly int $documentWarningDays,
         public readonly int $fmcsaReverificationDays,
+        // Los dos del rastreo público llegan con el lote de seguimiento: se
+        // guardaban desde el primer día y no los leía nadie.
+        public readonly bool $publicTrackingEnabled,
+        public readonly int $publicTrackingTtlHours,
     ) {}
 
     public static function for(?string $tenantId): self
@@ -69,6 +73,8 @@ final class TenantPolicy
                 'default_payment_terms_days',
                 'document_expiration_warning_days',
                 'fmcsa_reverification_days',
+                'public_tracking_enabled',
+                'public_tracking_token_ttl_hours',
             ]);
 
         if ($fila === null) {
@@ -85,6 +91,8 @@ final class TenantPolicy
             paymentTermsDays: (int) $fila->default_payment_terms_days,
             documentWarningDays: (int) $fila->document_expiration_warning_days,
             fmcsaReverificationDays: (int) $fila->fmcsa_reverification_days,
+            publicTrackingEnabled: (bool) $fila->public_tracking_enabled,
+            publicTrackingTtlHours: (int) $fila->public_tracking_token_ttl_hours,
         );
     }
 
@@ -114,6 +122,10 @@ final class TenantPolicy
             paymentTermsDays: 30,
             documentWarningDays: 30,
             fmcsaReverificationDays: 7,
+            // Los mismos valores por defecto que la columna: el rastreo público
+            // viene activado y el enlace dura tres días.
+            publicTrackingEnabled: true,
+            publicTrackingTtlHours: 72,
         );
     }
 }

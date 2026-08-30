@@ -141,7 +141,8 @@
     "createdAt": "Creado el {date}",
     "expiresAt": "Vence el {date}",
     "revokedAt": "Revocado el {date}",
-    "viewCount": "Visto {count} vez/veces",
+    "viewCount": "Visto {n} veces",
+    "viewCountOne": "Visto 1 vez",
     "lastViewedAt": "Última vista el {date}",
     "copyButton": "Copiar enlace",
     "copied": "Enlace copiado al portapapeles.",
@@ -219,5 +220,55 @@
     },
     "lastCheckedAt": "Última verificación el {date}",
     "lastError": "Último resultado: {message}"
+  },
+  "board": {
+    "title": "En la carretera",
+    "subtitle": "Las cargas que están rodando, y cuándo se comprobó cada una por última vez.",
+    "empty": "Ahora mismo no hay nada rodando.",
+    "onlyOverdue": "Solo las atrasadas",
+    "all": "Todas",
+    "loadColumn": "Carga",
+    "carrierColumn": "Transportista",
+    "statusColumn": "Estado",
+    "lastCheckColumn": "Última comprobación",
+    "nextCheckColumn": "Próxima",
+    "deliveryColumn": "Entrega",
+    "never": "Sin comprobar",
+    "noneScheduled": "Ninguna programada",
+    "overdue": "Atrasada",
+    "view": "Abrir",
+    "noGpsNote": "No hay ningún proveedor de telemática conectado. Esto son llamadas de control anotadas por personas."
+  },
+  "checkCalls": {
+    "title": "Llamadas de control",
+    "schedule": "Programar una llamada",
+    "logNow": "Anotar una llamada que acabo de hacer",
+    "complete": "Marcar como hecha",
+    "due": "Vence {date}",
+    "overdue": "Atrasada desde {date}",
+    "scheduledFor": "Programada para",
+    "notes": "Notas",
+    "notesHint": "Internas. No salen nunca en el enlace del cliente.",
+    "locationSummary": "Por dónde va",
+    "locationHint": "Esto SÍ sale en el enlace del cliente.",
+    "completedBy": "Hecha por {actor} el {date}",
+    "empty": "Esta carga todavía no tiene llamadas de control.",
+    "saved": "Llamada de control guardada.",
+    "completed": "Llamada de control marcada como hecha.",
+    "alreadyDone": "Esa llamada de control ya estaba hecha.",
+    "origin": {
+      "scheduled": "Programada",
+      "provider_event": "Proveedor de rastreo",
+      "manual": "Manual"
+    }
+  },
+  "stops": {
+    "title": "Paradas",
+    "pickup": "Recogida",
+    "delivery": "Entrega",
+    "window": "Ventana {start} – {end}",
+    "arrived": "Llegó el {date}",
+    "departed": "Salió el {date}",
+    "pending": "Todavía no ha llegado"
   }
 }

@@ -141,7 +141,8 @@
     "createdAt": "Created {date}",
     "expiresAt": "Expires {date}",
     "revokedAt": "Revoked {date}",
-    "viewCount": "Viewed {count} time(s)",
+    "viewCount": "Viewed {n} times",
+    "viewCountOne": "Viewed once",
     "lastViewedAt": "Last viewed {date}",
     "copyButton": "Copy link",
     "copied": "Link copied to clipboard.",
@@ -219,5 +220,55 @@
     },
     "lastCheckedAt": "Last checked {date}",
     "lastError": "Last result: {message}"
+  },
+  "board": {
+    "title": "On the road",
+    "subtitle": "Loads that are moving, and when someone last checked on them.",
+    "empty": "Nothing on the road right now.",
+    "onlyOverdue": "Only overdue checks",
+    "all": "All",
+    "loadColumn": "Load",
+    "carrierColumn": "Carrier",
+    "statusColumn": "Status",
+    "lastCheckColumn": "Last check",
+    "nextCheckColumn": "Next check",
+    "deliveryColumn": "Delivery",
+    "never": "Never checked",
+    "noneScheduled": "None scheduled",
+    "overdue": "Overdue",
+    "view": "Open",
+    "noGpsNote": "No telematics provider is connected. These are check calls entered by people."
+  },
+  "checkCalls": {
+    "title": "Check calls",
+    "schedule": "Schedule a check call",
+    "logNow": "Log a call I just made",
+    "complete": "Mark as done",
+    "due": "Due {date}",
+    "overdue": "Overdue since {date}",
+    "scheduledFor": "Scheduled for",
+    "notes": "Notes",
+    "notesHint": "Internal. Never shown on the customer link.",
+    "locationSummary": "Where they are",
+    "locationHint": "This one IS shown on the customer link.",
+    "completedBy": "Done by {actor} on {date}",
+    "empty": "No check calls on this load yet.",
+    "saved": "Check call saved.",
+    "completed": "Check call marked as done.",
+    "alreadyDone": "That check call was already done.",
+    "origin": {
+      "scheduled": "Scheduled",
+      "provider_event": "Tracking provider",
+      "manual": "Manual"
+    }
+  },
+  "stops": {
+    "title": "Stops",
+    "pickup": "Pickup",
+    "delivery": "Delivery",
+    "window": "Window {start} – {end}",
+    "arrived": "Arrived {date}",
+    "departed": "Departed {date}",
+    "pending": "Not there yet"
   }
 }
