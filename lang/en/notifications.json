@@ -47,6 +47,16 @@
         "title": "A lead was assigned to you",
         "body": "{name} is now yours to follow up."
       }
+    },
+    "subscription": {
+      "trial_ending": {
+        "title": "Your trial ends on {date}",
+        "body": "After that the account moves to past due until billing is sorted out. Nothing is deleted."
+      },
+      "trial_ended": {
+        "title": "Your trial ended on {date}",
+        "body": "The account is now past due. Nothing has been deleted and nobody has been locked out."
+      }
     }
   },
   "eventNames": {
@@ -61,6 +71,10 @@
     },
     "lead": {
       "assigned": "A lead assigned to you"
+    },
+    "subscription": {
+      "trial_ending": "Your trial is ending",
+      "trial_ended": "Your trial ended"
     }
   },
   "flash": {

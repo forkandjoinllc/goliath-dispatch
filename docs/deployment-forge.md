@@ -212,3 +212,24 @@ sin una sola clave de tercero. Ojo con un detalle que despista: el transporte
 `log` escribe a nivel DEBUG y en producción `LOG_LEVEL=warning`, así que el
 correo «se manda» —la fila queda en `sent`— y no aparece en el registro. Para
 verlo hay que bajar `LOG_LEVEL` a `debug`.
+
+## Suspender una empresa
+
+Desde el lote de plataforma, `tenants.status = 'suspended'` significa algo: el
+middleware `EnsureTenantActive` deja fuera de la aplicación a todo el mundo de
+esa empresa, con una pantalla que lo explica y con salidas (cerrar sesión y
+cambiar de empresa siguen funcionando). El super administrador de plataforma
+está exento: es quien tiene que entrar a levantarlo.
+
+Se hace desde `/platform/tenants/<id>`, exige motivo y queda en la pista de
+auditoría para siempre. **No se hace tocando la base de datos**: un `update`
+directo deja fuera a la empresa sin dejar constancia de quién ni por qué.
+
+Lo que NO cierra el acceso: que la suscripción esté `past_due`. El barrido
+diario mueve a `past_due` la suscripción cuyo periodo de prueba venció y avisa a
+la empresa, pero no suspende a nadie. Dejar sin sistema a un cliente porque una
+tarjeta falló un martes es una decisión de negocio, y el código no la toma solo.
+
+El cobro todavía no está conectado. Los identificadores de Stripe se guardan y
+se enseñan; cobrar de verdad va por su propia integración, con interfaz y
+adaptador simulado, como se hizo con FMCSA.

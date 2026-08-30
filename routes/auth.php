@@ -21,6 +21,8 @@ use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\PaymentController;
+use App\Http\Controllers\Platform\PlanController;
+use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\TenantSettingController;
@@ -295,6 +297,26 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+
+    /*
+    | Plataforma
+    |
+    | Solo el super administrador. Todas las consultas de estos controladores
+    | van `withoutTenant()`, que es saltarse el ámbito de empresa a propósito:
+    | es el ÚNICO sitio del producto donde eso es lo correcto, y por eso cada
+    | acción lleva su permiso `platform:*` delante.
+    |
+    | Suspender es la acción más grave que existe aquí —deja fuera a una empresa
+    | entera— y por eso exige motivo y deja rastro. Que además signifique algo lo
+    | hace EnsureTenantActive; sin ese middleware esto sería un cambio de
+    | columna decorativo, que es justo lo que era.
+    */
+    Route::get('platform/tenants', [PlatformTenantController::class, 'index'])->name('platform.tenants.index');
+    Route::get('platform/tenants/{tenant}', [PlatformTenantController::class, 'show'])->name('platform.tenants.show');
+    Route::post('platform/tenants/{tenant}/suspension', [PlatformTenantController::class, 'suspend'])->name('platform.tenants.suspend');
+
+    Route::get('platform/plans', [PlanController::class, 'index'])->name('platform.plans.index');
+    Route::patch('platform/plans/{plan}', [PlanController::class, 'update'])->name('platform.plans.update');
 
     /*
     | Avisos

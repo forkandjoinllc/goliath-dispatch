@@ -2,6 +2,7 @@
 
 use App\Exceptions\AuthorizationException;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -26,7 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
             ResolveTenant::class,
+            // DESPUÉS de Inertia, no antes. Necesita saber en qué empresa se
+            // está —de ahí que vaya tras ResolveTenant— pero la página de
+            // suspensión es una página de Inertia como cualquier otra y necesita
+            // el armazón compartido. Puesto antes, se renderizaba sin `shell` y
+            // el layout reventaba en el navegador con «cannot read properties
+            // of undefined (reading 'nav')»: un 403 con la pantalla en blanco.
             HandleInertiaRequests::class,
+            EnsureTenantActive::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
     })

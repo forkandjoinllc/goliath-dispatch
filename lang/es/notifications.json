@@ -47,6 +47,16 @@
         "title": "Le han asignado un prospecto",
         "body": "{name} pasa a ser suyo para darle seguimiento."
       }
+    },
+    "subscription": {
+      "trial_ending": {
+        "title": "Su periodo de prueba acaba el {date}",
+        "body": "A partir de esa fecha la cuenta queda como impagada hasta resolver el cobro. No se borra nada."
+      },
+      "trial_ended": {
+        "title": "Su periodo de prueba acabó el {date}",
+        "body": "La cuenta queda como impagada. No se ha borrado nada ni se ha dejado a nadie fuera."
+      }
     }
   },
   "eventNames": {
@@ -61,6 +71,10 @@
     },
     "lead": {
       "assigned": "Un prospecto asignado a usted"
+    },
+    "subscription": {
+      "trial_ending": "Su prueba se acaba",
+      "trial_ended": "Su prueba acabó"
     }
   },
   "flash": {

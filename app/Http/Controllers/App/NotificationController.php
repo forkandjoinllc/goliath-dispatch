@@ -50,6 +50,8 @@ final class NotificationController
         'carrier.reverification_due',
         'invoice.overdue',
         'lead.assigned',
+        'subscription.trial_ending',
+        'subscription.trial_ended',
     ];
 
     public function index(Request $request, CurrentActor $current): Response

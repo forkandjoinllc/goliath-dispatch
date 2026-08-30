@@ -176,6 +176,8 @@
     "load": "Load",
     "payment": "Payment",
     "report": "Report",
+    "saas_plan": "SaaS plan",
+    "tenant": "Company",
     "tenant_settings": "Company settings",
     "user_tenant_membership": "User membership"
   }

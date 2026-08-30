@@ -62,5 +62,16 @@
   },
   "flash": {
     "saved": "Settings saved. New loads and invoices will use them; existing ones keep what they were created with."
+  },
+  "subscription": {
+    "title": "Your plan",
+    "hint": "Read-only. Changing plan goes through billing, which is not connected yet.",
+    "plan": "Plan",
+    "status": "Status",
+    "monthly": "Monthly",
+    "trialEnds": "Trial ends",
+    "periodEnds": "Period ends",
+    "cancelling": "Cancels at the end of the period",
+    "none": "No subscription on file."
   }
 }

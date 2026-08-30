@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { AppLayout } from '@/layouts/AppLayout'
+import { formatCents } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
 interface Settings {
@@ -29,8 +30,20 @@ interface Settings {
   [key: string]: string | number | boolean | null
 }
 
+interface Subscription {
+  status: string
+  planCode: string | null
+  planNameEn: string | null
+  planNameEs: string | null
+  monthlyPriceCents: number | null
+  trialEndsOn: string | null
+  periodEndsOn: string | null
+  cancelAtPeriodEnd: boolean
+}
+
 interface Props {
   settings: Settings
+  subscription: Subscription | null
   readOnly: {
     loadNextSequence: number
     invoiceNextSequence: number
@@ -43,7 +56,7 @@ interface Props {
   can: { update: boolean }
 }
 
-export default function SettingsIndex({ settings, readOnly, feeBases, commissionBases, can }: Props) {
+export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
 
@@ -55,6 +68,8 @@ export default function SettingsIndex({ settings, readOnly, feeBases, commission
       description={t('settings.index.subtitle')}
       crumbs={[{ label: t('settings.index.title') }]}
     >
+      <Plan subscription={subscription} />
+
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -360,5 +375,81 @@ function Casilla({
         {hint ? <span className="block text-xs text-steel-600">{hint}</span> : null}
       </span>
     </label>
+  )
+}
+
+/**
+ * El plan de esta empresa, de solo lectura.
+ *
+ * `tenant_subscriptions` se escribía al darse de alta y no la leía nadie: ni la
+ * plataforma ni la propia empresa. Alguien podía estar en un periodo de prueba a
+ * punto de acabarse sin tener dónde comprobarlo.
+ *
+ * No hay botón de cambiar de plan a propósito: cambiar de plan pasa por cobrar,
+ * y el cobro todavía no está conectado. Un botón que no cobra es peor que no
+ * tener botón.
+ */
+function Plan({ subscription }: { subscription: Subscription | null }) {
+  const { t, locale } = useI18n()
+
+  if (subscription === null) {
+    return (
+      <p className="rounded border border-dashed border-steel-300 bg-white p-4 text-sm text-steel-700">
+        {t('settings.subscription.none')}
+      </p>
+    )
+  }
+
+  const nombre =
+    (locale === 'es' ? subscription.planNameEs : subscription.planNameEn) ?? subscription.planCode ?? '—'
+
+  return (
+    <section className="rounded border border-steel-200 bg-white p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm font-semibold text-carbon">{t('settings.subscription.title')}</p>
+        <p className="text-xs text-steel-600">{t('settings.subscription.hint')}</p>
+      </div>
+
+      <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-4">
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-steel-600">
+            {t('settings.subscription.plan')}
+          </dt>
+          <dd className="mt-0.5 text-sm font-medium text-carbon">{nombre}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-steel-600">
+            {t('settings.subscription.status')}
+          </dt>
+          <dd className="mt-0.5 text-sm text-carbon">
+            {t(`platform.status.${subscription.status}`)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-steel-600">
+            {t('settings.subscription.monthly')}
+          </dt>
+          <dd className="mt-0.5 text-sm tabular-nums text-carbon">
+            {subscription.monthlyPriceCents === null
+              ? '—'
+              : formatCents(subscription.monthlyPriceCents, locale)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-wide text-steel-600">
+            {subscription.status === 'trialing'
+              ? t('settings.subscription.trialEnds')
+              : t('settings.subscription.periodEnds')}
+          </dt>
+          <dd className="mt-0.5 text-sm tabular-nums text-carbon">
+            {(subscription.status === 'trialing' ? subscription.trialEndsOn : subscription.periodEndsOn) ?? '—'}
+          </dd>
+        </div>
+      </dl>
+
+      {subscription.cancelAtPeriodEnd ? (
+        <p className="mt-3 text-sm text-warning-800">{t('settings.subscription.cancelling')}</p>
+      ) : null}
+    </section>
   )
 }

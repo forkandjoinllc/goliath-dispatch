@@ -56,12 +56,16 @@ final class TenantSettingController
         $policy = $current->policy();
         $checker->authorize($actor, 'tenant:settings:read', null, $policy);
 
-        $this->usesDictionary($request, ['settings', 'nav', 'common', 'validation']);
+        // `platform` por las etiquetas del estado de la suscripción
+        // (`platform.status.trialing`…): el panel del plan las usa y viven en
+        // ese diccionario porque las comparte con las pantallas de plataforma.
+        $this->usesDictionary($request, ['settings', 'platform', 'nav', 'common', 'validation']);
 
         $fila = $this->row((string) $actor->tenantId);
 
         return Inertia::render('App/Settings/Index', [
             'settings' => $this->present($fila),
+            'subscription' => $this->subscription((string) $actor->tenantId),
             'readOnly' => [
                 'loadNextSequence' => (int) ($fila->load_number_next_sequence ?? 0),
                 'invoiceNextSequence' => (int) ($fila->invoice_number_next_sequence ?? 0),
@@ -211,4 +215,45 @@ final class TenantSettingController
             'default_payment_terms_days' => (int) ($f->default_payment_terms_days ?? 0),
         ];
     }
+
+    /**
+     * El plan de esta empresa, para que pueda verlo.
+     *
+     * Hasta ahora `tenant_subscriptions` se escribía al darse de alta y no la
+     * leía nadie: ni la plataforma ni la propia empresa. Alguien podía estar en
+     * un periodo de prueba a punto de acabarse sin tener dónde comprobarlo.
+     *
+     * Es de solo lectura. Cambiar de plan pasa por cobrar, y cobrar es otro
+     * lote con su pasarela; poner aquí un botón que no cobra sería peor que no
+     * ponerlo.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function subscription(string $tenantId): ?array
+    {
+        $fila = DB::table('tenant_subscriptions as s')
+            ->leftJoin('saas_plans as p', 'p.id', '=', 's.plan_id')
+            ->where('s.tenant_id', $tenantId)
+            ->first([
+                's.status', 's.trial_ends_at', 's.current_period_end', 's.cancel_at_period_end',
+                'p.code', 'p.name_en', 'p.name_es', 'p.monthly_price_cents',
+                'p.max_users', 'p.max_carriers', 'p.max_loads_per_month',
+            ]);
+
+        if ($fila === null) {
+            return null;
+        }
+
+        return [
+            'status' => (string) $fila->status,
+            'planCode' => $fila->code === null ? null : (string) $fila->code,
+            'planNameEn' => $fila->name_en === null ? null : (string) $fila->name_en,
+            'planNameEs' => $fila->name_es === null ? null : (string) $fila->name_es,
+            'monthlyPriceCents' => $fila->monthly_price_cents === null ? null : (int) $fila->monthly_price_cents,
+            'trialEndsOn' => $fila->trial_ends_at === null ? null : substr((string) $fila->trial_ends_at, 0, 10),
+            'periodEndsOn' => $fila->current_period_end === null ? null : substr((string) $fila->current_period_end, 0, 10),
+            'cancelAtPeriodEnd' => (bool) $fila->cancel_at_period_end,
+        ];
+    }
+
 }

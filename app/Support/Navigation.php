@@ -83,7 +83,7 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans'];
 
     /**
      * Entradas que solo tienen sentido con alcance de empresa.

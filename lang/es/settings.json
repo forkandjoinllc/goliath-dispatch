@@ -62,5 +62,16 @@
   },
   "flash": {
     "saved": "Ajustes guardados. Las cargas y facturas nuevas los usarán; las que ya existen conservan lo suyo."
+  },
+  "subscription": {
+    "title": "Su plan",
+    "hint": "Solo lectura. Cambiar de plan pasa por el cobro, que todavía no está conectado.",
+    "plan": "Plan",
+    "status": "Estado",
+    "monthly": "Mensual",
+    "trialEnds": "Fin de prueba",
+    "periodEnds": "Fin del periodo",
+    "cancelling": "Se cancela al terminar el periodo",
+    "none": "No hay ninguna suscripción registrada."
   }
 }

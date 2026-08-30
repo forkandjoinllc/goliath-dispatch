@@ -41,7 +41,12 @@ export function AppLayout({
   const { url } = usePage<SharedProps>()
   useEffect(() => setNavOpen(false), [url])
 
-  if (shell === null) {
+  // `== null` y no `=== null`: atrapa también `undefined`. Con la comparación
+  // estricta, una página renderizada sin la prop compartida —le pasó a la
+  // pantalla de suspensión por un middleware mal colocado— se colaba por aquí y
+  // reventaba dos líneas más abajo leyendo `shell.nav`. La guarda existía y no
+  // guardaba del caso más probable.
+  if (shell == null) {
     // No debería ocurrir: estas páginas van tras el middleware `auth`. Si
     // ocurre, decirlo es mejor que reventar con «cannot read property of null».
     return (

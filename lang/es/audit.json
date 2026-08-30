@@ -176,6 +176,8 @@
     "load": "Carga",
     "payment": "Cobro",
     "report": "Informe",
+    "saas_plan": "Plan de SaaS",
+    "tenant": "Empresa",
     "tenant_settings": "Ajustes de la empresa",
     "user_tenant_membership": "Usuario de la empresa"
   }

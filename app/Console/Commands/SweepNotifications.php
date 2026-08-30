@@ -42,7 +42,10 @@ final class SweepNotifications extends Command
         {--dry-run : Cuenta lo que avisaría sin escribir nada}
         {--tenant= : Barre solo esta empresa}';
 
-    protected $description = 'Avisa de documentos que caducan, transportistas por revalidar y facturas vencidas';
+    protected $description = 'Avisa de documentos que caducan, transportistas por revalidar, facturas vencidas y pruebas que terminan';
+
+    /** Con cuánta antelación se avisa de que un periodo de prueba se acaba. */
+    private const AVISO_PRUEBA_DIAS = 5;
 
     public function handle(TenantContext $context): int
     {
@@ -59,13 +62,14 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
                 $totales['carriers'] += $this->transportistasPorRevalidar($tenantId, $dry);
                 $totales['invoices'] += $this->facturasVencidas($tenantId, $dry);
+                $totales['trials'] += $this->periodosDePrueba($tenantId, $dry);
             });
         }
 
@@ -75,12 +79,13 @@ final class SweepNotifications extends Command
         // escritos (esos dos documentos por cada destinatario y por cada canal,
         // que pueden ser ocho).
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · transportistas %d · facturas %d%s',
+            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
             $totales['carriers'],
             $totales['invoices'],
+            $totales['trials'],
             $dry ? '  (simulacro: no se escribió nada)' : '',
         ));
 
@@ -248,4 +253,71 @@ final class SweepNotifications extends Command
 
         return $escritos;
     }
+
+    /**
+     * Periodos de prueba: los que están por acabarse y los que ya acabaron.
+     *
+     * `tenant_subscriptions` se escribía al darse alguien de alta y no la leía
+     * NADIE: las pruebas no terminaban nunca. Este barrido es lo que hace que
+     * `trial_ends_at` signifique algo.
+     *
+     * Y lo que hace es MOVER LA SUSCRIPCIÓN A `past_due` Y AVISAR. No corta el
+     * acceso. Dejar sin sistema a una empresa porque se le acabó la prueba un
+     * martes es una decisión de negocio, y no le toca tomarla a un comando
+     * programado: suspender sigue siendo un acto humano y explícito, con motivo
+     * y con rastro, desde la pantalla de plataforma.
+     *
+     * Se avisa a la propia empresa —a quien pueda leer sus ajustes— porque es
+     * quien tiene que hacer algo al respecto.
+     */
+    private function periodosDePrueba(string $tenantId, bool $dry): int
+    {
+        $suscripcion = DB::table('tenant_subscriptions')
+            ->where('tenant_id', $tenantId)
+            ->first(['id', 'status', 'trial_ends_at']);
+
+        if ($suscripcion === null
+            || $suscripcion->status !== 'trialing'
+            || $suscripcion->trial_ends_at === null) {
+            return 0;
+        }
+
+        $acaba = CarbonImmutable::parse((string) $suscripcion->trial_ends_at);
+        $ahora = CarbonImmutable::now();
+
+        // Ni acabada ni cerca: nada que decir todavía.
+        if ($acaba->isAfter($ahora->addDays(self::AVISO_PRUEBA_DIAS))) {
+            return 0;
+        }
+
+        $acabada = $acaba->isBefore($ahora);
+
+        if ($dry) {
+            return 1;
+        }
+
+        if ($acabada) {
+            DB::table('tenant_subscriptions')->where('id', $suscripcion->id)->update([
+                'status' => 'past_due',
+                'past_due_since' => $ahora,
+                'updated_at' => $ahora,
+            ]);
+        }
+
+        $dia = $acaba->toDateString();
+
+        return Notifier::toPermissionHolders(
+            tenantId: $tenantId,
+            permission: 'tenant:settings:read',
+            eventKey: $acabada ? 'subscription.trial_ended' : 'subscription.trial_ending',
+            // La clave lleva el día de fin, no el de hoy: se avisa una vez de
+            // que se acerca y una vez de que acabó, y no cada mañana.
+            dedupeKey: ($acabada ? 'subscription.trial_ended:' : 'subscription.trial_ending:').$tenantId.':'.$dia,
+            params: ['date' => $dia],
+            actionUrl: '/settings',
+            subjectType: 'tenant',
+            subjectId: $tenantId,
+        );
+    }
+
 }
