@@ -155,7 +155,8 @@
     "carrierSearchPlaceholder": "Type to search…",
     "noCarrierMatches": "No carrier matches.",
     "noneChosen": "No carrier chosen yet.",
-    "removeCarrier": "Remove"
+    "removeCarrier": "Remove",
+    "nYearsOne": "1 year"
   },
   "flash": {
     "created": "{name} was added.",

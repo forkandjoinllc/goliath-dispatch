@@ -20,8 +20,6 @@
     "detail": "Detail",
     "view": "Open",
     "empty": "Nothing recorded yet with these filters.",
-    "count": "{n} entries",
-    "countOne": "1 entry",
     "showing": "Showing {from}–{to} of {total}",
     "impersonated": "via support access",
     "unknownActor": "System",

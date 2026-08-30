@@ -13,7 +13,6 @@
     "total": "Total",
     "balance": "Balance",
     "empty": "No invoices match.",
-    "count": "{n} invoices",
     "billed": "Billed",
     "outstanding": "Outstanding"
   },
@@ -54,7 +53,8 @@
     "voidReason": "Why it is being voided",
     "voidHint": "An invoice that went out exists even if it was wrong. It is voided with a reason, and a new one is issued.",
     "confirmVoid": "Void this invoice",
-    "voided": "This invoice was voided."
+    "voided": "This invoice was voided.",
+    "nDaysOne": "1 day"
   },
   "status": {
     "draft": "Draft",

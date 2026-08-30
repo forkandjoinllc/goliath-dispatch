@@ -22,7 +22,8 @@
     "d31_60": "31–60 días",
     "d61_90": "61–90 días",
     "d90plus": "Más de 90 días",
-    "invoices": "{n} facturas"
+    "invoices": "{n} facturas",
+    "invoicesOne": "1 factura"
   },
   "carriers": {
     "title": "Por transportista",

@@ -10,7 +10,8 @@
     "empty": "Nada en este periodo. Las comisiones se devengan al facturar la carga.",
     "noLoad": "(carga borrada)",
     "formula": "{pct} % de {basis} — {amount}",
-    "pay": "Marcar {amount} como pagado"
+    "pay": "Marcar {amount} como pagado",
+    "rowsOne": "1 carga"
   },
   "status": {
     "accrued": "Debido",
@@ -24,6 +25,7 @@
     "commissionable_base": "la base comisionable"
   },
   "flash": {
-    "paid": "{n} comisiones marcadas como pagadas."
+    "paid": "{n} comisiones marcadas como pagadas.",
+    "paidOne": "1 comisión marcada como pagada."
   }
 }

@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (810 tests, 5652 assertions)
+OK (820 tests, 5673 assertions)
 ```
 
-(Cifra del 29 de agosto por la noche, tras el lote de plataforma.
+(Cifra del 30 de agosto, tras el lote de consolidación.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -132,6 +132,53 @@ pantalla:
 
 La regla general que dejan los dos: **una prueba verde no dice que la pantalla
 se vea**. Lo que no se renderiza no falla.
+
+### Los diccionarios portados son documentación, y nadie los estaba leyendo
+
+El puerto trajo un diccionario por dominio **en singular** —`document.json`,
+`load.json`, `notification.json`, `tracking.json`, `oversize.json`,
+`signature.json`…— con el vocabulario completo de la aplicación original en los
+dos idiomas. Ningún controlador los declara: la convención de esta casa es que,
+al construir un dominio, se escribe uno nuevo **en plural** (`documents.json`,
+`loads.json`) con lo que esa pantalla necesita.
+
+Esa convención está bien. Lo que sale caro es no mirar el portado antes de
+escribir el nuevo. Al construir los avisos se escribió `notifications.json`
+desde cero mientras `notification.json` ya traía el catálogo entero de sucesos,
+**incluido `document.expired` como suceso APARTE de `document.expiring`** — que
+es justo el matiz que faltaba y que dejó un aviso diciendo «renuévelo antes de
+que venza» sobre un documento ya caducado.
+
+Los portados que quedan son, en la práctica, media especificación de los
+dominios sin construir: `tracking` trae 191 claves, `oversize` 172, `signature`
+161, `finance` 383. **Quien construya esos dominios los lee primero.**
+
+`tests/Unit/I18n/PortedDictionariesTest.php` no impide duplicar —a veces es lo
+correcto— sino que lo hace visible: un diccionario nuevo cuyo portado existe
+tiene que aparecer en `PORTADOS_REVISADOS` diciendo qué se tomó de él.
+
+### Plurales: la decisión es explícita o la prueba falla
+
+Durante seis lotes se leyó «1 facturas», «1 cargas» y «1 años». La regla, ahora,
+es una sola y la aplican las dos mitades —`App\Support\Plural::key()` en PHP y
+`t()` en `resources/js/lib/i18n.tsx`—: con `n` igual a 1 se usa la clave hermana
+`<clave>One`; con cualquier otro número, el cero incluido, la base.
+
+Se eligió el sufijo y no la barra de Laravel (`una|varias`) porque el
+diccionario es JSON compartido entre servidor y cliente, y porque una clave
+hermana la ve la prueba de paridad entre idiomas igual que cualquier otra: un
+plural sin traducir se detecta solo.
+
+`tests/Unit/I18n/PluralTest.php` obliga a decidir sobre CADA clave con `{n}`: o
+tiene hermana singular, o está en `INVARIABLES` con el motivo escrito. Una clave
+nueva no puede colarse sin que alguien elija. Además exige que la forma singular
+diga algo distinto de la plural —una hermana copiada del plural pasaría la
+primera comprobación sin arreglar nada— y que la lista de invariables no
+conserve claves que ya no existen.
+
+De paso salieron seis claves de recuento muertas: el paginador compartido las
+dejó sin uso y nadie las quitó. Una clave que no se usa no se traduce, no se
+revisa y engaña al siguiente que la lee.
 
 ### Clases de color sin token: se pintan sin color y nadie avisa
 

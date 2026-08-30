@@ -10,7 +10,6 @@
     "searchLabel": "Buscar transportistas",
     "searchPlaceholder": "Razón social, nombre comercial, USDOT, MC o correo",
     "showing": "Mostrando {from}–{to} de {total}",
-    "countOne": "1 transportista",
     "countMany": "{count} transportistas"
   },
   "scope": {

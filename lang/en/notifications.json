@@ -27,7 +27,11 @@
     "document": {
       "expiring": {
         "title": "Document expiring: {title}",
-        "body": "“{title}” expires on {date}. Check it and renew it."
+        "body": "“{title}” expires on {date}. Upload a renewal before it lapses."
+      },
+      "expired": {
+        "title": "Document expired: {title}",
+        "body": "“{title}” expired on {date}. Until a current version is uploaded and approved, it counts as missing."
       }
     },
     "carrier": {
@@ -61,7 +65,8 @@
   },
   "eventNames": {
     "document": {
-      "expiring": "Documents expiring"
+      "expiring": "Documents expiring",
+      "expired": "Documents already expired"
     },
     "carrier": {
       "reverification_due": "Carriers due for re-verification"

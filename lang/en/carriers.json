@@ -10,7 +10,6 @@
     "searchLabel": "Search carriers",
     "searchPlaceholder": "Legal name, DBA, USDOT, MC or email",
     "showing": "Showing {from}–{to} of {total}",
-    "countOne": "1 carrier",
     "countMany": "{count} carriers"
   },
   "scope": {

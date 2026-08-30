@@ -20,8 +20,6 @@
     "detail": "Detalle",
     "view": "Abrir",
     "empty": "No hay nada registrado con estos filtros.",
-    "count": "{n} entradas",
-    "countOne": "1 entrada",
     "showing": "Mostrando {from}–{to} de {total}",
     "impersonated": "mediante acceso de soporte",
     "unknownActor": "El sistema",

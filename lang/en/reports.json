@@ -22,7 +22,8 @@
     "d31_60": "31–60 days",
     "d61_90": "61–90 days",
     "d90plus": "Over 90 days",
-    "invoices": "{n} invoices"
+    "invoices": "{n} invoices",
+    "invoicesOne": "1 invoice"
   },
   "carriers": {
     "title": "By carrier",

@@ -8,7 +8,6 @@
     "anyStatus": "Cualquier estado",
     "create": "Nuevo gasto",
     "empty": "Ningún gasto coincide.",
-    "count": "{n} gastos",
     "frozenWarning": "Esta carga ya está facturada o liquidada. Esas cifras están congeladas, así que aprobar esto no las cambia — haría falta una nota de crédito o un ajuste.",
     "approve": "Aprobar",
     "reject": "Rechazar",

@@ -447,3 +447,46 @@ it('la campana y la lista cuentan lo mismo', function () {
     expect($enLaLista)->toBe($enLaCampana);
     expect($enLaLista)->toBeGreaterThan(0);
 });
+
+/* ── Caducado y a punto de caducar son sucesos distintos ────────────────── */
+
+it('distingue un documento ya caducado de uno que caduca pronto', function () {
+    // En español, para poder afirmar sobre el texto: el escenario crea a la
+    // gente en inglés.
+    DB::table('users')->where('id', $this->scenario->user(Role::Admin)->id)->update(['locale' => 'es']);
+
+    documentoQueCaduca($this->scenario, 10, 'Seguro que caduca');
+    documentoQueCaduca($this->scenario, -20, 'Seguro ya caducado');
+
+    barrer($this->scenario);
+
+    $porCaducar = avisosDe($this->scenario, Role::Admin, 'document.expiring');
+    $caducado = avisosDe($this->scenario, Role::Admin, 'document.expired');
+
+    expect($porCaducar)->toHaveCount(1);
+    expect($caducado)->toHaveCount(1);
+
+    // Con un solo texto, el aviso de uno ya vencido decía «renuévelo antes de
+    // que venza». La distinción venía en el diccionario portado.
+    expect($porCaducar->first()->body)->toContain('antes de que venza');
+    expect($caducado->first()->body)->not->toContain('antes de que venza');
+    expect($caducado->first()->title)->toContain('caducado');
+});
+
+it('un documento que se avisó y nadie renovó vuelve a avisar al vencer', function () {
+    $id = documentoQueCaduca($this->scenario, 3, 'Seguro a punto');
+
+    barrer($this->scenario);
+    expect(avisosDe($this->scenario, Role::Admin, 'document.expiring'))->toHaveCount(1);
+
+    // Pasa el tiempo y nadie lo renueva: la fecha no cambia, pero el suceso sí.
+    // Si la clave de deduplicación no llevara el suceso, este segundo aviso
+    // —el que de verdad importa— no se mandaría nunca.
+    DB::table('documents')->where('id', $id)->update([
+        'expiration_date' => now()->subDay()->toDateString(),
+    ]);
+
+    barrer($this->scenario);
+
+    expect(avisosDe($this->scenario, Role::Admin, 'document.expired'))->toHaveCount(1);
+});

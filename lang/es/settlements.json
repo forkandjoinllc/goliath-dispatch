@@ -10,7 +10,6 @@
     "period": "Periodo",
     "net": "Neto",
     "empty": "No hay liquidaciones que coincidan.",
-    "count": "{n} liquidaciones",
     "netTotal": "Neto a transportistas",
     "feesTotal": "Tarifas de despacho"
   },

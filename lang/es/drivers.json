@@ -155,7 +155,8 @@
     "carrierSearchPlaceholder": "Escriba para buscar…",
     "noCarrierMatches": "Ningún transportista coincide.",
     "noneChosen": "Todavía no hay ningún transportista elegido.",
-    "removeCarrier": "Quitar"
+    "removeCarrier": "Quitar",
+    "nYearsOne": "1 año"
   },
   "flash": {
     "created": "Se agregó a {name}.",

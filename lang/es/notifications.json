@@ -27,7 +27,11 @@
     "document": {
       "expiring": {
         "title": "Caduca un documento: {title}",
-        "body": "«{title}» caduca el {date}. Compruébelo y renuévelo."
+        "body": "«{title}» caduca el {date}. Suba una renovación antes de que venza."
+      },
+      "expired": {
+        "title": "Documento caducado: {title}",
+        "body": "«{title}» caducó el {date}. Hasta que se suba y se apruebe una versión vigente, cuenta como no presentado."
       }
     },
     "carrier": {
@@ -61,7 +65,8 @@
   },
   "eventNames": {
     "document": {
-      "expiring": "Documentos que caducan"
+      "expiring": "Documentos que caducan",
+      "expired": "Documentos ya caducados"
     },
     "carrier": {
       "reverification_due": "Transportistas por revalidar"

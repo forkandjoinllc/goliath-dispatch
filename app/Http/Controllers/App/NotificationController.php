@@ -47,6 +47,7 @@ final class NotificationController
      */
     private const EVENTS = [
         'document.expiring',
+        'document.expired',
         'carrier.reverification_due',
         'invoice.overdue',
         'lead.assigned',

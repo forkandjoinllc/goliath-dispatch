@@ -13,7 +13,6 @@
     "total": "Total",
     "balance": "Saldo",
     "empty": "No hay facturas que coincidan.",
-    "count": "{n} facturas",
     "billed": "Facturado",
     "outstanding": "Pendiente de cobro"
   },
@@ -54,7 +53,8 @@
     "voidReason": "Por qué se anula",
     "voidHint": "Una factura que salió existe aunque estuviera mal. Se anula con motivo y se emite otra.",
     "confirmVoid": "Anular esta factura",
-    "voided": "Esta factura está anulada."
+    "voided": "Esta factura está anulada.",
+    "nDaysOne": "1 día"
   },
   "status": {
     "draft": "Borrador",

@@ -116,6 +116,8 @@ final class SweepNotifications extends Command
 
         $escritos = 0;
 
+        $hoy = CarbonImmutable::now()->toDateString();
+
         foreach ($filas as $documento) {
             $vence = substr((string) $documento->expiration_date, 0, 10);
 
@@ -125,11 +127,21 @@ final class SweepNotifications extends Command
                 continue;
             }
 
+            // Caducado y a punto de caducar son sucesos DISTINTOS, y no por
+            // pulcritud: el barrido alcanza a los dos, y con un solo texto el
+            // aviso de uno ya vencido decía «renuévelo antes de que venza». La
+            // distinción venía en el diccionario portado y se me pasó al
+            // construir los avisos.
+            $caducado = $vence < $hoy;
+
             $escritos += Notifier::toPermissionHolders(
                 tenantId: $tenantId,
                 permission: 'document:read',
-                eventKey: 'document.expiring',
-                dedupeKey: "document.expiring:{$documento->id}:{$vence}",
+                eventKey: $caducado ? 'document.expired' : 'document.expiring',
+                // La clave lleva el suceso además de la fecha: un documento que
+                // se avisó como «caduca pronto» y que nadie renueva tiene que
+                // poder avisar UNA vez más al vencer de verdad.
+                dedupeKey: ($caducado ? 'document.expired:' : 'document.expiring:')."{$documento->id}:{$vence}",
                 params: ['title' => (string) $documento->title, 'date' => $vence],
                 actionUrl: '/documents?expiring=1',
                 subjectType: 'document',

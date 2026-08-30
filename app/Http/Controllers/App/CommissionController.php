@@ -10,6 +10,7 @@ use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Support\Finance\CommissionLedger;
 use App\Support\InertiaPage;
+use App\Support\Plural;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -108,7 +109,13 @@ final class CommissionController
             static fn ($id): string => (string) $id
         )->all());
 
-        return back()->with('success', __('commissions.flash.paid', ['n' => (string) $pagadas]));
+        // La clave la elige `Plural`, con la MISMA regla que aplica el cliente:
+        // si las dos mitades eligieran distinto, la pantalla diría «1 comisión»
+        // y el mensaje de confirmación «1 comisiones».
+        return back()->with('success', __(
+            Plural::key('commissions.flash.paid', $pagadas),
+            ['n' => (string) $pagadas],
+        ));
     }
 
     // ------------------------------------------------------------------ ayudas

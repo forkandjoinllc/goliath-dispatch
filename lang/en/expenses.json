@@ -8,7 +8,6 @@
     "anyStatus": "Any status",
     "create": "New expense",
     "empty": "No expenses match.",
-    "count": "{n} expenses",
     "frozenWarning": "This load is already invoiced or settled. Those figures are frozen, so approving this will not change them — you would need a credit or an adjustment.",
     "approve": "Approve",
     "reject": "Reject",

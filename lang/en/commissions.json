@@ -10,7 +10,8 @@
     "empty": "Nothing here for this period. Commissions are accrued when a load is invoiced.",
     "noLoad": "(load deleted)",
     "formula": "{pct}% of {basis} — {amount}",
-    "pay": "Mark {amount} as paid"
+    "pay": "Mark {amount} as paid",
+    "rowsOne": "1 load"
   },
   "status": {
     "accrued": "Owed",
@@ -24,6 +25,7 @@
     "commissionable_base": "the commissionable base"
   },
   "flash": {
-    "paid": "{n} commissions marked as paid."
+    "paid": "{n} commissions marked as paid.",
+    "paidOne": "1 commission marked as paid."
   }
 }

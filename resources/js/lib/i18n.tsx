@@ -48,6 +48,29 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<I18nValue>(() => {
     const t = (key: string, params?: Record<string, string | number>): string => {
+      // Concordancia de número: con `n` igual a 1 se prefiere la clave hermana
+      // `<clave>One`. Sin esto se leía «1 facturas» y «1 años» por toda la
+      // aplicación.
+      //
+      // Se eligió el sufijo y no la barra de Laravel (`una|varias`) por dos
+      // razones: el diccionario es JSON compartido con el servidor y una
+      // sintaxis dentro del texto obliga a que las dos mitades la entiendan; y
+      // la clave hermana la ve la prueba de paridad entre idiomas igual que
+      // cualquier otra, así que un plural sin traducir se detecta solo.
+      //
+      // Inglés y español comparten la partición uno/resto, y el CERO va con el
+      // plural en los dos («0 facturas», «0 invoices»). Si algún día entra un
+      // idioma con más formas, este es el sitio donde se amplía.
+      const claveDeNumero =
+        params !== undefined && params.n !== undefined && Number(params.n) === 1
+          ? key + 'One'
+          : null
+
+      if (claveDeNumero !== null) {
+        const singular = lookup(dictionary, claveDeNumero)
+        if (typeof singular === 'string') return interpolate(singular, params)
+      }
+
       const found = lookup(dictionary, key)
       if (typeof found === 'string') return interpolate(found, params)
       if (import.meta.env.DEV && found === undefined) {
