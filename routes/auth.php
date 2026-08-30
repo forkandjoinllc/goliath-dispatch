@@ -26,6 +26,7 @@ use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\TenantSettingController;
+use App\Http\Controllers\App\TrackingController;
 use App\Http\Controllers\App\UserController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\SignupController;
@@ -350,6 +351,26 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+
+    /*
+    | Seguimiento
+    |
+    | El tablero cuelga de la raíz porque se mira por sí solo —«qué está
+    | rodando ahora»— mientras que todo lo demás cuelga de la carga, que es de
+    | quien son las llamadas y los enlaces. Las dos rutas de llamada de control
+    | son POST y no PATCH: ninguna modifica una llamada, una la crea y la otra
+    | la cierra.
+    |
+    | Revocar es POST y no DELETE a propósito: el enlace no se borra. Se le
+    | pone `revoked_at` y se queda, porque quién repartió qué enlace y hasta
+    | cuándo estuvo vivo es justo lo que hay que poder contar después.
+    */
+    Route::get('tracking', [TrackingController::class, 'board'])->name('tracking.board');
+    Route::get('loads/{load}/tracking', [TrackingController::class, 'show'])->name('tracking.show');
+    Route::post('loads/{load}/check-calls', [TrackingController::class, 'storeCheckCall'])->name('tracking.checkCalls.store');
+    Route::post('loads/{load}/check-calls/{checkCall}/complete', [TrackingController::class, 'completeCheckCall'])->name('tracking.checkCalls.complete');
+    Route::post('loads/{load}/tracking-links', [TrackingController::class, 'storeLink'])->name('tracking.links.store');
+    Route::post('loads/{load}/tracking-links/{link}/revoke', [TrackingController::class, 'revokeLink'])->name('tracking.links.revoke');
 
     /*
     | Pista de auditoría
