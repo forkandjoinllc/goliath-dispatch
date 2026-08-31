@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Support\Signatures\Ceremony;
+use App\Support\Signatures\Mailer;
 use App\Support\Signatures\Seal;
 use App\Support\Signatures\SigningLinks;
 use App\Support\Signatures\Templates;
 use App\Support\Signatures\Verifier;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -348,6 +351,38 @@ it('un fichero que falta es «no se puede comprobar», no «alterado»', functio
     expect(Verifier::verify($registro)['document'])->toBe('unavailable');
 });
 
+it('la cadena aguanta varios eventos en el mismo milisegundo', function () {
+    // Este es el fallo que apareció al reconstruir el entorno y pasar la suite
+    // otra vez: `occurred_at` es datetime(3), y `opened` y `viewed` se escriben
+    // seguidos al abrir un enlace — caen en el mismo milisegundo con toda
+    // facilidad. Con la hora empatada, el desempate era el UUID, que es
+    // aleatorio: escribir y verificar recorrían la cadena en órdenes distintos
+    // y la verificación fallaba en una firma perfectamente sana, según qué
+    // UUID hubiera tocado esa vez.
+    //
+    // Se fija el reloj para que TODOS los eventos compartan el instante. Si la
+    // cadena volviera a depender del orden de los UUID, esto fallaría siempre
+    // en vez de una de cada tantas.
+    Carbon::setTestNow(Carbon::create(2026, 8, 31, 10, 0, 0)->addMilliseconds(123));
+
+    ['requestId' => $id] = solicitudDeFirma($this->scenario);
+
+    foreach ([Ceremony::OPENED, Ceremony::VIEWED, Ceremony::CONSENT_SHOWN, Ceremony::CONSENT_ACCEPTED] as $tipo) {
+        app(TenantContext::class)->runAs($this->scenario->tenant->id, fn () => Ceremony::record(
+            tenantId: (string) $this->scenario->tenant->id,
+            requestId: $id,
+            eventType: $tipo,
+        ));
+    }
+
+    $horas = DB::table('signature_audit_events')->where('request_id', $id)->pluck('occurred_at')->unique();
+    expect($horas)->toHaveCount(1);
+
+    expect(Ceremony::verifyChain($id))->toBeNull();
+
+    Carbon::setTestNow();
+});
+
 it('la cadena de la bitácora detecta un eslabón que no cuadra', function () {
     ['token' => $token, 'requestId' => $id] = solicitudDeFirma($this->scenario);
     $this->get("/s/{$token}")->assertOk();
@@ -414,6 +449,114 @@ it('el sello va con clave, no es un sha que cualquiera pueda recalcular', functi
 
     expect($sello)->not->toBe(hash('sha256', Seal::canonical($componentes)));
     expect(strlen($sello))->toBe(64);
+});
+
+/* ── Correos y descargas ────────────────────────────────────────────────── */
+
+it('manda el enlace por correo y lo anota en la bitácora', function () {
+    signIn($this->scenario, Role::Admin);
+
+    $this->post('/signatures/requests', [
+        'carrier_id' => (string) $this->scenario->assignedCarrier->id,
+        'template_key' => 'carrier_agreement',
+        'signer_email' => 'firmante@prueba.test',
+        'locale' => 'es',
+        'expiry_days' => 30,
+    ])->assertRedirect();
+
+    $id = DB::table('signature_requests')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->where('signer_email', 'firmante@prueba.test')
+        ->value('id');
+
+    // El evento `emailed` SOLO se escribe si el envío devolvió que salió. Es
+    // una afirmación sobre lo que hizo este código, no sobre cómo el doble de
+    // pruebas de Laravel registra un envío en crudo.
+    expect(DB::table('signature_audit_events')->where('request_id', $id)->pluck('event_type')->all())
+        ->toContain(Ceremony::EMAILED);
+});
+
+it('el correo se compone en el idioma de la SOLICITUD, no en el de quien lo crea', function () {
+    // Un despachador trabajando en inglés le manda un acuerdo a un
+    // transportista al que se le habla en español. El correo tiene que salir en
+    // español: el idioma lo decidió quien lo mandó, no la petición.
+    app()->setLocale('en');
+
+    $destinatario = (object) ['locale' => 'es', 'signer_email' => 'firmante@prueba.test'];
+
+    $mensaje = Mailer::composeRequest($destinatario, 'https://ejemplo.test/es/s/abc', 'Demo Dispatch', 'Acuerdo');
+
+    expect($mensaje['subject'])->toContain('revise y firme');
+    expect($mensaje['body'])->toContain('Revisar y firmar');
+    expect($mensaje['body'])->toContain('https://ejemplo.test/es/s/abc');
+
+    // Y al revés, para que la prueba no pase por casualidad.
+    app()->setLocale('es');
+    $enIngles = Mailer::composeRequest(
+        (object) ['locale' => 'en', 'signer_email' => 'x@prueba.test'],
+        'https://ejemplo.test/en/s/abc', 'Demo Dispatch', 'Agreement',
+    );
+
+    expect($enIngles['subject'])->toContain('review and sign');
+});
+
+it('el aviso de copia firmada no promete un adjunto que no se manda', function () {
+    // El diccionario portado dice «adjuntamos su copia firmada». No se adjunta
+    // nada: mandar el acuerdo a un buzón que no controlamos y que se reenvía
+    // tres veces es una decisión, no un efecto secundario de una frase.
+    $mensaje = Mailer::composeSignedCopy(
+        (object) ['locale' => 'es', 'signer_email' => 'x@prueba.test'],
+        'Demo Dispatch',
+    );
+
+    expect($mensaje['body'])->not->toContain('Adjuntamos');
+    expect($mensaje['body'])->toContain('Demo Dispatch');
+});
+
+it('un fallo de correo no deshace la solicitud', function () {
+    // El servidor de correo caído es un problema de entrega, no un motivo para
+    // que no exista lo que se pidió: el enlace se enseña igual en pantalla.
+    Mail::shouldReceive('mailer')->andThrow(new RuntimeException('servidor caído'));
+
+    signIn($this->scenario, Role::Admin);
+
+    $this->post('/signatures/requests', [
+        'carrier_id' => (string) $this->scenario->assignedCarrier->id,
+        'template_key' => 'carrier_agreement',
+        'signer_email' => 'firmante@prueba.test',
+        'locale' => 'es',
+    ])->assertRedirect();
+
+    expect(DB::table('signature_requests')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->where('signer_email', 'firmante@prueba.test')
+        ->count())->toBe(1);
+});
+
+it('descargar el certificado queda anotado en la ceremonia', function () {
+    ['token' => $token, 'requestId' => $id] = solicitudDeFirma($this->scenario);
+    firmar($token);
+
+    signIn($this->scenario, Role::Admin);
+
+    $this->get("/signatures/{$id}/certificate")->assertRedirect();
+
+    expect(DB::table('signature_audit_events')->where('request_id', $id)->pluck('event_type')->all())
+        ->toContain(Ceremony::CERTIFICATE_DOWNLOADED);
+
+    // Y la cadena sigue entera después de añadirle ese evento.
+    expect(Ceremony::verifyChain($id))->toBeNull();
+});
+
+it('no se descarga el certificado de una firma que aún no existe', function () {
+    ['requestId' => $id] = solicitudDeFirma($this->scenario);
+
+    signIn($this->scenario, Role::Admin);
+
+    $this->get("/signatures/{$id}/certificate")->assertRedirect();
+
+    expect(DB::table('signature_audit_events')->where('request_id', $id)->pluck('event_type')->all())
+        ->not->toContain(Ceremony::CERTIFICATE_DOWNLOADED);
 });
 
 /* ── La aplicación por dentro ───────────────────────────────────────────── */

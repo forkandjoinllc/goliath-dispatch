@@ -10,6 +10,7 @@ use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Support\InertiaPage;
 use App\Support\Signatures\Ceremony;
+use App\Support\Signatures\Mailer;
 use App\Support\Signatures\SigningLinks;
 use App\Support\Signatures\TemplateBody;
 use App\Support\Signatures\Templates;
@@ -201,6 +202,13 @@ final class SignatureController
                 'sealAlgorithm' => (string) $registro->seal_algorithm,
                 'hasDocument' => $registro->signed_document_id !== null,
                 'hasCertificate' => $registro->audit_certificate_document_id !== null,
+                // Los dos PDF son documentos normales del transportista, así
+                // que se descargan por la ruta de documentos de siempre — con
+                // su permiso, su comprobación de ámbito y su registro de acceso.
+                // Duplicar todo eso aquí habría sido una segunda puerta a los
+                // mismos ficheros con sus propias comprobaciones que mantener.
+                'signedDocumentId' => $registro->signed_document_id,
+                'certificateDocumentId' => $registro->audit_certificate_document_id,
             ],
             'verification' => $registro === null ? null : Verifier::verify($registro),
             'events' => $eventos->map(fn (object $e): array => [
@@ -391,12 +399,86 @@ final class SignatureController
             ],
         );
 
+        $url = url('/'.$datos['locale'].'/s/'.$resultado['token']);
+
+        $nombreEmpresa = (string) (DB::table('tenants')
+            ->where('id', $actor->tenantId)
+            ->value('display_name') ?? '');
+
+        $titulo = $datos['locale'] === 'es'
+            ? (string) $plantilla->title_es
+            : (string) $plantilla->title_en;
+
+        // El correo va DESPUÉS de que la solicitud esté escrita. Si el servidor
+        // de correo está caído, la solicitud existe igual y el enlace se enseña
+        // en pantalla para copiarlo a mano: un problema de entrega no puede
+        // deshacer lo que ya se pidió.
+        $destinatario = (object) [
+            'locale' => $datos['locale'],
+            'signer_email' => $datos['signer_email'],
+        ];
+
+        if (Mailer::sendRequest($destinatario, $url, $nombreEmpresa, $titulo)) {
+            Ceremony::record(
+                tenantId: (string) $actor->tenantId,
+                requestId: $resultado['requestId'],
+                eventType: Ceremony::EMAILED,
+                actorUserId: $actor->auditUserId(),
+                actorEmail: $datos['signer_email'],
+                request: $request,
+            );
+        }
+
         return back()
             ->with('success', __('signature.sendDialog.success'))
             // Como el enlace de seguimiento: viaja una vez, en el flash de ESTA
             // respuesta, y con el prefijo del idioma en que se manda — no del
             // idioma de quien lo crea, porque quien lo abre es el firmante.
-            ->with('signingUrl', url('/'.$datos['locale'].'/s/'.$resultado['token']));
+            ->with('signingUrl', $url);
+    }
+
+    /**
+     * Anota que alguien se llevó el certificado de auditoría, y le manda a
+     * descargarlo.
+     *
+     * Existe esta ruta en vez de enlazar directo al documento porque
+     * `certificate_downloaded` es un evento de la ceremonia: forma parte de lo
+     * que hay que poder contar después sobre esta firma. El fichero lo sirve
+     * igualmente la ruta de documentos.
+     */
+    public function certificate(Request $request, string $signatureRequest, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'signature:certificate:download', null, $policy);
+
+        $solicitud = $this->scoped($actor, $scope)
+            ->where('r.id', $signatureRequest)
+            ->first(['r.id']);
+
+        if ($solicitud === null) {
+            throw new NotFoundHttpException;
+        }
+
+        $registro = DB::table('signature_records')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('request_id', $solicitud->id)
+            ->first(['id', 'audit_certificate_document_id']);
+
+        if ($registro === null || $registro->audit_certificate_document_id === null) {
+            return back()->with('error', __('signature.errors.certificateNotReady'));
+        }
+
+        Ceremony::record(
+            tenantId: (string) $actor->tenantId,
+            requestId: (string) $solicitud->id,
+            eventType: Ceremony::CERTIFICATE_DOWNLOADED,
+            recordId: (string) $registro->id,
+            actorUserId: $actor->auditUserId(),
+            request: $request,
+        );
+
+        return redirect('/documents/'.$registro->audit_certificate_document_id.'/download');
     }
 
     /** Anula una solicitud. El enlace deja de servir de inmediato. */

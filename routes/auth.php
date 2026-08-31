@@ -23,6 +23,7 @@ use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
+use App\Http\Controllers\App\RateConfirmationController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\SignatureController;
@@ -354,6 +355,19 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
 
     /*
+    | Confirmación de tarifa
+    |
+    | Cuelga de la carga porque es de la carga. Emitir es POST y no PUT: cada
+    | emisión crea un documento NUEVO, no una versión del anterior. Una
+    | confirmación reemitida con otra tarifa es otro papel, y encadenarlas como
+    | versiones haría que una aceptación apuntara a un documento cuyo contenido
+    | vigente ya no es el que se aceptó.
+    */
+    Route::get('loads/{load}/rate-confirmation', [RateConfirmationController::class, 'show'])->name('loads.rateconf.show');
+    Route::post('loads/{load}/rate-confirmation', [RateConfirmationController::class, 'issue'])->name('loads.rateconf.issue');
+    Route::post('loads/{load}/rate-confirmation/decide', [RateConfirmationController::class, 'decide'])->name('loads.rateconf.decide');
+
+    /*
     | Firmas
     |
     | Las plantillas van por su propia ruta y no bajo una solicitud porque son
@@ -375,6 +389,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('signatures/templates/{templateKey}/retire', [SignatureController::class, 'retireTemplate'])->name('signatures.templates.retire');
     Route::post('signatures/requests', [SignatureController::class, 'store'])->name('signatures.store');
     Route::get('signatures/{signatureRequest}', [SignatureController::class, 'show'])->name('signatures.show');
+    Route::get('signatures/{signatureRequest}/certificate', [SignatureController::class, 'certificate'])->name('signatures.certificate');
     Route::post('signatures/{signatureRequest}/void', [SignatureController::class, 'void'])->name('signatures.void');
 
     /*

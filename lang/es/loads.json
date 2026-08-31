@@ -308,5 +308,41 @@
   "errors": {
     "requirementNeedsSource": "Un requisito de autorización de trabajo tiene que decir de dónde sale: el contrato o la base que lo exige.",
     "requirementDuplicated": "Ese requisito ya está en la carga."
+  },
+  "rateConfirmation": {
+    "title": "Confirmación de tarifa",
+    "description": "El papel que dice por cuánto va esta carga, y lo que el transportista contestó.",
+    "issue": "Emitir la confirmación",
+    "reissue": "Reemitir con la tarifa de ahora",
+    "issued": "Confirmación de tarifa emitida.",
+    "issuedAt": "Emitida el {date}",
+    "noneIssued": "Todavía no se ha emitido ninguna confirmación de tarifa para esta carga.",
+    "needsCarrier": "Primero hay que asignarle un transportista a la carga.",
+    "needsRate": "Primero hay que poner la tarifa del transportista.",
+    "needsUser": "Hace falta una cuenta de usuario para responder a una confirmación de tarifa.",
+    "download": "Descargar el PDF",
+    "fingerprint": "Huella del PDF",
+    "historyTitle": "Lo que se ha contestado",
+    "historyEmpty": "El transportista todavía no ha contestado.",
+    "onOlderDocument": "Sobre una confirmación anterior",
+    "stale": "Se reemitió la confirmación después de esta respuesta. Lo aceptado ya no es lo vigente — hace falta que el transportista vuelva a contestar.",
+    "respondTitle": "Su respuesta",
+    "respondHint": "Queda registrada su cuenta, la fecha, su dirección IP y una huella del PDF exacto que tiene delante.",
+    "reasonLabel": "Motivo",
+    "reasonRequired": "Rechazar o pedir cambios necesita un motivo. Sin él, despacho tiene que llamar para averiguar qué pasa.",
+    "amount": "Importe",
+    "decidedBy": "{actor} · {date}",
+    "decisions": {
+      "accepted": "Aceptada",
+      "rejected": "Rechazada",
+      "changes_requested": "Cambios solicitados",
+      "acceptedAction": "Aceptar la tarifa",
+      "rejectedAction": "Rechazar",
+      "changes_requestedAction": "Pedir cambios",
+      "acceptedSaved": "Tarifa aceptada.",
+      "rejectedSaved": "Rechazo registrado.",
+      "changes_requestedSaved": "Petición de cambios registrada."
+    },
+    "legalNotice": "Este registro guarda quién aceptó, cuándo, desde qué dirección IP y una huella criptográfica del PDF exacto que se mostró. Por sí solo no constituye un contrato ni asesoría legal."
   }
 }

@@ -101,20 +101,48 @@ Al publicar:
   firmó, y aparecen agrupadas bajo «requiere nueva firma», que es una decisión
   de la casa y no un borrado.
 
+## Los correos
+
+Salen dos, y **no pasan por `Notifier`**. Esa clase es el único sitio que
+escribe en `notifications`, y esa tabla tiene `user_id` NOT NULL más un índice
+único sobre `(dedupe_key, user_id, channel)`: toda su forma da por hecho que el
+destinatario tiene cuenta, porque de ahí saca el idioma, las preferencias de
+canal y el sitio donde deduplicar. El firmante de un acuerdo **no tiene cuenta**
+— es la premisa entera de la ceremonia. Meterlo ahí habría exigido un usuario
+falso o una columna nullable que rompe el índice.
+
+`App\Support\Signatures\Mailer` manda el correo y nada más. El idioma sale de
+`signature_requests.locale`, no de la petición: si lo cogiera de la petición, el
+correo que sale de un despachador trabajando en inglés llegaría en inglés a
+alguien al que se le escribió en español.
+
+Un fallo de correo **no deshace nada**. La solicitud ya está creada, el enlace ya
+se enseñó en pantalla para copiarlo a mano, y el evento `emailed` solo se anota
+si el envío salió de verdad.
+
+El aviso de copia firmada **no adjunta el PDF**. El diccionario portado promete
+un adjunto (`email.signedCopyBody` dice «adjuntamos su copia firmada»); mandar
+el acuerdo a un buzón que no controlamos y que se reenvía tres veces es una
+decisión, no un efecto secundario de una frase. Se usa `email.signedCopyNotice`,
+que dice la verdad, y la copia se descarga desde la aplicación.
+
+## Las descargas
+
+Los dos PDF son documentos normales del transportista, así que se bajan por
+`/documents/{id}/download` — con su permiso, su comprobación de ámbito y su fila
+en `document_access_logs`. Duplicar todo eso habría sido una segunda puerta a
+los mismos ficheros, con sus propias comprobaciones que mantener.
+
+El certificado tiene además su propia ruta, `/signatures/{id}/certificate`, que
+anota `certificate_downloaded` en la bitácora antes de redirigir. Es un evento
+de la ceremonia: forma parte de lo que hay que poder contar después.
+
 ## Lo que este lote NO construyó
 
-- **No se manda ningún correo.** La solicitud se crea y el enlace se enseña una
-  vez en pantalla para copiarlo a mano. El diccionario portado ya trae los
-  textos de los dos correos (`email.requestSubject`, `email.signedCopySubject`)
-  para cuando se enganche al `Notifier`.
-- **No hay descarga desde la aplicación.** Los dos PDF se generan y se guardan
-  como documentos del transportista, con su tipo correcto, y se ven desde su
-  expediente. Falta la ruta firmada que los sirva desde la pantalla de la firma.
-- **`rate_confirmation_acceptances` sigue vacía.** Es la otra mitad del dominio
-  y tiene una forma distinta: exige `actor_user_id` NOT NULL, o sea un
-  transportista con cuenta, no un enlace anónimo. Va en su propio lote.
 - **`signature_requests.subject_type` solo se usa con `carrier`.** El esquema
   admite `load` y `tenant`; no hay pantalla que los cree todavía.
+- **`notification_templates` sigue vacía.** Es la personalización de textos por
+  empresa y necesita su propio editor.
 
 ## Dónde vive cada cosa
 
@@ -129,3 +157,4 @@ Al publicar:
 | `app/Support/Signatures/Signing.php` | Capturar, generar, guardar y sellar |
 | `app/Support/Signatures/Renderer.php` | Los dos PDF, con dompdf |
 | `app/Support/Signatures/DefaultTemplates.php` | Las tres plantillas de partida |
+| `app/Support/Signatures/Mailer.php` | Los dos correos, en el idioma de la solicitud |

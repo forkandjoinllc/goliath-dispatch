@@ -147,7 +147,8 @@
     "requestBody": "{tenant} has sent you \"{title}\" to review and sign electronically.",
     "requestCta": "Review and sign",
     "signedCopySubject": "{tenant}: your signed copy",
-    "signedCopyBody": "Thank you for signing. Attached is your signed copy along with the audit certificate recording how the signature was captured."
+    "signedCopyBody": "Thank you for signing. Attached is your signed copy along with the audit certificate recording how the signature was captured.",
+    "signedCopyNotice": "Thank you for signing. Your signed copy and the audit certificate are stored with {tenant}; ask them if you need a copy."
   },
   "ceremony": {
     "loading": "Loading your document…",

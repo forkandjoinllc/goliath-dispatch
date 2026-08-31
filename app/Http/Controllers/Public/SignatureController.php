@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Support\InertiaPage;
 use App\Support\Signatures\Ceremony;
+use App\Support\Signatures\Mailer;
 use App\Support\Signatures\Signing;
 use App\Support\Signatures\SigningLinks;
 use App\Support\Signatures\TemplateBody;
@@ -183,6 +184,18 @@ final class SignatureController
             }
 
             return back()->with('error', __('signature.errors.signatureRequired'));
+        }
+
+        // El aviso de que la copia está lista. Igual que el otro: si no sale,
+        // la firma ya está sellada y no se deshace nada por eso.
+        if (Mailer::sendSignedCopy($solicitud, (string) ($this->tenantName((string) $solicitud->tenant_id) ?? ''))) {
+            Ceremony::record(
+                tenantId: (string) $solicitud->tenant_id,
+                requestId: (string) $solicitud->id,
+                eventType: Ceremony::EMAILED_COPY,
+                actorEmail: (string) $solicitud->signer_email,
+                request: $request,
+            );
         }
 
         return back()->with('success', __('signature.ceremony.successTitle'));

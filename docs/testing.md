@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (872 tests, 6081 assertions)
+OK (893 tests, 6189 assertions)
 ```
 
-(Cifra del 30 de agosto, tras el lote de firmas.
+(Cifra del 31 de agosto, tras el lote de confirmación de tarifa.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -328,6 +328,52 @@ rompiendo cinco pruebas de `CustomerAccessTest` que no tenían nada que ver. Es
 exactamente la trampa que ya está contada más arriba, y la volví a pisar. La
 prueba ahora INSERTA un evento con un eslabón que no cuadra, que recorre el
 mismo camino de código sin tocar el esquema.
+
+### El fallo que solo aparece a veces
+
+Al reconstruir el entorno de trabajo y volver a pasar la suite, una prueba del
+lote de firmas falló — la misma que había pasado cinco veces seguidas el día
+anterior. No era una casualidad del entorno: era un fallo de verdad que se
+manifestaba según la suerte.
+
+`signature_audit_events.occurred_at` es `datetime(3)`, y dos eventos de la misma
+ceremonia caen en el mismo milisegundo con toda facilidad — abrir un enlace
+escribe `opened` y `viewed` seguidos. La cadena de hashes buscaba el eslabón
+anterior **ordenando por la hora**, y con la hora empatada el desempate era el
+UUID, que es aleatorio. Escribir y verificar podían entonces recorrer la cadena
+en órdenes distintos, y la verificación fallaba en una firma perfectamente sana
+según qué UUID hubiera tocado esa vez.
+
+El arreglo es de fondo: **una cadena de hashes se recorre por sus enlaces, no
+ordenando por un campo.** Ahora se busca la cola siguiendo los enlaces
+—el evento al que no apunta ningún otro— y se verifica caminando desde la raíz.
+De paso detecta dos cosas que el orden por hora no veía: un evento suelto que no
+cuelga de la cadena, y una bifurcación con dos eventos apuntando al mismo
+anterior.
+
+La prueba que lo fija **congela el reloj** para que todos los eventos compartan
+el instante. Comprobado que falla siempre con la implementación vieja: un fallo
+que aparece una de cada tantas no vale como prueba de nada.
+
+### Probar el contenido en la capa donde se decide
+
+Dos pruebas de este lote empezaron mirando bytes y acabaron mirando otra cosa,
+por el mismo motivo:
+
+- «El PDF no lleva lo que la casa le cobra al cliente» empezó inflando flujos
+  zlib del PDF y deshaciendo el escapado de dompdf. Funcionaba a medias, llenaba
+  el informe de fallos con cien kilobytes de binario, y se habría roto el día
+  que la librería cambiara de compresión. Se partió el renderizador en `html()`
+  y `toPdf()`, y la prueba comprueba el HTML — que es donde se decide qué dice
+  el documento. Aparte, otra prueba comprueba que lo que se guarda es un PDF.
+- «El correo sale en el idioma de la solicitud» empezó con `Mail::fake()` y
+  chocó con que `Mail::raw` no registra un Mailable. Se partió el `Mailer` en
+  `composeRequest()` y `sendRequest()`, y la prueba comprueba el mensaje
+  compuesto. Cómo el doble de pruebas de Laravel registra un envío en crudo es
+  un detalle del framework; el idioma del correo es una decisión de este código.
+
+La regla que sale de las dos: **si una prueba tiene que deshacer tres capas de
+codificación para llegar al dato, está mirando en la capa equivocada.**
 
 ## Migraciones: por qué todas son reanudables
 

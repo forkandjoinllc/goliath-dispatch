@@ -308,5 +308,41 @@
   "errors": {
     "requirementNeedsSource": "A work-authorization requirement has to say where it comes from — the contract or base that demands it.",
     "requirementDuplicated": "That requirement is already on the load."
+  },
+  "rateConfirmation": {
+    "title": "Rate confirmation",
+    "description": "The paper that states what this load pays, and what the carrier answered.",
+    "issue": "Issue the confirmation",
+    "reissue": "Reissue with the current rate",
+    "issued": "Rate confirmation issued.",
+    "issuedAt": "Issued {date}",
+    "noneIssued": "No rate confirmation has been issued for this load yet.",
+    "needsCarrier": "Assign a carrier to the load first.",
+    "needsRate": "Set the carrier rate first.",
+    "needsUser": "A user account is required to respond to a rate confirmation.",
+    "download": "Download the PDF",
+    "fingerprint": "PDF fingerprint",
+    "historyTitle": "What has been answered",
+    "historyEmpty": "The carrier has not answered yet.",
+    "onOlderDocument": "On an earlier confirmation",
+    "stale": "The confirmation was reissued after this answer. What was accepted is no longer what stands — the carrier needs to answer again.",
+    "respondTitle": "Your answer",
+    "respondHint": "Your account, the date, your IP address and a fingerprint of the exact PDF in front of you are recorded.",
+    "reasonLabel": "Reason",
+    "reasonRequired": "Rejecting or requesting changes needs a reason. Without one, dispatch has to call to find out what happened.",
+    "amount": "Amount",
+    "decidedBy": "{actor} · {date}",
+    "decisions": {
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "changes_requested": "Changes requested",
+      "acceptedAction": "Accept the rate",
+      "rejectedAction": "Reject",
+      "changes_requestedAction": "Request changes",
+      "acceptedSaved": "Rate accepted.",
+      "rejectedSaved": "Rejection recorded.",
+      "changes_requestedSaved": "Change request recorded."
+    },
+    "legalNotice": "This record stores who accepted, when, from what IP address, and a cryptographic fingerprint of the exact PDF shown. On its own it does not constitute a contract or legal advice."
   }
 }

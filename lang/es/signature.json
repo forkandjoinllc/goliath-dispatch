@@ -147,7 +147,8 @@
     "requestBody": "{tenant} le ha enviado \"{title}\" para su revisión y firma electrónica.",
     "requestCta": "Revisar y firmar",
     "signedCopySubject": "{tenant}: su copia firmada",
-    "signedCopyBody": "Gracias por firmar. Adjuntamos su copia firmada junto con el certificado de auditoría que documenta cómo se capturó la firma."
+    "signedCopyBody": "Gracias por firmar. Adjuntamos su copia firmada junto con el certificado de auditoría que documenta cómo se capturó la firma.",
+    "signedCopyNotice": "Gracias por firmar. Su copia firmada y el certificado de auditoría quedan guardados en {tenant}; pídaselos si necesita una copia."
   },
   "ceremony": {
     "loading": "Cargando su documento…",

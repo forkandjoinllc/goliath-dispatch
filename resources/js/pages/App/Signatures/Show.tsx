@@ -39,6 +39,8 @@ interface Registro {
   sealAlgorithm: string
   hasDocument: boolean
   hasCertificate: boolean
+  signedDocumentId: string | null
+  certificateDocumentId: string | null
 }
 
 interface Verificacion {
@@ -141,6 +143,27 @@ export default function SignatureShow({ request, record, verification, events, c
                 <Dato etiqueta={t('signature.detail.ipAddress')} valor={record.ipAddress} />
                 <Dato etiqueta={t('signature.detail.userAgent')} valor={record.userAgent} />
               </dl>
+
+              {can.download ? (
+                <div className="mt-3 flex flex-wrap gap-3 border-t border-steel-100 pt-3">
+                  {record.signedDocumentId !== null ? (
+                    <a
+                      href={`/documents/${record.signedDocumentId}/download`}
+                      className="text-sm font-medium text-navy-700 hover:underline"
+                    >
+                      {t('signature.detail.downloadDocument')}
+                    </a>
+                  ) : null}
+                  {record.certificateDocumentId !== null ? (
+                    <a
+                      href={`/signatures/${request.id}/certificate`}
+                      className="text-sm font-medium text-navy-700 hover:underline"
+                    >
+                      {t('signature.detail.downloadCertificate')}
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
 
               <p className="mt-4 text-xs font-medium uppercase tracking-wide text-steel-600">
                 {t('signature.detail.hashes')}
