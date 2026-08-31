@@ -69,5 +69,18 @@
         "needsEntityType": "A hold by type or by record needs to know which type.",
         "needsEntityId": "A hold on one record needs to know which one.",
         "holdNotFound": "That hold does not exist or has already been lifted."
+    },
+    "storage": {
+        "title": "The file store",
+        "hint": "The policy says how long records are kept; this says whether their files are where they should be.",
+        "orphans": "Files no row claims",
+        "orphansHint": "Almost always uploads that were cut short: the file was stored and the row never got written. Only files with no owner for more than {hours} hours are counted, so an upload in progress is not mistaken for one.",
+        "orphansZero": "None. Every file in the store has its row.",
+        "dangling": "Rows naming a file that is not there",
+        "danglingHint": "This should never happen. Each one is a download button that will fail. It does not fix itself: there is nowhere to get the file from.",
+        "danglingZero": "None. Everything the database names exists in the store.",
+        "scanned": "Files checked",
+        "tooRecent": "Too recent to judge",
+        "purgeNote": "Orphans are deleted in the same sweep and behind the same switch as the record purge. With the purge off they are only counted."
     }
 }

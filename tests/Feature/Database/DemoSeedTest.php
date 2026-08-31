@@ -6,6 +6,7 @@ use App\Support\TenantContext;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 uses(DatabaseTransactions::class);
 
@@ -154,4 +155,29 @@ it('toda parada sembrada dice dónde está', function () {
         ->count());
 
     expect($mudas)->toBe(0);
+});
+
+it('todo documento sembrado tiene su fichero de verdad', function () {
+    // El sembrador escribía `storage_key`, `byte_size` y hasta un `sha256` para
+    // un fichero que nunca existió: cada documento de la demostración era un
+    // botón de «Descargar» que daba error, doce de doce. Y está en lo primero
+    // que abre quien evalúa el producto.
+    //
+    // Lo encontró el barrido de huérfanos del lote 53, que las contó como filas
+    // rotas. Ninguna prueba lo veía porque ninguna miraba el almacén: las filas
+    // eran perfectamente válidas, y eso era justamente el problema.
+    Storage::fake('local');
+
+    $this->seed(DemoDataSeeder::class);
+
+    $store = app(App\Support\Storage\DocumentStore::class);
+
+    $rotas = app(TenantContext::class)->withoutTenant(fn () => DB::table('document_versions')
+        ->whereNotNull('storage_key')
+        ->pluck('storage_key')
+        ->reject(fn ($k): bool => $store->exists((string) $k))
+        ->values()
+        ->all());
+
+    expect($rotas)->toBe([], 'Documentos sembrados cuyo fichero no existe: '.implode(', ', $rotas));
 });

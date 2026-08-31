@@ -25,6 +25,7 @@ use App\Support\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -519,6 +520,19 @@ class DemoDataSeeder extends Seeder
                 'extraction_status' => 'not_started',
                 'uploaded_by_user_id' => $this->users['admin@demo.test'] ?? null,
             ]);
+
+            // Y el FICHERO, no solo la fila.
+            //
+            // Hasta este lote el sembrador escribía `storage_key`, `byte_size`
+            // y hasta un `sha256` para un fichero que nunca existió. Cada
+            // documento de la demostración era un botón de «Descargar» que daba
+            // error — doce de doce— y se descubrió con el barrido de huérfanos
+            // del lote 53, que las contó como filas rotas.
+            //
+            // Es la misma clase de fallo que este proyecto lleva persiguiendo:
+            // la fila afirmaba algo —«aquí hay un PDF de 300 KB»— que no era
+            // verdad. Y estaba en lo primero que abre quien evalúa el producto.
+            $this->placeholderPdf("demo/{$this->tenantId}/carriers/{$carrierId}/{$type->value}-v1.pdf");
 
             DB::table('documents')->where('id', $documentId)->update([
                 'current_version_id' => $versionId,
@@ -1459,6 +1473,34 @@ class DemoDataSeeder extends Seeder
             role: Role::Admin,
         );
     }
+
+    /**
+     * Un PDF de verdad, mínimo, en el sitio que la fila dice.
+     *
+     * No intenta parecerse a un certificado de seguro: es un PDF válido de una
+     * página que se abre sin error. Lo que arregla es que la fila deje de
+     * mentir — antes prometía un fichero de 300 KB que no existía en ninguna
+     * parte, y el botón de descargar daba error en las doce.
+     *
+     * Se escribe solo si falta, para que volver a sembrar no reescriba doce
+     * ficheros cada vez.
+     */
+    private function placeholderPdf(string $storageKey): void
+    {
+        if (Storage::disk('local')->exists($storageKey)) {
+            return;
+        }
+
+        Storage::disk('local')->put($storageKey, self::PDF_MINIMO);
+    }
+
+    /** Un PDF de una página en blanco. Suficiente para que un visor lo abra. */
+    private const PDF_MINIMO = "%PDF-1.4\n"
+        ."1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+        ."2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        ."3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\n"
+        ."trailer<</Root 1 0 R>>\n"
+        ."%%EOF\n";
 
     private function report(): void
     {

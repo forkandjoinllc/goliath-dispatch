@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1030 tests, 6836 assertions)
+OK (1049 tests, 6896 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de retención.
+(Cifra del 31 de agosto, tras el lote del almacén de ficheros.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -586,6 +586,46 @@ Las dos son de la misma familia que todo lo que este documento lleva contando
 desde el lote 44, y conviene nombrarla de una vez: **el fallo más caro de esta
 aplicación no es que algo no funcione, es que una pantalla afirme algo que no es
 verdad.** Un botón roto se nota. Una frase falsa se cree.
+
+### El fallo que ninguna prueba puede ver mirando la base de datos
+
+El lote 53 salió a cerrar un agujero que yo mismo había dejado documentado —la
+purga borraba la fila y dejaba el fichero— y al escribir la primera prueba
+aparecieron tres más, cada uno peor que el anterior. Merece la pena el orden en
+que salieron, porque explica por qué el lote no se pudo hacer «con cuidado»:
+
+1. **La purga no borraba el fichero.** Conocido, documentado, y la razón por la
+   que existía el lote.
+2. **Al arreglarlo, la prueba siguió fallando.** Borrar un `documents` arrastra
+   su `document_versions` por una clave foránea `on delete cascade`, y el
+   fichero vive en la HIJA. El código nunca pasaba por esa fila, así que nadie
+   leía su `storage_key` — y la pasada siguiente sobre `document_versions` ya no
+   encontraba nada, con lo que el resumen decía «ficheros: 0» y parecía bien.
+3. **Un bloqueo legal sobre la hija no detenía la cascada de la madre.** El
+   bloqueo marcaba las filas de `document_versions` y no las de `documents`; la
+   purga veía el `legal_hold` del documento en cero, lo borraba, y MySQL se
+   llevaba la versión bloqueada para un pleito. El bloqueo protegía la fila y no
+   protegía nada.
+4. **El sembrador de demostración escribía filas sin fichero.** Doce de doce.
+   Cada documento de la demostración era un botón de «Descargar» que daba error,
+   en lo primero que abre quien evalúa el producto.
+
+Los tres últimos comparten algo que conviene nombrar: **no se pueden ver desde la
+base de datos.** Las filas eran perfectamente válidas — ese era el problema. Un
+`document_versions` con su `storage_key`, su `byte_size` y su `sha256` pasa
+cualquier comprobación de integridad que se le haga a la base; lo que falla está
+al otro lado, en un disco que ninguna prueba miraba.
+
+De ahí la forma de las pruebas nuevas: todas usan `Storage::fake('local')` y
+comprueban **el fichero**, no la fila. La regla que dejan:
+
+> Cuando un dato vive en dos sitios, una prueba que solo mira uno prueba la
+> mitad. Y la mitad que se mira siempre es la fácil.
+
+El cuarto lo encontró el barrido nuevo al ejecutarlo contra los datos de
+demostración: contó doce filas rotas cuando yo había roto una a mano. Es la
+segunda vez en dos lotes que una herramienta escrita para producción encuentra un
+fallo en la demostración antes que cualquier persona.
 
 ## Migraciones: por qué todas son reanudables
 

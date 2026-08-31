@@ -69,5 +69,18 @@
         "needsEntityType": "Un bloqueo por tipo o por registro necesita saber de qué tipo.",
         "needsEntityId": "Un bloqueo de un registro necesita saber cuál.",
         "holdNotFound": "Ese bloqueo no existe o ya está levantado."
+    },
+    "storage": {
+        "title": "El almacén de ficheros",
+        "hint": "La política dice cuánto se conservan los registros; esto dice si sus ficheros están donde deberían.",
+        "orphans": "Ficheros que ninguna fila reclama",
+        "orphansHint": "Casi siempre son subidas que se cortaron a medias: el fichero se guardó y la fila nunca llegó a escribirse. Solo cuentan los que llevan más de {hours} horas sin dueño, para no confundir con una subida en curso.",
+        "orphansZero": "Ninguno. Todo fichero del almacén tiene su fila.",
+        "dangling": "Filas que nombran un fichero que no está",
+        "danglingHint": "Esto no debería pasar nunca. Cada una es un botón de descargar que va a dar error. No se arregla solo: no hay de dónde sacar el fichero.",
+        "danglingZero": "Ninguna. Todo lo que la base de datos nombra existe en el almacén.",
+        "scanned": "Ficheros revisados",
+        "tooRecent": "Demasiado recientes para juzgar",
+        "purgeNote": "Los huérfanos se borran en el mismo barrido y con el mismo interruptor que la purga de registros. Con la purga apagada solo se cuentan."
     }
 }

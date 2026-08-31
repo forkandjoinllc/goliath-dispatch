@@ -41,6 +41,14 @@ interface Props {
     at: string
   }[]
   entities: Entity[]
+  storage: {
+    orphans: number
+    orphanBytes: number
+    scanned: number
+    tooRecent: number
+    dangling: number
+    graceHours: number
+  }
   lastSweep: { hasEverRun: boolean; startedAt: string | null; status: string | null } | null
   scopes: string[]
   can: { hold: boolean }
@@ -61,7 +69,7 @@ interface Props {
  * No hay botón de purgar. Purgar es un DELETE que no se deshace, y un botón así
  * es un botón que alguien pulsa por curiosidad un viernes.
  */
-export default function RetentionPage({ policy, holds, wouldPurge, runs, entities, lastSweep, scopes, can }: Props) {
+export default function RetentionPage({ policy, holds, wouldPurge, runs, entities, storage, lastSweep, scopes, can }: Props) {
   const { t } = useI18n()
 
   return (
@@ -148,6 +156,56 @@ export default function RetentionPage({ policy, holds, wouldPurge, runs, entitie
               </table>
             </div>
           )}
+        </section>
+
+        {/*
+          El almacén, junto a la retención y no en su propia pantalla: es la
+          misma pregunta por el otro lado. La política dice cuánto se conservan
+          los registros; esto dice si los ficheros de esos registros están donde
+          deberían. Hasta el lote 53 no había forma de saberlo.
+        */}
+        <section className="rounded border border-steel-200 bg-white p-4">
+          <p className="text-sm font-semibold text-carbon">{t('retention.storage.title')}</p>
+          <p className="mt-0.5 text-xs text-steel-600">{t('retention.storage.hint')}</p>
+
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm font-medium text-carbon">{t('retention.storage.orphans')}</p>
+              {storage.orphans === 0 ? (
+                <p className="mt-1 text-sm text-success-700">{t('retention.storage.orphansZero')}</p>
+              ) : (
+                <p className="mt-1 text-2xl font-semibold text-carbon">
+                  {storage.orphans}
+                  {/*
+                    El separador es un carácter de VERDAD, no un margen de CSS.
+                    Con solo `ml-2`, la cifra y el tamaño quedan pegados en el
+                    texto plano —«1» y «16 B» se leen «116 B»— y eso es lo que
+                    oye quien usa un lector de pantalla, que no ve márgenes.
+                  */}
+                  <span className="ml-2 text-sm font-normal text-steel-600">· {peso(storage.orphanBytes)}</span>
+                </p>
+              )}
+              <p className="mt-1 text-xs text-steel-600">
+                {t('retention.storage.orphansHint', { hours: storage.graceHours })}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-carbon">{t('retention.storage.dangling')}</p>
+              {storage.dangling === 0 ? (
+                <p className="mt-1 text-sm text-success-700">{t('retention.storage.danglingZero')}</p>
+              ) : (
+                <p className="mt-1 text-2xl font-semibold text-danger-700">{storage.dangling}</p>
+              )}
+              <p className="mt-1 text-xs text-steel-600">{t('retention.storage.danglingHint')}</p>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs text-steel-600">
+            {t('retention.storage.scanned')}: {storage.scanned}
+            {storage.tooRecent > 0 ? ` · ${t('retention.storage.tooRecent')}: ${storage.tooRecent}` : ''}
+          </p>
+          <p className="mt-1 text-xs text-steel-600">{t('retention.storage.purgeNote')}</p>
         </section>
 
         <section className="rounded border border-steel-200 bg-white p-4">
@@ -413,4 +471,10 @@ function NuevoBloqueo({ entities, scopes }: { entities: Entity[]; scopes: string
       </button>
     </form>
   )
+}
+
+function peso(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }

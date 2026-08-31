@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Support\Retention\Holds;
 use App\Support\Retention\Policy;
 use App\Support\Retention\Sweeper;
+use App\Support\Storage\DocumentStore;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -235,7 +236,7 @@ it('con la purga apagada no se borra nada, por vencido que esté', function () {
     $id = app(TenantContext::class)->runAs($tenantId, fn () => notificacionDe($this->scenario, CarbonImmutable::now()->subYears(20)));
 
     Sweeper::archive($tenantId, CarbonImmutable::now()->subYears(10));
-    $resultado = Sweeper::purge($tenantId);
+    $resultado = Sweeper::purge(app(DocumentStore::class), $tenantId);
 
     expect($resultado)->toBe([]);
     expect(app(TenantContext::class)->withoutTenant(
@@ -251,7 +252,7 @@ it('con la purga encendida borra lo vencido', function () {
 
     // Archivado hace diez años: su fecha de purga ya pasó.
     Sweeper::archive($tenantId, CarbonImmutable::now()->subYears(10));
-    Sweeper::purge($tenantId);
+    Sweeper::purge(app(DocumentStore::class), $tenantId);
 
     expect(app(TenantContext::class)->withoutTenant(
         fn () => DB::table('notifications')->where('id', $id)->exists()
@@ -268,7 +269,7 @@ it('la purga respeta el bloqueo legal aunque esté encendida', function () {
 
     Holds::apply($actor, 'Pleito', 'Hay un pleito abierto y esto es prueba.', 'entity_type', 'notifications');
 
-    $resultado = Sweeper::purge($tenantId);
+    $resultado = Sweeper::purge(app(DocumentStore::class), $tenantId);
 
     expect(app(TenantContext::class)->withoutTenant(
         fn () => DB::table('notifications')->where('id', $id)->exists()
@@ -303,7 +304,7 @@ it('cada pasada deja constancia en retention_jobs', function () {
 
     app(TenantContext::class)->runAs($tenantId, fn () => notificacionDe($this->scenario, CarbonImmutable::now()->subYears(3)));
 
-    Sweeper::run($tenantId);
+    Sweeper::run(app(DocumentStore::class), $tenantId);
 
     $fila = app(TenantContext::class)->withoutTenant(fn () => DB::table('retention_jobs')
         ->where('tenant_id', $tenantId)

@@ -24,8 +24,15 @@ use Illuminate\Http\UploadedFile;
  *    firmada y temporal, no leyéndolo a memoria para reenviarlo: un
  *    certificado de seguro escaneado son varios megabytes y una lista de
  *    veinte los pondría todos en la memoria del servidor.
- *  - Borrar. Los documentos se retienen por política —siete años— y el borrado
- *    lo decide el trabajo de retención, no una pantalla.
+ *
+ * Antes tampoco borraba, y el motivo escrito aquí era este: «los documentos se
+ * retienen por política —siete años— y el borrado lo decide el trabajo de
+ * retención, no una pantalla». La decisión era correcta y la consecuencia se
+ * quedó a medias: **ese trabajo se construyó en el lote 52 y borraba la FILA,
+ * dejando el fichero.** El sistema decía «purgado» y el PDF seguía en el disco.
+ *
+ * Así que borrar entra ahora, con el mismo criterio de entonces: lo llama el
+ * trabajo de retención, nunca una pantalla. No hay controlador que lo invoque.
  */
 interface DocumentStore
 {
@@ -63,4 +70,41 @@ interface DocumentStore
 
     /** Bytes del fichero. Solo para trabajos en segundo plano, nunca para servirlo. */
     public function size(string $storageKey): int;
+
+    /**
+     * Borra un fichero. Permanente.
+     *
+     * Devuelve `true` también cuando el fichero YA NO ESTABA, y no es
+     * indulgencia: quien llama a esto está terminando de borrar algo, y un
+     * fichero que falta es el estado que quería. Devolver `false` obligaría a
+     * cada llamador a distinguir «no pude» de «ya estaba hecho», y el barrido
+     * nocturno acabaría contando como fallos las repeticiones de su propio
+     * trabajo.
+     *
+     * `false` queda para lo que sí es un problema: permisos, disco de solo
+     * lectura, S3 que contesta un error.
+     */
+    public function delete(string $storageKey): bool;
+
+    /**
+     * Borra varios. Devuelve cuántos se fueron.
+     *
+     * Existe aparte porque S3 borra hasta mil claves en una llamada y hacerlo
+     * de una en una sobre diez mil ficheros son diez mil viajes de red. El
+     * adaptador local no gana nada, pero la interfaz tiene que dejar que el que
+     * sí gana lo aproveche.
+     *
+     * @param  list<string>  $storageKeys
+     */
+    public function deleteMany(array $storageKeys): int;
+
+    /**
+     * Todas las claves que hay guardadas, para poder buscar huérfanos.
+     *
+     * Devuelve un iterador y no un array: un almacén con doscientos mil
+     * ficheros no cabe en memoria de golpe, y el barrido los procesa por lotes.
+     *
+     * @return iterable<string>
+     */
+    public function keys(string $prefix = ''): iterable;
 }

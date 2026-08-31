@@ -11,6 +11,8 @@ use App\Support\Platform\ScheduledRuns;
 use App\Support\Retention\Holds;
 use App\Support\Retention\Policy;
 use App\Support\Retention\Sweeper;
+use App\Support\Storage\DocumentStore;
+use App\Support\Storage\OrphanSweep;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +47,7 @@ final class RetentionController
 {
     use InertiaPage;
 
-    public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
+    public function index(Request $request, CurrentActor $current, PermissionChecker $checker, DocumentStore $store): Response
     {
         $actor = $current->require();
         $policy = $current->policy();
@@ -97,6 +99,19 @@ final class RetentionController
             // dos años la pantalla estaría diciéndole que su retención no
             // funciona.
             'lastSweep' => ScheduledRuns::summary(['retention:sweep'])[0] ?? null,
+            // El estado del almacén de ficheros.
+            //
+            // Se enseña junto a la retención y no en su propia pantalla porque
+            // es la misma pregunta vista por el otro lado: la política dice
+            // cuánto se conservan los REGISTROS, y esto dice si los FICHEROS de
+            // esos registros están donde deberían. Hasta este lote la respuesta
+            // era que no había forma de saberlo.
+            //
+            // El barrido de huérfanos es del almacén entero y no de una
+            // empresa: un fichero sin fila no se puede atribuir a nadie, porque
+            // esa era justamente la fila que falta. Por eso la pantalla lo
+            // presenta como estado de la instalación.
+            'storage' => $this->storage($store),
             'entities' => $this->entities(),
             'scopes' => Holds::SCOPES,
             'can' => [
@@ -162,6 +177,28 @@ final class RetentionController
         }
 
         return back()->with('success', __('retention.flash.released'));
+    }
+
+    /**
+     * Huérfanos y filas rotas, contados sin tocar nada.
+     *
+     * @return array<string, int>
+     */
+    private function storage(DocumentStore $store): array
+    {
+        // Un límite bajo a propósito: esta pantalla se abre para saber si el
+        // número es cero, no para leer una lista de mil ficheros. El barrido
+        // nocturno los cuenta enteros.
+        $huerfanos = OrphanSweep::find($store, limite: 200);
+
+        return [
+            'orphans' => count($huerfanos['files']),
+            'orphanBytes' => $huerfanos['bytes'],
+            'scanned' => $huerfanos['scanned'],
+            'tooRecent' => $huerfanos['tooRecent'],
+            'dangling' => count(OrphanSweep::dangling($store, 200)),
+            'graceHours' => OrphanSweep::MARGEN_HORAS,
+        ];
     }
 
     /**

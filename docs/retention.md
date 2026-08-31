@@ -161,10 +161,9 @@ php artisan retention:sweep --tenant=<id>
 - **No es asesoramiento legal ni una garantía de cumplimiento.** Es un mecanismo
   que aplica unas fechas. Los plazos correctos para una empresa concreta —FMCSA,
   el estado, el seguro, los contratos con sus clientes— los determina un abogado.
-- **No cubre lo que vive fuera de la base de datos.** Los ficheros del
-  almacenamiento de documentos no se borran con la fila; hoy la fila se va y el
-  objeto se queda. Es una tarea pendiente y conviene saberlo antes de encender la
-  purga.
+- **Los ficheros sí se borran con la fila**, desde el lote 53 — incluidos los
+  que MySQL se lleva en cascada, y respetando los bloqueos legales de los hijos.
+  Ver `docs/storage.md`, que cuenta los cuatro fallos que había en ese camino.
 - **No anonimiza.** `retention_jobs.action` admite `anonymize` y no está
   implementado: hoy solo hay `archive` y `purge`.
 - **No preserva nada por sí solo.** Un bloqueo legal detiene ESTE mecanismo. No

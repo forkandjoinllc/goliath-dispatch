@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Support\Retention;
 
+use App\Support\Storage\CascadedFiles;
+use App\Support\Storage\DocumentStore;
+use App\Support\Storage\StoredFiles;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -150,9 +153,9 @@ final class Sweeper
     /**
      * Purga de verdad. Irreversible.
      *
-     * @return array<string, array{processed: int, skipped: int}>
+     * @return array<string, array{processed: int, skipped: int, files: int}>
      */
-    public static function purge(string $tenantId, ?CarbonImmutable $now = null): array
+    public static function purge(DocumentStore $store, string $tenantId, ?CarbonImmutable $now = null): array
     {
         if (! config('retention.purge_enabled')) {
             // No es un error: es el estado de fábrica. Se devuelve vacío y quien
@@ -188,12 +191,13 @@ final class Sweeper
                 // Un bloqueo por tipo o de toda la empresa: no se toca la tabla,
                 // y se cuenta entera como saltada por bloqueo legal — que es
                 // justo para lo que existe `retention_jobs.skipped_legal_hold_count`.
-                $resumen[$tabla] = ['processed' => 0, 'skipped' => (clone $base())->count()];
+                $resumen[$tabla] = ['processed' => 0, 'skipped' => (clone $base())->count(), 'files' => 0];
 
                 continue;
             }
 
             $hechos = 0;
+            $ficheros = 0;
 
             do {
                 $ids = (clone $base())
@@ -206,11 +210,64 @@ final class Sweeper
                     break;
                 }
 
-                $hechos += DB::table($tabla)->whereIn('id', $ids)->delete();
+                // ¿Hay debajo de alguna de estas filas algo bloqueado?
+                //
+                // Un bloqueo legal sobre `document_versions` marca sus filas y
+                // NO marca los `documents` de los que cuelgan. La purga veía el
+                // `legal_hold` del documento en cero, lo borraba, y MySQL se
+                // llevaba en cascada la versión que alguien había bloqueado para
+                // un pleito: el bloqueo protegía la fila y no protegía nada.
+                $conHijoBloqueado = CascadedFiles::heldParentIds($tabla, $ids);
+
+                if ($conHijoBloqueado !== []) {
+                    $bloqueados += count($conHijoBloqueado);
+                    $ids = array_values(array_diff($ids, $conHijoBloqueado));
+
+                    if ($ids === []) {
+                        // Todo el lote estaba protegido. Se sale en vez de
+                        // volver a pedir el mismo lote: la consulta no excluye
+                        // lo ya visto, así que insistir sería un bucle infinito.
+                        break;
+                    }
+                }
+
+                // LAS CLAVES PRIMERO, LA FILA DESPUÉS, EL FICHERO AL FINAL.
+                //
+                // El orden no es preferencia, es la única secuencia que no deja
+                // nada roto:
+                //
+                //  1. Leer las claves. Después del DELETE no hay fila que
+                //     preguntar, y el fichero se queda en el disco para siempre
+                //     sin que nadie sepa siquiera que está ahí. Es justo lo que
+                //     hacía este método antes de este lote: decía «purgado» y
+                //     el PDF seguía en el almacén.
+                //  2. Borrar la fila.
+                //  3. Borrar el fichero SOLO si el borrado de la fila salió
+                //     bien. Al revés —fichero primero— un fallo entre las dos
+                //     dejaría filas apuntando a ficheros que ya no están, y eso
+                //     es peor que un huérfano: un huérfano ocupa disco, una
+                //     fila rota es un botón de descargar que da error delante
+                //     de un cliente.
+                // Las de la propia fila...
+                $claves = StoredFiles::keysOf($tabla, $ids);
+
+                // ...y las de todo lo que MySQL se va a llevar en cascada. Sin
+                // esto, borrar un `documents` arrastraba su `document_versions`
+                // —donde vive el PDF— sin que el código pasara nunca por esa
+                // fila: el fichero se quedaba en el disco y el resumen decía
+                // «ficheros: 0», que parecía correcto. Ver CascadedFiles.
+                $claves = [...$claves, ...CascadedFiles::keysFor($tabla, $ids)];
+
+                $borradas = DB::table($tabla)->whereIn('id', $ids)->delete();
+                $hechos += $borradas;
+
+                if ($borradas > 0 && $claves !== []) {
+                    $ficheros += $store->deleteMany($claves);
+                }
             } while (count($ids) === self::LOTE);
 
             if ($hechos > 0 || $bloqueados > 0) {
-                $resumen[$tabla] = ['processed' => $hechos, 'skipped' => $bloqueados];
+                $resumen[$tabla] = ['processed' => $hechos, 'skipped' => $bloqueados, 'files' => $ficheros];
             }
         }
 
@@ -229,12 +286,12 @@ final class Sweeper
      * inofensivo al archivar, porque la segunda pasada ya no encuentra
      * candidatos, y una forma excelente de duplicar filas en `retention_jobs`.
      *
-     * @return array{archived: int, purged: int, skipped: int, jobs: list<string>}
+     * @return array{archived: int, purged: int, skipped: int, files: int, jobs: list<string>}
      */
-    public static function run(string $tenantId, ?CarbonImmutable $now = null): array
+    public static function run(DocumentStore $store, string $tenantId, ?CarbonImmutable $now = null): array
     {
         $now ??= CarbonImmutable::now();
-        $total = ['archived' => 0, 'purged' => 0, 'skipped' => 0, 'jobs' => []];
+        $total = ['archived' => 0, 'purged' => 0, 'skipped' => 0, 'files' => 0, 'jobs' => []];
 
         foreach (self::archive($tenantId, $now) as $tabla => $r) {
             $total['archived'] += $r['processed'];
@@ -242,9 +299,10 @@ final class Sweeper
             $total['jobs'][] = self::record($tenantId, 'archive', $tabla, $now, $r['candidates'], $r['processed'], $r['skipped']);
         }
 
-        foreach (self::purge($tenantId, $now) as $tabla => $r) {
+        foreach (self::purge($store, $tenantId, $now) as $tabla => $r) {
             $total['purged'] += $r['processed'];
             $total['skipped'] += $r['skipped'];
+            $total['files'] += $r['files'];
             $total['jobs'][] = self::record($tenantId, 'purge', $tabla, $now, $r['processed'] + $r['skipped'], $r['processed'], $r['skipped']);
         }
 

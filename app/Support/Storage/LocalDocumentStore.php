@@ -92,6 +92,60 @@ final class LocalDocumentStore implements DocumentStore
         return (int) Storage::disk(self::DISK)->size($storageKey);
     }
 
+    public function delete(string $storageKey): bool
+    {
+        // Un fichero que ya no está es el estado que quería quien llamó. Ver la
+        // nota de la interfaz: distinguirlo de un fallo real haría que el
+        // barrido contara como errores las repeticiones de su propio trabajo.
+        if (! Storage::disk(self::DISK)->exists($storageKey)) {
+            return true;
+        }
+
+        return Storage::disk(self::DISK)->delete($storageKey);
+    }
+
+    public function deleteMany(array $storageKeys): int
+    {
+        $idos = 0;
+
+        foreach ($storageKeys as $clave) {
+            if ($this->delete($clave)) {
+                $idos++;
+            }
+        }
+
+        return $idos;
+    }
+
+    /**
+     * La marca de tiempo del fichero, en segundos.
+     *
+     * NO está en la interfaz a propósito: S3 la trae en el listado, así que un
+     * adaptador de S3 no querría una llamada por fichero para obtenerla.
+     * `OrphanSweep` la usa si existe y da el fichero por viejo si no — que en
+     * S3 es lo correcto, porque allí el listado ya la lleva.
+     */
+    public function lastModified(string $storageKey): int
+    {
+        if (! Storage::disk(self::DISK)->exists($storageKey)) {
+            return 0;
+        }
+
+        return (int) Storage::disk(self::DISK)->lastModified($storageKey);
+    }
+
+    public function keys(string $prefix = ''): iterable
+    {
+        // `allFiles` recorre recursivamente y devuelve rutas relativas al
+        // disco, que es exactamente el formato de las claves.
+        //
+        // Con doscientos mil ficheros esto sí carga un array grande, y es una
+        // limitación conocida del adaptador local: el de S3 pagina de verdad.
+        // Se acepta porque el disco local es para una sola máquina, y una sola
+        // máquina no llega a esas cifras sin haber migrado antes a S3.
+        return Storage::disk(self::DISK)->allFiles($prefix);
+    }
+
     /**
      * La extensión, de una lista blanca.
      *
