@@ -157,6 +157,14 @@ final class DocumentController
 
         return Inertia::render('App/Documents/Form', [
             'owners' => $this->uploadTargets($actor, $scope),
+            // `load` no está en el mapa a propósito, aunque el catálogo ya
+            // tiene sus tipos. Este formulario genérico elige el dueño de una
+            // LISTA, y una empresa tiene cuatro camiones y treinta mil cargas:
+            // el desplegable sería inservible y la consulta que lo llena, cara.
+            // Los papeles de una carga se cuelgan desde la carga, en
+            // LoadDocumentController, donde el dueño ya está decidido. Lo que sí
+            // admite este controlador es `owner_type=load` al GUARDAR, porque
+            // ahí el dueño llega en la petición y solo hay que comprobarlo.
             'typesByOwner' => [
                 'carrier' => DocumentTypes::forOwner('carrier'),
                 'driver' => DocumentTypes::forOwner('driver'),
@@ -245,7 +253,7 @@ final class DocumentController
                 'application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             ],
             'document_id' => ['nullable', 'string', 'size:36'],
-            'owner_type' => ['required_without:document_id', 'in:carrier,driver,truck,trailer'],
+            'owner_type' => ['required_without:document_id', 'in:carrier,driver,truck,trailer,load'],
             'owner_id' => ['required_without:document_id', 'string', 'size:36'],
             'document_type' => ['required_without:document_id', 'string', 'max:40'],
             'title' => ['nullable', 'string', 'max:200'],
@@ -634,6 +642,7 @@ final class DocumentController
             'driver' => 'drivers',
             'truck' => 'trucks',
             'trailer' => 'trailers',
+            'load' => 'loads',
             default => null,
         };
 

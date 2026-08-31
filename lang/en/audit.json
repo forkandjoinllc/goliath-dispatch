@@ -1,182 +1,183 @@
 {
-  "index": {
-    "title": "Audit trail",
-    "subtitle": "Who did what, when, and from where. Entries can never be edited or deleted.",
-    "action": "Action",
-    "anyAction": "Any action",
-    "entityType": "Record type",
-    "anyEntityType": "Any record type",
-    "actor": "Person",
-    "anyActor": "Anyone",
-    "search": "Search",
-    "searchPlaceholder": "Name, email, reason or id",
-    "from": "From",
-    "to": "To",
-    "clear": "Clear filters",
-    "when": "When",
-    "who": "Who",
-    "what": "What",
-    "record": "Record",
-    "detail": "Detail",
-    "view": "Open",
-    "empty": "Nothing recorded yet with these filters.",
-    "showing": "Showing {from}–{to} of {total}",
-    "impersonated": "via support access",
-    "unknownActor": "System",
-    "noRecord": "—"
-  },
-  "show": {
-    "title": "Audit entry",
-    "back": "Back to the audit trail",
-    "occurredAt": "Occurred at",
-    "actor": "Person",
-    "role": "Role at the time",
-    "record": "Record",
-    "recordId": "Record id",
-    "reason": "Reason given",
-    "noReason": "No reason was recorded.",
-    "ipAddress": "IP address",
-    "userAgent": "Browser",
-    "requestId": "Request",
-    "changes": "What changed",
-    "noChanges": "This entry records an action, not a change of values.",
-    "field": "Field",
-    "before": "Before",
-    "after": "After",
-    "empty": "(empty)",
-    "siblings": "Recorded in the same action",
-    "siblingsHint": "One action can leave several entries. These share the same request.",
-    "impersonation": "Support access",
-    "impersonationHint": "This was done through support access. The person shown is who was really at the controls.",
-    "actingAs": "Acting as {name}",
-    "appendOnly": "Audit entries are append-only: they cannot be edited or deleted, not even from the database."
-  },
-  "action": {
-    "auth": {
-      "login": "Signed in",
-      "login_failed": "Sign-in failed",
-      "logout": "Signed out",
-      "password_reset_requested": "Password reset requested",
-      "password_reset_completed": "Password reset completed",
-      "email_verified": "Email verified",
-      "mfa_enrolled": "Two-step verification enrolled",
-      "mfa_challenge_failed": "Two-step verification failed",
-      "session_revoked": "Session revoked",
-      "account_locked": "Account locked"
+    "index": {
+        "title": "Audit trail",
+        "subtitle": "Who did what, when, and from where. Entries can never be edited or deleted.",
+        "action": "Action",
+        "anyAction": "Any action",
+        "entityType": "Record type",
+        "anyEntityType": "Any record type",
+        "actor": "Person",
+        "anyActor": "Anyone",
+        "search": "Search",
+        "searchPlaceholder": "Name, email, reason or id",
+        "from": "From",
+        "to": "To",
+        "clear": "Clear filters",
+        "when": "When",
+        "who": "Who",
+        "what": "What",
+        "record": "Record",
+        "detail": "Detail",
+        "view": "Open",
+        "empty": "Nothing recorded yet with these filters.",
+        "showing": "Showing {from}–{to} of {total}",
+        "impersonated": "via support access",
+        "unknownActor": "System",
+        "noRecord": "—"
     },
-    "impersonation": {
-      "started": "Support access started",
-      "ended": "Support access ended"
+    "show": {
+        "title": "Audit entry",
+        "back": "Back to the audit trail",
+        "occurredAt": "Occurred at",
+        "actor": "Person",
+        "role": "Role at the time",
+        "record": "Record",
+        "recordId": "Record id",
+        "reason": "Reason given",
+        "noReason": "No reason was recorded.",
+        "ipAddress": "IP address",
+        "userAgent": "Browser",
+        "requestId": "Request",
+        "changes": "What changed",
+        "noChanges": "This entry records an action, not a change of values.",
+        "field": "Field",
+        "before": "Before",
+        "after": "After",
+        "empty": "(empty)",
+        "siblings": "Recorded in the same action",
+        "siblingsHint": "One action can leave several entries. These share the same request.",
+        "impersonation": "Support access",
+        "impersonationHint": "This was done through support access. The person shown is who was really at the controls.",
+        "actingAs": "Acting as {name}",
+        "appendOnly": "Audit entries are append-only: they cannot be edited or deleted, not even from the database."
     },
-    "permission": {
-      "changed": "Permissions changed"
+    "action": {
+        "auth": {
+            "login": "Signed in",
+            "login_failed": "Sign-in failed",
+            "logout": "Signed out",
+            "password_reset_requested": "Password reset requested",
+            "password_reset_completed": "Password reset completed",
+            "email_verified": "Email verified",
+            "mfa_enrolled": "Two-step verification enrolled",
+            "mfa_challenge_failed": "Two-step verification failed",
+            "session_revoked": "Session revoked",
+            "account_locked": "Account locked"
+        },
+        "impersonation": {
+            "started": "Support access started",
+            "ended": "Support access ended"
+        },
+        "permission": {
+            "changed": "Permissions changed"
+        },
+        "role": {
+            "changed": "Role changed"
+        },
+        "tenant": {
+            "created": "Company created",
+            "updated": "Company updated",
+            "suspended": "Company suspended",
+            "reactivated": "Company reactivated",
+            "accessed": "Company accessed"
+        },
+        "document": {
+            "viewed": "Document viewed",
+            "downloaded": "Document downloaded",
+            "uploaded": "Document uploaded",
+            "approved": "Document approved",
+            "rejected": "Document rejected",
+            "deleted": "Document deleted"
+        },
+        "verification": {
+            "override": "Verification overridden"
+        },
+        "driver": {
+            "verified": "Driver reviewed"
+        },
+        "onboarding": {
+            "status_changed": "Onboarding status changed"
+        },
+        "load": {
+            "created": "Load created",
+            "status_changed": "Load status changed",
+            "assignment_changed": "Load assignment changed",
+            "cancelled": "Load cancelled",
+            "duplicated": "Load duplicated"
+        },
+        "financial": {
+            "changed": "Financials changed"
+        },
+        "expense": {
+            "approved": "Expense approved",
+            "rejected": "Expense rejected"
+        },
+        "invoice": {
+            "created": "Invoice created",
+            "sent": "Invoice sent",
+            "status_changed": "Invoice status changed"
+        },
+        "payment": {
+            "recorded": "Payment recorded",
+            "failed": "Payment failed or disputed",
+            "refunded": "Payment refunded"
+        },
+        "signature": {
+            "requested": "Signature requested",
+            "viewed": "Signature viewed",
+            "signed": "Signed",
+            "declined": "Signature declined",
+            "voided": "Signature voided"
+        },
+        "export": {
+            "created": "Export created",
+            "downloaded": "Export downloaded"
+        },
+        "retention": {
+            "archived": "Archived by retention",
+            "purged": "Purged by retention"
+        },
+        "legal_hold": {
+            "applied": "Legal hold applied",
+            "released": "Legal hold released"
+        },
+        "settings": {
+            "updated": "Settings updated"
+        },
+        "integration": {
+            "updated": "Integration updated"
+        },
+        "tracking": {
+            "consent_changed": "Tracking consent changed"
+        },
+        "security": {
+            "rate_limited": "Rate limit reached"
+        },
+        "lead": {
+            "status_changed": "Lead status changed",
+            "assigned": "Lead assigned"
+        }
     },
-    "role": {
-      "changed": "Role changed"
-    },
-    "tenant": {
-      "created": "Company created",
-      "updated": "Company updated",
-      "suspended": "Company suspended",
-      "reactivated": "Company reactivated",
-      "accessed": "Company accessed"
-    },
-    "document": {
-      "viewed": "Document viewed",
-      "downloaded": "Document downloaded",
-      "uploaded": "Document uploaded",
-      "approved": "Document approved",
-      "rejected": "Document rejected",
-      "deleted": "Document deleted"
-    },
-    "verification": {
-      "override": "Verification overridden"
-    },
-    "driver": {
-      "verified": "Driver reviewed"
-    },
-    "onboarding": {
-      "status_changed": "Onboarding status changed"
-    },
-    "load": {
-      "created": "Load created",
-      "status_changed": "Load status changed",
-      "assignment_changed": "Load assignment changed",
-      "cancelled": "Load cancelled",
-      "duplicated": "Load duplicated"
-    },
-    "financial": {
-      "changed": "Financials changed"
-    },
-    "expense": {
-      "approved": "Expense approved",
-      "rejected": "Expense rejected"
-    },
-    "invoice": {
-      "created": "Invoice created",
-      "sent": "Invoice sent",
-      "status_changed": "Invoice status changed"
-    },
-    "payment": {
-      "recorded": "Payment recorded",
-      "failed": "Payment failed or disputed",
-      "refunded": "Payment refunded"
-    },
-    "signature": {
-      "requested": "Signature requested",
-      "viewed": "Signature viewed",
-      "signed": "Signed",
-      "declined": "Signature declined",
-      "voided": "Signature voided"
-    },
-    "export": {
-      "created": "Export created",
-      "downloaded": "Export downloaded"
-    },
-    "retention": {
-      "archived": "Archived by retention",
-      "purged": "Purged by retention"
-    },
-    "legal_hold": {
-      "applied": "Legal hold applied",
-      "released": "Legal hold released"
-    },
-    "settings": {
-      "updated": "Settings updated"
-    },
-    "integration": {
-      "updated": "Integration updated"
-    },
-    "tracking": {
-      "consent_changed": "Tracking consent changed"
-    },
-    "security": {
-      "rate_limited": "Rate limit reached"
-    },
-    "lead": {
-      "status_changed": "Lead status changed",
-      "assigned": "Lead assigned"
+    "entity": {
+        "carrier": "Carrier",
+        "carrier_settlement": "Carrier settlement",
+        "dispatcher_commission": "Dispatcher commission",
+        "dispatcher_group": "Dispatcher group",
+        "dispatcher_profile": "Dispatcher profile",
+        "dispatcher_resource_assignment": "Assignment",
+        "document": "Document",
+        "driver": "Driver",
+        "expense": "Expense",
+        "factoring_company": "Factoring company",
+        "invoice": "Invoice",
+        "lead": "Lead",
+        "load": "Load",
+        "load_document": "Load document",
+        "payment": "Payment",
+        "report": "Report",
+        "saas_plan": "SaaS plan",
+        "tenant": "Company",
+        "tenant_settings": "Company settings",
+        "user_tenant_membership": "User membership"
     }
-  },
-  "entity": {
-    "carrier": "Carrier",
-    "carrier_settlement": "Carrier settlement",
-    "dispatcher_commission": "Dispatcher commission",
-    "dispatcher_group": "Dispatcher group",
-    "dispatcher_profile": "Dispatcher profile",
-    "dispatcher_resource_assignment": "Assignment",
-    "document": "Document",
-    "driver": "Driver",
-    "expense": "Expense",
-    "factoring_company": "Factoring company",
-    "invoice": "Invoice",
-    "lead": "Lead",
-    "load": "Load",
-    "payment": "Payment",
-    "report": "Report",
-    "saas_plan": "SaaS plan",
-    "tenant": "Company",
-    "tenant_settings": "Company settings",
-    "user_tenant_membership": "User membership"
-  }
 }

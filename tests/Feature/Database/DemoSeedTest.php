@@ -105,3 +105,53 @@ it('sembrar dos veces no duplica nada', function () {
             ->toBe($n, "la tabla {$tabla} creció al sembrar dos veces");
     }
 });
+
+it('ninguna carga sembrada recoge y entrega en el mismo sitio', function () {
+    // Cinco de las once lo hacían. La causa: dos clientes tenían una sola
+    // ubicación, y el sembrador elegía la primera para la recogida y la última
+    // para la entrega —la misma fila—. En un sistema de despacho una carga que
+    // sale y llega a la misma dirección no es un detalle cosmético: es una
+    // carga que no existe, y está en la primera pantalla que abre quien evalúa
+    // la demostración.
+    //
+    // Se vio en el desplegable de «¿de qué parada es este comprobante?», que
+    // ofrecía dos veces el mismo sitio.
+    $this->seed(DemoDataSeeder::class);
+
+    $tenantId = app(TenantContext::class)->withoutTenant(
+        fn () => DB::table('tenants')->where('slug', 'demo-dispatch')->value('id')
+    );
+
+    $repetidas = app(TenantContext::class)->withoutTenant(fn () => DB::table('load_stops as s')
+        ->join('loads as l', 'l.id', '=', 's.load_id')
+        ->where('s.tenant_id', $tenantId)
+        ->whereNull('s.deleted_at')
+        ->groupBy('s.load_id', 'l.load_number')
+        ->havingRaw('count(distinct s.customer_location_id) = 1')
+        ->pluck('l.load_number')
+        ->all());
+
+    expect($repetidas)->toBe([], 'Cargas que recogen y entregan en el mismo sitio: '.implode(', ', $repetidas));
+});
+
+it('toda parada sembrada dice dónde está', function () {
+    // La dirección de una parada puede vivir en la propia fila o en la
+    // ubicación del cliente a la que apunta. Lo que no puede es no estar en
+    // ninguno de los dos sitios: una parada sin dirección es una parada a la
+    // que nadie puede ir.
+    $this->seed(DemoDataSeeder::class);
+
+    $tenantId = app(TenantContext::class)->withoutTenant(
+        fn () => DB::table('tenants')->where('slug', 'demo-dispatch')->value('id')
+    );
+
+    $mudas = app(TenantContext::class)->withoutTenant(fn () => DB::table('load_stops as s')
+        ->leftJoin('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+        ->where('s.tenant_id', $tenantId)
+        ->whereNull('s.deleted_at')
+        ->whereNull('cl.city')
+        ->whereNull('s.city')
+        ->count());
+
+    expect($mudas)->toBe(0);
+});

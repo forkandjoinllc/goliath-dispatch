@@ -128,6 +128,25 @@ export default function LoadShow({
       crumbs={[{ label: t('loads.index.title'), href: '/loads' }, { label: load.loadNumber }]}
       actions={
         <>
+          {/*
+            Los papeles y la confirmación de tarifa son PANTALLAS de la carga, y
+            hasta ahora no se llegaba a ninguna de las dos más que escribiendo
+            la URL a mano. Una pantalla sin enlace es una pantalla que no
+            existe: la de papeles se acaba de escribir, y la de tarifa llevaba
+            desde el lote 46 construida y sin puerta de entrada.
+          */}
+          <Link
+            href={`/loads/${load.id}/documents`}
+            className="rounded border border-steel-300 px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+          >
+            {t('loads.documents.link')}
+          </Link>
+          <Link
+            href={`/loads/${load.id}/rate-confirmation`}
+            className="rounded border border-steel-300 px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+          >
+            {t('loads.rateConfirmation.title')}
+          </Link>
           {can.update ? (
             <Link
               href={`/loads/${load.id}/edit`}

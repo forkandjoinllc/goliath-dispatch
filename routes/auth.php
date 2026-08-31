@@ -26,6 +26,7 @@ use App\Http\Controllers\App\PermitController;
 use App\Http\Controllers\Platform\HealthController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
+use App\Http\Controllers\App\LoadDocumentController;
 use App\Http\Controllers\App\RateConfirmationController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
@@ -407,6 +408,13 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('loads/{load}/rate-confirmation', [RateConfirmationController::class, 'show'])->name('loads.rateconf.show');
     Route::post('loads/{load}/rate-confirmation', [RateConfirmationController::class, 'issue'])->name('loads.rateconf.issue');
     Route::post('loads/{load}/rate-confirmation/decide', [RateConfirmationController::class, 'decide'])->name('loads.rateconf.decide');
+
+    // Los papeles de la carga. `destroy` descuelga el ENLACE, no el documento:
+    // el papel sigue existiendo con sus versiones y su bitácora, lo que se
+    // deshace es que pertenezca a esta carga.
+    Route::get('loads/{load}/documents', [LoadDocumentController::class, 'index'])->name('loads.documents.index');
+    Route::post('loads/{load}/documents', [LoadDocumentController::class, 'store'])->name('loads.documents.store');
+    Route::delete('loads/{load}/documents/{link}', [LoadDocumentController::class, 'destroy'])->name('loads.documents.destroy');
 
     /*
     | Firmas

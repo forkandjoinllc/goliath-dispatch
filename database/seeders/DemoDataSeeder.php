@@ -698,6 +698,7 @@ class DemoDataSeeder extends Seeder
                 'email' => 'cuentas@acerosdelgado.test', 'phone' => '+1 555 0212', 'terms' => 45, 'credit' => 60_000_00,
                 'locations' => [
                     ['bodega', 'Bodega Laredo', '8100 San Dario Avenue', 'Laredo', 'TX', '78041'],
+                    ['patio', 'Patio San Antonio', '4700 Rittiman Road', 'San Antonio', 'TX', '78218'],
                 ],
             ],
             [
@@ -706,6 +707,7 @@ class DemoDataSeeder extends Seeder
                 'email' => 'billing@harborworks.test', 'phone' => '+1 555 0223', 'terms' => 30, 'credit' => 40_000_00,
                 'locations' => [
                     ['dock', 'Savannah Dock 4', '2200 President Street', 'Savannah', 'GA', '31404'],
+                    ['yard', 'Brunswick Lay-Down Yard', '1900 Newcastle Street', 'Brunswick', 'GA', '31520'],
                 ],
             ],
             [
@@ -853,6 +855,18 @@ class DemoDataSeeder extends Seeder
             ]);
 
             $locationIds = array_values($customer['locations']);
+            // DOS ubicaciones distintas, y por eso todo cliente de la
+            // demostración tiene al menos dos.
+            //
+            // Con una sola, `$locationIds[0]` y `$locationIds[count-1]` son la
+            // MISMA fila, y la carga salía recogiéndose y entregándose en la
+            // misma dirección. Cinco de las once cargas sembradas lo hacían.
+            // En un sistema de despacho eso no es un detalle cosmético: es una
+            // carga que no existe, y quien evalúa la demostración lo ve en la
+            // primera pantalla que abre.
+            //
+            // Se descubrió en el desplegable de «¿de qué parada es este
+            // comprobante?», que ofrecía dos veces el mismo sitio.
             $pickupLocation = $locationIds[0];
             $deliveryLocation = $locationIds[count($locationIds) - 1];
 

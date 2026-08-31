@@ -33,6 +33,8 @@ const INVARIABLES = [
     // Etiquetas ordinales: el número identifica, no cuenta.
     'carriers.form.contactN' => 'Rótulo: «Contacto 1», «Contacto 2».',
     'loads.form.stopNumber' => 'Rótulo: «Parada 1», «Parada 2».',
+    'loads.documents.stopOption' => 'Rótulo del desplegable: «Parada 2: Laredo, TX».',
+    'loads.documents.forStop' => 'Rótulo de la ficha: «Parada 2 · Laredo, TX».',
 
     // El sustantivo va antes del número o no existe.
     'platform.show.of' => 'Es el segundo miembro de «3 de 10»; el sustantivo está en la otra clave.',

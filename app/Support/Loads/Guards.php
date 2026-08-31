@@ -141,12 +141,23 @@ final class Guards
     {
         // Marcar «comprobante recibido» sin documento adjunto vaciaría de sentido
         // el estado: es justo el papel que se le enseña al cliente para cobrar.
+        //
+        // EL TIPO ES `pod`, NO `proof_of_delivery`. Esta comprobación buscaba lo
+        // segundo, que es un valor que el CHECK de `documents.document_type` no
+        // admite y que por tanto ninguna fila puede tener jamás. La puerta no
+        // era estricta: era IMPOSIBLE. `pod_received` —el estado con el que se
+        // factura— era inalcanzable en producción, y nadie lo había notado
+        // porque tampoco había pantalla para colgar el papel: la tabla
+        // `load_documents` la escribía el sembrador y nadie más.
+        //
+        // Se ve solo comparando el literal contra el CHECK del esquema, así que
+        // eso es ahora una prueba: tests/Unit/Suite/DocumentTypeCheckTest.php.
         $hasPod = DB::table('load_documents as ld')
             ->join('documents as d', 'd.id', '=', 'ld.document_id')
             ->where('ld.load_id', $load->id)
             ->whereNull('ld.deleted_at')
             ->whereNull('d.deleted_at')
-            ->where('d.document_type', 'proof_of_delivery')
+            ->where('d.document_type', 'pod')
             ->exists();
 
         return $hasPod ? [] : ['noPodDocument'];

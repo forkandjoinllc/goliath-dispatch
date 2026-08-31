@@ -22,6 +22,10 @@ namespace App\Support\Documents;
  *
  * Del conductor, la licencia y la tarjeta médica. Del equipo, la matrícula y la
  * inspección anual.
+ *
+ * De la CARGA no hay ninguno obligatorio: sus papeles —albarán, comprobante de
+ * entrega, tique de báscula— nacen del viaje, no del alta. Ver el bloque de
+ * carga en el catálogo.
  */
 final class DocumentTypes
 {
@@ -52,6 +56,21 @@ final class DocumentTypes
         'annual_inspection' => ['truck', true],
         'equipment_photo' => ['truck', false],
         'equipment_video' => ['truck', false],
+
+        // Carga
+        //
+        // Ninguno es OBLIGATORIO, y no por descuido. `requiredFor()` alimenta la
+        // puerta de cumplimiento del transportista —«¿qué le falta para poder
+        // llevar carga?»—, y un comprobante de entrega no puede existir antes de
+        // la entrega. Declararlo obligatorio bloquearía a todo transportista
+        // recién dado de alta por no tener el papel de un viaje que aún no ha
+        // hecho. Lo que exige el comprobante es la PUERTA DE `pod_received`, que
+        // vive en Guards y mira esta carga, no este transportista.
+        'bol' => ['load', false],
+        'pod' => ['load', false],
+        'receipt' => ['load', false],
+        'lumper_receipt' => ['load', false],
+        'scale_ticket' => ['load', false],
 
         // Genéricos
         'other' => ['carrier', false],

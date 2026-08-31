@@ -149,6 +149,19 @@ final class DocumentScope
                 ->whereIn('carrier_id', $carrierIds)
                 ->whereNull('deleted_at')
                 ->exists(),
+
+            // Una carga, por el transportista que la lleva. Aquí sí, y no en
+            // `apply()` de más arriba: LEER la lista de documentos de un
+            // transportista no incluye los de sus cargas —eso se ve desde la
+            // carga—, pero SUBIR el comprobante de una carga suya tiene que
+            // poder hacerlo. Son dos preguntas distintas sobre el mismo tipo de
+            // dueño, y contestarlas igual romperia una de las dos.
+            'load' => DB::table('loads')
+                ->where('id', $ownerId)
+                ->whereIn('carrier_id', $carrierIds)
+                ->whereNull('deleted_at')
+                ->exists(),
+
             default => false,
         };
     }

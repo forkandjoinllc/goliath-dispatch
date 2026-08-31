@@ -1,182 +1,183 @@
 {
-  "index": {
-    "title": "Pista de auditoría",
-    "subtitle": "Quién hizo qué, cuándo y desde dónde. Las entradas no se pueden editar ni borrar nunca.",
-    "action": "Acción",
-    "anyAction": "Cualquier acción",
-    "entityType": "Tipo de registro",
-    "anyEntityType": "Cualquier tipo",
-    "actor": "Persona",
-    "anyActor": "Cualquiera",
-    "search": "Buscar",
-    "searchPlaceholder": "Nombre, correo, motivo o identificador",
-    "from": "Desde",
-    "to": "Hasta",
-    "clear": "Quitar filtros",
-    "when": "Cuándo",
-    "who": "Quién",
-    "what": "Qué",
-    "record": "Registro",
-    "detail": "Detalle",
-    "view": "Abrir",
-    "empty": "No hay nada registrado con estos filtros.",
-    "showing": "Mostrando {from}–{to} de {total}",
-    "impersonated": "mediante acceso de soporte",
-    "unknownActor": "El sistema",
-    "noRecord": "—"
-  },
-  "show": {
-    "title": "Entrada de auditoría",
-    "back": "Volver a la pista de auditoría",
-    "occurredAt": "Ocurrió el",
-    "actor": "Persona",
-    "role": "Rol en ese momento",
-    "record": "Registro",
-    "recordId": "Identificador del registro",
-    "reason": "Motivo indicado",
-    "noReason": "No se guardó ningún motivo.",
-    "ipAddress": "Dirección IP",
-    "userAgent": "Navegador",
-    "requestId": "Petición",
-    "changes": "Qué cambió",
-    "noChanges": "Esta entrada registra una acción, no un cambio de valores.",
-    "field": "Campo",
-    "before": "Antes",
-    "after": "Después",
-    "empty": "(vacío)",
-    "siblings": "Registrado en la misma acción",
-    "siblingsHint": "Una sola acción puede dejar varias entradas. Estas comparten la misma petición.",
-    "impersonation": "Acceso de soporte",
-    "impersonationHint": "Esto se hizo mediante un acceso de soporte. La persona que aparece es quien estaba realmente a los mandos.",
-    "actingAs": "Actuando como {name}",
-    "appendOnly": "Las entradas de auditoría son de solo añadir: no se pueden editar ni borrar, ni siquiera desde la base de datos."
-  },
-  "action": {
-    "auth": {
-      "login": "Inició sesión",
-      "login_failed": "Intento de acceso fallido",
-      "logout": "Cerró sesión",
-      "password_reset_requested": "Pidió restablecer la contraseña",
-      "password_reset_completed": "Restableció la contraseña",
-      "email_verified": "Verificó el correo",
-      "mfa_enrolled": "Activó la verificación en dos pasos",
-      "mfa_challenge_failed": "Falló la verificación en dos pasos",
-      "session_revoked": "Revocó una sesión",
-      "account_locked": "Bloqueó la cuenta"
+    "index": {
+        "title": "Pista de auditoría",
+        "subtitle": "Quién hizo qué, cuándo y desde dónde. Las entradas no se pueden editar ni borrar nunca.",
+        "action": "Acción",
+        "anyAction": "Cualquier acción",
+        "entityType": "Tipo de registro",
+        "anyEntityType": "Cualquier tipo",
+        "actor": "Persona",
+        "anyActor": "Cualquiera",
+        "search": "Buscar",
+        "searchPlaceholder": "Nombre, correo, motivo o identificador",
+        "from": "Desde",
+        "to": "Hasta",
+        "clear": "Quitar filtros",
+        "when": "Cuándo",
+        "who": "Quién",
+        "what": "Qué",
+        "record": "Registro",
+        "detail": "Detalle",
+        "view": "Abrir",
+        "empty": "No hay nada registrado con estos filtros.",
+        "showing": "Mostrando {from}–{to} de {total}",
+        "impersonated": "mediante acceso de soporte",
+        "unknownActor": "El sistema",
+        "noRecord": "—"
     },
-    "impersonation": {
-      "started": "Empezó un acceso de soporte",
-      "ended": "Terminó el acceso de soporte"
+    "show": {
+        "title": "Entrada de auditoría",
+        "back": "Volver a la pista de auditoría",
+        "occurredAt": "Ocurrió el",
+        "actor": "Persona",
+        "role": "Rol en ese momento",
+        "record": "Registro",
+        "recordId": "Identificador del registro",
+        "reason": "Motivo indicado",
+        "noReason": "No se guardó ningún motivo.",
+        "ipAddress": "Dirección IP",
+        "userAgent": "Navegador",
+        "requestId": "Petición",
+        "changes": "Qué cambió",
+        "noChanges": "Esta entrada registra una acción, no un cambio de valores.",
+        "field": "Campo",
+        "before": "Antes",
+        "after": "Después",
+        "empty": "(vacío)",
+        "siblings": "Registrado en la misma acción",
+        "siblingsHint": "Una sola acción puede dejar varias entradas. Estas comparten la misma petición.",
+        "impersonation": "Acceso de soporte",
+        "impersonationHint": "Esto se hizo mediante un acceso de soporte. La persona que aparece es quien estaba realmente a los mandos.",
+        "actingAs": "Actuando como {name}",
+        "appendOnly": "Las entradas de auditoría son de solo añadir: no se pueden editar ni borrar, ni siquiera desde la base de datos."
     },
-    "permission": {
-      "changed": "Cambió permisos"
+    "action": {
+        "auth": {
+            "login": "Inició sesión",
+            "login_failed": "Intento de acceso fallido",
+            "logout": "Cerró sesión",
+            "password_reset_requested": "Pidió restablecer la contraseña",
+            "password_reset_completed": "Restableció la contraseña",
+            "email_verified": "Verificó el correo",
+            "mfa_enrolled": "Activó la verificación en dos pasos",
+            "mfa_challenge_failed": "Falló la verificación en dos pasos",
+            "session_revoked": "Revocó una sesión",
+            "account_locked": "Bloqueó la cuenta"
+        },
+        "impersonation": {
+            "started": "Empezó un acceso de soporte",
+            "ended": "Terminó el acceso de soporte"
+        },
+        "permission": {
+            "changed": "Cambió permisos"
+        },
+        "role": {
+            "changed": "Cambió el rol"
+        },
+        "tenant": {
+            "created": "Creó la empresa",
+            "updated": "Actualizó la empresa",
+            "suspended": "Suspendió la empresa",
+            "reactivated": "Reactivó la empresa",
+            "accessed": "Entró en la empresa"
+        },
+        "document": {
+            "viewed": "Vio un documento",
+            "downloaded": "Descargó un documento",
+            "uploaded": "Subió un documento",
+            "approved": "Aprobó un documento",
+            "rejected": "Rechazó un documento",
+            "deleted": "Borró un documento"
+        },
+        "verification": {
+            "override": "Forzó una verificación"
+        },
+        "driver": {
+            "verified": "Revisó a un conductor"
+        },
+        "onboarding": {
+            "status_changed": "Cambió el estado de incorporación"
+        },
+        "load": {
+            "created": "Creó una carga",
+            "status_changed": "Cambió el estado de una carga",
+            "assignment_changed": "Cambió la asignación de una carga",
+            "cancelled": "Canceló una carga",
+            "duplicated": "Duplicó una carga"
+        },
+        "financial": {
+            "changed": "Cambió cifras de dinero"
+        },
+        "expense": {
+            "approved": "Aprobó un gasto",
+            "rejected": "Rechazó un gasto"
+        },
+        "invoice": {
+            "created": "Creó una factura",
+            "sent": "Envió una factura",
+            "status_changed": "Cambió el estado de una factura"
+        },
+        "payment": {
+            "recorded": "Anotó un cobro",
+            "failed": "Cobro fallido o en disputa",
+            "refunded": "Reembolsó un cobro"
+        },
+        "signature": {
+            "requested": "Pidió una firma",
+            "viewed": "Vio una solicitud de firma",
+            "signed": "Firmó",
+            "declined": "Rechazó firmar",
+            "voided": "Anuló una firma"
+        },
+        "export": {
+            "created": "Generó una exportación",
+            "downloaded": "Descargó una exportación"
+        },
+        "retention": {
+            "archived": "Archivó por retención",
+            "purged": "Purgó por retención"
+        },
+        "legal_hold": {
+            "applied": "Aplicó una retención legal",
+            "released": "Levantó una retención legal"
+        },
+        "settings": {
+            "updated": "Cambió los ajustes"
+        },
+        "integration": {
+            "updated": "Cambió una integración"
+        },
+        "tracking": {
+            "consent_changed": "Cambió el consentimiento de rastreo"
+        },
+        "security": {
+            "rate_limited": "Alcanzó el límite de peticiones"
+        },
+        "lead": {
+            "status_changed": "Cambió el estado de un prospecto",
+            "assigned": "Asignó un prospecto"
+        }
     },
-    "role": {
-      "changed": "Cambió el rol"
-    },
-    "tenant": {
-      "created": "Creó la empresa",
-      "updated": "Actualizó la empresa",
-      "suspended": "Suspendió la empresa",
-      "reactivated": "Reactivó la empresa",
-      "accessed": "Entró en la empresa"
-    },
-    "document": {
-      "viewed": "Vio un documento",
-      "downloaded": "Descargó un documento",
-      "uploaded": "Subió un documento",
-      "approved": "Aprobó un documento",
-      "rejected": "Rechazó un documento",
-      "deleted": "Borró un documento"
-    },
-    "verification": {
-      "override": "Forzó una verificación"
-    },
-    "driver": {
-      "verified": "Revisó a un conductor"
-    },
-    "onboarding": {
-      "status_changed": "Cambió el estado de incorporación"
-    },
-    "load": {
-      "created": "Creó una carga",
-      "status_changed": "Cambió el estado de una carga",
-      "assignment_changed": "Cambió la asignación de una carga",
-      "cancelled": "Canceló una carga",
-      "duplicated": "Duplicó una carga"
-    },
-    "financial": {
-      "changed": "Cambió cifras de dinero"
-    },
-    "expense": {
-      "approved": "Aprobó un gasto",
-      "rejected": "Rechazó un gasto"
-    },
-    "invoice": {
-      "created": "Creó una factura",
-      "sent": "Envió una factura",
-      "status_changed": "Cambió el estado de una factura"
-    },
-    "payment": {
-      "recorded": "Anotó un cobro",
-      "failed": "Cobro fallido o en disputa",
-      "refunded": "Reembolsó un cobro"
-    },
-    "signature": {
-      "requested": "Pidió una firma",
-      "viewed": "Vio una solicitud de firma",
-      "signed": "Firmó",
-      "declined": "Rechazó firmar",
-      "voided": "Anuló una firma"
-    },
-    "export": {
-      "created": "Generó una exportación",
-      "downloaded": "Descargó una exportación"
-    },
-    "retention": {
-      "archived": "Archivó por retención",
-      "purged": "Purgó por retención"
-    },
-    "legal_hold": {
-      "applied": "Aplicó una retención legal",
-      "released": "Levantó una retención legal"
-    },
-    "settings": {
-      "updated": "Cambió los ajustes"
-    },
-    "integration": {
-      "updated": "Cambió una integración"
-    },
-    "tracking": {
-      "consent_changed": "Cambió el consentimiento de rastreo"
-    },
-    "security": {
-      "rate_limited": "Alcanzó el límite de peticiones"
-    },
-    "lead": {
-      "status_changed": "Cambió el estado de un prospecto",
-      "assigned": "Asignó un prospecto"
+    "entity": {
+        "carrier": "Transportista",
+        "carrier_settlement": "Liquidación",
+        "dispatcher_commission": "Comisión",
+        "dispatcher_group": "Grupo de despachadores",
+        "dispatcher_profile": "Ficha de despachador",
+        "dispatcher_resource_assignment": "Asignación",
+        "document": "Documento",
+        "driver": "Conductor",
+        "expense": "Gasto",
+        "factoring_company": "Empresa de factoring",
+        "invoice": "Factura",
+        "lead": "Prospecto",
+        "load": "Carga",
+        "load_document": "Papel de una carga",
+        "payment": "Cobro",
+        "report": "Informe",
+        "saas_plan": "Plan de SaaS",
+        "tenant": "Empresa",
+        "tenant_settings": "Ajustes de la empresa",
+        "user_tenant_membership": "Usuario de la empresa"
     }
-  },
-  "entity": {
-    "carrier": "Transportista",
-    "carrier_settlement": "Liquidación",
-    "dispatcher_commission": "Comisión",
-    "dispatcher_group": "Grupo de despachadores",
-    "dispatcher_profile": "Ficha de despachador",
-    "dispatcher_resource_assignment": "Asignación",
-    "document": "Documento",
-    "driver": "Conductor",
-    "expense": "Gasto",
-    "factoring_company": "Empresa de factoring",
-    "invoice": "Factura",
-    "lead": "Prospecto",
-    "load": "Carga",
-    "payment": "Cobro",
-    "report": "Informe",
-    "saas_plan": "Plan de SaaS",
-    "tenant": "Empresa",
-    "tenant_settings": "Ajustes de la empresa",
-    "user_tenant_membership": "Usuario de la empresa"
-  }
 }

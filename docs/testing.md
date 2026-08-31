@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (948 tests, 6459 assertions)
+OK (969 tests, 6549 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de la cola de incorporación.
+(Cifra del 31 de agosto, tras el lote de los papeles de la carga.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -394,6 +394,75 @@ ficheros de `tests/`, junta las funciones declaradas en primera columna y falla
 si alguna aparece en dos sitios — nombrando la función y los dos ficheros. Un
 fallo normal en vez de una suite que no arranca. Comprobado que caza la colisión
 real.
+
+### La comparación que nunca puede ser cierta
+
+En el lote de los papeles de la carga apareció el peor defecto encontrado hasta
+ahora, y llevaba meses en producción con la suite entera en verde.
+
+La puerta de `pod_received` —el estado con el que se factura una carga— exige un
+comprobante de entrega y lo buscaba así:
+
+```php
+->where('d.document_type', 'proof_of_delivery')
+```
+
+El CHECK de `documents.document_type` **no admite ese valor**. El tipo se llama
+`pod`. Ninguna fila podía tenerlo jamás, así que la puerta no era estricta: era
+imposible. El estado con el que se cobra era inalcanzable, y no lo notaba nadie
+porque tampoco había pantalla para colgar el papel — `load_documents` la
+escribía solo el sembrador de demostración.
+
+Un literal que no está en el CHECK no da error de compilación, ni de tipos, ni
+de análisis estático. Da algo peor: una comparación que siempre es falsa. Y las
+pruebas que tocaban esa puerta escribían el mismo literal equivocado, así que
+**confirmaban el error en vez de encontrarlo**.
+
+Lo cubre `tests/Unit/Suite/DocumentTypeCheckTest.php`, que lee el CHECK del DDL
+—no una constante de PHP: una constante la escribe la misma mano que escribe el
+literal, y las dos se equivocan a la vez— y falla nombrando el literal y el
+fichero. Comprobado que caza el fallo real al reintroducirlo. De paso comprueba
+que los dos CHECK de tipo de documento —el de `documents` y el de
+`load_documents`, que viven en ficheros de esquema distintos— siguen diciendo lo
+mismo.
+
+La forma general del defecto: **una comprobación que compara contra un valor que
+el esquema no admite parece más estricta de lo que es, cuando en realidad no es
+una comprobación en absoluto.** Es la misma familia que la puerta de documentos
+que solo miraba vencimientos y por eso dejaba pasar a un transportista con cero
+documentos.
+
+### La sexta vez que el navegador encuentra lo que la suite no
+
+Con las dieciséis pruebas del lote en verde, abrir la pantalla enseñó que el
+desplegable de «¿de qué parada es este comprobante?» decía **«Parada 1:
+recogida» y «Parada 2: entrega»** — dos etiquetas que no dicen dónde, que es lo
+único que hace falta saber para elegir.
+
+La causa: una parada puede llevar su dirección escrita en su propia fila o
+apuntar a una `customer_locations`. Las cargas reales usan lo segundo, y
+entonces `facility_name`, `city` y `state` de la parada están **todas a NULL**.
+La consulta leía solo la fila de `load_stops`.
+
+Ninguna prueba lo veía, y por el motivo de siempre: todas montaban las paradas
+escribiéndoles la dirección a mano, que es justo el caso que sí funcionaba. La
+prueba nueva crea la ubicación del cliente y deja la parada sin dirección
+propia — como lo hace la aplicación de verdad. Comprobado que falla con la
+consulta vieja.
+
+Es el mismo enunciado que ya está tres veces en este documento, y conviene que
+esté una cuarta porque se sigue cumpliendo: **una prueba que inserta sus propias
+filas prueba el controlador, no el sistema. Cuando el dato puede llegar por dos
+caminos, la prueba tiene que usar el que usa la aplicación.**
+
+Y tirando de ese hilo salió un tercero, en los datos de demostración: dos
+clientes tenían una sola ubicación, el sembrador elegía la primera para la
+recogida y la última para la entrega —la misma fila—, y **cinco de las once
+cargas sembradas recogían y entregaban en la misma dirección**. En un sistema de
+despacho eso no es cosmético: es una carga que no existe, en la primera pantalla
+que abre quien evalúa la demostración. Lo cubren ahora dos pruebas en
+`Feature/Database/DemoSeedTest.php`: ninguna carga con origen igual a destino, y
+ninguna parada sin dirección por ninguno de los dos caminos.
 
 ## Migraciones: por qué todas son reanudables
 
