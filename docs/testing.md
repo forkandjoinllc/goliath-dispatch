@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (932 tests, 6374 assertions)
+OK (948 tests, 6459 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de salud de la plataforma.
+(Cifra del 31 de agosto, tras el lote de la cola de incorporación.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 

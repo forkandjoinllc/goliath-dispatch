@@ -152,12 +152,20 @@ final class Guards
         return $hasPod ? [] : ['noPodDocument'];
     }
 
-    /** @return list<string> */
-    private static function carrierCompliance(string $carrierId): array
+    /**
+     * Lo que impide que un transportista lleve carga.
+     *
+     * PÚBLICA a propósito. La cola de incorporación necesita contestar «¿qué le
+     * falta a este transportista?» y es exactamente la misma pregunta que se
+     * hace la puerta de despacho. Con dos implementaciones, la cola diría
+     * «listo» y el despacho diría «bloqueado» — y quien lleva cumplimiento
+     * confiaría en la que se equivoque.
+     *
+     * @return list<string>
+     */
+    public static function carrierBlocking(string $carrierId): array
     {
-        $carrier = DB::table('carriers')->where('id', $carrierId)->first([
-            'onboarding_status', 'fmcsa_status',
-        ]);
+        $carrier = DB::table('carriers')->where('id', $carrierId)->first(['onboarding_status']);
 
         if ($carrier === null) {
             return ['noCarrier'];
@@ -170,6 +178,12 @@ final class Guards
         }
 
         return [...$blocking, ...self::documentCompliance('carrier', $carrierId)];
+    }
+
+    /** @return list<string> */
+    private static function carrierCompliance(string $carrierId): array
+    {
+        return self::carrierBlocking($carrierId);
     }
 
     /**

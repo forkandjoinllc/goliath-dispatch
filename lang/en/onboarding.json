@@ -25,7 +25,9 @@
     "certificate_of_insurance": "Certificate of Insurance (COI)",
     "w9": "W-9",
     "notice_of_assignment": "Notice of Assignment",
-    "change_of_payee": "Change of Payee"
+    "change_of_payee": "Change of Payee",
+    "carrier_agreement": "Carrier agreement",
+    "other_onboarding": "Other onboarding document"
   },
   "transitions": {
     "submit": {
@@ -81,5 +83,38 @@
     "expiringSoon": "Expiring soon",
     "lastActivity": "Last activity",
     "noCards": "No carriers in this status."
+  },
+  "queue": {
+    "title": "Onboarding",
+    "description": "Which carrier is waiting on what, and who is missing something before they can haul.",
+    "empty": "No carriers.",
+    "all": "All",
+    "carrierColumn": "Carrier",
+    "statusColumn": "Status",
+    "waitingColumn": "Waiting since",
+    "missingColumn": "Missing",
+    "open": "Open record",
+    "canHaul": "Can haul",
+    "cannotHaul": "Cannot haul",
+    "nothingMissing": "Nothing",
+    "blockedTitle": "Approved but unable to haul",
+    "blockedDescription": "Their onboarding is approved, but something expired or is missing. No status list shows them — they are still \"approved\" — and yet their truck cannot roll.",
+    "blockedEmpty": "None. Every approved carrier is up to date.",
+    "warningsTitle": "Warnings",
+    "warningsHint": "These do not stop dispatch today. They are here because whoever runs compliance needs to see them."
+  },
+  "blocking": {
+    "carrierNotApproved": "Onboarding is not approved",
+    "noCarrier": "The carrier does not exist"
+  },
+  "warnings": {
+    "fmcsaNeverChecked": "Never checked against FMCSA",
+    "fmcsaStale": "The FMCSA check is past due"
+  },
+  "signature": {
+    "title": "Carrier agreement",
+    "none": "Not sent for signature",
+    "sentAt": "Sent {date}",
+    "viewedAt": "Viewed {date}"
   }
 }

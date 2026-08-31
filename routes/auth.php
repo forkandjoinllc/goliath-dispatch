@@ -20,6 +20,7 @@ use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\NotificationController;
+use App\Http\Controllers\App\OnboardingController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\PermitController;
 use App\Http\Controllers\Platform\HealthController;
@@ -360,6 +361,17 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+
+    /*
+    | Cola de incorporación
+    |
+    | Solo lectura. Las transiciones ya viven bajo el transportista
+    | (`carriers/{carrier}/onboarding/{action}`) desde hace lotes, y duplicarlas
+    | aquí habría creado dos puertas al mismo cambio de estado con sus propias
+    | comprobaciones que mantener. Esta pantalla ENSEÑA la cola; el botón de
+    | aprobar sigue estando donde estaba.
+    */
+    Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
 
     /*
     | Permisos, escoltas y sobredimensión

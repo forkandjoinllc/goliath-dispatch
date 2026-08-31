@@ -25,7 +25,9 @@
     "certificate_of_insurance": "Certificado de seguro (COI)",
     "w9": "Formulario W-9",
     "notice_of_assignment": "Aviso de cesión (Notice of Assignment)",
-    "change_of_payee": "Cambio de beneficiario (Change of Payee)"
+    "change_of_payee": "Cambio de beneficiario (Change of Payee)",
+    "carrier_agreement": "Acuerdo de transportista",
+    "other_onboarding": "Otro documento de incorporación"
   },
   "transitions": {
     "submit": {
@@ -81,5 +83,38 @@
     "expiringSoon": "Por vencer",
     "lastActivity": "Última actividad",
     "noCards": "No hay transportistas en este estado."
+  },
+  "queue": {
+    "title": "Incorporación",
+    "description": "Qué transportista espera qué, y a quién le falta algo para poder llevar carga.",
+    "empty": "No hay transportistas.",
+    "all": "Todos",
+    "carrierColumn": "Transportista",
+    "statusColumn": "Estado",
+    "waitingColumn": "Esperando desde",
+    "missingColumn": "Le falta",
+    "open": "Abrir ficha",
+    "canHaul": "Puede llevar carga",
+    "cannotHaul": "No puede llevar carga",
+    "nothingMissing": "Nada",
+    "blockedTitle": "Aprobados que no pueden llevar carga",
+    "blockedDescription": "Su incorporación está aprobada, pero algo se venció o falta. Ninguna lista por estado los enseña — siguen en «aprobado» — y sin embargo su camión no puede salir.",
+    "blockedEmpty": "Ninguno. Todos los aprobados están al día.",
+    "warningsTitle": "Avisos",
+    "warningsHint": "No impiden despachar hoy. Están aquí porque quien lleva cumplimiento tiene que verlos."
+  },
+  "blocking": {
+    "carrierNotApproved": "La incorporación no está aprobada",
+    "noCarrier": "El transportista no existe"
+  },
+  "warnings": {
+    "fmcsaNeverChecked": "Nunca se ha comprobado en FMCSA",
+    "fmcsaStale": "La comprobación de FMCSA está fuera de plazo"
+  },
+  "signature": {
+    "title": "Acuerdo de transportista",
+    "none": "No se ha mandado a firmar",
+    "sentAt": "Enviado el {date}",
+    "viewedAt": "Visto el {date}"
   }
 }
