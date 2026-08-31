@@ -37,6 +37,18 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureTenantActive::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        /*
+         * El webhook del proveedor de cobro no lleva token CSRF, y no puede: lo
+         * manda un servidor de fuera, no un navegador con sesión. Su defensa no
+         * es el token sino la FIRMA del cuerpo, que se comprueba antes de mirar
+         * nada más — ver BillingWebhookController.
+         *
+         * Es la única exclusión de la aplicación y conviene que siga siéndolo.
+         */
+        $middleware->validateCsrfTokens(except: [
+            'billing/webhook',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

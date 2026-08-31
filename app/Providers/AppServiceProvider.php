@@ -10,6 +10,9 @@ use App\Listeners\ActivateVerifiedUser;
 use App\Services\Fmcsa\DirectoryFmcsaVerifier;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
+use App\Services\Billing\BillingProvider;
+use App\Services\Billing\MockBillingProvider;
+use App\Services\Billing\StripeBillingProvider;
 use App\Services\Fmcsa\MockFmcsaDirectory;
 use App\Services\Fmcsa\MockFmcsaVerifier;
 use App\Services\Fmcsa\QcMobileDirectory;
@@ -103,6 +106,26 @@ class AppServiceProvider extends ServiceProvider
                 $clave,
                 (string) config('services.fmcsa.base_url', 'https://mobile.fmcsa.dot.gov/qc/services'),
             );
+        });
+
+        /*
+         * El cobro de la suscripción.
+         *
+         * Simulado mientras no haya las DOS credenciales. Con solo la secreta y
+         * sin la del webhook, el adaptador real cobraría y no se enteraría nunca
+         * de que le pagaron: la persona pagaría y su suscripción seguiría en
+         * `past_due`. Faltando cualquiera de las dos, mejor el simulacro — que
+         * al menos no cobra.
+         */
+        $this->app->singleton(BillingProvider::class, function ($app): BillingProvider {
+            $secreta = trim((string) config('services.stripe.secret', ''));
+            $webhook = trim((string) config('services.stripe.webhook_secret', ''));
+
+            if ($secreta === '' || $webhook === '') {
+                return new MockBillingProvider;
+            }
+
+            return new StripeBillingProvider($app->make(HttpFactory::class), $secreta, $webhook);
         });
 
         $this->app->bind(FmcsaVerifier::class, function ($app): FmcsaVerifier {

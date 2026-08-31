@@ -1,0 +1,84 @@
+{
+    "index": {
+        "title": "Facturación",
+        "description": "Tu plan, tu estado y cómo pagar.",
+        "currentPlan": "Plan actual",
+        "noSubscription": "Esta empresa no tiene suscripción.",
+        "perMonth": "{amount} al mes",
+        "trialEnds": "La prueba acaba el {date}",
+        "trialEnded": "La prueba ya acabó",
+        "periodEnds": "El periodo acaba el {date}",
+        "pastDueSince": "Sin pagar desde el {date}",
+        "cancelAtPeriodEnd": "Se dará de baja al acabar el periodo.",
+        "changePlan": "Elegir plan",
+        "pay": "Pagar",
+        "payHint": "Se abre la página de pago del proveedor. Los datos de la tarjeta se introducen allí y no pasan por este sistema.",
+        "portal": "Gestionar la suscripción",
+        "portalHint": "Cambiar de tarjeta, ver recibos o darse de baja, en la página del proveedor."
+    },
+    "status": {
+        "trialing": "En periodo de prueba",
+        "active": "Al corriente",
+        "past_due": "Pago pendiente",
+        "suspended": "Suspendida",
+        "cancelled": "Dada de baja",
+        "incomplete": "Sin completar"
+    },
+    "statusHint": {
+        "past_due": "El acceso NO se corta por esto. Suspender una empresa es una decisión de una persona, no de un cobro fallido.",
+        "cancelled": "La baja no borra nada. Tus cargas, tus facturas y tus documentos siguen siendo tuyos."
+    },
+    "plans": {
+        "title": "Planes",
+        "users": "{n} usuarios",
+        "usersOne": "{n} usuario",
+        "carriers": "{n} transportistas",
+        "carriersOne": "{n} transportista",
+        "loads": "{n} cargas al mes",
+        "loadsOne": "{n} carga al mes",
+        "unlimited": "Sin límite",
+        "trialDays": "{n} días de prueba",
+        "trialDaysOne": "{n} día de prueba",
+        "current": "Es tu plan",
+        "choose": "Elegir"
+    },
+    "provider": {
+        "mockTitle": "El cobro está simulado en esta instalación",
+        "mockHint": "No hay pasarela configurada, así que pulsar «Pagar» no cobra nada: lleva a una página de prueba que deja simular un pago aceptado o rechazado. Sirve para ver el flujo entero antes de conectar la pasarela de verdad.",
+        "liveTitle": "El cobro está activo",
+        "liveHint": "Pulsar «Pagar» lleva a la pasarela y cobra de verdad."
+    },
+    "events": {
+        "title": "Lo que ha dicho el proveedor",
+        "empty": "Todavía no ha llegado ningún aviso del proveedor.",
+        "emptyHint": "Aquí aparece cada aviso de cobro que llega, con si se pudo aplicar. Es donde mirar cuando un pago no se refleja.",
+        "type": "Aviso",
+        "state": "Estado",
+        "at": "Cuándo"
+    },
+    "eventStatus": {
+        "received": "Recibido",
+        "processed": "Aplicado",
+        "ignored": "No aplicaba",
+        "failed": "Falló"
+    },
+    "done": {
+        "title": "Gracias",
+        "heading": "Estamos confirmando el pago",
+        "body": "El proveedor nos avisa en unos segundos y la suscripción se actualiza sola. No hace falta que esperes en esta página: si cierras la ventana, se aplica igual.",
+        "back": "Volver a facturación"
+    },
+    "mock": {
+        "title": "Pago simulado",
+        "heading": "Esto no es una pasarela de pago",
+        "body": "Esta instalación no tiene pasarela configurada. Aquí puedes simular qué pasa si el pago se acepta y qué pasa si se rechaza — el segundo camino es el que casi nadie prueba y el que más se sufre.",
+        "plan": "Plan",
+        "pay": "Simular pago aceptado",
+        "fail": "Simular pago rechazado",
+        "cancel": "Volver sin pagar",
+        "noCard": "No se te pide ninguna tarjeta, aquí ni con la pasarela de verdad: los datos de tarjeta se introducen siempre en la página del proveedor."
+    },
+    "errors": {
+        "unknownPlan": "Ese plan no existe o no está disponible."
+    }
+}

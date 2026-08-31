@@ -26,6 +26,7 @@ use App\Http\Controllers\App\PermitController;
 use App\Http\Controllers\Platform\HealthController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
+use App\Http\Controllers\App\BillingController;
 use App\Http\Controllers\App\LoadDocumentController;
 use App\Http\Controllers\App\MessageController;
 use App\Http\Controllers\App\RetentionController;
@@ -443,6 +444,17 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('retention', [RetentionController::class, 'index'])->name('retention.index');
     Route::post('retention/holds', [RetentionController::class, 'storeHold'])->name('retention.holds.store');
     Route::post('retention/holds/{hold}/release', [RetentionController::class, 'releaseHold'])->name('retention.holds.release');
+
+    /*
+    | Facturación de la empresa
+    |
+    | `done` NO activa nada: solo enseña una página. Quien mueve la suscripción
+    | es el suceso del proveedor, que llega aunque nadie vuelva del navegador.
+    | Activar aquí dejaría sin sistema a quien pagara y cerrara la pestaña.
+    */
+    Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('billing/done', [BillingController::class, 'done'])->name('billing.done');
 
     /*
     | Firmas

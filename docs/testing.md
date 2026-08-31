@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1049 tests, 6896 assertions)
+OK (1075 tests, 7006 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote del almacén de ficheros.
+(Cifra del 31 de agosto, tras el lote del cobro de la suscripción.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -626,6 +626,39 @@ El cuarto lo encontró el barrido nuevo al ejecutarlo contra los datos de
 demostración: contó doce filas rotas cuando yo había roto una a mano. Es la
 segunda vez en dos lotes que una herramienta escrita para producción encuentra un
 fallo en la demostración antes que cualquier persona.
+
+### El simulacro que se llamaba a sí mismo
+
+En el lote del cobro escribí un adaptador simulado que, al «pagar», fabricaba el
+suceso, lo firmaba y lo mandaba al webhook con `Http::post(url('/billing/webhook'))`
+— exactamente lo que haría el proveedor de verdad. Parecía lo más fiel que se
+podía hacer.
+
+Veinte pruebas en verde. Abrí el navegador y el servidor se quedó **treinta
+segundos colgado**, dos veces, y devolvió sendos errores.
+
+Una petición que llama por red a su propio servidor espera a un trabajador que
+está ocupado siendo ella misma. Con un solo proceso PHP eso es un abrazo mortal,
+y no es un problema del servidor de desarrollo: un servidor pequeño en producción
+tiene exactamente un proceso libre menos de los que cree.
+
+Lo que no lo vio: **todas las pruebas del webhook llaman a la ruta directamente**
+—`$this->post('/billing/webhook', …)`— porque así se prueba el enrutado, la
+exención de CSRF y el limitador. Ninguna pasaba por el camino que hace la llamada
+anidada. La prueba correcta no era otra prueba del webhook: era abrir el
+navegador y pulsar el botón, que es lo que hace un usuario.
+
+El arreglo invoca el controlador del webhook en vez de llamarse por red. Recorre
+el mismo camino en todo lo que importa —firma, libro, ciclo— y lo único que deja
+de ejercer es el enrutado, que ya lo prueban las otras. Lo fija una prueba que
+lee el fichero y comprueba que no hay `Http::`.
+
+Y esa prueba falló a la primera **por su propio comentario**: la explicación de
+por qué existe NOMBRA la llamada que ya no está. Un guardián que se dispara con
+la explicación de su propia razón de ser es un guardián con falsos positivos, y
+uno con falsos positivos se acaba desactivando — así que filtra las líneas de
+comentario antes de mirar. Es la segunda vez que un guardián mío tiene ese fallo
+(la primera fue en el lote 49) y la regla ya está escrita más arriba.
 
 ## Migraciones: por qué todas son reanudables
 

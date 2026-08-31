@@ -98,6 +98,7 @@ class DemoDataSeeder extends Seeder
             DB::transaction(function (): void {
                 $equipment = $this->equipmentTypes();
                 $this->expenseCategories();
+                $this->subscription();
 
                 $carriers = $this->carriers();
                 $this->onboardings($carriers);
@@ -1501,6 +1502,44 @@ class DemoDataSeeder extends Seeder
         ."3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\n"
         ."trailer<</Root 1 0 R>>\n"
         ."%%EOF\n";
+
+    /**
+     * La suscripción de la empresa de demostración.
+     *
+     * Faltaba: el sembrador crea el inquilino a mano en vez de pasar por
+     * `ProvisionTenant`, así que `tenant_subscriptions` quedaba vacía y la
+     * pantalla de facturación decía «esta empresa no tiene suscripción». Se vio
+     * al abrirla por primera vez, en el lote del cobro.
+     *
+     * En PRUEBA y acabándose en cuatro días, a propósito: es el estado con más
+     * que enseñar. Se ve el aviso de que la prueba se acaba, el barrido de
+     * avisos tiene sobre qué avisar, y el botón de pagar está donde tiene que
+     * estar.
+     */
+    private function subscription(): void
+    {
+        $plan = DB::table('saas_plans')
+            ->whereNull('deleted_at')
+            ->where('is_public', 1)
+            ->orderBy('sort_order')
+            ->first(['id', 'trial_days']);
+
+        if ($plan === null) {
+            // Sin planes sembrados no hay suscripción posible: `plan_id` es NOT
+            // NULL. Se avisa en vez de reventar — los planes los siembra su
+            // propio sembrador y puede no haber corrido.
+            $this->command->warn('No hay planes de SaaS sembrados; la empresa de demostración se queda sin suscripción.');
+
+            return;
+        }
+
+        $this->upsert('tenant_subscriptions', ['tenant_id' => $this->tenantId], [
+            'plan_id' => $plan->id,
+            'status' => 'trialing',
+            'trial_ends_at' => Carbon::now()->addDays(4),
+            'current_period_start' => Carbon::now()->subDays((int) $plan->trial_days - 4),
+        ]);
+    }
 
     private function report(): void
     {

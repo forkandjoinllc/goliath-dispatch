@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Platform;
 
+use App\Services\Billing\BillingProvider;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Support\Routing\RouteProvider;
 use App\Support\Routing\StopDerivedRouteProvider;
@@ -145,15 +146,29 @@ final class Providers
     /** @return array<string, mixed> */
     private static function pagos(): array
     {
-        $clave = trim((string) Config::get('services.stripe.secret', ''));
+        // Antes esto miraba `services.stripe.secret` y decía «sin configurar».
+        // Ahora hay una interfaz atada de verdad, así que se pregunta a la
+        // aplicación qué adaptador corre — igual que con FMCSA. La diferencia
+        // importa: la configuración dice qué se PIDIÓ, y el contenedor dice qué
+        // se está USANDO, que es lo que alguien viene a comprobar.
+        $proveedor = app(BillingProvider::class);
+
+        // Hacen falta LAS DOS. Con solo la secreta, el adaptador real cobraría y
+        // no se enteraría nunca de que le pagaron: los sucesos llegan por el
+        // webhook y sin su secreto no se pueden verificar. Se nombra la que
+        // falta, no una genérica.
+        $secreta = trim((string) Config::get('services.stripe.secret', ''));
+        $webhook = trim((string) Config::get('services.stripe.webhook_secret', ''));
+
+        $falta = $secreta === '' ? 'STRIPE_SECRET' : ($webhook === '' ? 'STRIPE_WEBHOOK_SECRET' : null);
 
         return [
             'key' => 'payments',
-            'interface' => 'Stripe',
-            'bound' => $clave === '' ? 'sin configurar' : 'stripe',
-            'status' => $clave === '' ? 'mock' : 'live',
-            'detail' => $clave === '' ? 'STRIPE_SECRET' : null,
-            'envVar' => $clave === '',
+            'interface' => 'BillingProvider',
+            'bound' => class_basename($proveedor),
+            'status' => $proveedor->isLive() ? 'live' : 'mock',
+            'detail' => $falta,
+            'envVar' => $falta !== null,
         ];
     }
 

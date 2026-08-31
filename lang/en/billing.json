@@ -1,0 +1,84 @@
+{
+    "index": {
+        "title": "Billing",
+        "description": "Your plan, your status and how to pay.",
+        "currentPlan": "Current plan",
+        "noSubscription": "This company has no subscription.",
+        "perMonth": "{amount} per month",
+        "trialEnds": "The trial ends on {date}",
+        "trialEnded": "The trial has ended",
+        "periodEnds": "The period ends on {date}",
+        "pastDueSince": "Unpaid since {date}",
+        "cancelAtPeriodEnd": "It will be cancelled at the end of the period.",
+        "changePlan": "Choose a plan",
+        "pay": "Pay",
+        "payHint": "This opens the provider's payment page. Card details are entered there and never pass through this system.",
+        "portal": "Manage the subscription",
+        "portalHint": "Change card, see receipts or cancel, on the provider's page."
+    },
+    "status": {
+        "trialing": "On trial",
+        "active": "Paid up",
+        "past_due": "Payment due",
+        "suspended": "Suspended",
+        "cancelled": "Cancelled",
+        "incomplete": "Incomplete"
+    },
+    "statusHint": {
+        "past_due": "Access is NOT cut off for this. Suspending a company is a person's decision, not a failed charge's.",
+        "cancelled": "Cancelling deletes nothing. Your loads, invoices and documents remain yours."
+    },
+    "plans": {
+        "title": "Plans",
+        "users": "{n} users",
+        "usersOne": "{n} user",
+        "carriers": "{n} carriers",
+        "carriersOne": "{n} carrier",
+        "loads": "{n} loads per month",
+        "loadsOne": "{n} load per month",
+        "unlimited": "No limit",
+        "trialDays": "{n} trial days",
+        "trialDaysOne": "{n} trial day",
+        "current": "Your plan",
+        "choose": "Choose"
+    },
+    "provider": {
+        "mockTitle": "Billing is simulated on this installation",
+        "mockHint": "No payment gateway is configured, so pressing “Pay” charges nothing: it goes to a test page where you can simulate an accepted or a declined payment. It is there to show the whole flow before connecting the real gateway.",
+        "liveTitle": "Billing is live",
+        "liveHint": "Pressing “Pay” goes to the gateway and charges for real."
+    },
+    "events": {
+        "title": "What the provider has said",
+        "empty": "No notice from the provider has arrived yet.",
+        "emptyHint": "Every billing notice that arrives shows here, with whether it could be applied. This is where to look when a payment is not reflected.",
+        "type": "Notice",
+        "state": "State",
+        "at": "When"
+    },
+    "eventStatus": {
+        "received": "Received",
+        "processed": "Applied",
+        "ignored": "Not applicable",
+        "failed": "Failed"
+    },
+    "done": {
+        "title": "Thank you",
+        "heading": "We are confirming the payment",
+        "body": "The provider notifies us within seconds and the subscription updates itself. You do not need to wait on this page: if you close the window, it still applies.",
+        "back": "Back to billing"
+    },
+    "mock": {
+        "title": "Simulated payment",
+        "heading": "This is not a payment gateway",
+        "body": "This installation has no gateway configured. Here you can simulate what happens if the payment is accepted and what happens if it is declined — the second path is the one almost nobody tests and the one that hurts most.",
+        "plan": "Plan",
+        "pay": "Simulate accepted payment",
+        "fail": "Simulate declined payment",
+        "cancel": "Go back without paying",
+        "noCard": "You are not asked for a card, here or with the real gateway: card details are always entered on the provider's page."
+    },
+    "errors": {
+        "unknownPlan": "That plan does not exist or is not available."
+    }
+}

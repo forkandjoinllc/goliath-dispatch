@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\Marketing\CarrierSignupController;
 use App\Http\Controllers\Marketing\LeadController;
 use App\Http\Controllers\Marketing\PageController;
+use App\Http\Controllers\Public\BillingWebhookController;
+use App\Http\Controllers\Public\MockCheckoutController;
 use App\Http\Controllers\Public\SignatureController as PublicSignatureController;
 use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
 use App\Support\Locales;
@@ -130,3 +132,32 @@ Route::middleware('throttle:20,1')->group(function (): void {
 });
 
 require __DIR__.'/auth.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| Cobro de la suscripción
+|--------------------------------------------------------------------------
+|
+| Dos rutas públicas y sin sesión, por motivos distintos.
+|
+| El WEBHOOK lo llama el proveedor desde su servidor, así que no hay sesión que
+| valga y tampoco token CSRF (ver la exclusión en bootstrap/app.php). Su única
+| defensa es la firma del cuerpo, comprobada antes de mirar nada más. Con
+| limitador generoso: un proveedor de pagos reintenta por diseño, y estrangularle
+| los reintentos sería perder pagos por prudencia mal puesta.
+|
+| La PÁGINA DE PAGO SIMULADA existe para que el arco entero funcione sin
+| credenciales de nadie. Va firmada y caduca: sin firma, cualquiera abriría la
+| página de pago de otra empresa y le activaría la suscripción. Solo responde si
+| el proveedor atado es el simulado; con Stripe de verdad contesta 404.
+|
+*/
+Route::post('billing/webhook', BillingWebhookController::class)
+    ->middleware('throttle:300,1')
+    ->name('billing.webhook');
+
+Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    Route::get('billing/mock-checkout', [MockCheckoutController::class, 'show'])->name('billing.mock.checkout');
+    Route::post('billing/mock-checkout', [MockCheckoutController::class, 'decide'])->name('billing.mock.decide');
+});

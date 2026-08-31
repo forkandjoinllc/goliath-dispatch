@@ -41,6 +41,23 @@ return [
         'base_url' => env('FMCSA_BASE_URL', 'https://mobile.fmcsa.dot.gov/qc/services'),
     ],
 
+    /*
+    | Stripe — el cobro de la suscripción.
+    |
+    | Hacen falta LAS DOS. Con solo `STRIPE_SECRET` el adaptador real cobraría y
+    | no se enteraría nunca de que le pagaron —los sucesos llegan por el webhook,
+    | y sin su secreto no se puede comprobar que vienen de Stripe—, así que la
+    | persona pagaría y su suscripción seguiría en `past_due`. Faltando
+    | cualquiera de las dos se ata el simulacro, que al menos no cobra.
+    |
+    | Las dos entran por el `.env` DEL SERVIDOR: no se versionan, no se pegan en
+    | un chat y no se registran en los logs.
+    */
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
