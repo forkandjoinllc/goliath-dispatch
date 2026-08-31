@@ -141,6 +141,18 @@ export default function LoadShow({
           >
             {t('loads.documents.link')}
           </Link>
+          {/*
+            Un botón y no un enlace: la primera vez CREA el hilo y mete dentro
+            al transportista. Un GET que escribe es un GET que el prefetch del
+            navegador dispara solo.
+          */}
+          <button
+            type="button"
+            onClick={() => router.post(`/loads/${load.id}/messages`)}
+            className="rounded border border-steel-300 px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+          >
+            {t('messages.index.title')}
+          </button>
           <Link
             href={`/loads/${load.id}/rate-confirmation`}
             className="rounded border border-steel-300 px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"

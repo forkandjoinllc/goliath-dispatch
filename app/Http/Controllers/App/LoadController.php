@@ -26,6 +26,7 @@ use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\Transitions;
+use App\Support\Messaging\Narrator;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
@@ -141,7 +142,11 @@ final class LoadController
 
         $checker->authorize($actor, 'load:read', $context, $policy);
 
-        $this->usesDictionary($request, ['loads', 'nav']);
+        // `messages` porque la ficha lleva el botón de abrir el hilo de la
+        // carga. Sin él la pantalla pintaría la clave en crudo — que es
+        // exactamente el fallo que EnumLabelsTest existe para cazar, y que aquí
+        // no cazaría porque no es una clave de enum.
+        $this->usesDictionary($request, ['loads', 'messages', 'nav']);
 
         $canMoney = $checker->can($actor, 'load:financials:read', $context, $policy)->allowed;
 
@@ -467,6 +472,23 @@ final class LoadController
                 before: ['status' => $from->value],
                 after: ['status' => $target->value],
                 reason: $reason !== '' ? $reason : null,
+            );
+
+            // Y se cuenta en el hilo de la carga, si lo hay. `Narrator` no crea
+            // hilos a propósito: si lo hiciera, cada cambio de estado de cada
+            // carga abriría una conversación y una empresa con seiscientas
+            // cargas al mes tendría una bandeja de seiscientos hilos que nadie
+            // ha abierto, con los cinco que importan enterrados debajo.
+            //
+            // Se guarda como CLAVE de traducción y parámetros, no como frase:
+            // en el hilo hay despacho trabajando en español y un transportista
+            // que puede trabajar en inglés, y una frase ya redactada dejaría a
+            // uno de los dos leyendo el idioma del otro. Ver Posting::narrate().
+            Narrator::loadStatusChanged(
+                tenantId: (string) $model->tenant_id,
+                loadId: (string) $model->id,
+                fromStatus: $from->value,
+                toStatus: $target->value,
             );
         });
 

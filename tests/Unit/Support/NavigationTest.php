@@ -92,10 +92,23 @@ it('cada entrada declara si su pantalla existe', function () {
 
     expect($ready)->toContain('/carriers', '/customers');
 
-    // Y que sigan existiendo entradas apagadas. Antes esta línea nombraba
-    // '/loads' como pendiente y se rompió sola el día que se construyó:
-    // clavar una ruta concreta aquí caduca por diseño.
-    expect($items->where('ready', false))->not->toBeEmpty();
+    // Y aquí llegó el día. Esta línea decía «que sigan existiendo entradas
+    // apagadas», y ya no queda ninguna: con los mensajes construidos, el menú
+    // del administrador está entero. La versión anterior nombraba '/loads' como
+    // pendiente y se rompió sola cuando se construyó — clavar una ruta concreta
+    // caduca por diseño, y clavar «hay pendientes» caduca también, solo que más
+    // tarde.
+    //
+    // Lo que queda vigilado es lo que de verdad importa: que nadie añada una
+    // entrada al menú sin decidir si está construida. Si esto falla nombrando
+    // una entrada nueva, hay dos salidas honestas — construir la pantalla, o
+    // dejarla apagada A PROPÓSITO y cambiar esta expectativa diciendo por qué.
+    $apagadas = $items->where('ready', false)->pluck('href')->all();
+
+    expect($apagadas)->toBe([], implode("\n", [
+        'Entradas del menú sin pantalla: '.implode(', ', $apagadas),
+        'O se construye, o se añade a Navigation::BUILT, o se cambia esta prueba con el motivo.',
+    ]));
 });
 
 it('el transportista no ve el directorio de factoring', function () {

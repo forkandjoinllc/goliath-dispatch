@@ -1,0 +1,55 @@
+{
+    "index": {
+        "title": "Mensajes",
+        "description": "Los hilos en los que estás. Un hilo se ve desde dentro: si no te han metido, no aparece.",
+        "empty": "No estás en ningún hilo todavía.",
+        "emptyFiltered": "Ningún hilo cuadra con lo que buscas.",
+        "searchLabel": "Buscar por asunto",
+        "kindLabel": "Clase de hilo",
+        "allKinds": "Todas",
+        "unread": "{n} sin leer",
+        "noMessages": "Sin mensajes todavía",
+        "openLoad": "Ver la carga"
+    },
+    "kind": {
+        "direct": "Directo",
+        "load": "De una carga",
+        "broadcast": "Aviso general"
+    },
+    "show": {
+        "title": "Hilo",
+        "participants": "Quién está dentro",
+        "participantsHint": "Todo el que está aquí lee este hilo. Meter a alguien queda anotado en la bitácora.",
+        "lastRead": "Ha leído hasta {date}",
+        "neverRead": "Todavía no lo ha abierto",
+        "remove": "Sacar del hilo",
+        "leave": "Salirme del hilo",
+        "leaveHint": "Dejarás de ver el hilo. Lo que escribiste se queda.",
+        "operational": "Hilo operativo",
+        "operationalHint": "Aquí se acuerdan citas y se avisan retrasos, así que la política de retención no lo tira sin más.",
+        "empty": "Nadie ha escrito todavía.",
+        "edited": "editado",
+        "system": "Del sistema",
+        "carrierMissingTitle": "Nadie de {carrier} está en este hilo",
+        "carrierMissingHint": "El transportista está dado de alta pero su gente todavía no tiene cuenta, así que lo que escribas aquí no lo va a leer nadie de su lado. Invítalos desde Usuarios, o llámalos."
+    },
+    "compose": {
+        "label": "Escribir",
+        "placeholder": "Escribe un mensaje…",
+        "send": "Enviar",
+        "attach": "Adjuntar un fichero",
+        "attachHint": "PDF o foto, hasta {mb} MB.",
+        "download": "Descargar"
+    },
+    "system": {
+        "loadStatusChanged": "La carga pasó de «{from}» a «{to}»."
+    },
+    "flash": {
+        "sent": "Mensaje enviado.",
+        "left": "Te has salido del hilo.",
+        "removed": "Se ha sacado a esa persona del hilo."
+    },
+    "errors": {
+        "notInThread": "No estás en ese hilo."
+    }
+}

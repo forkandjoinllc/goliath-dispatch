@@ -27,6 +27,7 @@ use App\Http\Controllers\Platform\HealthController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\LoadDocumentController;
+use App\Http\Controllers\App\MessageController;
 use App\Http\Controllers\App\RateConfirmationController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
@@ -415,6 +416,20 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('loads/{load}/documents', [LoadDocumentController::class, 'index'])->name('loads.documents.index');
     Route::post('loads/{load}/documents', [LoadDocumentController::class, 'store'])->name('loads.documents.store');
     Route::delete('loads/{load}/documents/{link}', [LoadDocumentController::class, 'destroy'])->name('loads.documents.destroy');
+
+    /*
+    | Mensajes
+    |
+    | `loads/{load}/messages` es un POST y no un GET aunque «abrir el hilo»
+    | suene a lectura: la primera vez CREA el hilo y mete dentro al
+    | transportista. Un GET que escribe es un GET que un rastreador, un
+    | prefetch del navegador o un enlace compartido disparan solos.
+    */
+    Route::get('messages', [MessageController::class, 'index'])->name('messages.index');
+    Route::get('messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('messages/{conversation}', [MessageController::class, 'store'])->name('messages.store');
+    Route::delete('messages/{conversation}/participants/{user}', [MessageController::class, 'removeParticipant'])->name('messages.participants.destroy');
+    Route::post('loads/{load}/messages', [MessageController::class, 'forLoad'])->name('loads.messages.open');
 
     /*
     | Firmas

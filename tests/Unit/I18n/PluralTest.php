@@ -42,6 +42,7 @@ const INVARIABLES = [
 
     // Sin sustantivo detrás: adjetivos y abreviaturas invariables.
     'notifications.bell.unread' => '«1 sin leer» y «1 unread» son correctos.',
+    'messages.index.unread' => 'Lo mismo que la campana: «1 sin leer» y «1 unread» son correctos.',
     'loads.eligibility.failsShort' => '«1 sin cumplir» es correcto.',
     'loads.eligibility.unknownShort' => '«1 sin constar» es correcto.',
     'leads.show.pounds' => '«lb» es una abreviatura de unidad y no lleva plural.',

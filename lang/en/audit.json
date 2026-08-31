@@ -64,23 +64,6 @@
             "session_revoked": "Session revoked",
             "account_locked": "Account locked"
         },
-        "impersonation": {
-            "started": "Support access started",
-            "ended": "Support access ended"
-        },
-        "permission": {
-            "changed": "Permissions changed"
-        },
-        "role": {
-            "changed": "Role changed"
-        },
-        "tenant": {
-            "created": "Company created",
-            "updated": "Company updated",
-            "suspended": "Company suspended",
-            "reactivated": "Company reactivated",
-            "accessed": "Company accessed"
-        },
         "document": {
             "viewed": "Document viewed",
             "downloaded": "Document downloaded",
@@ -89,14 +72,39 @@
             "rejected": "Document rejected",
             "deleted": "Document deleted"
         },
-        "verification": {
-            "override": "Verification overridden"
-        },
         "driver": {
             "verified": "Driver reviewed"
         },
-        "onboarding": {
-            "status_changed": "Onboarding status changed"
+        "expense": {
+            "approved": "Expense approved",
+            "rejected": "Expense rejected"
+        },
+        "export": {
+            "created": "Export created",
+            "downloaded": "Export downloaded"
+        },
+        "financial": {
+            "changed": "Financials changed"
+        },
+        "impersonation": {
+            "started": "Support access started",
+            "ended": "Support access ended"
+        },
+        "integration": {
+            "updated": "Integration updated"
+        },
+        "invoice": {
+            "created": "Invoice created",
+            "sent": "Invoice sent",
+            "status_changed": "Invoice status changed"
+        },
+        "lead": {
+            "status_changed": "Lead status changed",
+            "assigned": "Lead assigned"
+        },
+        "legal_hold": {
+            "applied": "Legal hold applied",
+            "released": "Legal hold released"
         },
         "load": {
             "created": "Load created",
@@ -105,22 +113,33 @@
             "cancelled": "Load cancelled",
             "duplicated": "Load duplicated"
         },
-        "financial": {
-            "changed": "Financials changed"
+        "message": {
+            "participant_added": "Someone joined a thread",
+            "participant_removed": "Someone left a thread"
         },
-        "expense": {
-            "approved": "Expense approved",
-            "rejected": "Expense rejected"
-        },
-        "invoice": {
-            "created": "Invoice created",
-            "sent": "Invoice sent",
-            "status_changed": "Invoice status changed"
+        "onboarding": {
+            "status_changed": "Onboarding status changed"
         },
         "payment": {
             "recorded": "Payment recorded",
             "failed": "Payment failed or disputed",
             "refunded": "Payment refunded"
+        },
+        "permission": {
+            "changed": "Permissions changed"
+        },
+        "retention": {
+            "archived": "Archived by retention",
+            "purged": "Purged by retention"
+        },
+        "role": {
+            "changed": "Role changed"
+        },
+        "security": {
+            "rate_limited": "Rate limit reached"
+        },
+        "settings": {
+            "updated": "Settings updated"
         },
         "signature": {
             "requested": "Signature requested",
@@ -129,38 +148,24 @@
             "declined": "Signature declined",
             "voided": "Signature voided"
         },
-        "export": {
-            "created": "Export created",
-            "downloaded": "Export downloaded"
-        },
-        "retention": {
-            "archived": "Archived by retention",
-            "purged": "Purged by retention"
-        },
-        "legal_hold": {
-            "applied": "Legal hold applied",
-            "released": "Legal hold released"
-        },
-        "settings": {
-            "updated": "Settings updated"
-        },
-        "integration": {
-            "updated": "Integration updated"
+        "tenant": {
+            "created": "Company created",
+            "updated": "Company updated",
+            "suspended": "Company suspended",
+            "reactivated": "Company reactivated",
+            "accessed": "Company accessed"
         },
         "tracking": {
             "consent_changed": "Tracking consent changed"
         },
-        "security": {
-            "rate_limited": "Rate limit reached"
-        },
-        "lead": {
-            "status_changed": "Lead status changed",
-            "assigned": "Lead assigned"
+        "verification": {
+            "override": "Verification overridden"
         }
     },
     "entity": {
         "carrier": "Carrier",
         "carrier_settlement": "Carrier settlement",
+        "conversation": "Message thread",
         "dispatcher_commission": "Dispatcher commission",
         "dispatcher_group": "Dispatcher group",
         "dispatcher_profile": "Dispatcher profile",

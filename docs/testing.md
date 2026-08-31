@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (969 tests, 6549 assertions)
+OK (996 tests, 6699 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de los papeles de la carga.
+(Cifra del 31 de agosto, tras el lote de mensajes.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -463,6 +463,74 @@ despacho eso no es cosmético: es una carga que no existe, en la primera pantall
 que abre quien evalúa la demostración. Lo cubren ahora dos pruebas en
 `Feature/Database/DemoSeedTest.php`: ninguna carga con origen igual a destino, y
 ninguna parada sin dirección por ninguno de los dos caminos.
+
+### La séptima vez, y esta vez por reimplementar
+
+En el lote de mensajes, con las nueve pruebas de alcance en verde, abrir el
+navegador dio un **404 en el hilo que el despachador acababa de crear**.
+
+La causa: un despachador alcanza una carga por DOS caminos —el transportista que
+lleva, o ser él mismo el `dispatcher_user_id` de esa carga— y `ScopeFilter` los
+une con un OR. `MessageScope` miraba solo el primero, porque lo había escrito de
+nuevo en vez de preguntárselo a `LoadScope`.
+
+Y no lo vio ninguna prueba por el motivo de siempre, en su versión más limpia:
+**`tests/Support/Scenario.php` asigna el despachador al transportista**, así que
+el primer camino tapaba siempre al segundo. En los datos de demostración el
+despachador no lleva ningún transportista y llega a sus cargas solo por ser su
+despachador — que es la configuración normal de una casa pequeña.
+
+La regla no es «probar también el otro camino». Es la que este proyecto lleva
+reaprendiendo desde el lote 44 y que aquí se pisó de frente:
+
+> **Cuando dos sitios contestan la misma pregunta, uno de los dos se equivoca.**
+
+La pregunta era «¿alcanzo esta carga?» y ya tenía dueño. La prueba nueva quita la
+asignación de transportista y pone al despachador como dueño de la carga —
+comprobado que falla con la consulta vieja.
+
+El navegador encontró un segundo, más difícil de llamar defecto y más fácil de
+sufrir: un hilo de carga cuyo transportista está dado de alta pero cuya gente
+todavía no tiene cuenta queda **con un solo lado**, sin que nada falle. Despacho
+escribe «la cita se mueve a las 14:00» y no lo lee nadie. La única señal era que
+la lista de participantes era corta, o sea pedirle a alguien que note una
+ausencia. Ahora la pantalla lo dice arriba y en voz alta, y hay dos pruebas.
+
+### El Actor fuera de una petición no es el Actor
+
+Media hora perdida que merece quedar escrita. Estas pruebas empezaron cogiendo el
+actor así:
+
+```php
+signIn($scenario, Role::Admin);
+$actor = app(CurrentActor::class)->require();   // ← no
+```
+
+Funciona, no lanza nada, y devuelve un Actor con **`role` y `tenantId` en nulo**:
+el Actor vive dentro de una petición y `signIn()` ya terminó la suya. Todo lo que
+dependa de esos dos campos se comporta distinto que en la aplicación, y los
+fallos que salen no se parecen a la causa — en este caso, filas de participante
+que no se escribían y una consulta de hilos que devolvía cero.
+
+Lo correcto es construirlo como lo construye la aplicación:
+
+```php
+app(TenantContext::class)->set((string) $scenario->tenant->id);
+$actor = app(ActorFactory::class)->for($scenario->user($rol)->fresh(), $tenantId);
+```
+
+Con `->fresh()`, además: el modelo que `Scenario` tiene en memoria se construyó
+con los atributos del INSERT, y `locale` lo rellena la base de datos.
+`ActorFactory` hace `Locale::from()` sobre él y una cadena vacía revienta.
+
+### Las claves con punto, otra vez
+
+`audit.json` guarda las acciones ANIDADAS —`action.load.status_changed`— porque
+el buscador del cliente parte las claves por puntos. Al añadir las dos acciones
+nuevas del lote las escribí planas (`"message.participant_added": "…"`), que es
+exactamente la trampa contada más arriba, y `EnumLabelsTest` la cazó en el mismo
+minuto. Es la tercera vez que un guardián escrito en un lote anterior atrapa un
+error del siguiente, y la razón de que valga la pena escribirlos.
 
 ## Migraciones: por qué todas son reanudables
 

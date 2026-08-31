@@ -1,0 +1,55 @@
+{
+    "index": {
+        "title": "Messages",
+        "description": "The threads you are in. A thread is visible from the inside: if nobody added you, it does not show.",
+        "empty": "You are not in any thread yet.",
+        "emptyFiltered": "No thread matches what you are looking for.",
+        "searchLabel": "Search by subject",
+        "kindLabel": "Thread kind",
+        "allKinds": "All",
+        "unread": "{n} unread",
+        "noMessages": "No messages yet",
+        "openLoad": "Open the load"
+    },
+    "kind": {
+        "direct": "Direct",
+        "load": "About a load",
+        "broadcast": "Announcement"
+    },
+    "show": {
+        "title": "Thread",
+        "participants": "Who is in",
+        "participantsHint": "Everyone here reads this thread. Adding someone is recorded in the audit log.",
+        "lastRead": "Read up to {date}",
+        "neverRead": "Has not opened it yet",
+        "remove": "Remove from thread",
+        "leave": "Leave the thread",
+        "leaveHint": "You will stop seeing the thread. What you wrote stays.",
+        "operational": "Operational thread",
+        "operationalHint": "Appointments are agreed and delays reported here, so the retention policy does not discard it lightly.",
+        "empty": "Nobody has written yet.",
+        "edited": "edited",
+        "system": "From the system",
+        "carrierMissingTitle": "Nobody from {carrier} is in this thread",
+        "carrierMissingHint": "The carrier is set up but their people do not have accounts yet, so nobody on their side will read what you write here. Invite them from Users, or call them."
+    },
+    "compose": {
+        "label": "Write",
+        "placeholder": "Write a message…",
+        "send": "Send",
+        "attach": "Attach a file",
+        "attachHint": "PDF or photo, up to {mb} MB.",
+        "download": "Download"
+    },
+    "system": {
+        "loadStatusChanged": "The load moved from “{from}” to “{to}”."
+    },
+    "flash": {
+        "sent": "Message sent.",
+        "left": "You left the thread.",
+        "removed": "That person was removed from the thread."
+    },
+    "errors": {
+        "notInThread": "You are not in that thread."
+    }
+}

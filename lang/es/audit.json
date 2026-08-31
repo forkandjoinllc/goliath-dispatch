@@ -64,23 +64,6 @@
             "session_revoked": "Revocó una sesión",
             "account_locked": "Bloqueó la cuenta"
         },
-        "impersonation": {
-            "started": "Empezó un acceso de soporte",
-            "ended": "Terminó el acceso de soporte"
-        },
-        "permission": {
-            "changed": "Cambió permisos"
-        },
-        "role": {
-            "changed": "Cambió el rol"
-        },
-        "tenant": {
-            "created": "Creó la empresa",
-            "updated": "Actualizó la empresa",
-            "suspended": "Suspendió la empresa",
-            "reactivated": "Reactivó la empresa",
-            "accessed": "Entró en la empresa"
-        },
         "document": {
             "viewed": "Vio un documento",
             "downloaded": "Descargó un documento",
@@ -89,14 +72,39 @@
             "rejected": "Rechazó un documento",
             "deleted": "Borró un documento"
         },
-        "verification": {
-            "override": "Forzó una verificación"
-        },
         "driver": {
             "verified": "Revisó a un conductor"
         },
-        "onboarding": {
-            "status_changed": "Cambió el estado de incorporación"
+        "expense": {
+            "approved": "Aprobó un gasto",
+            "rejected": "Rechazó un gasto"
+        },
+        "export": {
+            "created": "Generó una exportación",
+            "downloaded": "Descargó una exportación"
+        },
+        "financial": {
+            "changed": "Cambió cifras de dinero"
+        },
+        "impersonation": {
+            "started": "Empezó un acceso de soporte",
+            "ended": "Terminó el acceso de soporte"
+        },
+        "integration": {
+            "updated": "Cambió una integración"
+        },
+        "invoice": {
+            "created": "Creó una factura",
+            "sent": "Envió una factura",
+            "status_changed": "Cambió el estado de una factura"
+        },
+        "lead": {
+            "status_changed": "Cambió el estado de un prospecto",
+            "assigned": "Asignó un prospecto"
+        },
+        "legal_hold": {
+            "applied": "Aplicó una retención legal",
+            "released": "Levantó una retención legal"
         },
         "load": {
             "created": "Creó una carga",
@@ -105,22 +113,33 @@
             "cancelled": "Canceló una carga",
             "duplicated": "Duplicó una carga"
         },
-        "financial": {
-            "changed": "Cambió cifras de dinero"
+        "message": {
+            "participant_added": "Alguien entró en un hilo",
+            "participant_removed": "Alguien salió de un hilo"
         },
-        "expense": {
-            "approved": "Aprobó un gasto",
-            "rejected": "Rechazó un gasto"
-        },
-        "invoice": {
-            "created": "Creó una factura",
-            "sent": "Envió una factura",
-            "status_changed": "Cambió el estado de una factura"
+        "onboarding": {
+            "status_changed": "Cambió el estado de incorporación"
         },
         "payment": {
             "recorded": "Anotó un cobro",
             "failed": "Cobro fallido o en disputa",
             "refunded": "Reembolsó un cobro"
+        },
+        "permission": {
+            "changed": "Cambió permisos"
+        },
+        "retention": {
+            "archived": "Archivó por retención",
+            "purged": "Purgó por retención"
+        },
+        "role": {
+            "changed": "Cambió el rol"
+        },
+        "security": {
+            "rate_limited": "Alcanzó el límite de peticiones"
+        },
+        "settings": {
+            "updated": "Cambió los ajustes"
         },
         "signature": {
             "requested": "Pidió una firma",
@@ -129,38 +148,24 @@
             "declined": "Rechazó firmar",
             "voided": "Anuló una firma"
         },
-        "export": {
-            "created": "Generó una exportación",
-            "downloaded": "Descargó una exportación"
-        },
-        "retention": {
-            "archived": "Archivó por retención",
-            "purged": "Purgó por retención"
-        },
-        "legal_hold": {
-            "applied": "Aplicó una retención legal",
-            "released": "Levantó una retención legal"
-        },
-        "settings": {
-            "updated": "Cambió los ajustes"
-        },
-        "integration": {
-            "updated": "Cambió una integración"
+        "tenant": {
+            "created": "Creó la empresa",
+            "updated": "Actualizó la empresa",
+            "suspended": "Suspendió la empresa",
+            "reactivated": "Reactivó la empresa",
+            "accessed": "Entró en la empresa"
         },
         "tracking": {
             "consent_changed": "Cambió el consentimiento de rastreo"
         },
-        "security": {
-            "rate_limited": "Alcanzó el límite de peticiones"
-        },
-        "lead": {
-            "status_changed": "Cambió el estado de un prospecto",
-            "assigned": "Asignó un prospecto"
+        "verification": {
+            "override": "Forzó una verificación"
         }
     },
     "entity": {
         "carrier": "Transportista",
         "carrier_settlement": "Liquidación",
+        "conversation": "Hilo de mensajes",
         "dispatcher_commission": "Comisión",
         "dispatcher_group": "Grupo de despachadores",
         "dispatcher_profile": "Ficha de despachador",

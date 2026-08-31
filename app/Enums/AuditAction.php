@@ -52,6 +52,8 @@ enum AuditAction: string
     case SignatureSigned = 'signature.signed';
     case SignatureDeclined = 'signature.declined';
     case SignatureVoided = 'signature.voided';
+    case MessageParticipantAdded = 'message.participant_added';
+    case MessageParticipantRemoved = 'message.participant_removed';
     case ExportCreated = 'export.created';
     case ExportDownloaded = 'export.downloaded';
     case RetentionArchived = 'retention.archived';
