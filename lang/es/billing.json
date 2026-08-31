@@ -1,7 +1,7 @@
 {
     "index": {
         "title": "Facturación",
-        "description": "Tu plan, tu estado y cómo pagar.",
+        "description": "Su plan, su estado y cómo pagar.",
         "currentPlan": "Plan actual",
         "noSubscription": "Esta empresa no tiene suscripción.",
         "perMonth": "{amount} al mes",
@@ -26,7 +26,7 @@
     },
     "statusHint": {
         "past_due": "El acceso NO se corta por esto. Suspender una empresa es una decisión de una persona, no de un cobro fallido.",
-        "cancelled": "La baja no borra nada. Tus cargas, tus facturas y tus documentos siguen siendo tuyos."
+        "cancelled": "La baja no borra nada. Sus cargas, sus facturas y sus documentos siguen siendo suyos."
     },
     "plans": {
         "title": "Planes",
@@ -39,7 +39,7 @@
         "unlimited": "Sin límite",
         "trialDays": "{n} días de prueba",
         "trialDaysOne": "{n} día de prueba",
-        "current": "Es tu plan",
+        "current": "Es su plan",
         "choose": "Elegir"
     },
     "provider": {
@@ -71,7 +71,7 @@
     "mock": {
         "title": "Pago simulado",
         "heading": "Esto no es una pasarela de pago",
-        "body": "Esta instalación no tiene pasarela configurada. Aquí puedes simular qué pasa si el pago se acepta y qué pasa si se rechaza — el segundo camino es el que casi nadie prueba y el que más se sufre.",
+        "body": "Esta instalación no tiene pasarela configurada. Aquí se puede simular qué pasa si el pago se acepta y qué pasa si se rechaza — el segundo camino es el que casi nadie prueba y el que más se sufre.",
         "plan": "Plan",
         "pay": "Simular pago aceptado",
         "fail": "Simular pago rechazado",
@@ -80,5 +80,24 @@
     },
     "errors": {
         "unknownPlan": "Ese plan no existe o no está disponible."
+    },
+    "limits": {
+        "title": "Uso del plan",
+        "hint": "Lo que este plan incluye y lo que lleva usado esta empresa.",
+        "of": "{used} de {max}",
+        "unlimited": "Sin límite",
+        "users": "Usuarios de plantilla",
+        "carriers": "Transportistas",
+        "loadsThisMonth": "Cargas este mes",
+        "seatsHint": "Solo ocupan asiento las cuentas de plantilla: administración, contabilidad y despacho. Los accesos de transportistas y de chóferes no cuentan.",
+        "notEnforced": "Ahora mismo estos topes se cuentan y no bloquean nada. Si esta empresa pasa a estar sujeta a ellos, se avisa antes.",
+        "enforcedSince": "Sujeta a los topes de su plan desde el {date}.",
+        "near": "Queda poco de {resource}: {used} de {max}.",
+        "over": "Por encima del tope de {resource}: {used} de {max}.",
+        "reached": {
+            "users": "No caben más usuarios en este plan. Libere un asiento desactivando a alguien, o elija un plan mayor.",
+            "carriers": "No caben más transportistas en este plan. Elija un plan mayor para dar de alta a otro.",
+            "loadsThisMonth": "Se ha llegado al tope de cargas de este mes en este plan. El contador vuelve a cero el día 1; para seguir hoy, elija un plan mayor."
+        }
     }
 }

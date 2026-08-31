@@ -22,6 +22,7 @@ use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Locales;
+use App\Support\Plans\Limits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -192,9 +193,15 @@ final class CarrierController
         CurrentActor $current,
         PermissionChecker $checker,
         FmcsaDirectory $directory,
-    ): Response {
+    ): Response|RedirectResponse {
         $actor = $current->require();
         $checker->authorize($actor, 'carrier:create', null, $current->policy());
+
+        // Igual que en las cargas: se avisa antes del formulario, y el muro de
+        // verdad sigue en store().
+        if (Limits::isFull((string) $actor->tenantId, Limits::CARRIERS)) {
+            return redirect('/carriers')->with('error', __('billing.limits.reached.carriers'));
+        }
 
         $this->usesDictionary($request, ['carriers', 'nav', 'validation']);
 
@@ -360,6 +367,12 @@ final class CarrierController
         $actor = $current->require();
         $policy = $current->policy();
         $checker->authorize($actor, 'carrier:create', null, $policy);
+
+        // El tope de transportistas del plan. Antes de validar nada: el mensaje
+        // que hay que dar no es «este campo está mal», es «no cabe otro».
+        if (Limits::isFull((string) $actor->tenantId, Limits::CARRIERS)) {
+            return back()->withInput()->with('error', __('billing.limits.reached.carriers'));
+        }
 
         $data = $this->validated($request, null);
 

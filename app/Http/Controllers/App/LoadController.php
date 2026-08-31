@@ -25,6 +25,7 @@ use App\Support\Loads\DriverFacts;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
+use App\Support\Plans\Limits;
 use App\Support\Loads\Transitions;
 use App\Support\Messaging\Narrator;
 use App\Support\Tenancy\TenantPolicy;
@@ -212,11 +213,20 @@ final class LoadController
     }
 
 
-    public function create(Request $request, CurrentActor $current, PermissionChecker $checker): Response
+    public function create(Request $request, CurrentActor $current, PermissionChecker $checker): Response|RedirectResponse
     {
         $actor = $current->require();
         $policy = $current->policy();
         $checker->authorize($actor, 'load:create', null, $policy);
+
+        // Si no cabe otra, se dice ANTES de pedir el formulario entero. Dejar
+        // rellenar veinte campos y dos paradas para rechazarlo al guardar es
+        // gastarle media hora a alguien para darle una noticia que ya sabíamos.
+        // El muro de verdad sigue estando en store(): esto es cortesía, no
+        // autorización.
+        if (Limits::isFull((string) $actor->tenantId, Limits::LOADS)) {
+            return redirect('/loads')->with('error', __('billing.limits.reached.loadsThisMonth'));
+        }
 
         // `drivers` por las etiquetas de autorización de trabajo del bloque de
         // requisitos de la carga (`drivers.workAuthorization.*`). Sin él ese
@@ -240,6 +250,14 @@ final class LoadController
         $actor = $current->require();
         $policy = $current->policy();
         $checker->authorize($actor, 'load:create', null, $policy);
+
+        // El tope de cargas del mes. Es el único de los tres que puede aparecer
+        // en mitad de una jornada, así que la pantalla lo lleva contando desde el
+        // 80% (ver App/Billing/Index.tsx y la barra del armazón): nadie debería
+        // descubrir este muro chocándose con él un martes a las tres.
+        if (Limits::isFull((string) $actor->tenantId, Limits::LOADS)) {
+            return back()->withInput()->with('error', __('billing.limits.reached.loadsThisMonth'));
+        }
 
         $data = $this->validated($request, true);
         $canMoney = $checker->can($actor, 'load:financials:update', null, $policy)->allowed;

@@ -168,7 +168,7 @@
         "stripeCustomer": "Stripe customer",
         "none": "—",
         "usage": "Usage against the plan",
-        "usageHint": "Shown, not enforced. The plan limits have never been applied, and blocking today would change how companies that are already over them work — that is a decision for the business, not the code.",
+        "usageHint": "Enforcement is decided company by company, below. Turning it on for one that is already over cuts off its new records straight away, so it is not allowed: talk to the customer first, put up the wall after.",
         "users": "Users",
         "carriers": "Carriers",
         "loadsThisMonth": "Loads this month",
@@ -201,5 +201,15 @@
         "suspend": "Company suspended.",
         "reactivate": "Company reactivated.",
         "planSaved": "Plan saved."
+    },
+    "limits": {
+        "refusedOver": "Enforcement cannot be turned on: this company is already over {resources}. Talk to the customer and make room before putting up the wall.",
+        "enforced": "Plan limits are now enforced for this company.",
+        "relaxed": "Plan limits are no longer enforced: they are still counted and block nothing.",
+        "title": "Plan limits",
+        "enforce": "Turn on enforcement",
+        "relax": "Turn off enforcement",
+        "notEnforced": "Limits are counted and block nothing.",
+        "enforcedSince": "Enforcing since {date}."
     }
 }

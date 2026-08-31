@@ -8,6 +8,8 @@ import { Estado } from './Index'
 interface Uso {
   used: number
   limit: number | null
+  /** Si este tope BLOQUEA en esta empresa, o solo se cuenta. */
+  enforced: boolean
 }
 
 interface Props {
@@ -27,6 +29,7 @@ interface Props {
     customDomain: string | null
     customDomainVerified: boolean
     stripeCustomerId: string | null
+    limitsEnforcedAt: string | null
   }
   usage: { users: Uso; carriers: Uso; loadsThisMonth: Uso }
   can: { suspend: boolean }
@@ -106,6 +109,8 @@ export default function PlatformTenantShow({ tenant, usage, can }: Props) {
             <Consumo label={t('platform.show.carriers')} uso={usage.carriers} />
             <Consumo label={t('platform.show.loadsThisMonth')} uso={usage.loadsThisMonth} />
           </div>
+
+          <Bloqueo tenant={tenant} usage={usage} />
         </div>
 
         {can.suspend ? (
@@ -198,6 +203,59 @@ function Dato({ label, value, mono = false }: { label: string; value: string; mo
     <div>
       <dt className="text-xs uppercase tracking-wide text-steel-600">{label}</dt>
       <dd className={`mt-0.5 break-words text-sm text-carbon ${mono ? 'font-mono text-xs' : ''}`}>{value}</dd>
+    </div>
+  )
+}
+
+/**
+ * El interruptor del bloqueo, con su freno.
+ *
+ * Encenderlo sobre una empresa que ya está por encima de un tope le corta las
+ * altas a la primera. Por eso el botón no está: el servidor se niega igual
+ * —nunca se confía en el cliente— y la pantalla dice cuál es el recurso que
+ * sobra, para que la conversación con el cliente pase ANTES que el muro.
+ */
+function Bloqueo({
+  tenant, usage,
+}: {
+  tenant: { id: string; limitsEnforcedAt: string | null }
+  usage: { users: Uso; carriers: Uso; loadsThisMonth: Uso }
+}) {
+  const { t } = useI18n()
+  const form = useForm({ action: tenant.limitsEnforcedAt === null ? 'enforce' : 'relax' })
+
+  const excedidos = (Object.entries(usage) as [string, Uso][])
+    .filter(([, u]) => u.limit !== null && u.used > u.limit)
+    .map(([k]) => t(`billing.limits.${k}`))
+
+  const aplicando = tenant.limitsEnforcedAt !== null
+  const bloqueado = ! aplicando && excedidos.length > 0
+
+  return (
+    <div className="mt-4 border-t border-steel-100 pt-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-steel-600">
+        {t('platform.limits.title')}
+      </p>
+      <p className="mt-1 text-sm text-steel-700">
+        {aplicando
+          ? t('platform.limits.enforcedSince', { date: tenant.limitsEnforcedAt ?? '' })
+          : t('platform.limits.notEnforced')}
+      </p>
+
+      {bloqueado ? (
+        <p className="mt-2 rounded border border-warning-300 bg-warning-50 p-2 text-sm text-carbon">
+          {t('platform.limits.refusedOver', { resources: excedidos.join(', ') })}
+        </p>
+      ) : (
+        <button
+          type="button"
+          disabled={form.processing}
+          onClick={() => form.post(`/platform/tenants/${tenant.id}/limits`, { preserveScroll: true })}
+          className="mt-2 rounded border border-steel-300 bg-white px-3 py-1.5 text-sm font-medium text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+        >
+          {aplicando ? t('platform.limits.relax') : t('platform.limits.enforce')}
+        </button>
+      )}
     </div>
   )
 }

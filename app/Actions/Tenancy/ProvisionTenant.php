@@ -88,6 +88,16 @@ final class ProvisionTenant
                     'trial_ends_at' => now()->addDays($plan->trial_days),
                     'current_period_start' => now(),
                     'current_period_end' => now()->addDays($plan->trial_days),
+                    // Sujeta a los topes de su plan DESDE EL PRIMER MINUTO.
+                    //
+                    // Quien contrata hoy un plan que dice cinco usuarios recibe
+                    // un plan de cinco usuarios. La excepción son las empresas
+                    // que ya existían cuando los topes no se aplicaban —esas
+                    // llevan la columna nula y hay que encenderlas a mano, sin
+                    // sorpresas— pero una empresa nueva no tiene nada de lo que
+                    // sorprenderse: nace conociendo su tope y con el contador a
+                    // cero. Ver App\Support\Plans\Limits.
+                    'limits_enforced_at' => now(),
                 ]);
 
                 $user = User::create([

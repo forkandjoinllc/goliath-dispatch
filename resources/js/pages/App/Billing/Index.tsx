@@ -26,9 +26,17 @@ interface Subscription {
   customerId: string | null
 }
 
+interface Uso {
+  used: number
+  limit: number | null
+  /** Si el tope BLOQUEA en esta empresa, o de momento solo se cuenta. */
+  enforced: boolean
+}
+
 interface Props {
   subscription: Subscription | null
   plans: Plan[]
+  usage: { users: Uso; carriers: Uso; loadsThisMonth: Uso }
   events: { id: string; type: string; status: string; error: string | null; at: string }[]
   provider: { name: string; live: boolean }
   portalUrl: string | null
@@ -47,7 +55,7 @@ interface Props {
  * alojada por el proveedor. Este servidor no ve el número, no lo registra y no
  * lo guarda.
  */
-export default function BillingPage({ subscription, plans, events, provider, portalUrl, can }: Props) {
+export default function BillingPage({ subscription, plans, usage, events, provider, portalUrl, can }: Props) {
   const { t, locale } = useI18n()
 
   const nombrePlan = (p: { nameEs: string; nameEn: string }) => (locale === 'es' ? p.nameEs : p.nameEn)
@@ -132,6 +140,8 @@ export default function BillingPage({ subscription, plans, events, provider, por
             </>
           )}
         </section>
+
+        <Consumo usage={usage} />
 
         <section className="rounded border border-steel-200 bg-white p-4">
           <p className="text-sm font-semibold text-carbon">{t('billing.plans.title')}</p>
@@ -266,4 +276,91 @@ function limite(
 
 function dinero(cents: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
+}
+
+/**
+ * Lo que lleva gastado la empresa frente a lo que su plan incluye.
+ *
+ * Existe porque la sección de planes de esta misma pantalla VENDE «hasta cinco
+ * usuarios, quince transportistas, ciento cincuenta cargas al mes» y hasta el
+ * lote 56 no había forma de saber por cuánto iba uno. Los números existían: los
+ * veía la plataforma en su pantalla de empresas, y el cliente no. Enseñarle al
+ * cliente el número que ya teníamos no es una función nueva; es dejar de
+ * escondérselo.
+ *
+ * La barra se pone en ámbar al 80% y en rojo al llegar. Ese 80% es la parte que
+ * importa de verdad: el tope de cargas es el único de los tres que puede
+ * aparecer en mitad de una jornada, y nadie debería descubrirlo chocándose con
+ * él un martes a las tres de la tarde.
+ */
+function Consumo({ usage }: { usage: { users: Uso; carriers: Uso; loadsThisMonth: Uso } }) {
+  const { t } = useI18n()
+  const filas = Object.entries(usage) as [string, Uso][]
+
+  if (filas.every(([, u]) => u.limit === null)) {
+    return null
+  }
+
+  return (
+    <section className="rounded border border-steel-200 bg-white p-4">
+      <p className="text-sm font-semibold text-carbon">{t('billing.limits.title')}</p>
+      <p className="mt-0.5 text-xs text-steel-600">{t('billing.limits.hint')}</p>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        {filas.map(([clave, uso]) => (
+          <Barra key={clave} etiqueta={t(`billing.limits.${clave}`)} uso={uso} />
+        ))}
+      </div>
+
+      <p className="mt-3 text-xs text-steel-600">{t('billing.limits.seatsHint')}</p>
+
+      {/*
+        Y si los topes todavía no bloquean, se dice. Una barra al 100% que no
+        impide nada y una barra al 100% que corta el alta de la próxima carga se
+        pintan igual y no son la misma noticia.
+      */}
+      {filas.some(([, u]) => u.limit !== null && ! u.enforced) ? (
+        <p className="mt-1 text-xs text-steel-600">{t('billing.limits.notEnforced')}</p>
+      ) : null}
+    </section>
+  )
+}
+
+function Barra({ etiqueta, uso }: { etiqueta: string; uso: Uso }) {
+  const { t } = useI18n()
+
+  if (uso.limit === null) {
+    return (
+      <div className="rounded border border-steel-200 p-3">
+        <p className="text-xs uppercase tracking-wide text-steel-600">{etiqueta}</p>
+        <p className="mt-1 text-sm font-semibold text-carbon">{uso.used}</p>
+        <p className="text-xs text-steel-600">{t('billing.limits.unlimited')}</p>
+      </div>
+    )
+  }
+
+  const parte = uso.limit === 0 ? 1 : Math.min(uso.used / uso.limit, 1)
+  const lleno = uso.used >= uso.limit
+  const cerca = ! lleno && parte >= 0.8
+
+  return (
+    <div className="rounded border border-steel-200 p-3">
+      <p className="text-xs uppercase tracking-wide text-steel-600">{etiqueta}</p>
+      <p
+        className={`mt-1 text-sm font-semibold ${
+          lleno ? 'text-danger-700' : cerca ? 'text-warning-700' : 'text-carbon'
+        }`}
+      >
+        {t('billing.limits.of', { used: uso.used, max: uso.limit })}
+      </p>
+      <div className="mt-1.5 h-1.5 w-full rounded bg-steel-100">
+        <div
+          className={`h-1.5 rounded ${
+            lleno ? 'bg-danger-500' : cerca ? 'bg-warning-500' : 'bg-navy-600'
+          }`}
+          style={{ width: `${Math.round(parte * 100)}%` }}
+        />
+      </div>
+    </div>
+  )
 }

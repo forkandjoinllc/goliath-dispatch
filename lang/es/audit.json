@@ -184,6 +184,7 @@
         "saas_plan": "Plan de SaaS",
         "tenant": "Empresa",
         "tenant_settings": "Ajustes de la empresa",
+        "tenant_subscription": "Suscripción de una empresa",
         "user_tenant_membership": "Usuario de la empresa"
     }
 }

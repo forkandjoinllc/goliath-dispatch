@@ -184,6 +184,7 @@
         "saas_plan": "SaaS plan",
         "tenant": "Company",
         "tenant_settings": "Company settings",
+        "tenant_subscription": "Company subscription",
         "user_tenant_membership": "User membership"
     }
 }

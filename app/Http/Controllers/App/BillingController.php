@@ -9,6 +9,7 @@ use App\Authorization\PermissionChecker;
 use App\Services\Billing\BillingProvider;
 use App\Support\Billing\EventLedger;
 use App\Support\InertiaPage;
+use App\Support\Plans\Limits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,15 @@ final class BillingController
         return Inertia::render('App/Billing/Index', [
             'subscription' => $suscripcion,
             'plans' => $this->plans(),
+            // Lo que esta empresa lleva gastado frente a los topes que la propia
+            // pantalla vende dos párrafos más abajo.
+            //
+            // Hasta el lote 56 estos números SOLO los veía la plataforma, en su
+            // pantalla de empresas. Es decir: nosotros sabíamos que un cliente
+            // iba por 5 de 5 usuarios y el cliente no. Quien paga por «hasta
+            // cinco usuarios» tiene derecho a saber cuántos lleva sin contarlos a
+            // mano, y quien va a chocarse con un tope tiene derecho a verlo venir.
+            'usage' => Limits::usage($tenantId),
             'events' => EventLedger::forTenant($tenantId),
             // Que el cobro esté simulado se dice EN PANTALLA, no solo en la
             // salud de la plataforma. Quien mira esto quiere saber si al pulsar

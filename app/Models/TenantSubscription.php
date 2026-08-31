@@ -31,6 +31,7 @@ final class TenantSubscription extends BaseModel
         'cancel_at_period_end',
         'cancelled_at',
         'past_due_since',
+        'limits_enforced_at',
     ];
 
     /** @return array<string, string> */
@@ -44,6 +45,7 @@ final class TenantSubscription extends BaseModel
             'cancel_at_period_end' => 'boolean',
             'cancelled_at' => 'immutable_datetime',
             'past_due_since' => 'immutable_datetime',
+            'limits_enforced_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];

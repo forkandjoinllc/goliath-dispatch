@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\User;
 use App\Models\UserTenantMembership;
+use App\Support\Plans\Limits;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
@@ -468,4 +469,96 @@ it('la pantalla de suspensión llega con su diccionario y con el menú', functio
         expect($props['dictionary'])->toHaveKey('platform');
         expect($props['dictionary']['platform']['suspended']['title'])->not->toBeEmpty();
     });
+});
+
+/* ── El bloqueo de topes: primero la conversación, después el muro ──────── */
+
+/** Le pone a la empresa del escenario un plan con el tope de usuarios que se pida. */
+function planConTopeDeUsuarios(Scenario $scenario, int $tope): void
+{
+    app(TenantContext::class)->withoutTenant(function () use ($scenario, $tope): void {
+        $planId = (string) Str::uuid();
+
+        DB::table('saas_plans')->insert([
+            'id' => $planId,
+            'code' => 'plat-'.substr($planId, 0, 8),
+            'name_en' => 'Test',
+            'name_es' => 'Prueba',
+            'monthly_price_cents' => 1000,
+            'trial_days' => 0,
+            'max_users' => $tope,
+            'features' => '[]',
+            'is_public' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tenant_subscriptions')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $scenario->tenant->id,
+            'plan_id' => $planId,
+            'status' => 'active',
+            'limits_enforced_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+}
+
+it('no deja encender el bloqueo sobre una empresa que ya está por encima', function () {
+    // Es el freno que hace que esto sea seguro de desplegar. Encenderlo sobre
+    // quien ya incumple le corta las altas a la primera, y el cliente se entera
+    // por una avería en vez de por una conversación.
+    planConTopeDeUsuarios($this->scenario, 1);
+
+    expect(Limits::over((string) $this->scenario->tenant->id))->toContain('users');
+
+    entrarComo(superAdministrador($this->scenario));
+
+    $this->post("/platform/tenants/{$this->scenario->tenant->id}/limits", ['action' => 'enforce'])
+        ->assertRedirect();
+
+    expect(session('error'))->not->toBeNull();
+
+    expect(DB::table('tenant_subscriptions')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->value('limits_enforced_at'))->toBeNull();
+});
+
+it('lo enciende cuando la empresa está dentro de sus topes, y lo apaga', function () {
+    planConTopeDeUsuarios($this->scenario, 500);
+
+    entrarComo(superAdministrador($this->scenario));
+
+    $this->post("/platform/tenants/{$this->scenario->tenant->id}/limits", ['action' => 'enforce'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(DB::table('tenant_subscriptions')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->value('limits_enforced_at'))->not->toBeNull();
+
+    // Aflojar no tiene cortapisa: se puede hacer deprisa, que es cuando hace
+    // falta.
+    $this->post("/platform/tenants/{$this->scenario->tenant->id}/limits", ['action' => 'relax'])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(DB::table('tenant_subscriptions')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->value('limits_enforced_at'))->toBeNull();
+});
+
+it('un administrador de empresa no toca el bloqueo de topes', function () {
+    planConTopeDeUsuarios($this->scenario, 500);
+
+    signIn($this->scenario, Role::Admin);
+
+    // En un POST la negativa se sirve como redirección a la pantalla de acceso
+    // denegado, no como 403: ver App\Exceptions\AuthorizationException y el
+    // middleware de Inertia. Lo que importa es que NO ha tocado nada.
+    $this->post("/platform/tenants/{$this->scenario->tenant->id}/limits", ['action' => 'enforce'])
+        ->assertRedirect();
+
+    expect(DB::table('tenant_subscriptions')
+        ->where('tenant_id', $this->scenario->tenant->id)
+        ->value('limits_enforced_at'))->toBeNull();
 });

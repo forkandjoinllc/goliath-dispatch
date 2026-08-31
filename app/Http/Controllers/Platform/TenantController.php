@@ -10,6 +10,7 @@ use App\Authorization\PermissionChecker;
 use App\Enums\AuditAction;
 use App\Support\Audit;
 use App\Support\InertiaPage;
+use App\Support\Plans\Limits;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -116,7 +117,7 @@ final class TenantController
         $policy = $current->policy();
         $checker->authorize($actor, 'platform:tenant:read', null, $policy);
 
-        $this->usesDictionary($request, ['platform', 'nav', 'common', 'validation']);
+        $this->usesDictionary($request, ['platform', 'billing', 'nav', 'common', 'validation']);
 
         $fila = $this->find($tenant);
 
@@ -130,8 +131,11 @@ final class TenantController
                 'periodEnd' => $fila->current_period_end === null
                     ? null
                     : substr((string) $fila->current_period_end, 0, 10),
+                'limitsEnforcedAt' => $fila->limits_enforced_at === null
+                    ? null
+                    : substr((string) $fila->limits_enforced_at, 0, 10),
             ],
-            'usage' => $this->usage((string) $fila->id, $fila),
+            'usage' => $this->usage((string) $fila->id),
             'can' => [
                 'suspend' => $checker->can($actor, 'platform:tenant:suspend', null, $policy)->allowed,
             ],
@@ -198,7 +202,7 @@ final class TenantController
                 't.id', 't.slug', 't.display_name', 't.legal_name', 't.status', 't.created_at',
                 't.custom_domain', 't.custom_domain_verified_at',
                 's.status as subscription_status', 's.trial_ends_at', 's.past_due_since',
-                's.current_period_end', 's.stripe_customer_id',
+                's.current_period_end', 's.stripe_customer_id', 's.limits_enforced_at',
                 'p.code as plan_code', 'p.monthly_price_cents',
                 'p.max_users', 'p.max_carriers', 'p.max_loads_per_month',
             ]));
@@ -213,40 +217,78 @@ final class TenantController
     /**
      * Lo que esta empresa está gastando frente a los topes de su plan.
      *
-     * Se ENSEÑA y no se impide. `saas_plans` trae `max_users`, `max_carriers` y
-     * `max_loads_per_month` desde el primer día y nadie los ha aplicado nunca;
-     * empezar a bloquear altas hoy cambiaría el comportamiento de empresas que
-     * llevan meses por encima del tope sin saberlo. Ver el número es lo que
-     * permite decidir; decidir es de quien lleva el negocio.
+     * Cuenta y bloqueo viven ahora en App\Support\Plans\Limits, que es quien
+     * decide qué ocupa asiento y qué no. Aquí solo se enseña.
      *
-     * @return array<string, array{used: int, limit: int|null}>
+     * El comentario que había en este sitio decía «se ENSEÑA y no se impide»,
+     * y daba una razón buena: hay empresas que llevan meses por encima del tope
+     * sin saberlo, y empezar a bloquear altas de golpe les convierte un martes
+     * cualquiera en una avería. Esa razón sigue en pie y por eso el bloqueo NO
+     * es global: es por empresa, con fecha, y no se puede encender sobre una
+     * que ya esté por encima. Lo que ya no se sostiene es que el tope no se
+     * aplique NUNCA: la pantalla de suscripción lo vende con números.
+     *
+     * @return array<string, array{used: int, limit: int|null, enforced: bool}>
      */
-    private function usage(string $tenantId, object $plan): array
+    private function usage(string $tenantId): array
     {
-        return app(TenantContext::class)->withoutTenant(function () use ($tenantId, $plan): array {
-            $usuarios = DB::table('user_tenant_memberships')
-                ->where('tenant_id', $tenantId)
-                ->whereIn('status', ['active', 'invited'])
-                ->whereNull('deleted_at')
-                ->count();
+        return Limits::usage($tenantId);
+    }
 
-            $transportistas = DB::table('carriers')
-                ->where('tenant_id', $tenantId)
-                ->whereNull('deleted_at')
-                ->count();
+    /**
+     * Encender o apagar el bloqueo de topes para esta empresa.
+     *
+     * Se NIEGA a encenderlo sobre una empresa que ya está por encima de alguno
+     * de sus topes, y dice de cuál. No es una comodidad: es la diferencia entre
+     * que el cliente se entere por una conversación y que se entere porque a las
+     * tres de la tarde deja de poder dar de alta una carga. Primero se habla, se
+     * hace sitio o se le sube el plan, y después se enciende.
+     *
+     * Apagarlo no tiene esa cortapisa: aflojar siempre puede hacerse deprisa.
+     */
+    public function limits(Request $request, string $tenant, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $checker->authorize($actor, 'platform:tenant:read', null, $policy);
+        $checker->authorize($actor, 'platform:tenant:suspend', null, $policy);
 
-            $cargas = DB::table('loads')
-                ->where('tenant_id', $tenantId)
-                ->whereNull('deleted_at')
-                ->where('created_at', '>=', CarbonImmutable::now()->startOfMonth())
-                ->count();
+        $fila = $this->find($tenant);
 
-            return [
-                'users' => ['used' => $usuarios, 'limit' => $plan->max_users === null ? null : (int) $plan->max_users],
-                'carriers' => ['used' => $transportistas, 'limit' => $plan->max_carriers === null ? null : (int) $plan->max_carriers],
-                'loadsThisMonth' => ['used' => $cargas, 'limit' => $plan->max_loads_per_month === null ? null : (int) $plan->max_loads_per_month],
-            ];
-        });
+        $data = $request->validate([
+            'action' => ['required', 'string', Rule::in(['enforce', 'relax'])],
+        ]);
+
+        if ($data['action'] === 'enforce') {
+            $fuera = Limits::over((string) $fila->id);
+
+            if ($fuera !== []) {
+                return back()->with('error', __('platform.limits.refusedOver', [
+                    'resources' => implode(', ', array_map(
+                        static fn (string $r): string => (string) __('billing.limits.'.$r),
+                        $fuera,
+                    )),
+                ]));
+            }
+        }
+
+        app(TenantContext::class)->withoutTenant(fn () => DB::table('tenant_subscriptions')
+            ->where('tenant_id', $fila->id)
+            ->update([
+                'limits_enforced_at' => $data['action'] === 'enforce' ? CarbonImmutable::now() : null,
+                'updated_at' => CarbonImmutable::now(),
+            ]));
+
+        Audit::record(
+            $actor,
+            AuditAction::SettingsUpdated,
+            entityType: 'tenant_subscription',
+            entityId: (string) $fila->id,
+            entityLabel: (string) $fila->display_name,
+            after: ['limitsEnforced' => $data['action'] === 'enforce'],
+        );
+
+        return back()->with('success', __('platform.limits.'.($data['action'] === 'enforce' ? 'enforced' : 'relaxed')));
     }
 
     /** @return array<string, int> */

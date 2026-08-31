@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1083 tests, 7018 assertions)
+OK (1100 tests, 7074 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de los interruptores inertes.
+(Cifra del 31 de agosto, tras el lote de los topes del plan.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -736,6 +736,51 @@ Y la regla hermana, que es la que salvó este lote: **un guardián nuevo se
 verifica saboteando**. Se vuelve a meter el fallo que el guardián existe para
 cazar y se comprueba que FALLA. Un guardián que nunca se ha visto fallar no es
 un guardián: es una prueba que pasa.
+
+### La pantalla que se contradice a sí misma, en dos párrafos seguidos
+
+Lote 56, y otra vez lo encontró el navegador con la suite entera en verde.
+
+La pantalla de plataforma llevaba desde el lote de informes un texto explicando
+por qué los topes del plan no se aplicaban:
+
+> «Se enseña, no se impide. Los topes del plan no se han aplicado nunca, y
+> empezar a bloquear hoy cambiaría cómo trabajan empresas que ya están por
+> encima.»
+
+Era verdad cuando se escribió y era una buena razón — tanto que este lote la
+respetó y construyó el bloqueo empresa por empresa en vez de global. Lo que no
+hizo fue **releer la frase**. Al abrir la pantalla, ese párrafo estaba dos
+centímetros por encima del interruptor nuevo, que decía «Bloqueando desde el 31
+de agosto».
+
+Ninguna prueba puede ver esto. Las dos afirmaciones son correctas por separado y
+la contradicción solo existe al leerlas juntas, que es lo que hace un ojo y no
+hace un `assertSee`. La lección práctica: **cuando un lote cambia una política,
+hay que buscar los textos que explicaban la política vieja.** El código que
+cambia se ve en el diff; la frase que lo explicaba, no — vive en un JSON de
+idioma que el diff no toca.
+
+Y la comprobación barata que lo caza: al abrir cada pantalla que el lote toca,
+leer los párrafos de alrededor, no solo lo que se ha añadido.
+
+### Dos pruebas mías que no probaban nada
+
+Del mismo lote, y las cacé releyendo lo que acababa de escribir:
+
+- **`assertRedirect()` a secas sobre un POST rechazado por el tope.** Una
+  validación fallida también redirige, así que la prueba pasaba igual con la
+  puerta quitada. Ahora afirma el MENSAJE (`assertSessionHas('error', …)`), que
+  es lo único que distingue «lo paró el tope» de «lo paró cualquier otra cosa».
+- **Una prueba de conteo que recalculaba el conteo.** Comprobaba que
+  `Limits::usage()` daba lo mismo que una consulta escrita a mano con la misma
+  lógica. Eso no prueba la regla: prueba que sé repetirme. Ahora MUEVE la aguja
+  —afilia un chófer y espera que el número no cambie, afilia un despachador y
+  espera que suba— que es la única forma de comprobar una regla de conteo.
+
+La regla general de las dos: **una prueba que pasaría igual con el defecto
+puesto no es una prueba.** Es el mismo criterio que el sabotaje de guardianes,
+aplicado a las pruebas normales.
 
 ## Migraciones: por qué todas son reanudables
 

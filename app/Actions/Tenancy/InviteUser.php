@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\UserInvitation;
 use App\Support\Audit;
 use App\Support\Invitations\Invitations;
+use App\Support\Plans\Limits;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -71,6 +72,7 @@ final class InviteUser
             }
 
             $this->guardAgainstDuplicate($tenantId, (string) $user->id, $input['role']);
+            $this->guardAgainstPlanLimit($tenantId, $input['role']);
 
             $ahora = CarbonImmutable::now();
             $membershipId = (string) Str::uuid();
@@ -117,6 +119,33 @@ final class InviteUser
                 'isNewAccount' => $nueva,
             ];
         });
+    }
+
+    /**
+     * El tope de asientos del plan.
+     *
+     * Se comprueba al INVITAR y no al aceptar. Es la diferencia entre que el
+     * error lo vea quien puede arreglarlo —el administrador que invita, que
+     * puede liberar un asiento o mejorar el plan— y que lo vea la persona
+     * invitada, que abre su enlace y se encuentra con que no cabe. Por eso una
+     * invitación pendiente ya ocupa asiento en la cuenta.
+     *
+     * Solo para los roles de plantilla: las cuentas de portal de transportistas
+     * y chóferes no gastan asiento. Ver App\Support\Plans\Limits.
+     */
+    private function guardAgainstPlanLimit(string $tenantId, Role $role): void
+    {
+        if (! in_array($role->value, Limits::SEAT_ROLES, true)) {
+            return;
+        }
+
+        if (! Limits::isFull($tenantId, Limits::USERS)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'email' => __('billing.limits.reached.users'),
+        ]);
     }
 
     /**

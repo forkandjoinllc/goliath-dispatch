@@ -324,6 +324,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('platform/tenants', [PlatformTenantController::class, 'index'])->name('platform.tenants.index');
     Route::get('platform/tenants/{tenant}', [PlatformTenantController::class, 'show'])->name('platform.tenants.show');
     Route::post('platform/tenants/{tenant}/suspension', [PlatformTenantController::class, 'suspend'])->name('platform.tenants.suspend');
+    Route::post('platform/tenants/{tenant}/limits', [PlatformTenantController::class, 'limits'])->name('platform.tenants.limits');
 
     // La salud de la instalación. Solo lectura y sin acciones: lo que enseña se
     // arregla en el servidor, no desde aquí — activar el planificador de Forge

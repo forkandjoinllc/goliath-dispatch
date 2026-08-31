@@ -7,9 +7,11 @@ use App\Models\Lead;
 use App\Models\QuoteRequest;
 use App\Models\Tenant;
 use App\Support\Forms\FormToken;
+use App\Support\Plans\Limits;
 use App\Support\Locales;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
@@ -358,4 +360,66 @@ it('limita los envíos por IP', function () {
     }
 
     $this->post('/leads', leadPayload())->assertStatus(429);
+});
+
+it('con el tope de transportistas lleno se queda el lead y no se crea el carrier', function () {
+    // El tope es una decisión comercial ENTRE la casa de despacho y nosotros.
+    // Quien rellena este formulario es un tercero —una empresa de transporte que
+    // quiere trabajar con ella— y no tiene por qué enterarse de nada: ve el
+    // mismo «gracias» de siempre.
+    //
+    // Lo que NO pasa es el alta automática, que es justo lo que el tope limita.
+    // El contacto llega igual a la bandeja de leads, y la casa decide: llamarle,
+    // hacer sitio, o mejorar el plan. Un tope que le da un error en la cara a un
+    // cliente potencial del cliente es un tope que cuesta más de lo que protege.
+    $tenant = Tenant::create([
+        'slug' => 'tope-'.Str::random(6),
+        'legal_name' => 'Empresa Con Tope LLC',
+        'display_name' => 'Con Tope',
+        'status' => 'active',
+        'custom_domain' => 'tope-'.Str::random(6).'.test',
+        'custom_domain_verified_at' => now(),
+    ]);
+
+    $planId = (string) Str::uuid();
+
+    app(TenantContext::class)->withoutTenant(function () use ($tenant, $planId): void {
+        DB::table('saas_plans')->insert([
+            'id' => $planId,
+            'code' => 'tope-'.substr($planId, 0, 8),
+            'name_en' => 'Capped',
+            'name_es' => 'Con tope',
+            'monthly_price_cents' => 1000,
+            'trial_days' => 0,
+            'max_carriers' => 0,
+            'features' => '[]',
+            'is_public' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tenant_subscriptions')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $tenant->id,
+            'plan_id' => $planId,
+            'status' => 'active',
+            'limits_enforced_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    expect(Limits::isFull((string) $tenant->id, Limits::CARRIERS))->toBeTrue();
+
+    $payload = signupPayload();
+
+    $this->post("http://{$tenant->custom_domain}/carrier-signup", $payload)
+        ->assertSessionHasNoErrors();
+
+    app(TenantContext::class)->runAs($tenant->id, function () use ($payload) {
+        expect(Carrier::where('dot_number', '1234567')->count())->toBe(0);
+
+        // El lead sí, y SIN marcar como convertido: no se ha convertido en nada.
+        expect(Lead::where('email', $payload['email'])->value('status'))->toBe('new');
+    });
 });

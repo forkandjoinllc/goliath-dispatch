@@ -168,7 +168,7 @@
         "stripeCustomer": "Cliente en Stripe",
         "none": "—",
         "usage": "Consumo frente al plan",
-        "usageHint": "Se enseña, no se impide. Los topes del plan no se han aplicado nunca, y empezar a bloquear hoy cambiaría cómo trabajan empresas que ya están por encima — eso lo decide el negocio, no el código.",
+        "usageHint": "El bloqueo se decide empresa por empresa, aquí abajo. Encenderlo sobre una que ya está por encima le corta las altas a la primera, así que no se deja: primero la conversación con el cliente, después el muro.",
         "users": "Usuarios",
         "carriers": "Transportistas",
         "loadsThisMonth": "Cargas este mes",
@@ -201,5 +201,15 @@
         "suspend": "Empresa suspendida.",
         "reactivate": "Empresa reactivada.",
         "planSaved": "Plan guardado."
+    },
+    "limits": {
+        "refusedOver": "No se puede activar el bloqueo: esta empresa ya está por encima de {resources}. Háblelo con el cliente y haga sitio antes de poner el muro.",
+        "enforced": "El bloqueo de topes queda activado para esta empresa.",
+        "relaxed": "El bloqueo de topes queda desactivado: los topes se siguen contando y ya no impiden nada.",
+        "title": "Topes del plan",
+        "enforce": "Activar el bloqueo",
+        "relax": "Desactivar el bloqueo",
+        "notEnforced": "Los topes se cuentan y no bloquean nada.",
+        "enforcedSince": "Bloqueando desde el {date}."
     }
 }

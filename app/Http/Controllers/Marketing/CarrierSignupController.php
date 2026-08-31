@@ -11,6 +11,7 @@ use App\Models\Carrier;
 use App\Models\CarrierOnboarding;
 use App\Models\Lead;
 use App\Support\Locales;
+use App\Support\Plans\Limits;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,23 @@ final class CarrierSignupController
 
             if (! $this->context->hasTenant()) {
                 return; // Sitio de la plataforma: el lead ES el resultado.
+            }
+
+            // El tope de transportistas del plan, si la empresa lo tiene puesto.
+            //
+            // Y aquí el tope NO se le enseña a nadie: se queda el lead y no se
+            // crea el transportista. Quien rellena este formulario es un tercero
+            // —una empresa de transporte que quiere trabajar con la casa de
+            // despacho— y no tiene ninguna relación con el plan que la casa haya
+            // contratado. Devolverle un error suyo sería cobrarle a él una
+            // decisión comercial nuestra.
+            //
+            // Así que la casa recibe el contacto igual, en la bandeja de leads, y
+            // decide: llamarle, hacer sitio, o mejorar el plan. Lo único que no
+            // pasa solo es el alta automática, que es justo lo que el tope
+            // limita.
+            if (Limits::isFull((string) $this->context->id(), Limits::CARRIERS)) {
+                return;
             }
 
             $carrier = Carrier::create([

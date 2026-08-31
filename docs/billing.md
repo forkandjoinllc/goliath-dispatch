@@ -146,14 +146,97 @@ solo en la salud de la plataforma: quien la abre quiere saber si al pulsar
 - **No hay prorrateo ni facturas de la suscripción.** Cambiar de plan crea una
   sesión de pago nueva; lo que el proveedor haga con el periodo en curso es cosa
   suya. Los recibos están en su portal.
-- **No se aplican los topes del plan.** `max_users`, `max_carriers` y
-  `max_loads_per_month` se enseñan y no se impiden. Empezar a bloquear cambiaría
-  cómo trabajan empresas que ya están por encima, y eso lo decide el negocio.
+- **El bloqueo de topes no está encendido para las empresas que ya existían.**
+  Nace encendido en las suscripciones nuevas y se activa a mano en las viejas.
+  Ver «Los topes del plan» más abajo.
 - **No hay reclamación de impagos.** Una empresa en `past_due` recibe el aviso
   del barrido y nada más: nadie la persigue ni la suspende sola.
 - **`stripe_price_id` de los planes está vacío.** Con Stripe de verdad hay que
   crear los precios allí y anotar sus identificadores aquí, o la sesión de pago
   no sabrá qué cobrar.
+
+## Los topes del plan
+
+`saas_plans` trae `max_users`, `max_carriers` y `max_loads_per_month` desde el
+primer día, y la pantalla de suscripción los VENDE con esas palabras: «hasta 5
+usuarios, 15 transportistas, 150 cargas al mes». Hasta el lote 56 no los leía
+nadie. Se podían crear los que fuera en el plan más pequeño.
+
+Falla en las dos direcciones, y esa es la parte que lo hace peor que un defecto
+normal: quien paga el plan grande tampoco recibe nada a cambio de la diferencia.
+
+### Qué ocupa sitio
+
+| Tope | Cuenta | No cuenta |
+|---|---|---|
+| `max_users` | Afiliaciones `admin`, `accounting` y `dispatcher` en estado `active` o `invited` | Las cuentas de portal (`carrier`, `driver`), las suspendidas y las desactivadas |
+| `max_carriers` | Transportistas vivos | Los `rejected` y los borrados |
+| `max_loads_per_month` | Cargas creadas en el mes natural en curso, cualquiera que sea su estado | Las borradas |
+
+Las dos decisiones que importan:
+
+**Las cuentas de portal no ocupan asiento.** Es la única lectura que no es
+absurda: el plan Starter vende cinco usuarios y quince transportistas, así que si
+cada chófer de cada transportista gastara asiento, el tope de transportistas
+sería inalcanzable por construcción. No es hipotético — la empresa de
+demostración, recién sembrada, tiene tres personas de plantilla y dos cuentas de
+portal: contando todo iba por 5 de 5 y no podía contratar a un segundo
+despachador porque uno de sus transportistas tiene un chófer dado de alta.
+
+**Una invitación pendiente ya ocupa asiento.** Si no contara, se invitaría a diez
+personas con cinco asientos y el error saltaría al ACEPTAR, es decir en la cara
+de la persona invitada, que es justo quien no puede arreglarlo.
+
+### Contar no es bloquear
+
+`tenant_subscriptions.limits_enforced_at` decide si el tope es un muro o un
+número.
+
+- **Nula** — se cuenta y se enseña; no impide nada. Es el estado de todo lo que
+  ya existía.
+- **Con fecha** — bloquea. Las suscripciones nuevas nacen así: quien contrata hoy
+  un plan que dice cinco usuarios recibe un plan de cinco usuarios.
+
+La distinción existe porque hay empresas que llevan meses por encima del tope sin
+saberlo, y un despliegue que empieza a bloquear altas de golpe les convierte un
+martes cualquiera en una avería. Se enciende empresa por empresa, desde la
+pantalla de plataforma, **y no se deja encender sobre una que ya está por
+encima**: la pantalla dice de qué recurso se trata. Primero la conversación con
+el cliente, después el muro.
+
+Apagarlo no tiene esa cortapisa. Aflojar siempre puede hacerse deprisa.
+
+Una empresa **sin suscripción** no tiene plan, y sin plan no hay tope: falta de
+configuración no es falta de permiso, la misma regla que la validación de
+sobredimensión.
+
+### Dónde se aplica
+
+Cuatro sitios, y el cuarto es el que se olvida:
+
+| Sitio | Qué pasa |
+|---|---|
+| `Actions/Tenancy/InviteUser` | Error en el formulario de invitación |
+| `App/CarrierController@create` y `@store` | Aviso antes del formulario, y muro en el guardado |
+| `App/LoadController@create` y `@store` | Igual |
+| `Marketing/CarrierSignupController` | **Se queda el lead y no se crea el transportista** |
+
+El último merece su párrafo. Quien rellena el alta pública es un tercero —una
+empresa de transporte que quiere trabajar con la casa de despacho— y no tiene
+ninguna relación con el plan que la casa haya contratado. Devolverle un error
+sería cobrarle a él una decisión comercial nuestra. Así que ve el mismo «gracias»
+de siempre, la casa recibe el contacto en su bandeja de prospectos, y lo único
+que no ocurre solo es el alta automática. El prospecto se queda en `new` y no en
+`converted`, porque no se ha convertido en nada.
+
+### El contador se ve antes del muro
+
+La pantalla de suscripción enseña las tres barras, en ámbar al 80% y en rojo al
+llegar. Hasta el lote 56 esos números SOLO los veía la plataforma: nosotros
+sabíamos que un cliente iba por 5 de 5 y el cliente no. Enseñárselos no es una
+función nueva, es dejar de escondérselos — y el de cargas es el único de los tres
+que puede aparecer en mitad de una jornada, así que verlo venir es la diferencia
+entre planificar y quedarse parado.
 
 ## Dónde está
 
@@ -167,4 +250,6 @@ solo en la salud de la plataforma: quien la abre quiere saber si al pulsar
 | Webhook | `app/Http/Controllers/Public/BillingWebhookController.php` |
 | Pantalla | `resources/js/pages/App/Billing/Index.tsx` |
 | Credenciales | `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` — en el `.env` del servidor |
-| Pruebas | `tests/Feature/Billing/`, `tests/Unit/Suite/BillingStatusTest.php` |
+| Topes | `app/Support/Plans/Limits.php` |
+| Interruptor del bloqueo | `app/Http/Controllers/Platform/TenantController.php@limits` |
+| Pruebas | `tests/Feature/Billing/`, `tests/Feature/Plans/LimitsTest.php`, `tests/Unit/Suite/BillingStatusTest.php`, `tests/Unit/Suite/PlanLimitsTest.php` |

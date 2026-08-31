@@ -80,5 +80,24 @@
     },
     "errors": {
         "unknownPlan": "That plan does not exist or is not available."
+    },
+    "limits": {
+        "title": "Plan usage",
+        "hint": "What this plan includes and what this company has used.",
+        "of": "{used} of {max}",
+        "unlimited": "Unlimited",
+        "users": "Staff users",
+        "carriers": "Carriers",
+        "loadsThisMonth": "Loads this month",
+        "seatsHint": "Only staff accounts take a seat: admin, accounting and dispatch. Carrier and driver logins do not count.",
+        "notEnforced": "Right now these limits are counted and block nothing. If this company becomes subject to them, you will be told first.",
+        "enforcedSince": "Subject to its plan limits since {date}.",
+        "near": "Running low on {resource}: {used} of {max}.",
+        "over": "Over the {resource} limit: {used} of {max}.",
+        "reached": {
+            "users": "This plan has no room for more users. Free a seat by deactivating someone, or choose a larger plan.",
+            "carriers": "This plan has no room for more carriers. Choose a larger plan to add another one.",
+            "loadsThisMonth": "This month's load limit for this plan has been reached. The counter resets on the 1st; to keep going today, choose a larger plan."
+        }
     }
 }
