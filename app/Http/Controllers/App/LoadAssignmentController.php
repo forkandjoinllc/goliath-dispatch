@@ -10,6 +10,8 @@ use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
 use Carbon\CarbonImmutable;
@@ -285,7 +287,10 @@ final class LoadAssignmentController
             ->where('tenant_id', $load->tenant_id)
             ->where('id', $id)
             ->whereNull('deleted_at')
-            ->first(['unit_number', 'carrier_id', 'status']);
+            ->first([
+                'unit_number', 'carrier_id', 'status',
+                'next_inspection_due_at', 'registration_expires_at',
+            ]);
 
         if ($unit === null) {
             return __('loads.assign.unitNotFound');
@@ -295,8 +300,26 @@ final class LoadAssignmentController
             return __('loads.assign.unitWrongCarrier', ['unit' => (string) $unit->unit_number]);
         }
 
-        if ($unit->status === 'out_of_service') {
-            return __('loads.assign.unitOutOfService', ['unit' => (string) $unit->unit_number]);
+        // Y aquí estaba el agujero. Solo se rechazaba `out_of_service`, mientras
+        // que unas líneas más arriba, en esta misma función, al conductor se le
+        // comprobaba el carné vencido y la tarjeta médica vencida. La unidad no
+        // se comprobaba de ninguna manera — ni el estado que el propio
+        // diccionario prometía que la impedía, ni la inspección anual, cuya
+        // fecha se guarda en la instantánea dos funciones más abajo como prueba
+        // de lo que se sabía en el momento de asignar.
+        //
+        // Ver App\Support\Equipment\Eligibility para qué bloquea y por qué una
+        // fecha que no consta no bloquea.
+        $motivos = Eligibility::reasons(UnitFacts::fromRow($unit));
+
+        if ($motivos !== []) {
+            return __('loads.assign.unitBlocked', [
+                'unit' => (string) $unit->unit_number,
+                'reasons' => implode(' ', array_map(
+                    static fn (string $m): string => (string) __('equipment.blocking.'.$m),
+                    $motivos,
+                )),
+            ]);
         }
 
         return null;
@@ -338,12 +361,20 @@ final class LoadAssignmentController
         }
 
         $table = $type === 'truck' ? 'trucks' : 'trailers';
-        $u = DB::table($table)->where('id', $id)->first(['status', 'next_inspection_due_at']);
+        $u = DB::table($table)->where('id', $id)
+            ->first(['unit_number', 'status', 'next_inspection_due_at', 'registration_expires_at']);
 
         return [
             'checked_at' => now()->toIso8601String(),
             'status' => $u->status ?? null,
             'next_inspection_due_at' => $u->next_inspection_due_at ?? null,
+            'registration_expires_at' => $u->registration_expires_at ?? null,
+            // El veredicto, y no solo los datos sueltos. Es lo que ya se hacía
+            // con el conductor y no se hacía con la unidad: guardar la fecha de
+            // la inspección sin guardar si estaba vencida deja la prueba a medias
+            // — obliga a quien lea esto dentro de un año a recalcular la regla de
+            // entonces, que quizá ya no exista.
+            'blocking' => $u === null ? [] : Eligibility::reasons(UnitFacts::fromRow($u)),
         ];
     }
 

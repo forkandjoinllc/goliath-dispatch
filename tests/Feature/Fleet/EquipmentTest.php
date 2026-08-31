@@ -175,9 +175,21 @@ it('pero NO la retira de una carga ya entregada', function () {
 });
 
 it('volver a ponerla activa no exige motivo y lo limpia', function () {
+    // Desde el lote 57, SUBIR a «activa» exige que la unidad esté verificada
+    // contra la póliza del transportista — y esta se dio de alta y nunca lo
+    // estuvo. Que volviera sola del taller a estar disponible sin que nadie
+    // hubiera mirado nunca su seguro es justamente lo que ya no pasa.
+    //
+    // Lo que esta prueba mira sigue siendo lo de siempre: que volver a activa no
+    // pida motivo y que limpie el que había.
+    $this->scenario->approveCarrierDocuments();
+
     signIn($this->scenario, Role::Admin);
     $this->post('/equipment/trucks', truckPayload($this->scenario));
     $truckId = DB::table('trucks')->where('unit_number', '310')->value('id');
+
+    $this->post("/equipment/trucks/{$truckId}/verification", ['action' => 'confirm'])
+        ->assertSessionHasNoErrors();
 
     $this->post("/equipment/trucks/{$truckId}/status", [
         'status' => 'out_of_service',

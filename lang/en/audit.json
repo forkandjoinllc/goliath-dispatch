@@ -75,6 +75,9 @@
         "driver": {
             "verified": "Driver reviewed"
         },
+        "equipment": {
+            "verified": "Equipment verified"
+        },
         "expense": {
             "approved": "Expense approved",
             "rejected": "Expense rejected"
@@ -172,6 +175,7 @@
         "dispatcher_resource_assignment": "Assignment",
         "document": "Document",
         "driver": "Driver",
+        "equipment_verification": "Equipment verification",
         "expense": "Expense",
         "factoring_company": "Factoring company",
         "invoice": "Invoice",

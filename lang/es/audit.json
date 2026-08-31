@@ -75,6 +75,9 @@
         "driver": {
             "verified": "Revisó a un conductor"
         },
+        "equipment": {
+            "verified": "Equipo verificado"
+        },
         "expense": {
             "approved": "Aprobó un gasto",
             "rejected": "Rechazó un gasto"
@@ -172,6 +175,7 @@
         "dispatcher_resource_assignment": "Asignación",
         "document": "Documento",
         "driver": "Conductor",
+        "equipment_verification": "Verificación de equipo",
         "expense": "Gasto",
         "factoring_company": "Empresa de factoring",
         "invoice": "Factura",

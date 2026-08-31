@@ -22,6 +22,8 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
+use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
@@ -588,13 +590,23 @@ final class LoadController
             ->where('carrier_id', $load->carrier_id)
             ->whereNull('deleted_at')
             ->orderBy('unit_number')
-            ->get(['id', 'unit_number', 'status'])
-            ->map(fn ($r): array => [
-                'id' => (string) $r->id,
-                'label' => (string) $r->unit_number,
-                'ok' => $r->status !== 'out_of_service',
-                'problem' => $r->status === 'out_of_service' ? 'unitOutOfService' : null,
-            ])
+            ->get(['id', 'unit_number', 'status', 'next_inspection_due_at', 'registration_expires_at'])
+            ->map(function ($r): array {
+                // El desplegable tiene que decir lo MISMO que la puerta. Si aquí
+                // se marcara en regla una unidad que la asignación va a rechazar,
+                // se descubriría el muro chocándose con él: se elige el camión,
+                // se pulsa asignar y sale un error. Por eso los dos sitios leen
+                // la misma regla.
+                $motivos = Eligibility::reasons(UnitFacts::fromRow($r));
+
+                return [
+                    'id' => (string) $r->id,
+                    'label' => (string) $r->unit_number,
+                    'ok' => $motivos === [],
+                    'problem' => null,
+                    'blockingKeys' => $motivos,
+                ];
+            })
             ->all();
 
         // Los requisitos se piden UNA vez para toda la lista. La comparación es

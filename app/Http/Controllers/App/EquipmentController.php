@@ -13,6 +13,9 @@ use App\Models\Trailer;
 use App\Models\Truck;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\EnumValue;
+use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\UnitFacts;
+use App\Support\Equipment\Verification;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
@@ -121,7 +124,7 @@ final class EquipmentController
 
         $checker->authorize($actor, 'equipment:read', $context, $policy);
 
-        $this->usesDictionary($request, ['equipment', 'nav']);
+        $this->usesDictionary($request, ['equipment', 'nav', 'validation']);
 
         return Inertia::render('App/Equipment/Show', [
             'type' => $type,
@@ -129,9 +132,21 @@ final class EquipmentController
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model, $type)
                 : null,
+            // Lo que impide que esta unidad vaya a una carga, HOY, con la misma
+            // regla que usa la puerta. Si esta pantalla dijera otra cosa que la
+            // asignación, volveríamos al defecto que este lote existe para
+            // cerrar. Ver App\Support\Equipment\Eligibility.
+            'blockingKeys' => Eligibility::reasons(UnitFacts::fromRow((object) [
+                'unit_number' => $model->unit_number,
+                'status' => $model->status->value,
+                'next_inspection_due_at' => $model->next_inspection_due_at,
+                'registration_expires_at' => $model->registration_expires_at,
+            ])),
+            'verification' => $this->verification($model, $type),
             'can' => [
                 'update' => $checker->can($actor, 'equipment:update', $context, $policy)->allowed,
                 'changeStatus' => $checker->can($actor, 'equipment:status:update', $context, $policy)->allowed,
+                'override' => $checker->can($actor, 'equipment:verification:override', $context, $policy)->allowed,
             ],
         ]);
     }
@@ -243,6 +258,26 @@ final class EquipmentController
             ]);
         }
 
+        // Poner una unidad EN SERVICIO exige que alguien la haya verificado.
+        //
+        // Sin esto, la puerta del lote 57 —`pending_verification` impide ponerla
+        // en una carga— tenía una llave que era un desplegable: se cambiaba el
+        // estado a «activa» y ya estaba, sin que constara qué se había mirado ni
+        // quién lo dijo. Una puerta cuya llave la tiene cualquiera y no deja
+        // rastro es decoración.
+        //
+        // Solo se exige al SUBIR. Una unidad que ya estaba activa antes de que
+        // esto existiera no se cae de servicio sola: se le exige verificación la
+        // próxima vez que alguien la mueva, no hoy y por sorpresa. Misma regla
+        // de trato que los topes del plan del lote 56.
+        if ($data['status'] === 'active'
+            && $model->status->value !== 'active'
+            && ! Verification::habilita((string) $actor->tenantId, $this->singular($type), (string) $model->id)) {
+            throw ValidationException::withMessages([
+                'status' => __('equipment.verification.requiredToActivate'),
+            ]);
+        }
+
         $released = DB::transaction(function () use ($model, $data, $reason, $goingDown, $type): int {
             $model->status = $data['status'];
             $model->out_of_service_reason = $goingDown ? $reason : null;
@@ -277,6 +312,76 @@ final class EquipmentController
             : __('equipment.status.done'));
     }
 
+    /**
+     * Verificar la unidad contra el certificado de seguro del transportista.
+     *
+     * Dos acciones en una ruta porque son la misma decisión con dos salidas:
+     * «lo he visto» y «no está, y aun así entra». La segunda pide permiso aparte
+     * (`equipment:verification:override`) y motivo escrito — que es toda la
+     * diferencia entre una excepción y un atajo.
+     */
+    public function verify(Request $request, string $type, string $unit, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $this->assertType($type);
+
+        $actor = $current->require();
+        $model = $this->find($type, $unit);
+        $contexto = $this->context($model);
+
+        $data = $request->validate([
+            'action' => ['required', 'string', 'in:confirm,override'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($data['action'] === 'override') {
+            $checker->authorize($actor, 'equipment:verification:override', $contexto, $current->policy());
+
+            $motivo = trim((string) ($data['reason'] ?? ''));
+
+            if (mb_strlen($motivo) < 5) {
+                throw ValidationException::withMessages([
+                    'reason' => __('equipment.verification.reasonRequired'),
+                ]);
+            }
+
+            Verification::anular(
+                $actor,
+                $this->singular($type),
+                (string) $model->id,
+                (string) $model->carrier_id,
+                $motivo,
+            );
+
+            return back()->with('success', __('equipment.verification.overridden'));
+        }
+
+        // Confirmar es un acto de cumplimiento, no de edición: se pide el mismo
+        // permiso que para poner la unidad en servicio, porque es lo que
+        // habilita a ponerla.
+        $checker->authorize($actor, 'equipment:status:update', $contexto, $current->policy());
+
+        try {
+            Verification::confirmar(
+                $actor,
+                $this->singular($type),
+                (string) $model->id,
+                (string) $model->carrier_id,
+                (string) $model->vin,
+            );
+        } catch (\RuntimeException) {
+            // Sin certificado vigente no hay nada contra lo que confirmar. Se
+            // contesta con el motivo concreto —no hay ninguno, o el que hay está
+            // vencido— porque son dos llamadas de teléfono distintas.
+            $impedimentos = Verification::impedimentos((string) $actor->tenantId, (string) $model->carrier_id);
+
+            throw ValidationException::withMessages([
+                'action' => __('equipment.verification.'.($impedimentos[0] ?? Verification::SIN_SEGURO)),
+            ]);
+        }
+
+        return back()->with('success', __('equipment.verification.confirmed'));
+    }
+
     // ------------------------------------------------------------------ interno
 
     private function assertType(string $type): void
@@ -285,6 +390,53 @@ final class EquipmentController
         // «/equipment/usuarios/…» acabaría en un nombre de tabla construido con
         // texto del usuario.
         abort_unless(in_array($type, ['trucks', 'trailers'], true), 404);
+    }
+
+    /**
+     * El estado de verificación de esta unidad, para la pantalla.
+     *
+     * @return array<string, mixed>
+     */
+    private function verification(Truck|Trailer $model, string $type): array
+    {
+        $tenantId = (string) $model->tenant_id;
+        $ultima = Verification::ultima($tenantId, $this->singular($type), (string) $model->id);
+        $coi = Verification::certificado($tenantId, (string) $model->carrier_id);
+
+        $nombre = static function (?string $userId): ?string {
+            if ($userId === null) {
+                return null;
+            }
+
+            $u = DB::table('users')->where('id', $userId)->first(['first_name', 'last_name']);
+
+            return $u === null ? null : trim($u->first_name.' '.$u->last_name);
+        };
+
+        return [
+            'status' => $ultima === null ? null : (string) $ultima->status,
+            'at' => $ultima === null
+                ? null
+                : substr((string) ($ultima->verified_at ?? $ultima->overridden_at ?? $ultima->created_at), 0, 10),
+            'by' => $ultima === null ? null : $nombre($ultima->overridden_by_user_id),
+            'reason' => $ultima === null ? null : $ultima->override_reason,
+            // El certificado contra el que se puede mirar AHORA, con enlace: sin
+            // él la pantalla pediría confirmar algo que no se puede consultar.
+            'coiDocumentId' => $coi === null ? null : (string) $coi->id,
+            'coiExpiresOn' => $coi === null || $coi->expiration_date === null
+                ? null
+                : substr((string) $coi->expiration_date, 0, 10),
+            'obstacles' => Verification::impedimentos($tenantId, (string) $model->carrier_id),
+        ];
+    }
+
+    /**
+     * `trucks` → `truck`. La ruta habla en plural y `equipment_verifications`
+     * en singular, con un CHECK que solo admite `truck` y `trailer`.
+     */
+    private function singular(string $type): string
+    {
+        return $type === 'trucks' ? 'truck' : 'trailer';
     }
 
     /**

@@ -252,7 +252,8 @@
         "expiresOn": "Vence el {date}",
         "noneAvailable": "No hay nada disponible para este transportista.",
         "compliant": "En regla",
-        "notCompliant": "No está en regla"
+        "notCompliant": "No está en regla",
+        "unitBlocked": "{unit} no puede ir a esta carga. {reasons}"
     },
     "flash": {
         "created": "Carga {number} creada.",

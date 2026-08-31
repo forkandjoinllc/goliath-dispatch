@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1100 tests, 7074 assertions)
+OK (1115 tests, 7128 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de los topes del plan.
+(Cifra del 31 de agosto, tras el lote de la unidad sin verificar.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -781,6 +781,63 @@ Del mismo lote, y las cacé releyendo lo que acababa de escribir:
 La regla general de las dos: **una prueba que pasaría igual con el defecto
 puesto no es una prueba.** Es el mismo criterio que el sabotaje de guardianes,
 aplicado a las pruebas normales.
+
+### La frase que llevaba desde el primer día siendo falsa
+
+Lote 57. El diccionario de equipos decía que una unidad pendiente de verificar
+«no se puede poner en una carga hasta que alguien la haya revisado», y el
+comentario del controlador lo repetía. La asignación solo rechazaba
+`out_of_service`.
+
+Lo que hace este caso distinto de los anteriores no es el defecto: es **dónde
+estaba escrito**. No era una pantalla que se hubiera quedado desfasada por un
+cambio de política, como en el lote 56 — era una frase que NUNCA fue verdad, y
+llevaba ahí desde que se escribió el módulo, respaldada por un comentario en el
+código que decía lo mismo. Dos afirmaciones que se apoyaban la una en la otra, y
+ninguna de las dos comprobada por nada.
+
+De ahí sale una comprobación barata que no estaba en la lista de entrega:
+**leerse los textos del módulo que se toca y preguntarse cuál de ellos comprueba
+alguien.** Un `grep` de las frases que prometen un bloqueo —«no se puede», «hasta
+que», «impide»— es media hora y encuentra promesas huérfanas.
+
+Y una prueba: `tests/Unit/Suite/EquipmentBlockingTest.php` ata las claves de
+`equipment.blocking.*` a las constantes de `Eligibility`, en los dos sentidos. Una
+regla sin frase enseña la clave en crudo; **una frase sin regla promete una
+puerta que no existe**, que es exactamente lo que había.
+
+### El desplegable que no decía lo mismo que la puerta
+
+Del mismo lote y probablemente lo más reutilizable que ha salido de él.
+
+Cuando una regla decide si algo se puede hacer, hay casi siempre DOS sitios que
+la consultan: el que impide (la puerta) y el que anticipa (la lista, el botón
+deshabilitado, el aviso). Si cada uno la implementa por su cuenta, divergen — y
+la divergencia siempre cae del mismo lado: la lista es más permisiva que la
+puerta, porque la lista se escribió antes. El usuario elige una opción que
+parecía válida, pulsa, y recibe un error que nada anticipaba.
+
+Aquí el desplegable de asignación marcaba en regla unidades que la puerta iba a
+rechazar. La solución no es sincronizar las dos listas: es que **haya una sola
+regla y los dos la llamen**, y una prueba que compruebe que la llaman —
+`EquipmentBlockingTest` lo hace leyendo los tres ficheros, con los comentarios
+filtrados.
+
+### Y lo que encontró el navegador, dos veces más
+
+Con las 1.115 en verde:
+
+- **«El certificado está vencido» cuando no lo estaba.** El código distinguía dos
+  casos —hay papel o no lo hay— y la empresa de demostración tenía el tercero: un
+  certificado subido y pendiente de revisión. Se anunciaba como vencido, y eso
+  manda a quien lo lee a pedirle a un transportista un documento que ya había
+  mandado. Ahora son tres casos, que son tres llamadas de teléfono distintas.
+- **«Verificada contra el certificado del …» debajo de «Sin verificar».** Reusar
+  una frase de un estado en otro: la etiqueta del enlace decía el nombre de la
+  sección en vez del nombre del documento, y la fecha de vencimiento de la póliza
+  se presentaba con el texto de una verificación ya hecha. Dos líneas seguidas
+  contradiciéndose, como en el lote anterior. Se ve leyendo la pantalla; no se ve
+  de ninguna otra forma.
 
 ## Migraciones: por qué todas son reanudables
 

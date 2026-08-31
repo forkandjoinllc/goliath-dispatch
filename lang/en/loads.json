@@ -252,7 +252,8 @@
         "expiresOn": "Expires {date}",
         "noneAvailable": "Nothing available for this carrier.",
         "compliant": "In order",
-        "notCompliant": "Not in order"
+        "notCompliant": "Not in order",
+        "unitBlocked": "{unit} cannot go on this load. {reasons}"
     },
     "flash": {
         "created": "Load {number} created.",

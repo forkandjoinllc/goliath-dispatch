@@ -564,6 +564,7 @@ Route::middleware(['auth'])->group(function (): void {
             Route::get('{unit}/edit', [EquipmentController::class, 'edit'])->name('equipment.edit');
             Route::patch('{unit}', [EquipmentController::class, 'update'])->name('equipment.update');
             Route::post('{unit}/status', [EquipmentController::class, 'status'])->name('equipment.status');
+            Route::post('{unit}/verification', [EquipmentController::class, 'verify'])->name('equipment.verify');
         });
 });
 

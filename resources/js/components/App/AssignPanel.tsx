@@ -24,6 +24,18 @@ interface Option {
   label: string
   ok: boolean
   problem: string | null
+  /**
+   * Solo en unidades: TODAS las razones por las que no puede ir a la carga, como
+   * claves de `equipment.blocking.*`.
+   *
+   * Son varias y no una porque quien prepara un camión quiere saber de una vez
+   * todo lo que le falta —sin verificar Y con la inspección vencida— y no
+   * descubrirlo de uno en uno, arreglando y volviendo a chocarse.
+   *
+   * Van como CLAVES, no como texto: ver la lección del lote 55 sobre props que
+   * llegan ya traducidas y se vuelven a traducir.
+   */
+  blockingKeys?: string[]
   licenseExpiresAt?: string | null
   medicalCardExpiresAt?: string | null
   /** Solo en conductores, y solo si la carga tiene requisitos. */
@@ -221,20 +233,14 @@ function ResourcePicker({
                     ve de una vez quién está en regla y quién no. */}
                 {o.ok
                   ? `${o.label}${verdictTag(o.eligibility, t)}`
-                  : `${o.label} — ${t(`loads.assign.${o.problem}`, {
-                      name: o.label,
-                      date: day(o.licenseExpiresAt ?? o.medicalCardExpiresAt),
-                    })}`}
+                  : `${o.label} — ${motivo(o, t)}`}
               </option>
             ))}
           </select>
 
           {chosen && !chosen.ok ? (
             <p role="alert" className="rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
-              {t(`loads.assign.${chosen.problem}`, {
-                name: chosen.label,
-                date: day(chosen.licenseExpiresAt ?? chosen.medicalCardExpiresAt),
-              })}
+              {motivo(chosen, t)}
             </p>
           ) : null}
 
@@ -342,4 +348,23 @@ function EligibilityReport({
       <p className="mt-2 text-xs text-steel-600">{t('loads.eligibility.notABlock')}</p>
     </div>
   )
+}
+
+/**
+ * Por qué esta opción no puede elegirse, en una frase.
+ *
+ * Dos formas porque son dos dominios: el conductor trae una clave suelta
+ * (`loads.assign.licenseExpired`) con sus parámetros, y la unidad trae la lista
+ * completa de lo que le falta (`equipment.blocking.*`). Antes la unidad solo
+ * podía traer «fuera de servicio», porque era lo único que se comprobaba.
+ */
+function motivo(o: Option, t: (k: string, p?: Record<string, string | number>) => string): string {
+  if (o.blockingKeys !== undefined && o.blockingKeys.length > 0) {
+    return o.blockingKeys.map((k) => t(`equipment.blocking.${k}`)).join(' ')
+  }
+
+  return t(`loads.assign.${o.problem}`, {
+    name: o.label,
+    date: day(o.licenseExpiresAt ?? o.medicalCardExpiresAt),
+  })
 }

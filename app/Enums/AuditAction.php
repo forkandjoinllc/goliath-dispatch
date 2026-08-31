@@ -30,6 +30,9 @@ enum AuditAction: string
     case DocumentRejected = 'document.rejected';
     case DocumentDeleted = 'document.deleted';
     case VerificationOverride = 'verification.override';
+
+    /** Alguien confirmó que el VIN de la unidad está en la póliza. */
+    case EquipmentVerified = 'equipment.verified';
     /** Revisión de la licencia de un conductor. Añadido, no portado — ver la migración. */
     case DriverVerified = 'driver.verified';
     case OnboardingStatusChanged = 'onboarding.status_changed';
