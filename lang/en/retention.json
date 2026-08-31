@@ -1,0 +1,73 @@
+{
+    "index": {
+        "title": "Retention and holds",
+        "description": "How long records are kept, and what is on hold because a claim is in play.",
+        "policyTitle": "The policy in force",
+        "policyLine": "Operational records stay active for {months} months. Financial records are kept for {financial} years. Archived records are purged {purge} years later.",
+        "policyNote": "The periods are changed in Settings, and changing them has legal consequences. This system applies the numbers it is given; it does not decide which ones are right for your company.",
+        "purgeOn": "Permanent purge is ON on this server",
+        "purgeOnHint": "Sunday's sweep really deletes what appears below. It cannot be undone.",
+        "purgeOff": "Permanent purge is off",
+        "purgeOffHint": "The sweep archives — which can be undone — and deletes nothing. The list below is a forecast, not what will happen."
+    },
+    "holds": {
+        "title": "Active holds",
+        "empty": "There is no legal hold in force.",
+        "newTitle": "Apply a hold",
+        "nameLabel": "Name",
+        "namePlaceholder": "Claim on load GD-24007",
+        "reasonLabel": "Reason",
+        "reasonHint": "Write it for whoever reads it in three years and has to decide whether it can be lifted. A hold with no reason never gets lifted.",
+        "scopeLabel": "Scope",
+        "entityLabel": "Record type",
+        "entityIdLabel": "Record identifier",
+        "matterLabel": "Matter reference (optional)",
+        "apply": "Apply the hold",
+        "appliedBy": "Applied by {who} on {date}",
+        "release": "Lift",
+        "releaseTitle": "Lift the hold",
+        "releaseHint": "Lifting restarts the deletion clock on these records. Explain why.",
+        "releaseReasonLabel": "Reason for lifting",
+        "confirmRelease": "Lift the hold",
+        "cannotPurge": "never purged"
+    },
+    "scope": {
+        "tenant": "The whole company",
+        "entity_type": "One record type",
+        "record": "One specific record"
+    },
+    "entityClass": {
+        "operational": "Operational",
+        "financial": "Financial"
+    },
+    "purge": {
+        "title": "What would be purged today",
+        "empty": "There is nothing to purge today.",
+        "entity": "Record",
+        "candidates": "Would be purged",
+        "skipped": "Skipped by a hold",
+        "hint": "Expired and already archived. Anything a hold covers is left alone."
+    },
+    "runs": {
+        "title": "Recent runs",
+        "empty": "The retention sweep has not run yet.",
+        "emptyHint": "It runs Sundays at 4:00 if the scheduler is enabled on the server. You can check that in Platform health.",
+        "action": "Action",
+        "archive": "Archive",
+        "purgeAction": "Purge",
+        "candidates": "Candidates",
+        "processed": "Done",
+        "skipped": "Skipped",
+        "at": "When",
+        "ranWithNothingToDo": "The sweep ran on {date} and there was nothing to archive or purge. That is normal while the company is young."
+    },
+    "flash": {
+        "held": "Hold applied.",
+        "released": "Hold lifted."
+    },
+    "errors": {
+        "needsEntityType": "A hold by type or by record needs to know which type.",
+        "needsEntityId": "A hold on one record needs to know which one.",
+        "holdNotFound": "That hold does not exist or has already been lifted."
+    }
+}

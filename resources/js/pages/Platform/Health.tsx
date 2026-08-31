@@ -205,6 +205,18 @@ function NuncaCorrio({ tarea, cronLine }: { tarea: Tarea; cronLine: string }) {
         </span>
       </div>
       <p className="mt-2 text-sm text-carbon">{t('platform.health.neverRanExplanation')}</p>
+      {/*
+        La consecuencia, por tarea. La explicación de arriba dice por qué no
+        corre —siempre lo mismo: falta el cron— y esta dice qué se está dejando
+        de hacer, que NO es lo mismo para cada una. Con un solo texto, la
+        pantalla le contaba a quien mira que sin `retention:sweep` no se mandan
+        los avisos de documentos que caducan, que es de otra tarea. Un aviso que
+        describe mal lo que pasa se corrige tarde, porque quien lo lee busca en
+        el sitio equivocado.
+      */}
+      <p className="mt-1 text-sm font-medium text-carbon">
+        {t(`platform.health.consequence.${tarea.task.replace(/[:.](.)/g, (_, c: string) => c.toUpperCase())}`)}
+      </p>
       <p className="mt-3 text-xs text-carbon">{t('platform.health.cronLine')}</p>
       <pre className="mt-1 overflow-x-auto rounded bg-white px-3 py-2 font-mono text-[11px] text-carbon">
         {cronLine}

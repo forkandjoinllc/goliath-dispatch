@@ -39,3 +39,21 @@ Schedule::command('notifications:sweep')
     ->dailyAt('06:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+| El barrido de retención, semanal y no diario.
+|
+| Archivar y purgar no es urgente: un registro que cumple veinticuatro meses el
+| martes puede archivarse el domingo sin que nada cambie. Y las dos operaciones
+| tocan muchas filas, así que hacerlo entre semana a las seis de la mañana
+| —cuando despacho ya está trabajando— sería competir por la base de datos con
+| el trabajo de verdad.
+|
+| Domingo a las cuatro es el hueco: en la costa oeste es la una de la madrugada
+| del domingo, y ni siquiera los que salen de madrugada están dando de alta
+| cargas a esa hora.
+*/
+Schedule::command('retention:sweep')
+    ->weeklyOn(0, '04:00')
+    ->withoutOverlapping()
+    ->onOneServer();

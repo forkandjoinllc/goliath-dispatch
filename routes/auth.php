@@ -28,6 +28,7 @@ use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\LoadDocumentController;
 use App\Http\Controllers\App\MessageController;
+use App\Http\Controllers\App\RetentionController;
 use App\Http\Controllers\App\RateConfirmationController;
 use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
@@ -430,6 +431,18 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('messages/{conversation}', [MessageController::class, 'store'])->name('messages.store');
     Route::delete('messages/{conversation}/participants/{user}', [MessageController::class, 'removeParticipant'])->name('messages.participants.destroy');
     Route::post('loads/{load}/messages', [MessageController::class, 'forLoad'])->name('loads.messages.open');
+
+    /*
+    | Retención y bloqueo legal
+    |
+    | No hay ruta de purgar, y es deliberado: purgar es un DELETE que no se
+    | deshace, y un botón así en una pantalla web es un botón que alguien pulsa
+    | por curiosidad un viernes. La purga la ejecuta el planificador, y solo si
+    | alguien encendió RETENTION_PURGE_ENABLED en el servidor.
+    */
+    Route::get('retention', [RetentionController::class, 'index'])->name('retention.index');
+    Route::post('retention/holds', [RetentionController::class, 'storeHold'])->name('retention.holds.store');
+    Route::post('retention/holds/{hold}/release', [RetentionController::class, 'releaseHold'])->name('retention.holds.release');
 
     /*
     | Firmas

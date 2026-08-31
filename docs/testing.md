@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (996 tests, 6699 assertions)
+OK (1030 tests, 6836 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de mensajes.
+(Cifra del 31 de agosto, tras el lote de retención.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -531,6 +531,61 @@ nuevas del lote las escribí planas (`"message.participant_added": "…"`), que 
 exactamente la trampa contada más arriba, y `EnumLabelsTest` la cazó en el mismo
 minuto. Es la tercera vez que un guardián escrito en un lote anterior atrapa un
 error del siguiente, y la razón de que valga la pena escribirlos.
+
+### Un guardián que caza antes de que exista la función
+
+En el lote de retención escribí primero `Policy::ENTITIES` —la lista de tablas
+que el barrido toca— y a continuación el guardián que la comprueba contra el
+esquema. El guardián falló **en su primera ejecución**, antes de que existiera
+nada que barrer: `load_status_history` estaba en mi lista y no tiene columnas de
+retención. Se habría contado como candidata cada domingo y no se habría hecho
+nada con ella: un «procesados: 0» eterno que nadie sabría interpretar.
+
+Es la primera vez en este proyecto que un guardián atrapa un error antes que el
+código que protege, y merece decirlo porque cambia cuándo conviene escribirlos:
+no al final, como red; al principio, como especificación.
+
+El mismo fichero destapó una contradicción del esquema que llevaba ahí desde el
+puerto: seis tablas tienen columnas de retención —«puedes purgar esto»— Y un
+disparador `before delete` que lanza `SIGNAL` —«no puedes borrar esto jamás»—.
+Sin la comprobación, el sitio donde se habría descubierto es un barrido nocturno
+reventando a mitad de una transacción, en el cliente que primero acumulara cinco
+años de datos.
+
+### El literal que el CHECK no admite, otra vez
+
+`Sweeper` escribía `retention_jobs.status = 'completed'`. El CHECK admite
+`queued | running | succeeded | failed | dead_letter | cancelled`. Es
+exactamente el mismo tropiezo que el `proof_of_delivery` del lote 50, en un lote
+que se abrió citando ese fallo — o sea que conocer la trampa no basta para no
+pisarla, y por eso la respuesta correcta nunca es «tener más cuidado» sino otro
+guardián. Ahora `PurgeableTablesTest` compara los literales de `'status' =>` de
+`Sweeper.php` contra el CHECK del DDL. Comprobado que falla al reintroducirlo.
+
+### Lo que encontró el navegador, dos veces
+
+Con veinticinco pruebas en verde:
+
+1. **`/platform/health` contaba la consecuencia equivocada.** La pantalla tenía
+   un solo texto —escrito para `notifications:sweep`— y se lo pintaba a todas las
+   tareas. Al añadir `retention:sweep`, le decía a quien mira que sin él no se
+   mandan los avisos de documentos que caducan. Un aviso que describe mal lo que
+   pasa se corrige tarde, porque quien lo lee busca donde no es. Ahora la
+   consecuencia es por tarea, y una prueba obliga a que la siguiente traiga la
+   suya en los dos idiomas.
+
+2. **La pantalla de retención decía «el barrido todavía no ha corrido» después
+   de que corriera.** Un barrido sin trabajo no escribe filas en `retention_jobs`
+   —no hay nada que contar—, así que la lista quedaba vacía y la pantalla
+   concluía que no se había ejecutado. Para una empresa nueva ese es el estado
+   normal durante dos años: dos años diciéndole que su retención no funciona.
+   Ahora se distingue «nunca corrió» de «corrió y no había nada que hacer»
+   leyendo la última ejecución de `job_queue`.
+
+Las dos son de la misma familia que todo lo que este documento lleva contando
+desde el lote 44, y conviene nombrarla de una vez: **el fallo más caro de esta
+aplicación no es que algo no funcione, es que una pantalla afirme algo que no es
+verdad.** Un botón roto se nota. Una frase falsa se cree.
 
 ## Migraciones: por qué todas son reanudables
 

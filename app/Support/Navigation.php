@@ -67,6 +67,7 @@ final class Navigation
             ['settings', 'settings', ['tenant:settings:read']],
             ['audit', 'audit', ['audit:read']],
             ['leads', 'leads', ['lead:read']],
+            ['retention', 'retention', ['retention:manage']],
         ],
         'platform' => [
             ['platform/tenants', 'tenants', ['platform:tenant:read']],
@@ -83,7 +84,7 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages'];
+    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages', 'retention'];
 
     /**
      * Entradas que solo tienen sentido con alcance de empresa.

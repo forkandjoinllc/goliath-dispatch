@@ -1,0 +1,73 @@
+{
+    "index": {
+        "title": "Retención y bloqueos",
+        "description": "Cuánto tiempo se conservan los registros, y qué está bloqueado porque hay una reclamación de por medio.",
+        "policyTitle": "La política vigente",
+        "policyLine": "Los registros operativos están activos {months} meses. Los financieros se conservan {financial} años. Lo archivado se purga {purge} años después.",
+        "policyNote": "Los plazos se cambian en Configuración, y cambiarlos tiene consecuencias legales. Este sistema aplica los números que le den; no decide cuáles son los correctos para su empresa.",
+        "purgeOn": "La purga permanente está ENCENDIDA en este servidor",
+        "purgeOnHint": "El barrido del domingo borra de verdad lo que aparece abajo. Es irreversible.",
+        "purgeOff": "La purga permanente está apagada",
+        "purgeOffHint": "El barrido archiva —que se deshace— y no borra nada. La lista de abajo es una previsión, no lo que va a pasar."
+    },
+    "holds": {
+        "title": "Bloqueos vigentes",
+        "empty": "No hay ningún bloqueo legal vigente.",
+        "newTitle": "Aplicar un bloqueo",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Reclamación de la carga GD-24007",
+        "reasonLabel": "Motivo",
+        "reasonHint": "Escríbalo para quien lo lea dentro de tres años y tenga que decidir si puede levantarlo. Un bloqueo sin motivo no se levanta nunca.",
+        "scopeLabel": "Alcance",
+        "entityLabel": "Tipo de registro",
+        "entityIdLabel": "Identificador del registro",
+        "matterLabel": "Referencia del expediente (opcional)",
+        "apply": "Aplicar el bloqueo",
+        "appliedBy": "Aplicado por {who} el {date}",
+        "release": "Levantar",
+        "releaseTitle": "Levantar el bloqueo",
+        "releaseHint": "Levantar vuelve a poner en marcha el reloj de borrado sobre estos registros. Explique por qué.",
+        "releaseReasonLabel": "Motivo para levantarlo",
+        "confirmRelease": "Levantar el bloqueo",
+        "cannotPurge": "no se purga nunca"
+    },
+    "scope": {
+        "tenant": "Toda la empresa",
+        "entity_type": "Un tipo de registro",
+        "record": "Un registro concreto"
+    },
+    "entityClass": {
+        "operational": "Operativo",
+        "financial": "Financiero"
+    },
+    "purge": {
+        "title": "Qué se purgaría hoy",
+        "empty": "Hoy no hay nada que purgar.",
+        "entity": "Registro",
+        "candidates": "Se purgarían",
+        "skipped": "Saltados por bloqueo",
+        "hint": "Vencidos y ya archivados. Lo que un bloqueo cubre no se toca."
+    },
+    "runs": {
+        "title": "Últimas ejecuciones",
+        "empty": "El barrido de retención todavía no ha corrido.",
+        "emptyHint": "Corre los domingos a las 4:00 si el planificador está activado en el servidor. Se puede comprobar en Salud de la plataforma.",
+        "action": "Acción",
+        "archive": "Archivar",
+        "purgeAction": "Purgar",
+        "candidates": "Candidatos",
+        "processed": "Hechos",
+        "skipped": "Saltados",
+        "at": "Cuándo",
+        "ranWithNothingToDo": "El barrido corrió el {date} y no había nada que archivar ni que purgar. Es lo normal mientras la empresa sea joven."
+    },
+    "flash": {
+        "held": "Bloqueo aplicado.",
+        "released": "Bloqueo levantado."
+    },
+    "errors": {
+        "needsEntityType": "Un bloqueo por tipo o por registro necesita saber de qué tipo.",
+        "needsEntityId": "Un bloqueo de un registro necesita saber cuál.",
+        "holdNotFound": "Ese bloqueo no existe o ya está levantado."
+    }
+}

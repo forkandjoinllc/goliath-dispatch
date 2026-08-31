@@ -353,3 +353,41 @@ it('un administrador de empresa no entra en la salud de la plataforma', function
     // no hay a dónde mandarle que sea mejor que decírselo.
     $this->get('/platform/health')->assertForbidden();
 });
+
+it('cada tarea del planificador explica QUÉ se deja de hacer si no corre', function () {
+    // Lo encontró el navegador. La pantalla tenía un solo texto de consecuencia
+    // —escrito para `notifications:sweep`— y se lo pintaba a todas: al añadir
+    // `retention:sweep`, la pantalla le decía a quien mira que sin él no se
+    // mandan los avisos de documentos que caducan. Un aviso que describe mal lo
+    // que pasa se corrige tarde, porque quien lo lee busca donde no es.
+    //
+    // Ahora la consecuencia es por tarea, y esto obliga a que la siguiente que
+    // se añada traiga la suya en los dos idiomas.
+    $reflexion = new ReflectionClass(App\Http\Controllers\Platform\HealthController::class);
+    /** @var list<string> $tareas */
+    $tareas = $reflexion->getConstant('TAREAS');
+
+    expect($tareas)->not->toBeEmpty();
+
+    foreach (['es', 'en'] as $locale) {
+        $faltan = [];
+
+        foreach ($tareas as $tarea) {
+            // La clave se compone igual que en la pantalla: `notifications:sweep`
+            // se vuelve `notificationsSweep`.
+            $clave = preg_replace_callback(
+                '/[:.](.)/',
+                static fn (array $m): string => strtoupper($m[1]),
+                $tarea,
+            );
+
+            $texto = __("platform.health.consequence.{$clave}", [], $locale);
+
+            if ($texto === "platform.health.consequence.{$clave}" || trim($texto) === '') {
+                $faltan[] = $tarea;
+            }
+        }
+
+        expect($faltan)->toBe([], "Tareas sin consecuencia escrita en {$locale}: ".implode(', ', $faltan));
+    }
+});

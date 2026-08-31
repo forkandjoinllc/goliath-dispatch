@@ -51,7 +51,7 @@ final class HealthController
      *
      * @var list<string>
      */
-    private const TAREAS = ['notifications:sweep'];
+    private const TAREAS = ['notifications:sweep', 'retention:sweep'];
 
     public function __invoke(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
