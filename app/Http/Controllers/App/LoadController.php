@@ -167,7 +167,14 @@ final class LoadController
                 // llevan el tipo pegado a la clave y la pantalla tendría que
                 // volver a partirla — dos sitios haciendo lo mismo acaban
                 // discrepando.
-                'blocking' => array_map(
+                //
+                // Y por eso el campo se llama `blockingMessages` y no
+                // `blocking`: se llamaba lo segundo, y la pantalla —que en otras
+                // páginas SÍ recibe claves con ese nombre— lo traducía otra vez.
+                // El resultado se veía en la ficha de carga, la pantalla más
+                // usada de la aplicación: «loads.blocking.No se ha elegido
+                // transportista.». El nombre lleva ahora el contrato encima.
+                'blockingMessages' => array_map(
                     fn (string $key): string => $this->blockingMessage($key),
                     Guards::blocking($model, $action),
                 ),

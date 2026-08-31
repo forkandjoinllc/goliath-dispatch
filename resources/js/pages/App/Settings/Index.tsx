@@ -204,8 +204,16 @@ export default function SettingsIndex({ settings, subscription = null, readOnly,
               onChange={(v) => form.setData('allow_dispatcher_resource_assignment', v)}
               disabled={bloqueado}
             />
+            {/*
+              El texto de ayuda dice QUÉ HACE, y no es adorno: este interruptor
+              estuvo inerte desde el primer día. Se encendía, la persona creía
+              tener un segundo par de ojos sobre las cargas sobredimensionadas,
+              y el despacho se comportaba igual. Decir en voz alta lo que activa
+              es parte de que vuelva a ser creíble.
+            */}
             <Casilla
               label={t('settings.ops.oversizeAdmin')}
+              hint={t('settings.ops.oversizeAdminHint')}
               checked={form.data.require_oversize_admin_validation}
               onChange={(v) => form.setData('require_oversize_admin_validation', v)}
               disabled={bloqueado}

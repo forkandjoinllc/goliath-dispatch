@@ -133,7 +133,45 @@ final class Guards
             $blocking[] = 'permitNotApproved';
         }
 
+        // Y el SEGUNDO par de ojos, si la empresa lo ha pedido.
+        //
+        // `tenant_settings.require_oversize_admin_validation` existía, se
+        // editaba en la pantalla de configuración con la etiqueta «las cargas
+        // sobredimensionadas necesitan validación de un administrador», se
+        // guardaba… y no lo leía nadie. Se encendía y el despacho se comportaba
+        // exactamente igual: alguien creía tener un control que no existía,
+        // sobre la parte del sistema donde la gente se hace daño.
+        //
+        // Son dos actos distintos y por eso son dos columnas y dos permisos:
+        //
+        //  - `permit:approve_ready` dice «los papeles están todos».
+        //  - `oversize:validate` dice «las medidas y la ruta las ha mirado un
+        //    administrador». El despachador puede EVALUAR (`oversize:evaluate`)
+        //    y no puede validar: esa asimetría de la matriz de roles solo tiene
+        //    sentido si alguien la usa, y hasta ahora nadie la usaba.
+        if ((bool) $load->is_oversize
+            && $load->oversize_validated_at === null
+            && self::requiresOversizeValidation((string) $load->tenant_id)) {
+            $blocking[] = 'oversizeNotValidated';
+        }
+
         return $blocking;
+    }
+
+    /**
+     * ¿Exige esta empresa la validación de un administrador en sobredimensión?
+     *
+     * Falso cuando no hay fila de ajustes, y eso es deliberado: falta de
+     * configuración no es falta de permiso. Una empresa sin ajustes —no debería
+     * pasar, pero pasa— no puede quedarse con todas sus cargas sobredimensionadas
+     * paradas porque una consulta devolvió nulo. La puerta que se cierra sola
+     * por un dato que falta es tan mala como la que no se cierra nunca.
+     */
+    private static function requiresOversizeValidation(string $tenantId): bool
+    {
+        return (bool) DB::table('tenant_settings')
+            ->where('tenant_id', $tenantId)
+            ->value('require_oversize_admin_validation');
     }
 
     /** @return list<string> */

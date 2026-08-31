@@ -58,7 +58,19 @@ interface Financials {
 
 interface Action {
   action: string
-  blocking: string[]
+  /**
+   * Mensajes YA TRADUCIDOS por el servidor, no claves.
+   *
+   * El nombre lo dice a propósito. Se llamaba `blocking`, igual que el campo de
+   * otras pantallas que sí trae claves, y aquí se volvía a traducir: la ficha de
+   * carga —la pantalla más usada— enseñaba «loads.blocking.No se ha elegido
+   * transportista.» a cualquiera que intentara despachar sin transportista.
+   *
+   * El servidor los redacta porque los documentos que faltan llevan el tipo
+   * pegado a la clave (`missingDocument:certificate_of_insurance`) y partirla en
+   * dos sitios acaba discrepando.
+   */
+  blockingMessages: string[]
   requiresReason: boolean
 }
 
@@ -524,7 +536,7 @@ function ActionBar({ actions, loadId }: { actions: Action[]; loadId: string }) {
     <>
       <div className="flex flex-wrap items-center gap-2">
         {actions.map((a) => {
-          const blocked = a.blocking.length > 0
+          const blocked = a.blockingMessages.length > 0
           const primary = !blocked && a.action !== 'cancelled'
 
           return (
@@ -533,7 +545,7 @@ function ActionBar({ actions, loadId }: { actions: Action[]; loadId: string }) {
                 type="button"
                 disabled={blocked}
                 onClick={() => run(a)}
-                title={blocked ? a.blocking.map((b) => t(`loads.blocking.${b}`)).join(' ') : undefined}
+                title={blocked ? a.blockingMessages.join(' ') : undefined}
                 className={`rounded px-4 py-2 text-sm font-medium transition ${
                   blocked
                     ? 'cursor-not-allowed border border-steel-300 bg-steel-100 text-steel-500'
@@ -551,14 +563,14 @@ function ActionBar({ actions, loadId }: { actions: Action[]; loadId: string }) {
 
       {/* Los motivos de bloqueo, escritos. El `title` del botón no sirve para
           quien navega con teclado ni en un móvil. */}
-      {actions.some((a) => a.blocking.length > 0) ? (
+      {actions.some((a) => a.blockingMessages.length > 0) ? (
         <div className="mt-3 w-full rounded border-l-4 border-safety-500 bg-safety-50 p-3 text-sm">
           <strong className="block text-xs uppercase tracking-wide">
             {t('loads.transition.blockedTitle')}
           </strong>
           <ul className="mt-1 list-disc pl-4">
-            {[...new Set(actions.flatMap((a) => a.blocking))].map((b) => (
-              <li key={b}>{t(`loads.blocking.${b}`)}</li>
+            {[...new Set(actions.flatMap((a) => a.blockingMessages))].map((b) => (
+              <li key={b}>{b}</li>
             ))}
           </ul>
         </div>

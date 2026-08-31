@@ -64,7 +64,39 @@ final class AppShell
             // campana a cero sin que nadie lo notara — y una campana que miente
             // es peor que no tenerla.
             'unreadNotifications' => NotificationController::unreadCount($actor),
+            // El correo de soporte de la empresa.
+            //
+            // Va en el armazón por el mismo motivo que la campana: lo necesitan
+            // las pantallas donde alguien se ha quedado fuera —acceso denegado,
+            // empresa suspendida— y esas se pintan desde sitios distintos. Si
+            // dependiera del controlador, la que más falta hace sería la que se
+            // olvidara.
+            //
+            // Se editaba en configuración desde el primer día y NO SE ENSEÑABA
+            // EN NINGÚN SITIO. Alguien lo rellenaba creyendo que su gente sabría
+            // a quién escribir, y su gente veía «consulte con un administrador»
+            // sin más. Lo cazó tests/Unit/Suite/InertSettingsTest.php.
+            'supportEmail' => $this->supportEmail($actor->tenantId),
         ];
+    }
+
+    /**
+     * El correo al que escribe quien necesita ayuda en esta empresa.
+     *
+     * Nulo cuando no está puesto, y entonces la pantalla no promete un contacto
+     * que no existe: enseñar un enlace vacío sería otra forma de mentir.
+     */
+    private function supportEmail(?string $tenantId): ?string
+    {
+        if ($tenantId === null) {
+            return null;
+        }
+
+        $valor = $this->context->withoutTenant(fn () => DB::table('tenant_settings')
+            ->where('tenant_id', $tenantId)
+            ->value('support_email'));
+
+        return is_string($valor) && trim($valor) !== '' ? trim($valor) : null;
     }
 
     /**

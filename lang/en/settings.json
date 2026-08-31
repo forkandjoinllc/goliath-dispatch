@@ -1,77 +1,78 @@
 {
-  "index": {
-    "title": "Company settings",
-    "subtitle": "The policy new loads and invoices are born with. Changing it never rewrites what already exists.",
-    "save": "Save settings"
-  },
-  "money": {
-    "title": "Money",
-    "note": "A load keeps its own fee and commission from the moment it was agreed. These are only the values the next ones start with.",
-    "feeBase": "Dispatch fee is charged on",
-    "dispatchFee": "Default dispatch fee",
-    "dispatchFeeHint": "What you charge the carrier, as a percentage.",
-    "commission": "Default dispatcher commission",
-    "commissionHint": "What the dispatcher earns. Can be overridden per dispatcher.",
-    "commissionBasis": "Commission is calculated on",
-    "paymentTerms": "Default payment terms (days)"
-  },
-  "feeBaseLabel": {
-    "commissionable_base": "The commissionable base",
-    "carrier_gross_rate": "The carrier gross rate"
-  },
-  "feeBase": {
-    "commissionable_base": "The gross rate less excluded expenses — permits and escorts do not earn you a fee.",
-    "carrier_gross_rate": "The whole gross rate, expenses included."
-  },
-  "commissionBasis": {
-    "dispatch_fee_amount": "The dispatch fee",
-    "carrier_gross_rate": "The carrier gross rate",
-    "commissionable_base": "The commissionable base"
-  },
-  "numbering": {
-    "title": "Numbering",
-    "note": "Prefixes only. Uppercase letters, digits and dashes.",
-    "loadPrefix": "Load number prefix",
-    "invoicePrefix": "Invoice number prefix",
-    "counters": "Next load number: {load}. Next invoice number: {invoice}. Counters cannot be edited here — moving one backwards would repeat an invoice number that has already gone out."
-  },
-  "ops": {
-    "title": "Operations",
-    "docWarning": "Warn about expiring documents (days)",
-    "docWarningHint": "How far ahead a document counts as expiring soon.",
-    "fmcsaDays": "Re-check FMCSA every (days)",
-    "trackingTtl": "Public tracking link lasts (hours)",
-    "dispatcherAssign": "Dispatchers may assign trucks, trailers and drivers to loads",
-    "dispatcherAssignHint": "Off by default. With it off, only an administrator assigns resources.",
-    "oversizeAdmin": "Oversize loads need administrator validation",
-    "publicTracking": "Public tracking links are enabled"
-  },
-  "contact": {
-    "title": "Public contact details",
-    "note": "What the public site shows. Not used for anything operational.",
-    "phone": "Phone",
-    "email": "Email",
-    "support": "Support email",
-    "line1": "Address",
-    "line2": "Address line 2",
-    "city": "City",
-    "postal": "Postal code"
-  },
-  "retention": {
-    "note": "Retention: records stay active for {months} months, are purged {purge} years after archiving, and financial records are kept {financial} years. Changing retention has legal consequences and is not editable here — ask for it deliberately."
-  },
-  "flash": {
-    "saved": "Settings saved. New loads and invoices will use them; existing ones keep what they were created with."
-  },
-  "subscription": {
-    "title": "Your plan",
-    "hint": "Read-only. Changing plan goes through billing, which is not connected yet.",
-    "plan": "Plan",
-    "status": "Status",
-    "monthly": "Monthly",
-    "trialEnds": "Trial ends",
-    "periodEnds": "Period ends",
-    "cancelling": "Cancels at the end of the period",
-    "none": "No subscription on file."
-  }
+    "index": {
+        "title": "Company settings",
+        "subtitle": "The policy new loads and invoices are born with. Changing it never rewrites what already exists.",
+        "save": "Save settings"
+    },
+    "money": {
+        "title": "Money",
+        "note": "A load keeps its own fee and commission from the moment it was agreed. These are only the values the next ones start with.",
+        "feeBase": "Dispatch fee is charged on",
+        "dispatchFee": "Default dispatch fee",
+        "dispatchFeeHint": "What you charge the carrier, as a percentage.",
+        "commission": "Default dispatcher commission",
+        "commissionHint": "What the dispatcher earns. Can be overridden per dispatcher.",
+        "commissionBasis": "Commission is calculated on",
+        "paymentTerms": "Default payment terms (days)"
+    },
+    "feeBaseLabel": {
+        "commissionable_base": "The commissionable base",
+        "carrier_gross_rate": "The carrier gross rate"
+    },
+    "feeBase": {
+        "commissionable_base": "The gross rate less excluded expenses — permits and escorts do not earn you a fee.",
+        "carrier_gross_rate": "The whole gross rate, expenses included."
+    },
+    "commissionBasis": {
+        "dispatch_fee_amount": "The dispatch fee",
+        "carrier_gross_rate": "The carrier gross rate",
+        "commissionable_base": "The commissionable base"
+    },
+    "numbering": {
+        "title": "Numbering",
+        "note": "Prefixes only. Uppercase letters, digits and dashes.",
+        "loadPrefix": "Load number prefix",
+        "invoicePrefix": "Invoice number prefix",
+        "counters": "Next load number: {load}. Next invoice number: {invoice}. Counters cannot be edited here — moving one backwards would repeat an invoice number that has already gone out."
+    },
+    "ops": {
+        "title": "Operations",
+        "docWarning": "Warn about expiring documents (days)",
+        "docWarningHint": "How far ahead a document counts as expiring soon.",
+        "fmcsaDays": "Re-check FMCSA every (days)",
+        "trackingTtl": "Public tracking link lasts (hours)",
+        "dispatcherAssign": "Dispatchers may assign trucks, trailers and drivers to loads",
+        "dispatcherAssignHint": "Off by default. With it off, only an administrator assigns resources.",
+        "oversizeAdmin": "Oversize loads need administrator validation",
+        "oversizeAdminHint": "With this on, an oversize load cannot be dispatched until an administrator validates its dimensions on the permits screen — on top of the paperwork being approved. A dispatcher can evaluate it; validating it, no.",
+        "publicTracking": "Public tracking links are enabled"
+    },
+    "contact": {
+        "title": "Public contact details",
+        "note": "What the public site shows. Not used for anything operational.",
+        "phone": "Phone",
+        "email": "Email",
+        "support": "Support email",
+        "line1": "Address",
+        "line2": "Address line 2",
+        "city": "City",
+        "postal": "Postal code"
+    },
+    "retention": {
+        "note": "Retention: records stay active for {months} months, are purged {purge} years after archiving, and financial records are kept {financial} years. Changing retention has legal consequences and is not editable here — ask for it deliberately."
+    },
+    "flash": {
+        "saved": "Settings saved. New loads and invoices will use them; existing ones keep what they were created with."
+    },
+    "subscription": {
+        "title": "Your plan",
+        "hint": "Read-only. Changing plan goes through billing, which is not connected yet.",
+        "plan": "Plan",
+        "status": "Status",
+        "monthly": "Monthly",
+        "trialEnds": "Trial ends",
+        "periodEnds": "Period ends",
+        "cancelling": "Cancels at the end of the period",
+        "none": "No subscription on file."
+    }
 }

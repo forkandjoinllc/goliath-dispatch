@@ -44,6 +44,7 @@ export interface Shell {
   nav: NavGroup[]
   /** Avisos sin leer de ESTA persona en ESTA empresa. Sostiene la campana. */
   unreadNotifications: number
+  supportEmail: string | null
 }
 
 /** Props que trae toda página autenticada. `shell` es null en el sitio público. */

@@ -103,6 +103,40 @@ Y **añadir un permiso pendiente reabre una compuerta ya aprobada**. Si no lo
 hiciera, una carga aprobada el lunes seguiría aprobada el martes con un permiso
 nuevo sin tramitar dentro.
 
+## El segundo par de ojos, si la empresa lo pide
+
+`tenant_settings.require_oversize_admin_validation` es un ajuste que se editaba
+en configuración desde el primer día, con la etiqueta «las cargas
+sobredimensionadas necesitan validación de un administrador», y que **no leía
+nadie**. Se encendía, se guardaba, y el despacho se comportaba exactamente
+igual. Alguien creía tener un control que no existía, sobre la parte del sistema
+donde la gente se hace daño de verdad.
+
+Desde el lote 55 lo lee `Guards::blocking()`: con el ajuste encendido, una carga
+`is_oversize` con `oversize_validated_at` en NULL **no se despacha**, y la
+pantalla de la carga lo dice con esas palabras.
+
+Son dos actos distintos y por eso son dos columnas y dos permisos:
+
+| Columna | Permiso | Qué afirma |
+|---|---|---|
+| `permit_ready_approved_at` | `permit:approve_ready` | «Los papeles están todos.» |
+| `oversize_validated_at` | `oversize:validate` | «Las medidas y la ruta las ha mirado un administrador.» |
+
+El despachador puede EVALUAR (`oversize:evaluate`) y no puede validar. Esa
+asimetría estaba en la matriz de roles desde el principio y solo tiene sentido
+si alguien la usa.
+
+Sin fila de ajustes la respuesta es **no**, deliberadamente: falta de
+configuración no es falta de permiso. Una empresa sin ajustes —no debería pasar,
+pero pasa— no puede quedarse con todas sus cargas sobredimensionadas paradas
+porque una consulta devolvió nulo.
+
+Y la compuerta solo se alcanza si la carga ya tiene transportista:
+`Guards::blocking()` devuelve `['noCarrier']` y corta antes que nada. Es
+correcto —el resto de comprobaciones cuelgan del transportista— pero conviene
+saberlo al reproducir el caso a mano.
+
 ## Lo que falta
 
 - **Las restricciones de viaje.** `oversize_rules.travel_restrictions` es un

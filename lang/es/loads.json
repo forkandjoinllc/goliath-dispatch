@@ -147,6 +147,7 @@
         "carrierNotApproved": "El alta del transportista no está aprobada.",
         "driverNotCompliant": "La licencia o la tarjeta médica de un conductor está vencida, o el conductor está inactivo.",
         "permitNotApproved": "Es una carga sobredimensionada y su permiso no está aprobado.",
+        "oversizeNotValidated": "Es sobredimensionada y un administrador todavía no ha validado sus medidas.",
         "noPodDocument": "No se ha subido el comprobante de entrega.",
         "missingDocument": "Falta un documento obligatorio o no está aprobado: {document}."
     },

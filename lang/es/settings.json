@@ -1,77 +1,78 @@
 {
-  "index": {
-    "title": "Ajustes de la empresa",
-    "subtitle": "La política con la que nacen las cargas y las facturas nuevas. Cambiarla no reescribe nada de lo que ya existe.",
-    "save": "Guardar ajustes"
-  },
-  "money": {
-    "title": "Dinero",
-    "note": "Una carga conserva su tarifa y su comisión desde que se acordó. Esto es solo con qué empiezan las siguientes.",
-    "feeBase": "La tarifa de despacho se cobra sobre",
-    "dispatchFee": "Tarifa de despacho por defecto",
-    "dispatchFeeHint": "Lo que le cobra al transportista, en porcentaje.",
-    "commission": "Comisión del despachador por defecto",
-    "commissionHint": "Lo que gana el despachador. Se puede cambiar por persona.",
-    "commissionBasis": "La comisión se calcula sobre",
-    "paymentTerms": "Plazo de pago por defecto (días)"
-  },
-  "feeBaseLabel": {
-    "commissionable_base": "La base comisionable",
-    "carrier_gross_rate": "El bruto del transportista"
-  },
-  "feeBase": {
-    "commissionable_base": "El bruto menos los gastos excluidos — los permisos y las escoltas no le generan tarifa.",
-    "carrier_gross_rate": "El bruto entero, gastos incluidos."
-  },
-  "commissionBasis": {
-    "dispatch_fee_amount": "La tarifa de despacho",
-    "carrier_gross_rate": "El bruto del transportista",
-    "commissionable_base": "La base comisionable"
-  },
-  "numbering": {
-    "title": "Numeración",
-    "note": "Solo los prefijos. Mayúsculas, dígitos y guiones.",
-    "loadPrefix": "Prefijo del número de carga",
-    "invoicePrefix": "Prefijo del número de factura",
-    "counters": "Próximo número de carga: {load}. Próximo número de factura: {invoice}. Los contadores no se editan aquí — bajar uno repetiría un número de factura que ya salió."
-  },
-  "ops": {
-    "title": "Operación",
-    "docWarning": "Avisar de documentos por caducar (días)",
-    "docWarningHint": "Con cuánta antelación un documento cuenta como «caduca pronto».",
-    "fmcsaDays": "Volver a comprobar FMCSA cada (días)",
-    "trackingTtl": "El enlace público de rastreo dura (horas)",
-    "dispatcherAssign": "Los despachadores pueden asignar camiones, remolques y conductores a una carga",
-    "dispatcherAssignHint": "Apagado por defecto. Con esto apagado, solo un administrador asigna recursos.",
-    "oversizeAdmin": "Las cargas sobredimensionadas necesitan validación de un administrador",
-    "publicTracking": "Los enlaces públicos de rastreo están activos"
-  },
-  "contact": {
-    "title": "Datos públicos de contacto",
-    "note": "Lo que enseña el sitio público. No se usa para nada operativo.",
-    "phone": "Teléfono",
-    "email": "Correo electrónico",
-    "support": "Correo de soporte",
-    "line1": "Dirección",
-    "line2": "Dirección, línea 2",
-    "city": "Ciudad",
-    "postal": "Código postal"
-  },
-  "retention": {
-    "note": "Retención: los registros están activos {months} meses, se purgan {purge} años después de archivarse, y los financieros se conservan {financial} años. Cambiar la retención tiene consecuencias legales y no se edita aquí — pídalo a propósito."
-  },
-  "flash": {
-    "saved": "Ajustes guardados. Las cargas y facturas nuevas los usarán; las que ya existen conservan lo suyo."
-  },
-  "subscription": {
-    "title": "Su plan",
-    "hint": "Solo lectura. Cambiar de plan pasa por el cobro, que todavía no está conectado.",
-    "plan": "Plan",
-    "status": "Estado",
-    "monthly": "Mensual",
-    "trialEnds": "Fin de prueba",
-    "periodEnds": "Fin del periodo",
-    "cancelling": "Se cancela al terminar el periodo",
-    "none": "No hay ninguna suscripción registrada."
-  }
+    "index": {
+        "title": "Ajustes de la empresa",
+        "subtitle": "La política con la que nacen las cargas y las facturas nuevas. Cambiarla no reescribe nada de lo que ya existe.",
+        "save": "Guardar ajustes"
+    },
+    "money": {
+        "title": "Dinero",
+        "note": "Una carga conserva su tarifa y su comisión desde que se acordó. Esto es solo con qué empiezan las siguientes.",
+        "feeBase": "La tarifa de despacho se cobra sobre",
+        "dispatchFee": "Tarifa de despacho por defecto",
+        "dispatchFeeHint": "Lo que le cobra al transportista, en porcentaje.",
+        "commission": "Comisión del despachador por defecto",
+        "commissionHint": "Lo que gana el despachador. Se puede cambiar por persona.",
+        "commissionBasis": "La comisión se calcula sobre",
+        "paymentTerms": "Plazo de pago por defecto (días)"
+    },
+    "feeBaseLabel": {
+        "commissionable_base": "La base comisionable",
+        "carrier_gross_rate": "El bruto del transportista"
+    },
+    "feeBase": {
+        "commissionable_base": "El bruto menos los gastos excluidos — los permisos y las escoltas no le generan tarifa.",
+        "carrier_gross_rate": "El bruto entero, gastos incluidos."
+    },
+    "commissionBasis": {
+        "dispatch_fee_amount": "La tarifa de despacho",
+        "carrier_gross_rate": "El bruto del transportista",
+        "commissionable_base": "La base comisionable"
+    },
+    "numbering": {
+        "title": "Numeración",
+        "note": "Solo los prefijos. Mayúsculas, dígitos y guiones.",
+        "loadPrefix": "Prefijo del número de carga",
+        "invoicePrefix": "Prefijo del número de factura",
+        "counters": "Próximo número de carga: {load}. Próximo número de factura: {invoice}. Los contadores no se editan aquí — bajar uno repetiría un número de factura que ya salió."
+    },
+    "ops": {
+        "title": "Operación",
+        "docWarning": "Avisar de documentos por caducar (días)",
+        "docWarningHint": "Con cuánta antelación un documento cuenta como «caduca pronto».",
+        "fmcsaDays": "Volver a comprobar FMCSA cada (días)",
+        "trackingTtl": "El enlace público de rastreo dura (horas)",
+        "dispatcherAssign": "Los despachadores pueden asignar camiones, remolques y conductores a una carga",
+        "dispatcherAssignHint": "Apagado por defecto. Con esto apagado, solo un administrador asigna recursos.",
+        "oversizeAdmin": "Las cargas sobredimensionadas necesitan validación de un administrador",
+        "oversizeAdminHint": "Con esto encendido, una carga sobredimensionada no se puede despachar hasta que un administrador valide sus medidas en la pantalla de permisos — además de que los papeles estén aprobados. El despachador puede evaluarla; validarla, no.",
+        "publicTracking": "Los enlaces públicos de rastreo están activos"
+    },
+    "contact": {
+        "title": "Datos públicos de contacto",
+        "note": "Lo que enseña el sitio público. No se usa para nada operativo.",
+        "phone": "Teléfono",
+        "email": "Correo electrónico",
+        "support": "Correo de soporte",
+        "line1": "Dirección",
+        "line2": "Dirección, línea 2",
+        "city": "Ciudad",
+        "postal": "Código postal"
+    },
+    "retention": {
+        "note": "Retención: los registros están activos {months} meses, se purgan {purge} años después de archivarse, y los financieros se conservan {financial} años. Cambiar la retención tiene consecuencias legales y no se edita aquí — pídalo a propósito."
+    },
+    "flash": {
+        "saved": "Ajustes guardados. Las cargas y facturas nuevas los usarán; las que ya existen conservan lo suyo."
+    },
+    "subscription": {
+        "title": "Su plan",
+        "hint": "Solo lectura. Cambiar de plan pasa por el cobro, que todavía no está conectado.",
+        "plan": "Plan",
+        "status": "Estado",
+        "monthly": "Mensual",
+        "trialEnds": "Fin de prueba",
+        "periodEnds": "Fin del periodo",
+        "cancelling": "Se cancela al terminar el periodo",
+        "none": "No hay ninguna suscripción registrada."
+    }
 }

@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1075 tests, 7006 assertions)
+OK (1083 tests, 7018 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote del cobro de la suscripción.
+(Cifra del 31 de agosto, tras el lote de los interruptores inertes.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -659,6 +659,83 @@ la explicación de su propia razón de ser es un guardián con falsos positivos,
 uno con falsos positivos se acaba desactivando — así que filtra las líneas de
 comentario antes de mirar. Es la segunda vez que un guardián mío tiene ese fallo
 (la primera fue en el lote 49) y la regla ya está escrita más arriba.
+
+### Por qué el navegador encuentra algo en CADA lote
+
+Esto lleva desde el lote 44 pasando en todos, y hasta el 55 no supe por qué.
+La explicación no es que las pruebas estén mal escritas: es estructural.
+
+**Inertia renderiza en el cliente.** La respuesta del servidor es un `<div>`
+vacío y un atributo `data-page` con los props en JSON. El HTML que ve
+`$this->get('/loads/x')->getContent()` NO CONTIENE la pantalla: contiene los
+datos con los que el navegador la construirá después. Una prueba de PHP puede
+comprobar todo lo que el servidor decide y nada de lo que la pantalla hace con
+ello.
+
+Lo comprobé a propósito. La carga llevaba este fallo:
+
+```tsx
+{blocking.map((b) => <li>{t(`loads.blocking.${b}`)}</li>)}
+```
+
+donde `blocking` YA venía traducido del servidor. En la pantalla más usada de la
+aplicación se leía, literalmente:
+
+> loads.blocking.No se ha elegido transportista.
+
+Escribí una prueba que pedía la página y buscaba el texto correcto en el HTML.
+**Pasó.** Volví a meter el fallo. **Siguió pasando** — porque el texto correcto
+está en los props, que es lo único que hay en la respuesta, y la concatenación
+ocurre en el navegador. Una prueba que mira el HTML de una página de Inertia
+está mirando los props con pasos extra.
+
+De ahí salen dos reglas:
+
+1. **Ninguna prueba de PHP sustituye a abrir la pantalla.** El paso «recorrido
+   con navegador en los dos idiomas» de la lista de entrega no es celo: es la
+   única capa donde existe la mitad cliente.
+2. **Lo que sí se puede fijar es la CONVENCIÓN, leyendo el fichero.**
+   `tests/Unit/Ui/TranslatedPropsTest.php` recorre `resources/js` y falla si
+   encuentra ``t(`…${algoMessages}`)``: una prop que se llama `…Message` o
+   `…Messages` lleva TEXTO y no se pasa por `t()`. Por eso el prop se renombró
+   de `blocking` a `blockingMessages` en vez de solo arreglar la línea — el
+   nombre viejo no permitía distinguir la clave del mensaje, y en
+   `App/Onboarding/Index.tsx` hay un `blocking` que sí son claves y sí se
+   traduce en la pantalla. Los dos nombres ahora dicen cuál es cuál.
+
+### Y lo que encontró el navegador ESTE lote
+
+Con las 1.083 en verde, el recorrido de los dos idiomas dio dos cosas más, las
+dos de texto y ninguna visible desde PHP:
+
+- **La pantalla de acceso denegado decía lo mismo dos veces.** «Consulte con un
+  administrador si cree que debería tenerlo» seguido de «si cree que debería
+  tener acceso, escriba a soporte@…». La segunda frase existe justamente porque
+  la primera es un consejo sin destinatario, así que ahora es una **o** la otra,
+  nunca las dos.
+- **Tuteo en una aplicación de usted.** Las dos frases nuevas decían «si crees»
+  y «escribe a»; el resto del diccionario español trata de usted de arriba abajo
+  («Inténtelo», «Ajuste», «Consulte»). Se ve leyendo la pantalla, no comparando
+  claves: la prueba de paridad entre idiomas comprueba que la clave EXISTE en
+  los dos, no en qué registro está escrita.
+
+### El guardián que pasó con el fallo puesto, tercera vez
+
+`tests/Unit/Suite/InertSettingsTest.php` —el que comprueba que cada ajuste de
+`tenant_settings` que la pantalla deja editar lo lee alguien— pasó a la primera
+con los dos ajustes inertes todavía inertes. Otra vez el mismo motivo: buscaba
+los nombres de columna en el código y los encontraba **en sus propios
+comentarios**, que los nombran para explicar qué hace la prueba.
+
+Van tres (lote 49, lote 54 y este). La regla ya no admite excusa: **un guardián
+que busca texto en ficheros filtra los comentarios antes de buscar**, con
+`token_get_all()` y `T_COMMENT`/`T_DOC_COMMENT` en PHP, o descartando las líneas
+`//` y `*` en TypeScript.
+
+Y la regla hermana, que es la que salvó este lote: **un guardián nuevo se
+verifica saboteando**. Se vuelve a meter el fallo que el guardián existe para
+cazar y se comprueba que FALLA. Un guardián que nunca se ha visto fallar no es
+un guardián: es una prueba que pasa.
 
 ## Migraciones: por qué todas son reanudables
 
