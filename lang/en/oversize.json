@@ -47,7 +47,10 @@
     "missingGrossWeight": "Gross vehicle weight was not entered — this evaluation cannot confirm the load is clear on weight.",
     "missingAxleWeight": "Axle weight was not entered — overweight-per-axle exposure could not be evaluated.",
     "noRoute": "No route could be calculated for this load, so no state's limits could be checked.",
-    "noRouteStates": "The route crosses no recognized states, so no state's limits could be checked."
+    "noRouteStates": "The route crosses no recognized states, so no state's limits could be checked.",
+    "stateWithoutRules": "The route crosses {state} and this company has no limits recorded for that state. Nothing could be checked there.",
+    "throughStatesUnknown": "No routing provider is connected: states come from the load stops, so THE PASS-THROUGH STATES ARE MISSING. A load from Texas to Illinois crosses states this evaluation has not looked at.",
+    "stopWithoutState": "A stop does not say what state it is in, so it could not be included in the route."
   },
   "evaluation": {
     "title": "Oversize / overweight evaluation",
@@ -64,7 +67,9 @@
     "staleBanner": "The load's dimensions have changed since this evaluation ran. Run a new evaluation before dispatch.",
     "inputsUsed": "Inputs used",
     "routeStatesUsed": "States evaluated",
-    "noRouteStatesUsed": "No states — no route was available at evaluation time."
+    "noRouteStatesUsed": "No states — no route was available at evaluation time.",
+    "done": "Evaluation run.",
+    "needsUser": "A user account is required to sign off an evaluation."
   },
   "panel": {
     "stateResultsTitle": "Per-state results",
@@ -138,7 +143,8 @@
     "travelRestrictionsNoteEs": "Restriction notes (Spanish)",
     "lastReviewed": "Last reviewed {date}",
     "saveButton": "Save rule",
-    "saved": "Oversize rule updated."
+    "saved": "Oversize rule updated.",
+    "neverReviewed": "Not reviewed — seeded values, not verified with the state."
   },
   "permits": {
     "title": "Permits",
@@ -166,7 +172,8 @@
     "expiringSoon": "Expires {date}",
     "expired": "Expired {date}",
     "created": "Permit created.",
-    "updated": "Permit updated."
+    "updated": "Permit updated.",
+    "unknownState": "That state code does not exist."
   },
   "escorts": {
     "title": "Escorts",
@@ -205,12 +212,38 @@
     "approveButton": "Approve permit-ready",
     "approved": "Approved by {name} on {date}",
     "notApproved": "Not yet approved",
-    "blocked": "Cannot approve — {count} requirement(s) still outstanding.",
-    "success": "Load approved as permit-ready."
+    "blocked": "Cannot approve: {n} requirements are still outstanding.",
+    "success": "Load approved as permit-ready.",
+    "needsValidation": "The oversize evaluation has to be validated first. Dispatch of an oversize load is not approved on top of something nobody has signed.",
+    "blockedOne": "Cannot approve: 1 requirement is still outstanding."
   },
   "expiryWarnings": {
     "title": "Permits expiring soon",
     "empty": "No permits expiring in the next {days} days.",
     "expiresOn": "Expires {date}"
+  },
+  "index": {
+    "title": "Permits and escorts",
+    "description": "Loads flagged oversize or overweight, and where their paperwork stands.",
+    "empty": "No oversize or overweight loads.",
+    "loadColumn": "Load",
+    "flagsColumn": "Flags",
+    "permitsColumn": "Permits",
+    "validationColumn": "Evaluation",
+    "readyColumn": "Ready to dispatch",
+    "open": "Open",
+    "issuedCount": "{n} issued",
+    "issuedCountOne": "1 issued",
+    "pendingCount": "{n} pending",
+    "pendingCountOne": "1 pending",
+    "none": "None"
+  },
+  "route": {
+    "title": "Route",
+    "provider": "Calculated by {provider} on {date}",
+    "mockProvider": "derived from the stops",
+    "statesTitle": "Route states",
+    "noneYet": "The route has not been calculated yet.",
+    "milesUnknown": "Per-state miles unknown"
   }
 }

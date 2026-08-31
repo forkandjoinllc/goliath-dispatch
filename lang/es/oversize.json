@@ -47,7 +47,10 @@
     "missingGrossWeight": "No se ingresó el peso bruto vehicular — esta evaluación no puede confirmar que la carga cumpla el límite de peso.",
     "missingAxleWeight": "No se ingresó el peso por eje — no se pudo evaluar la exposición a sobrepeso por eje.",
     "noRoute": "No se pudo calcular una ruta para esta carga, por lo que no se pudieron verificar los límites de ningún estado.",
-    "noRouteStates": "La ruta no cruza ningún estado reconocido, por lo que no se pudieron verificar los límites de ningún estado."
+    "noRouteStates": "La ruta no cruza ningún estado reconocido, por lo que no se pudieron verificar los límites de ningún estado.",
+    "stateWithoutRules": "La ruta cruza {state} y esta empresa no tiene límites registrados para ese estado. No se pudo comprobar nada allí.",
+    "throughStatesUnknown": "No hay proveedor de rutas conectado: los estados salen de las paradas de la carga, así que FALTAN LOS ESTADOS DE PASO. Una carga de Texas a Illinois cruza estados que esta evaluación no ha mirado.",
+    "stopWithoutState": "Alguna parada no dice en qué estado está, así que no se pudo incluir en el recorrido."
   },
   "evaluation": {
     "title": "Evaluación de carga sobredimensionada / con sobrepeso",
@@ -64,7 +67,9 @@
     "staleBanner": "Las dimensiones de la carga cambiaron desde que se ejecutó esta evaluación. Ejecute una nueva evaluación antes de despachar.",
     "inputsUsed": "Datos utilizados",
     "routeStatesUsed": "Estados evaluados",
-    "noRouteStatesUsed": "Ningún estado — no había una ruta disponible al momento de la evaluación."
+    "noRouteStatesUsed": "Ningún estado — no había una ruta disponible al momento de la evaluación.",
+    "done": "Evaluación ejecutada.",
+    "needsUser": "Hace falta una cuenta de usuario para firmar una evaluación."
   },
   "panel": {
     "stateResultsTitle": "Resultados por estado",
@@ -138,7 +143,8 @@
     "travelRestrictionsNoteEs": "Notas de restricción (español)",
     "lastReviewed": "Última revisión el {date}",
     "saveButton": "Guardar regla",
-    "saved": "Regla de sobredimensión actualizada."
+    "saved": "Regla de sobredimensión actualizada.",
+    "neverReviewed": "Sin revisar — valores sembrados, no verificados con el estado."
   },
   "permits": {
     "title": "Permisos",
@@ -166,7 +172,8 @@
     "expiringSoon": "Vence el {date}",
     "expired": "Venció el {date}",
     "created": "Permiso creado.",
-    "updated": "Permiso actualizado."
+    "updated": "Permiso actualizado.",
+    "unknownState": "Ese código de estado no existe."
   },
   "escorts": {
     "title": "Escoltas",
@@ -205,12 +212,38 @@
     "approveButton": "Aprobar permisos listos",
     "approved": "Aprobado por {name} el {date}",
     "notApproved": "Aún no aprobado",
-    "blocked": "No se puede aprobar — {count} requisito(s) pendiente(s).",
-    "success": "Carga aprobada con permisos listos."
+    "blocked": "No se puede aprobar: quedan {n} requisitos pendientes.",
+    "success": "Carga aprobada con permisos listos.",
+    "needsValidation": "Primero hay que validar la evaluación de sobredimensión. El despacho de una carga sobredimensionada no se aprueba sobre algo que nadie ha firmado.",
+    "blockedOne": "No se puede aprobar: queda 1 requisito pendiente."
   },
   "expiryWarnings": {
     "title": "Permisos por vencer",
     "empty": "No hay permisos que venzan en los próximos {days} días.",
     "expiresOn": "Vence el {date}"
+  },
+  "index": {
+    "title": "Permisos y escoltas",
+    "description": "Las cargas marcadas como sobredimensionadas o con sobrepeso, y en qué punto están sus papeles.",
+    "empty": "No hay ninguna carga sobredimensionada ni con sobrepeso.",
+    "loadColumn": "Carga",
+    "flagsColumn": "Marcas",
+    "permitsColumn": "Permisos",
+    "validationColumn": "Evaluación",
+    "readyColumn": "Listo para despachar",
+    "open": "Abrir",
+    "issuedCount": "{n} emitidos",
+    "issuedCountOne": "1 emitido",
+    "pendingCount": "{n} pendientes",
+    "pendingCountOne": "1 pendiente",
+    "none": "Ninguno"
+  },
+  "route": {
+    "title": "Recorrido",
+    "provider": "Calculado por {provider} el {date}",
+    "mockProvider": "deducción de las paradas",
+    "statesTitle": "Estados del recorrido",
+    "noneYet": "Todavía no se ha calculado el recorrido.",
+    "milesUnknown": "Millas por estado desconocidas"
   }
 }

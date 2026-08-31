@@ -21,6 +21,7 @@ use App\Http\Controllers\App\LoadController;
 use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\PaymentController;
+use App\Http\Controllers\App\PermitController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\RateConfirmationController;
@@ -353,6 +354,28 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
     Route::post('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.status');
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+
+    /*
+    | Permisos, escoltas y sobredimensión
+    |
+    | El índice cuelga de la raíz porque contesta «qué cargas tengo con papeles
+    | pendientes», que es una pregunta de la oficina entera. Todo lo demás
+    | cuelga de la carga, que es de quien son los permisos.
+    |
+    | Evaluar es POST aunque parezca una lectura: escribe una fila de
+    | `oversize_evaluations` con las medidas congeladas, y esa fila es la que
+    | alguien firma después. Un GET que escribe historia es un GET que un
+    | precargador del navegador puede disparar solo.
+    */
+    Route::get('permits', [PermitController::class, 'index'])->name('permits.index');
+    Route::get('loads/{load}/permits', [PermitController::class, 'show'])->name('permits.show');
+    Route::post('loads/{load}/permits/evaluate', [PermitController::class, 'evaluate'])->name('permits.evaluate');
+    Route::post('loads/{load}/permits/validate', [PermitController::class, 'validateEvaluation'])->name('permits.validate');
+    Route::post('loads/{load}/permits/ready', [PermitController::class, 'approveReady'])->name('permits.ready');
+    Route::post('loads/{load}/permits/items', [PermitController::class, 'storePermit'])->name('permits.items.store');
+    Route::post('loads/{load}/permits/items/{permit}', [PermitController::class, 'updatePermit'])->name('permits.items.update');
+    Route::post('loads/{load}/escorts', [PermitController::class, 'storeEscort'])->name('permits.escorts.store');
+    Route::post('loads/{load}/escorts/{escort}', [PermitController::class, 'updateEscort'])->name('permits.escorts.update');
 
     /*
     | Confirmación de tarifa

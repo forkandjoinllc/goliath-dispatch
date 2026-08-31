@@ -16,6 +16,8 @@ use App\Services\Fmcsa\QcMobileDirectory;
 use App\Support\Database\MillisecondGrammar;
 use App\Support\TenantContext;
 use App\Translation\BraceTranslator;
+use App\Support\Routing\RouteProvider;
+use App\Support\Routing\StopDerivedRouteProvider;
 use App\Support\Storage\DocumentStore;
 use App\Support\Storage\LocalDocumentStore;
 use App\Translation\JsonNamespaceLoader;
@@ -49,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
         // servidor; el día que haya credenciales de S3, esta línea cambia de
         // clase y nada más se entera. Ver App\Support\Storage\DocumentStore.
         $this->app->singleton(DocumentStore::class, LocalDocumentStore::class);
+
+        // De dónde sale el recorrido de una carga. Hoy se deduce de las paradas
+        // y AVISA de lo que no sabe —los estados de paso, sobre todo—; el día
+        // que haya un proveedor de rutas con credenciales, esta línea cambia de
+        // clase. Ver App\Support\Routing\RouteProvider.
+        $this->app->singleton(RouteProvider::class, StopDerivedRouteProvider::class);
 
         // Los diccionarios usan `{nombre}` porque los lee también el cliente.
         // Se sustituye el traductor para que `__()` los entienda igual — ver
