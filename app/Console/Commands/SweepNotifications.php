@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Support\Notifications\Notifier;
+use App\Support\Platform\Expirations;
+use App\Support\Platform\ScheduledRuns;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * El barrido diario: lo único de esta aplicación que ocurre sin que nadie mire.
@@ -50,6 +53,29 @@ final class SweepNotifications extends Command
     public function handle(TenantContext $context): int
     {
         $dry = (bool) $this->option('dry-run');
+
+        // Un simulacro NO deja rastro de ejecución. Si lo dejara, la pantalla
+        // de salud diría que el barrido corrió anoche cuando lo que corrió fue
+        // alguien probando desde una terminal, y el aviso de «el cron no está
+        // activado» dejaría de aparecer justo cuando sigue haciendo falta.
+        if ($dry) {
+            return $this->barrer($context, true);
+        }
+
+        return ScheduledRuns::wrap('notifications:sweep', function () use ($context): array {
+            // El orden importa y por eso esto es un bloque y no una flecha con
+            // un array literal: el resumen solo existe DESPUÉS de barrer.
+            $codigo = $this->barrer($context, false);
+
+            return [$codigo, $this->resumen];
+        });
+    }
+
+    /** Lo que contó la última pasada, para el rastro de la ejecución. */
+    private array $resumen = [];
+
+    private function barrer(TenantContext $context, bool $dry): int
+    {
         $soloEmpresa = trim((string) $this->option('tenant'));
 
         $empresas = $context->withoutTenant(function () use ($soloEmpresa): array {
@@ -66,6 +92,13 @@ final class SweepNotifications extends Command
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
+                // Antes de materializar nada: cerrar los avisos de documentos
+                // que ya no existen o a los que se les quitó la caducidad.
+                // Si no, la lista se llena de avisos que nadie va a cerrar.
+                if (! $dry) {
+                    Expirations::resolveOrphans($tenantId);
+                }
+
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
                 $totales['carriers'] += $this->transportistasPorRevalidar($tenantId, $dry);
                 $totales['invoices'] += $this->facturasVencidas($tenantId, $dry);
@@ -78,6 +111,8 @@ final class SweepNotifications extends Command
         // los ASUNTOS encontrados (dos documentos), y de verdad los AVISOS
         // escritos (esos dos documentos por cada destinatario y por cada canal,
         // que pueden ser ocho).
+        $this->resumen = ['tenants' => count($empresas)] + $totales;
+
         $this->line(sprintf(
             '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d%s',
             count($empresas),
@@ -134,6 +169,19 @@ final class SweepNotifications extends Command
             // construir los avisos.
             $caducado = $vence < $hoy;
 
+            // `document_expirations` existe justo para esto: su índice único es
+            // `(document_id, kind, expiration_date)`, o sea «un aviso por
+            // documento, por tipo y por vencimiento». Llevaba vacía desde el
+            // principio mientras el barrido recalculaba lo mismo cada mañana y
+            // se apoyaba solo en la deduplicación de `notifications`.
+            //
+            // Tenerla materializada cambia lo que se puede contestar: la
+            // pantalla puede enseñar qué está por vencer sin recorrer todos los
+            // documentos, y `resolved_at` deja escrito CUÁNDO se resolvió cada
+            // aviso — que es lo que separa «nadie lo renovó» de «se renovó y ya
+            // no aplica».
+            $this->materializar($tenantId, (string) $documento->id, $vence, $caducado, $dias);
+
             $escritos += Notifier::toPermissionHolders(
                 tenantId: $tenantId,
                 permission: 'document:read',
@@ -150,6 +198,44 @@ final class SweepNotifications extends Command
         }
 
         return $escritos;
+    }
+
+    /**
+     * Deja escrito el aviso de vencimiento en `document_expirations`.
+     *
+     * Es idempotente por el ÍNDICE, igual que `notifications`: el índice único
+     * `(document_id, kind, expiration_date)` rechaza el duplicado, y no se
+     * comprueba antes de insertar porque dos barridos solapados verían los dos
+     * que no hay nada.
+     *
+     * Y al escribir el de una fecha se RESUELVEN los de fechas anteriores del
+     * mismo documento: renovar un certificado le da una caducidad nueva, y el
+     * aviso de la vieja deja de aplicar en ese instante. Sin esto, la lista de
+     * vencimientos se llenaría de avisos de documentos ya renovados.
+     */
+    private function materializar(string $tenantId, string $documentId, string $vence, bool $caducado, int $diasDeAviso): void
+    {
+        $kind = $caducado ? 'expired' : 'warning';
+        $ahora = CarbonImmutable::now();
+
+        DB::table('document_expirations')->insertOrIgnore([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $tenantId,
+            'document_id' => $documentId,
+            'expiration_date' => $vence,
+            'warning_days' => $diasDeAviso,
+            'kind' => $kind,
+            'first_detected_at' => $ahora,
+            'created_at' => $ahora,
+            'updated_at' => $ahora,
+        ]);
+
+        DB::table('document_expirations')
+            ->where('tenant_id', $tenantId)
+            ->where('document_id', $documentId)
+            ->whereDate('expiration_date', '<', $vence)
+            ->whereNull('resolved_at')
+            ->update(['resolved_at' => $ahora, 'updated_at' => $ahora]);
     }
 
     /**

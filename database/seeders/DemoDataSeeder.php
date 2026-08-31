@@ -524,14 +524,16 @@ class DemoDataSeeder extends Seeder
                 'current_version_id' => $versionId,
             ]);
 
-            if ($expiration !== null) {
-                $this->upsert('document_expirations', ['document_id' => $documentId], [
-                    'expiration_date' => $expiration,
-                    'warning_days' => 30,
-                    'kind' => 'document',
-                    'resolved_at' => null,
-                ]);
-            }
+            // `document_expirations` NO se siembra. Antes se escribía aquí con
+            // `kind => 'document'`, que no es ninguno de los dos valores que el
+            // esquema documenta —«`warning` when approaching, `expired` once
+            // past due»— y que por tanto no casaba con nada que fuera a leerla.
+            //
+            // Ahora la escribe el barrido, que es quien sabe si un documento
+            // está por vencer o ya venció. Sembrarla a mano volvería a meter
+            // filas que el barrido no reconoce y que nadie resolvería jamás:
+            //
+            //     php artisan notifications:sweep
         }
     }
 

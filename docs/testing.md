@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (915 tests, 6297 assertions)
+OK (932 tests, 6374 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de permisos y sobredimensión.
+(Cifra del 31 de agosto, tras el lote de salud de la plataforma.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -374,6 +374,26 @@ por el mismo motivo:
 
 La regla que sale de las dos: **si una prueba tiene que deshacer tres capas de
 codificación para llegar al dato, está mirando en la capa equivocada.**
+
+### El ayudante que se llamaba igual, por tercera vez
+
+Escribí `documentoQueCaduca()` en `Feature/Platform/HealthTest.php` sin saber que
+`Feature/Notifications/SweepTest.php` ya la tenía. Pest carga todos los ficheros
+de prueba en un único espacio global, así que eso no es un fallo de una prueba:
+es un `Cannot redeclare function` que impide ejecutar la SUITE ENTERA, y el
+mensaje señala los dos ficheros sin decir cuál es el nuevo.
+
+Lo doloroso es que en ese mismo fichero, veinte líneas más arriba, había un
+comentario mío advirtiendo exactamente de esto — escrito al copiar a mano
+`superAdministrador()` y `entrarComo()` de `PlatformTest.php` para no tomarlas
+prestadas. Un ayudante con un nombre natural («un documento que caduca») es
+justo el que dos personas escriben igual.
+
+Ahora hay una prueba, `Unit/Suite/HelperCollisionTest.php`, que recorre todos los
+ficheros de `tests/`, junta las funciones declaradas en primera columna y falla
+si alguna aparece en dos sitios — nombrando la función y los dos ficheros. Un
+fallo normal en vez de una suite que no arranca. Comprobado que caza la colisión
+real.
 
 ## Migraciones: por qué todas son reanudables
 

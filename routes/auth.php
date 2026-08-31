@@ -22,6 +22,7 @@ use App\Http\Controllers\App\LocaleController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\PermitController;
+use App\Http\Controllers\Platform\HealthController;
 use App\Http\Controllers\Platform\PlanController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\App\RateConfirmationController;
@@ -319,6 +320,11 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('platform/tenants/{tenant}', [PlatformTenantController::class, 'show'])->name('platform.tenants.show');
     Route::post('platform/tenants/{tenant}/suspension', [PlatformTenantController::class, 'suspend'])->name('platform.tenants.suspend');
 
+    // La salud de la instalación. Solo lectura y sin acciones: lo que enseña se
+    // arregla en el servidor, no desde aquí — activar el planificador de Forge
+    // o poner una variable de entorno no son cosas que deba poder hacer una
+    // petición web.
+    Route::get('platform/health', HealthController::class)->name('platform.health');
     Route::get('platform/plans', [PlanController::class, 'index'])->name('platform.plans.index');
     Route::patch('platform/plans/{plan}', [PlanController::class, 'update'])->name('platform.plans.update');
 
