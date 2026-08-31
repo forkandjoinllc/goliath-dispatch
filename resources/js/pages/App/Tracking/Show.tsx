@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react'
+import { Link, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -47,11 +47,21 @@ interface Props {
   publicTrackingEnabled: boolean
   defaultTtlHours: number
   newLinkUrl: string | null
+  session: {
+    running: boolean
+    startedAt: string | null
+    driver: { id: string; name: string } | null
+    /**
+     * Por qué no puede empezar, como clave de `tracking.errors.*`. Nula si puede.
+     * Clave y no frase: ver la convención de props traducidas.
+     */
+    blockedBy: string | null
+  }
   can: { manage: boolean; createLink: boolean; revokeLink: boolean }
 }
 
 export default function TrackingShow({
-  load, stops, checkCalls, links, publicTrackingEnabled, defaultTtlHours, newLinkUrl, can,
+  load, stops, checkCalls, links, publicTrackingEnabled, defaultTtlHours, newLinkUrl, session, can,
 }: Props) {
   const { t } = useI18n()
 
@@ -77,6 +87,7 @@ export default function TrackingShow({
           </div>
         ) : null}
 
+        <Sesion load={load} session={session} puede={can.manage} />
         <Paradas stops={stops} />
         <LlamadasDeControl load={load} checkCalls={checkCalls} puede={can.manage} />
         <Enlaces
@@ -461,3 +472,72 @@ function RevocarBoton({ loadId, linkId }: { loadId: string; linkId: string }) {
 
 const CAMPO =
   'rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-200'
+
+/**
+ * La sesión de rastreo, con la puerta del consentimiento delante.
+ *
+ * Dice POR QUÉ no se puede empezar y no solo que no: sin conductor asignado no
+ * hay a quién pedirle permiso, y sin su consentimiento no se empieza. Las dos
+ * cosas mandan a sitios distintos —una a la carga, otra a la ficha del
+ * conductor— y confundirlas cuesta una llamada.
+ *
+ * Y dice lo que la sesión NO trae: posiciones. El proveedor de GPS no está
+ * conectado y esta pantalla lo ha dicho siempre; abrir una sesión no lo cambia.
+ */
+function Sesion({
+  load, session, puede,
+}: {
+  load: { id: string }
+  session: Props['session']
+  puede: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm({})
+
+  return (
+    <section className="rounded border border-steel-200 bg-white p-4">
+      <p className="text-sm font-semibold text-carbon">{t('tracking.session.title')}</p>
+      <p className="mt-0.5 text-xs text-steel-600">{t('tracking.session.panelHint')}</p>
+
+      <p className="mt-3 text-sm text-steel-700">
+        {session.running
+          ? t('tracking.session.startedAt', { date: session.startedAt ?? '' })
+          : t('tracking.session.notStarted')}
+        {session.driver !== null ? (
+          <>
+            {' · '}
+            <Link
+              href={`/drivers/${session.driver.id}`}
+              className="font-medium text-navy-700 hover:underline"
+            >
+              {session.driver.name}
+            </Link>
+          </>
+        ) : null}
+      </p>
+
+      {! session.running && session.blockedBy !== null ? (
+        <p className="mt-2 rounded border border-warning-300 bg-warning-50 p-2 text-sm text-carbon">
+          {t(`tracking.errors.${session.blockedBy}`)}
+        </p>
+      ) : null}
+
+      {puede ? (
+        <button
+          type="button"
+          disabled={form.processing || (! session.running && session.blockedBy !== null)}
+          onClick={() =>
+            form.post(`/loads/${load.id}/tracking/${session.running ? 'stop' : 'start'}`, {
+              preserveScroll: true,
+            })
+          }
+          className={`mt-3 rounded px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50 ${
+            session.running ? 'bg-danger-500 hover:bg-danger-700' : 'bg-navy-700 hover:bg-navy-800'
+          }`}
+        >
+          {session.running ? t('tracking.session.stopButton') : t('tracking.session.startButton')}
+        </button>
+      ) : null}
+    </section>
+  )
+}

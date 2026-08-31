@@ -13,6 +13,8 @@ use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\TenantContext;
+use App\Support\Tracking\Consent;
+use App\Support\Tracking\Sessions;
 use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -129,6 +131,10 @@ final class TrackingController
             // AQUÍ, no en la bolsa `flash` compartida: esa solo lleva
             // `success` y `error` a propósito. Mismo patrón que SignupController.
             'newLinkUrl' => $request->session()->get('trackingToken'),
+            // La sesión de rastreo y el consentimiento bajo el que podría
+            // abrirse. Las dos cosas juntas porque la pantalla tiene que poder
+            // decir POR QUÉ no se puede empezar, no solo que no.
+            'session' => $this->sessionPanel($actor, (string) $carga->id),
             'publicTrackingEnabled' => TrackingLinks::enabledFor((string) $actor->tenantId),
             'defaultTtlHours' => TrackingLinks::defaultTtlHours((string) $actor->tenantId),
             'can' => [
@@ -294,7 +300,113 @@ final class TrackingController
         );
     }
 
+    /**
+     * Arrancar el rastreo de una carga.
+     *
+     * La puerta que la pantalla llevaba prometiendo desde el primer día: sin
+     * consentimiento vigente del conductor, esto no empieza. Ver
+     * App\Support\Tracking\Consent.
+     */
+    public function startSession(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'tracking:read', null, $policy);
+        $checker->authorize($actor, 'tracking:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+        $recursos = $this->assignedResources((string) $carga->id);
+
+        if ($recursos['driver_id'] === null) {
+            return back()->with('error', __('tracking.errors.noDriverAssigned'));
+        }
+
+        try {
+            Sessions::iniciar(
+                $actor,
+                (string) $carga->id,
+                (string) $recursos['driver_id'],
+                $recursos['truck_id'],
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', __('tracking.errors.'.$e->getMessage()));
+        }
+
+        return back()->with('success', __('tracking.session.startSuccess'));
+    }
+
+    /** Pararlo a mano. Retirar el consentimiento lo para solo. */
+    public function stopSession(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'tracking:read', null, $policy);
+        $checker->authorize($actor, 'tracking:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        $parada = Sessions::detener((string) $actor->tenantId, (string) $carga->id);
+
+        return back()->with(
+            $parada ? 'success' : 'error',
+            __($parada ? 'tracking.session.endSuccess' : 'tracking.session.notStarted'),
+        );
+    }
+
     // ------------------------------------------------------------------ ayudas
+
+    /**
+     * El estado del rastreo de esta carga, para la pantalla.
+     *
+     * @return array<string, mixed>
+     */
+    private function sessionPanel(Actor $actor, string $loadId): array
+    {
+        $tenantId = (string) $actor->tenantId;
+        $abierta = Sessions::abierta($tenantId, $loadId);
+        $recursos = $this->assignedResources($loadId);
+        $driverId = $recursos['driver_id'] === null ? null : (string) $recursos['driver_id'];
+
+        $conductor = $driverId === null
+            ? null
+            : DB::table('drivers')->where('id', $driverId)->first(['id', 'first_name', 'last_name', 'user_id']);
+
+        return [
+            'startedAt' => $abierta?->started_at === null ? null : substr((string) $abierta->started_at, 0, 16),
+            'running' => $abierta !== null,
+            'driver' => $conductor === null ? null : [
+                'id' => (string) $conductor->id,
+                'name' => trim($conductor->first_name.' '.$conductor->last_name),
+            ],
+            // Por qué no se puede empezar. Una clave, no una frase: ver la
+            // lección del lote 55 sobre props que llegan ya traducidas.
+            'blockedBy' => match (true) {
+                $driverId === null => 'noDriverAssigned',
+                ! Consent::permiteRastrear($tenantId, $driverId) => 'trackingConsentMissing',
+                default => null,
+            },
+        ];
+    }
+
+    /**
+     * El conductor y el camión que lleva esta carga ahora mismo.
+     *
+     * @return array{driver_id: ?string, truck_id: ?string}
+     */
+    private function assignedResources(string $loadId): array
+    {
+        $filas = DB::table('load_assignments')
+            ->where('load_id', $loadId)
+            ->whereNull('unassigned_at')
+            ->whereNull('deleted_at')
+            ->get(['driver_id', 'truck_id']);
+
+        return [
+            'driver_id' => $filas->pluck('driver_id')->filter()->first(),
+            'truck_id' => $filas->pluck('truck_id')->filter()->first(),
+        ];
+    }
+
 
     /**
      * La carga, con el mismo estrechamiento que la pantalla de cargas.

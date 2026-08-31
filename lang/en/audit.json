@@ -168,6 +168,7 @@
     "entity": {
         "carrier": "Carrier",
         "carrier_settlement": "Carrier settlement",
+        "consent_record": "Consent record",
         "conversation": "Message thread",
         "dispatcher_commission": "Dispatcher commission",
         "dispatcher_group": "Dispatcher group",

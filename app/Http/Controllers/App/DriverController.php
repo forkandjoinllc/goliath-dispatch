@@ -18,6 +18,7 @@ use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Security\SensitiveNumber;
+use App\Support\Tracking\Consent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -122,7 +123,9 @@ final class DriverController
 
         $checker->authorize($actor, 'driver:read', $context, $policy);
 
-        $this->usesDictionary($request, ['drivers', 'nav']);
+        // `tracking` porque el panel de consentimiento vive en esta ficha: es la
+        // pantalla del conductor, y el consentimiento es suyo.
+        $this->usesDictionary($request, ['drivers', 'tracking', 'nav', 'common']);
 
         return Inertia::render('App/Drivers/Show', [
             'driver' => $this->detail($model),
@@ -133,6 +136,13 @@ final class DriverController
             'can' => [
                 'update' => $this->mayEdit($checker, $actor, $model, $policy),
                 'approve' => $checker->can($actor, 'driver:approve', $context, $policy)->allowed,
+                // Otorgar o retirar el consentimiento: el permiso es de ámbito
+                // propio y ADEMÁS se exige que esta ficha sea la suya. Un
+                // administrador con todos los permisos del mundo ve el estado y
+                // no ve el botón.
+                'consent' => $actor->driverId !== null
+                    && (string) $actor->driverId === (string) $model->id
+                    && $checker->can($actor, 'tracking:consent', $context, $policy)->allowed,
             ],
         ]);
     }
@@ -520,6 +530,11 @@ final class DriverController
      */
     private function detail(Driver $d): array
     {
+        $tenantId = $d->tenant_id === null ? null : (string) $d->tenant_id;
+        $cuenta = $tenantId === null
+            ? null
+            : Consent::cuentaDe($tenantId, (string) $d->id);
+
         return [
             ...$this->row($d),
             'firstName' => $d->first_name,
@@ -529,12 +544,65 @@ final class DriverController
             'restrictions' => $d->restrictions ?? [],
             'verifiedAt' => $d->verified_at?->toIso8601String(),
             'verificationNotes' => $d->verification_notes,
-            'trackingConsentAt' => $d->tracking_consent_granted_at?->toIso8601String(),
+            // Lo que hay HOY, con la versión de texto de hoy: un consentimiento
+            // sobre una redacción que ya cambió no cuenta, así que la fecha de
+            // `drivers` sola mentiría en cuanto se subiera la versión. Ver
+            // App\Support\Tracking\Consent.
+            'trackingConsentAt' => Consent::vigente($tenantId, $cuenta)
+                ? $d->tracking_consent_granted_at?->toIso8601String()
+                : null,
             'smsConsentAt' => $d->sms_consent_granted_at?->toIso8601String(),
-            'hasLogin' => $d->user_id !== null,
+            // Por la AFILIACIÓN y no por `drivers.user_id`: esa columna la
+            // escribe el sembrador y nadie más, así que un conductor invitado
+            // por el camino normal salía como «sin cuenta de acceso» teniéndola.
+            // Otra frase falsa en pantalla, encontrada al construir la puerta
+            // que depende de ella.
+            'hasLogin' => $cuenta !== null,
             'notes' => $d->notes,
             'createdAt' => $d->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * El conductor otorga o retira su consentimiento de rastreo.
+     *
+     * SOLO ÉL. `tracking:consent` es de ámbito propio y solo lo tiene el rol
+     * `driver`; la comprobación de abajo no se apoya en eso y vuelve a exigir
+     * que el conductor de la ficha sea quien está pidiendo. Dos cierres para lo
+     * mismo a propósito: si mañana alguien concede el permiso a otro rol por
+     * error, la ficha ajena sigue sin poder tocarse.
+     *
+     * Un despachador no puede marcarlo «porque el conductor lo dijo por
+     * teléfono». Eso sería el despachador afirmando algo, no el conductor
+     * consintiendo, y guardar lo segundo cuando pasó lo primero es la clase de
+     * mentira que este lote existe para quitar.
+     */
+    public function consent(Request $request, string $driver, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $model = $this->find($driver);
+
+        $checker->authorize($actor, 'tracking:consent', $this->context($model), $current->policy());
+
+        // La ficha tiene que ser LA SUYA. `Actor::driverId` sale de su
+        // afiliación, que es el vínculo que la aplicación mantiene.
+        if ($actor->driverId === null || (string) $actor->driverId !== (string) $model->id) {
+            return back()->with('error', __('tracking.consent.ownActionOnly'));
+        }
+
+        $data = $request->validate([
+            'action' => ['required', 'string', 'in:grant,revoke'],
+        ]);
+
+        if ($data['action'] === 'grant') {
+            Consent::otorgar($actor, $request);
+
+            return back()->with('success', __('tracking.consent.grantSuccess'));
+        }
+
+        Consent::retirar($actor);
+
+        return back()->with('success', __('tracking.consent.revokeSuccess'));
     }
 
     /**

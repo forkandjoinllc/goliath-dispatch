@@ -168,6 +168,7 @@
     "entity": {
         "carrier": "Transportista",
         "carrier_settlement": "Liquidación",
+        "consent_record": "Consentimiento",
         "conversation": "Hilo de mensajes",
         "dispatcher_commission": "Comisión",
         "dispatcher_group": "Grupo de despachadores",

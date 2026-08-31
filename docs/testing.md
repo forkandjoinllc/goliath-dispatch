@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1115 tests, 7128 assertions)
+OK (1126 tests, 7170 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote de la unidad sin verificar.
+(Cifra del 31 de agosto, tras el lote del consentimiento de rastreo.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -838,6 +838,43 @@ Con las 1.115 en verde:
   se presentaba con el texto de una verificación ya hecha. Dos líneas seguidas
   contradiciéndose, como en el lote anterior. Se ve leyendo la pantalla; no se ve
   de ninguna otra forma.
+
+### El barrido de promesas, y lo que sacó a la primera
+
+En el lote anterior escribí aquí que convenía **buscar en el diccionario las
+frases que prometen un bloqueo** —«no se puede», «hasta que», «impide»— y
+preguntarse cuál de ellas comprueba alguien. Lo hice al empezar el lote 58 y
+tardó menos de un minuto:
+
+> «El rastreo no puede iniciarse hasta que el conductor otorgue su
+> consentimiento, y se detiene de inmediato si el consentimiento se retira.»
+
+Cero puerta, cero registro, cero forma de retirarlo — sobre la ubicación en vivo
+de una persona, enseñada a terceros por un enlace público. El `grep` de frases
+prometedoras es la comprobación más barata de todas las que ha dado esta serie de
+lotes: **hazla al principio del lote, no al final.**
+
+### Una columna que existe no es una columna que se mantiene
+
+El defecto de este lote que no vi venir, y que habría dejado la puerta cerrada
+para todo el mundo sin que nadie entendiera por qué.
+
+Un conductor se enlaza con su cuenta de acceso por DOS caminos en este esquema:
+`drivers.user_id` y `user_tenant_memberships.driver_id`. Los dos existen, los dos
+están rellenos en el sembrador, y **solo el segundo lo mantiene la aplicación**:
+es el que rellena la invitación y el que lee `ActorFactory`. El primero lo escribe
+el sembrador y nadie más.
+
+Escribí la puerta contra `drivers.user_id` porque estaba ahí y porque en la base
+de demostración funcionaba. Lo cacé al mirar cómo lo resuelve el resto del código,
+no con una prueba — el escenario de pruebas también enlaza por afiliación, así
+que ninguna prueba habría fallado, y en producción todo conductor invitado por el
+camino normal habría quedado sin poder consentir.
+
+La regla: **cuando dos columnas dicen lo mismo, averigua cuál escribe la
+aplicación antes de leer ninguna de las dos.** Y de paso salió gratis otra frase
+falsa: `hasLogin` se calculaba con la columna muerta, así que un conductor con
+cuenta salía en pantalla como «sin cuenta de acceso».
 
 ## Migraciones: por qué todas son reanudables
 

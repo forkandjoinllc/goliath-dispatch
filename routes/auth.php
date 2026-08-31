@@ -174,6 +174,10 @@ Route::middleware(['auth'])->group(function (): void {
     Route::patch('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
     Route::post('drivers/{driver}/verification', [DriverController::class, 'verify'])
         ->name('drivers.verify');
+    // El consentimiento de rastreo. Ámbito propio: solo el conductor sobre su
+    // propia ficha. Ver App\Support\Tracking\Consent.
+    Route::post('drivers/{driver}/tracking-consent', [DriverController::class, 'consent'])
+        ->name('drivers.trackingConsent');
 
     /*
     | Equipos: camiones y remolques
@@ -499,6 +503,8 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('loads/{load}/tracking', [TrackingController::class, 'show'])->name('tracking.show');
     Route::post('loads/{load}/check-calls', [TrackingController::class, 'storeCheckCall'])->name('tracking.checkCalls.store');
     Route::post('loads/{load}/check-calls/{checkCall}/complete', [TrackingController::class, 'completeCheckCall'])->name('tracking.checkCalls.complete');
+    Route::post('loads/{load}/tracking/start', [TrackingController::class, 'startSession'])->name('tracking.session.start');
+    Route::post('loads/{load}/tracking/stop', [TrackingController::class, 'stopSession'])->name('tracking.session.stop');
     Route::post('loads/{load}/tracking-links', [TrackingController::class, 'storeLink'])->name('tracking.links.store');
     Route::post('loads/{load}/tracking-links/{link}/revoke', [TrackingController::class, 'revokeLink'])->name('tracking.links.revoke');
 

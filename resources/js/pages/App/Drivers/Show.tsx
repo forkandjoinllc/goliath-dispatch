@@ -46,7 +46,7 @@ interface Props {
     commodity: string | null
     plannedPickupAt: string | null
   }[] | null
-  can: { update: boolean; approve: boolean }
+  can: { update: boolean; approve: boolean; consent: boolean }
 }
 
 const VERIFICATION_TONE: Record<string, string> = {
@@ -241,6 +241,13 @@ export default function DriverShow({ driver, carriers, loads, can }: Props) {
           </Card>
 
           <Card title={t('drivers.detail.consent')}>
+            <ConsentimientoDeRastreo
+              driverId={driver.id}
+              grantedAt={driver.trackingConsentAt}
+              hasLogin={driver.hasLogin}
+              mine={can.consent}
+            />
+
             <Dl compact>
               <Item label={t('drivers.detail.trackingConsent')}>
                 {driver.trackingConsentAt
@@ -388,6 +395,69 @@ function Item({ label, children }: { label: string; children: ReactNode }) {
     <div className="min-w-0">
       <dt className="text-xs text-steel-600">{label}</dt>
       <dd className="truncate text-sm text-carbon">{children}</dd>
+    </div>
+  )
+}
+
+/**
+ * El consentimiento de rastreo, con su botón — y solo para su dueño.
+ *
+ * La pantalla de rastreo prometía desde el primer día que «el rastreo no puede
+ * iniciarse hasta que el conductor otorgue su consentimiento, y se detiene de
+ * inmediato si se retira». No había ni puerta ni botón: la fecha se pintaba y
+ * nadie podía ponerla ni quitarla.
+ *
+ * El botón aparece SOLO en la ficha de quien está mirando. Un administrador con
+ * todos los permisos ve el estado y no ve el botón, y eso no es una limitación
+ * que haya que arreglar: alguien marcando la casilla por otro no es esa persona
+ * consintiendo.
+ */
+function ConsentimientoDeRastreo({
+  driverId, grantedAt, hasLogin, mine,
+}: {
+  driverId: string
+  grantedAt: string | null
+  hasLogin: boolean
+  mine: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm({ action: grantedAt === null ? 'grant' : 'revoke' })
+
+  const enviar = (action: 'grant' | 'revoke') => {
+    form.transform((d) => ({ ...d, action }))
+    form.post(`/drivers/${driverId}/tracking-consent`, { preserveScroll: true })
+  }
+
+  return (
+    <div className="mb-3 rounded border border-steel-200 bg-steel-50 p-3">
+      <p className="text-sm text-carbon">{t('tracking.consent.description')}</p>
+      <p className="mt-1 text-xs text-steel-600">{t('tracking.consent.consentVersioned')}</p>
+      <p className="text-xs text-steel-600">{t('tracking.consent.onlyDriverCan')}</p>
+
+      {! hasLogin ? (
+        <p className="mt-2 rounded border border-warning-300 bg-warning-50 p-2 text-sm text-carbon">
+          {t('tracking.consent.noLogin')}
+        </p>
+      ) : null}
+
+      {mine ? (
+        <button
+          type="button"
+          disabled={form.processing}
+          onClick={() => enviar(grantedAt === null ? 'grant' : 'revoke')}
+          className={`mt-3 rounded px-3 py-1.5 text-sm font-semibold text-white transition disabled:opacity-50 ${
+            grantedAt === null ? 'bg-navy-700 hover:bg-navy-800' : 'bg-danger-500 hover:bg-danger-700'
+          }`}
+        >
+          {grantedAt === null
+            ? t('tracking.consent.grantButton')
+            : t('tracking.consent.revokeButton')}
+        </button>
+      ) : null}
+
+      {/* Dicho en la pantalla y no solo en un comentario: esto es un registro y
+          una puerta, no un dictamen sobre qué hay que pedir ni cómo. */}
+      <p className="mt-2 text-[11px] text-steel-500">{t('tracking.consent.notLegalAdvice')}</p>
     </div>
   )
 }
