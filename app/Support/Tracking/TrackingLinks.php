@@ -33,8 +33,13 @@ final class TrackingLinks
     private const MAX_HORAS = 720;
 
     /**
-     * Crea un enlace y devuelve el token EN CLARO, que es lo único que sale de
-     * aquí y solo viaja a la pantalla que lo acaba de pedir.
+     * Crea un enlace y devuelve su id y el token EN CLARO.
+     *
+     * El token es lo único secreto que sale de aquí y solo viaja a quien lo
+     * acaba de pedir. El id se devuelve desde el lote 59, cuando el enlace
+     * empezó a mandarse por correo: para anotar que SALIÓ hay que saber cuál es.
+     *
+     * @return array{id: string, token: string}
      */
     public static function issue(
         string $tenantId,
@@ -43,9 +48,10 @@ final class TrackingLinks
         ?string $recipientEmail,
         ?int $ttlHours,
         ?string $createdByUserId,
-    ): string {
+    ): array {
         $plano = Str::random(48);
         $ahora = CarbonImmutable::now();
+        $id = (string) Str::uuid();
 
         $horas = max(1, min(
             $ttlHours ?? self::defaultTtlHours($tenantId),
@@ -53,7 +59,7 @@ final class TrackingLinks
         ));
 
         DB::table('public_tracking_links')->insert([
-            'id' => (string) Str::uuid(),
+            'id' => $id,
             'tenant_id' => $tenantId,
             'load_id' => $loadId,
             'token_hash' => hash('sha256', $plano),
@@ -65,7 +71,16 @@ final class TrackingLinks
             'updated_at' => $ahora,
         ]);
 
-        return $plano;
+        return ['id' => $id, 'token' => $plano];
+    }
+
+    /** Anota que el correo con este enlace salió. */
+    public static function markSent(string $id): void
+    {
+        DB::table('public_tracking_links')->where('id', $id)->update([
+            'sent_at' => CarbonImmutable::now(),
+            'updated_at' => CarbonImmutable::now(),
+        ]);
     }
 
     /**
@@ -152,6 +167,10 @@ final class TrackingLinks
                     'id' => (string) $l->id,
                     'label' => $l->label,
                     'recipientEmail' => $l->recipient_email,
+                    // Si SALIÓ, y cuándo. Con la dirección sola solo se puede
+                    // contestar «a esa dirección era»; con la fecha se puede
+                    // decir «salió el martes a las 9:14» o «no salió, va ahora».
+                    'sentAt' => $l->sent_at === null ? null : substr((string) $l->sent_at, 0, 16),
                     'expiresAt' => $vence->format('Y-m-d H:i'),
                     'revokedAt' => $l->revoked_at === null ? null : substr((string) $l->revoked_at, 0, 16),
                     'viewCount' => (int) $l->view_count,

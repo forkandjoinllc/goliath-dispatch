@@ -166,7 +166,14 @@
             "revoked": "Revoked"
         },
         "expiresColumn": "Expires",
-        "viewsColumn": "Views"
+        "viewsColumn": "Views",
+        "sendSuccess": "The link was emailed.",
+        "sendFailed": "The email could not be sent. The link exists: copy it and send it by hand.",
+        "sendTitle": "Email the link",
+        "sendHint": "A new link is created and sent to that address. The previous one keeps working until it expires or is revoked.",
+        "sendButton": "Send",
+        "sentAt": "Sent {date}",
+        "notSent": "Not emailed"
     },
     "publicPage": {
         "title": "Track your shipment",
@@ -278,5 +285,9 @@
         "arrived": "Arrived {date}",
         "departed": "Departed {date}",
         "pending": "Not there yet"
+    },
+    "email": {
+        "subject": "Track your load with {tenant}",
+        "body": "You can follow your load with this link:\n\n{url}\n\nNo username or password needed. The link expires; if it stops working, ask us for a new one.\n\n{tenant}"
     }
 }

@@ -48,7 +48,7 @@ function enlaceDeSeguimiento(Scenario $scenario, string $loadId, ?int $horas = n
         recipientEmail: null,
         ttlHours: $horas,
         createdByUserId: null,
-    ));
+    )['token']);
 }
 
 /* ── El tablero ─────────────────────────────────────────────────────────── */

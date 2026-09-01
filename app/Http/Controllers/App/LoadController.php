@@ -25,6 +25,7 @@ use App\Support\Loads\DriverFacts;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\Guards;
+use App\Support\Tracking\CustomerLink;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Plans\Limits;
@@ -518,6 +519,27 @@ final class LoadController
                 toStatus: $target->value,
             );
         });
+
+        // Y al despachar sale el enlace de rastreo al cliente. FUERA de la
+        // transacción a propósito: mandar un correo dentro de una transacción
+        // abierta la mantiene viva mientras se habla con un servidor SMTP, y si
+        // luego algo la revierte el correo ya se ha ido y no vuelve.
+        //
+        // Que el correo falle no rompe el despacho. La carga sale igual, el
+        // enlace queda creado, y se reenvía desde la pantalla de rastreo — que
+        // es mucho mejor que haber impedido despachar porque el servidor de
+        // correo tuvo un mal minuto.
+        //
+        // Esto es la promesa que el sitio público hace en cinco sitios: «una vez
+        // despachada su carga, recibirá un enlace seguro por correo». Hasta el
+        // lote 59 no salía ninguno. Ver App\Support\Tracking\CustomerLink.
+        if ($action === 'dispatched') {
+            CustomerLink::sendForLoad(
+                (string) $model->tenant_id,
+                (string) $model->id,
+                $actor->auditUserId(),
+            );
+        }
 
         return back()->with('success', __('loads.transition.done', [
             'status' => __("nav.status.load.{$target->value}"),

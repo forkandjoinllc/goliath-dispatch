@@ -166,7 +166,14 @@
             "revoked": "Revocado"
         },
         "expiresColumn": "Vence",
-        "viewsColumn": "Vistas"
+        "viewsColumn": "Vistas",
+        "sendSuccess": "El enlace salió por correo.",
+        "sendFailed": "No se pudo mandar el correo. El enlace está creado: cópielo y mándelo a mano.",
+        "sendTitle": "Mandar el enlace por correo",
+        "sendHint": "Se crea un enlace nuevo y se manda a esa dirección. El anterior sigue valiendo hasta que caduque o se revoque.",
+        "sendButton": "Mandar",
+        "sentAt": "Salió el {date}",
+        "notSent": "No se mandó por correo"
     },
     "publicPage": {
         "title": "Rastree su envío",
@@ -278,5 +285,9 @@
         "arrived": "Llegó el {date}",
         "departed": "Salió el {date}",
         "pending": "Todavía no ha llegado"
+    },
+    "email": {
+        "subject": "Siga su carga con {tenant}",
+        "body": "Puede seguir el estado de su carga con este enlace:\n\n{url}\n\nNo hace falta usuario ni contraseña. El enlace caduca; si deja de funcionar, pídanos uno nuevo.\n\n{tenant}"
     }
 }

@@ -506,6 +506,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('loads/{load}/tracking/start', [TrackingController::class, 'startSession'])->name('tracking.session.start');
     Route::post('loads/{load}/tracking/stop', [TrackingController::class, 'stopSession'])->name('tracking.session.stop');
     Route::post('loads/{load}/tracking-links', [TrackingController::class, 'storeLink'])->name('tracking.links.store');
+    Route::post('loads/{load}/tracking-links/send', [TrackingController::class, 'sendLink'])->name('tracking.links.send');
     Route::post('loads/{load}/tracking-links/{link}/revoke', [TrackingController::class, 'revokeLink'])->name('tracking.links.revoke');
 
     /*

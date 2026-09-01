@@ -14,6 +14,7 @@ use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\TenantContext;
 use App\Support\Tracking\Consent;
+use App\Support\Tracking\CustomerLink;
 use App\Support\Tracking\Sessions;
 use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
@@ -263,7 +264,7 @@ final class TrackingController
             'ttl_hours' => ['nullable', 'integer', 'min:1', 'max:720'],
         ]);
 
-        $token = TrackingLinks::issue(
+        $enlace = TrackingLinks::issue(
             tenantId: (string) $actor->tenantId,
             loadId: (string) $carga->id,
             label: $data['label'] ?? null,
@@ -280,7 +281,45 @@ final class TrackingController
             // Con el prefijo del idioma en el que está trabajando quien lo
             // reparte: el cliente lo abre desde un correo, sin cookie ni
             // sesión, y sin esto leería lo que diga el navegador de su oficina.
-            ->with('trackingToken', url('/'.App::getLocale().'/t/'.$token));
+            ->with('trackingToken', url('/'.App::getLocale().'/t/'.$enlace['token']));
+    }
+
+    /**
+     * Mandarle el enlace a una dirección, porque alguien lo ha pedido.
+     *
+     * El caso de «el cliente llama diciendo que no le llegó». Emite un enlace
+     * NUEVO en vez de reenviar el viejo: del anterior solo se guarda el hash del
+     * token, así que reenviarlo es imposible por construcción — y esa propiedad
+     * conviene conservarla, no rodearla.
+     */
+    public function sendLink(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'tracking:read', null, $policy);
+        $checker->authorize($actor, 'tracking:link:create', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        if (! TrackingLinks::enabledFor((string) $actor->tenantId)) {
+            return back()->with('error', __('tracking.errors.publicTrackingDisabled'));
+        }
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        $salio = CustomerLink::sendTo(
+            (string) $actor->tenantId,
+            (string) $carga->id,
+            $data['email'],
+            $actor->auditUserId(),
+        );
+
+        return back()->with(
+            $salio ? 'success' : 'error',
+            __($salio ? 'tracking.publicLink.sendSuccess' : 'tracking.publicLink.sendFailed'),
+        );
     }
 
     public function revokeLink(Request $request, string $load, string $link, CurrentActor $current, PermissionChecker $checker): RedirectResponse

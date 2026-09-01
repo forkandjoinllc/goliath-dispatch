@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1126 tests, 7170 assertions)
+OK (1137 tests, 7203 assertions)
 ```
 
-(Cifra del 31 de agosto, tras el lote del consentimiento de rastreo.
+(Cifra del 1 de septiembre, tras el lote del enlace que nunca se mandaba.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -875,6 +875,40 @@ La regla: **cuando dos columnas dicen lo mismo, averigua cuál escribe la
 aplicación antes de leer ninguna de las dos.** Y de paso salió gratis otra frase
 falsa: `hasLogin` se calculaba con la columna muerta, así que un conductor con
 cuenta salía en pantalla como «sin cuenta de acceso».
+
+### La promesa que no se le hace al usuario
+
+Lote 59, y el barrido de promesas otra vez — esta vez sobre `marketing.json`, que
+en los cuatro lotes anteriores no había mirado.
+
+> «Una vez despachada su carga, recibirá un enlace seguro por correo
+> electrónico.»
+
+Repetida en cinco sitios, y falsa. `recipient_email` se pedía en el formulario,
+se guardaba y no lo leía nadie.
+
+Lo que aprendí y no había visto: **los diccionarios del sitio público son
+promesas igual que los de la aplicación, y son peores cuando fallan.** Una frase
+falsa dentro de la aplicación la sufre un usuario que puede quejarse y a quien se
+le puede explicar. Una frase falsa en la página de ventas la sufre el cliente de
+nuestro cliente, que no tiene cuenta, no se queja con nosotros, y deja mal a la
+casa de despacho que nos pagó.
+
+Así que el barrido de promesas incluye `lang/*/marketing.json` desde ahora, y el
+guardián `TrackingLinkPromiseTest` comprueba además que la frase **siga estando**:
+si alguien la reescribe, hay que volver a mirar si la puerta que la cumple sigue
+cumpliendo lo que dice ahora.
+
+### Cambiar una firma barata: `issue()` devolvía un token y ahora devuelve dos cosas
+
+Nota práctica, por si vuelve a pasar. Para anotar que el correo salió hacía falta
+el id del enlace, y `TrackingLinks::issue()` solo devolvía el token en claro. Se
+podía haber añadido un método nuevo al lado; se cambió la firma para que devuelva
+`{id, token}`, con dos llamadas en todo el proyecto.
+
+El coste real fue una línea en un ayudante de pruebas. **Un método con dos
+variantes casi iguales cuesta más para siempre que arreglar dos llamadas hoy**, y
+la variante de más es donde acaba el fallo del que llama a la equivocada.
 
 ## Migraciones: por qué todas son reanudables
 

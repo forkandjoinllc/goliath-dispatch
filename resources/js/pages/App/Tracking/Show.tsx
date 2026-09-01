@@ -31,6 +31,8 @@ interface TrackingLink {
   id: string
   label: string | null
   recipientEmail: string | null
+  /** Cuándo salió el correo con este enlace, o nulo si no salió ninguno. */
+  sentAt: string | null
   expiresAt: string
   revokedAt: string | null
   viewCount: number
@@ -417,6 +419,8 @@ function Enlaces({
         </form>
       ) : null}
 
+      {habilitado && puedeCrear ? <MandarEnlace load={load} /> : null}
+
       {links.length === 0 ? (
         <p className="mt-3 text-sm text-steel-600">{t('tracking.publicLink.empty')}</p>
       ) : (
@@ -438,9 +442,19 @@ function Enlaces({
                     ? ` · ${t('tracking.publicLink.lastViewedAt', { date: l.lastViewedAt })}`
                     : ''}
                 </p>
-                {l.recipientEmail ? (
-                  <p className="text-xs text-steel-600">{l.recipientEmail}</p>
+                {/* Si SALIÓ y cuándo. Con la dirección sola, a un cliente que
+                    dice que no le llegó nada solo se le puede contestar «a esa
+                    dirección era». */}
+                {l.recipientEmail !== null ? (
+                  <p className="mt-0.5 text-xs text-steel-600">
+                    {l.recipientEmail}
+                    {' · '}
+                    {l.sentAt !== null
+                      ? t('tracking.publicLink.sentAt', { date: l.sentAt })
+                      : t('tracking.publicLink.notSent')}
+                  </p>
                 ) : null}
+
               </div>
 
               {puedeRevocar && l.state === 'active' ? (
@@ -539,5 +553,51 @@ function Sesion({
         </button>
       ) : null}
     </section>
+  )
+}
+
+/**
+ * Mandar el enlace por correo a una dirección.
+ *
+ * El caso de «el cliente llama diciendo que no le llegó». Crea uno NUEVO en vez
+ * de reenviar el anterior: del anterior solo se guarda el hash del token, así
+ * que reenviarlo es imposible por construcción — y esa propiedad conviene
+ * conservarla, no rodearla. Se dice en el texto de ayuda, para que nadie crea
+ * que el enlace viejo dejó de valer.
+ */
+function MandarEnlace({ load }: { load: { id: string } }) {
+  const { t } = useI18n()
+  const form = useForm({ email: '' })
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.post(`/loads/${load.id}/tracking-links/send`, {
+          preserveScroll: true,
+          onSuccess: () => form.reset(),
+        })
+      }}
+      className="mt-3 flex flex-wrap items-end gap-3 border-t border-steel-100 pt-3"
+    >
+      <label className="flex min-w-56 flex-col gap-1">
+        <span className="text-xs font-medium text-steel-700">{t('tracking.publicLink.sendTitle')}</span>
+        <input
+          type="email"
+          required
+          value={form.data.email}
+          onChange={(e) => form.setData('email', e.target.value)}
+          className={CAMPO}
+        />
+        <span className="text-[11px] text-steel-500">{t('tracking.publicLink.sendHint')}</span>
+      </label>
+      <button
+        type="submit"
+        disabled={form.processing}
+        className="rounded border border-steel-300 bg-white px-4 py-2 text-sm font-medium text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+      >
+        {t('tracking.publicLink.sendButton')}
+      </button>
+    </form>
   )
 }
