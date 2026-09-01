@@ -60,16 +60,17 @@ interface Props {
     accentColor: string
     emailFooter: string | null
   }
-  template: {
+  templates: {
+    event: string
     locale: string
     subject: string | null
     body: string | null
     tokens: string[]
-  }
+  }[]
   can: { update: boolean }
 }
 
-export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, branding, template, can }: Props) {
+export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, branding, templates, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
 
@@ -309,7 +310,7 @@ export default function SettingsIndex({ settings, subscription = null, readOnly,
       {/* Va en SU PROPIO formulario y no dentro del de arriba: lleva un fichero,
           y mezclarlo obligaría a mandar el formulario entero como multipart cada
           vez que alguien cambia un plazo de pago. */}
-      <Marca branding={branding} template={template} bloqueado={bloqueado} />
+      <Marca branding={branding} templates={templates} bloqueado={bloqueado} />
     </AppLayout>
   )
 }
@@ -489,10 +490,10 @@ function Plan({ subscription }: { subscription: Subscription | null }) {
  * panel de ajustes suena a que va a cambiarlo todo.
  */
 function Marca({
-  branding, template, bloqueado,
+  branding, templates, bloqueado,
 }: {
   branding: Props['branding']
-  template: Props['template']
+  templates: Props['templates']
   bloqueado: boolean
 }) {
   const { t } = useI18n()
@@ -500,17 +501,26 @@ function Marca({
     primary_color: string
     accent_color: string
     email_footer: string
-    template_subject: string
-    template_body: string
+    templates: { event: string; subject: string; body: string }[]
     logo: File | null
   }>({
     primary_color: branding.primaryColor,
     accent_color: branding.accentColor,
     email_footer: branding.emailFooter ?? '',
-    template_subject: template.subject ?? '',
-    template_body: template.body ?? '',
+    templates: templates.map((p) => ({
+      event: p.event,
+      subject: p.subject ?? '',
+      body: p.body ?? '',
+    })),
     logo: null,
   })
+
+  const cambiar = (i: number, campo: 'subject' | 'body', valor: string) => {
+    form.setData(
+      'templates',
+      form.data.templates.map((p, j) => (i === j ? { ...p, [campo]: valor } : p)),
+    )
+  }
 
   return (
     <form
@@ -586,31 +596,36 @@ function Marca({
         </Campo>
       </Seccion>
 
-      <Seccion
-        titulo={t('settings.brand.templateTitle')}
-        nota={t('settings.brand.templateNote', { tokens: template.tokens.map((k) => `{${k}}`).join(', ') })}
-      >
-        <Campo label={t('settings.brand.templateSubject')} error={form.errors.template_subject}>
-          <input
-            type="text"
-            maxLength={255}
-            disabled={bloqueado}
-            value={form.data.template_subject}
-            onChange={(e) => form.setData('template_subject', e.target.value)}
-            className={CAMPO}
-          />
-        </Campo>
-        <Campo label={t('settings.brand.templateBody')} error={form.errors.template_body}>
-          <textarea
-            rows={6}
-            maxLength={4000}
-            disabled={bloqueado}
-            value={form.data.template_body}
-            onChange={(e) => form.setData('template_body', e.target.value)}
-            className={CAMPO}
-          />
-        </Campo>
-      </Seccion>
+      {templates.map((plantilla, i) => (
+        <Seccion
+          key={plantilla.event}
+          titulo={t(`settings.brand.templates.${plantilla.event}`)}
+          nota={t('settings.brand.templateNote', {
+            tokens: plantilla.tokens.map((k) => `{${k}}`).join(', '),
+          })}
+        >
+          <Campo label={t('settings.brand.templateSubject')}>
+            <input
+              type="text"
+              maxLength={255}
+              disabled={bloqueado}
+              value={form.data.templates[i]?.subject ?? ''}
+              onChange={(e) => cambiar(i, 'subject', e.target.value)}
+              className={CAMPO}
+            />
+          </Campo>
+          <Campo label={t('settings.brand.templateBody')}>
+            <textarea
+              rows={6}
+              maxLength={4000}
+              disabled={bloqueado}
+              value={form.data.templates[i]?.body ?? ''}
+              onChange={(e) => cambiar(i, 'body', e.target.value)}
+              className={CAMPO}
+            />
+          </Campo>
+        </Seccion>
+      ))}
 
       {! bloqueado ? (
         <div>

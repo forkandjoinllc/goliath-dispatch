@@ -10,6 +10,8 @@ use App\Listeners\ActivateVerifiedUser;
 use App\Services\Fmcsa\DirectoryFmcsaVerifier;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
+use App\Services\Payments\InvoicePaymentProvider;
+use App\Services\Payments\MockInvoicePaymentProvider;
 use App\Services\Billing\BillingProvider;
 use App\Services\Billing\MockBillingProvider;
 use App\Services\Billing\StripeBillingProvider;
@@ -127,6 +129,20 @@ class AppServiceProvider extends ServiceProvider
 
             return new StripeBillingProvider($app->make(HttpFactory::class), $secreta, $webhook);
         });
+
+        /**
+         * El cobro de las facturas de FLETE, que es otro dinero.
+         *
+         * `BillingProvider` es nosotros cobrándole la suscripción a la casa de
+         * despacho; esto es la casa de despacho cobrándole el flete a su
+         * cliente, y ese dinero va a la cuenta de ellos. Con Stripe eso es
+         * Connect: otras credenciales, otra integración y otra responsabilidad.
+         * Mientras no exista ese adaptador, el simulado — que no cobra y lo dice.
+         */
+        $this->app->singleton(
+            InvoicePaymentProvider::class,
+            static fn (): InvoicePaymentProvider => new MockInvoicePaymentProvider,
+        );
 
         $this->app->bind(FmcsaVerifier::class, function ($app): FmcsaVerifier {
             $directory = $app->make(FmcsaDirectory::class);

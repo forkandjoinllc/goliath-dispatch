@@ -64,7 +64,10 @@ it('el pie y el color se limpian al leer, no solo al escribir', function (): voi
 });
 
 it('solo se pueden reescribir los avisos que salen fuera', function (): void {
-    expect(Templates::EDITABLES)->toBe([Templates::ENLACE_DE_RASTREO]);
+    // Los dos que salen FUERA: el enlace de rastreo, que lee el cliente de la
+    // carga, y la factura, que lee el transportista. Ninguno de los dos es
+    // usuario de la aplicación.
+    expect(Templates::EDITABLES)->toBe([Templates::ENLACE_DE_RASTREO, Templates::FACTURA]);
 
     // Si mañana se añade alguno, que sea una decisión y no un descuido: los
     // avisos internos los lee el propio equipo, y dejar que cada empresa los

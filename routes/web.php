@@ -6,7 +6,9 @@ use App\Http\Controllers\Marketing\CarrierSignupController;
 use App\Http\Controllers\Marketing\LeadController;
 use App\Http\Controllers\Marketing\PageController;
 use App\Http\Controllers\Public\BillingWebhookController;
+use App\Http\Controllers\Public\InvoiceController as PublicInvoiceController;
 use App\Http\Controllers\Public\MockCheckoutController;
+use App\Http\Controllers\Public\MockInvoicePaymentController;
 use App\Http\Controllers\Public\SignatureController as PublicSignatureController;
 use App\Http\Controllers\Public\BrandLogoController;
 use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
@@ -110,6 +112,27 @@ Route::middleware('throttle:30,1')->get('t/{token}', PublicTrackingController::c
 Route::middleware('throttle:120,1')->get('b/{tenant}/logo', BrandLogoController::class)
     ->name('public.brand.logo');
 
+/*
+|--------------------------------------------------------------------------
+| La factura que abre —y paga— el transportista
+|--------------------------------------------------------------------------
+|
+| Mismo trato que el rastreo público: el testigo ES la autorización, va con
+| límite de peticiones y con prefijo de idioma para que el enlace mande sobre el
+| navegador de quien lo abre.
+*/
+Route::middleware('throttle:30,1')->group(function (): void {
+    Route::get('i/{token}', PublicInvoiceController::class)->name('public.invoice');
+    Route::post('i/{token}/pay', [PublicInvoiceController::class, 'pay'])->name('public.invoice.pay');
+});
+
+foreach (Locales::all() as $code) {
+    Route::middleware('throttle:30,1')
+        ->prefix($code)
+        ->get('i/{token}', PublicInvoiceController::class)
+        ->name("public.invoice.{$code}");
+}
+
 foreach (Locales::all() as $code) {
     Route::middleware('throttle:30,1')
         ->prefix($code)
@@ -171,6 +194,13 @@ Route::post('billing/webhook', BillingWebhookController::class)
     ->name('billing.webhook');
 
 Route::middleware(['signed', 'throttle:30,1'])->group(function (): void {
+    // `pay/mock` y NO `invoices/mock-pay`: `auth.php` registra
+    // `invoices/{invoice}` y se carga ANTES que este fichero, así que
+    // `invoices/mock-pay` lo capturaba esa ruta —con su middleware de sesión— y
+    // el transportista acababa en la pantalla de acceso. Una ruta pública que
+    // cuelga de un prefijo ya autenticado se queda tapada sin decir nada.
+    Route::get('pay/mock', [MockInvoicePaymentController::class, 'show'])->name('invoices.mock.pay');
+    Route::post('pay/mock', [MockInvoicePaymentController::class, 'decide'])->name('invoices.mock.decide');
     Route::get('billing/mock-checkout', [MockCheckoutController::class, 'show'])->name('billing.mock.checkout');
     Route::post('billing/mock-checkout', [MockCheckoutController::class, 'decide'])->name('billing.mock.decide');
 });

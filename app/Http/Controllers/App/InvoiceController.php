@@ -14,8 +14,9 @@ use App\Models\Invoice;
 use App\Models\Load;
 use App\Support\Audit;
 use App\Support\Finance\Billable;
-use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\InvoiceBuilder;
+use App\Support\Finance\InvoiceLink;
+use App\Support\Finance\PaymentLedger;
 use App\Support\InertiaPage;
 use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
@@ -254,17 +255,47 @@ final class InvoiceController
             'updated_at' => $ahora,
         ]);
 
+        // Y AHORA SALE DE VERDAD. Hasta el lote 62 esto solo la marcaba como
+        // enviada —la pantalla lo decía con cuidado, así que no mentía— y el
+        // despachador la mandaba por su cuenta desde su correo. Ver
+        // App\Support\Finance\InvoiceLink: va al contacto de facturación del
+        // transportista, en su idioma y con la cara de la empresa.
+        //
+        // Fuera de la escritura de arriba a propósito: mandar un correo dentro
+        // de una transacción abierta la mantiene viva hablando con un SMTP, y si
+        // algo la revierte el correo ya se fue.
+        $envio = InvoiceLink::send($model->fresh());
+
+        if ($envio['to'] !== null) {
+            DB::table('invoices')->where('id', $model->id)->update([
+                'sent_to' => $envio['to'],
+                'updated_at' => $ahora,
+            ]);
+        }
+
         Audit::record(
             $actor,
-            AuditAction::FinancialChanged,
+            AuditAction::InvoiceSent,
             entityType: 'invoice',
             entityId: (string) $model->id,
             entityLabel: (string) $model->invoice_number,
             before: ['status' => 'draft'],
-            after: ['status' => 'sent', 'due_date' => $ahora->addDays((int) $model->payment_terms_days)->toDateString()],
+            after: [
+                'status' => 'sent',
+                'due_date' => $ahora->addDays((int) $model->payment_terms_days)->toDateString(),
+                'sentTo' => $envio['to'],
+                'emailed' => $envio['sent'],
+            ],
         );
 
-        return back()->with('success', __('invoices.flash.sent'));
+        // Se dice si SALIÓ o no. «Marcada como enviada» cuando el correo falló
+        // dejaría a alguien esperando un pago de una factura que nadie recibió.
+        return back()->with(
+            $envio['sent'] ? 'success' : 'error',
+            $envio['sent']
+                ? __('invoices.flash.emailed', ['email' => $envio['to']])
+                : __($envio['to'] === null ? 'invoices.flash.noRecipient' : 'invoices.flash.notEmailed'),
+        );
     }
 
     /**

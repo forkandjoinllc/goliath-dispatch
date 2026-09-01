@@ -37,15 +37,19 @@ use Illuminate\Support\Str;
  */
 final class Templates
 {
-    /** El evento del correo con el enlace de rastreo. */
+    /** El correo con el enlace de rastreo, que recibe el cliente de la carga. */
     public const ENLACE_DE_RASTREO = 'tracking.link';
 
+    /** El correo con la factura, que recibe el transportista. */
+    public const FACTURA = 'invoice.sent';
+
     /** Los eventos que una empresa puede reescribir. Ver la nota de arriba. */
-    public const EDITABLES = [self::ENLACE_DE_RASTREO];
+    public const EDITABLES = [self::ENLACE_DE_RASTREO, self::FACTURA];
 
     /** Las fichas que admite cada evento. */
     public const FICHAS = [
         self::ENLACE_DE_RASTREO => ['tenant', 'url'],
+        self::FACTURA => ['tenant', 'invoice', 'amount', 'url'],
     ];
 
     /**

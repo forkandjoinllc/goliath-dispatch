@@ -88,9 +88,12 @@
         "save": "Guardar",
         "saved": "Marca guardada.",
         "preview": "Así se ve la barra de la página pública",
-        "templateTitle": "El texto del correo del enlace",
         "templateNote": "Si lo deja en blanco se manda el de siempre. Fichas disponibles: {tokens}.",
         "templateSubject": "Asunto",
-        "templateBody": "Cuerpo"
+        "templateBody": "Cuerpo",
+        "templates": {
+            "tracking.link": "El texto del correo del enlace de rastreo",
+            "invoice.sent": "El texto del correo de la factura"
+        }
     }
 }

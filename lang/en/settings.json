@@ -88,9 +88,12 @@
         "save": "Save",
         "saved": "Branding saved.",
         "preview": "This is the public page bar",
-        "templateTitle": "The wording of the link email",
         "templateNote": "Leave it blank and the standard one is sent. Available tokens: {tokens}.",
         "templateSubject": "Subject",
-        "templateBody": "Body"
+        "templateBody": "Body",
+        "templates": {
+            "tracking.link": "The wording of the tracking link email",
+            "invoice.sent": "The wording of the invoice email"
+        }
     }
 }

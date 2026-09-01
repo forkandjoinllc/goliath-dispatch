@@ -82,7 +82,11 @@ final class TenantSettingController
             // — la página pública de rastreo y el correo que la reparte. Ver
             // App\Support\Branding\Brand.
             'branding' => Brand::for((string) $actor->tenantId),
-            'template' => $this->template((string) $actor->tenantId),
+            // Uno por evento reescribible. En LISTA y no uno suelto: declarar
+            // un evento editable y no darle editor es prometer una puerta que no
+            // existe, que es el defecto que este proyecto lleva media docena de
+            // lotes cerrando.
+            'templates' => $this->templates((string) $actor->tenantId),
             'feeBases' => array_map(static fn (FeeBase $b): string => $b->value, FeeBase::cases()),
             'commissionBases' => array_map(static fn (CommissionBasis $b): string => $b->value, CommissionBasis::cases()),
             'can' => [
@@ -184,21 +188,25 @@ final class TenantSettingController
      * alguien cambia un plazo de pago.
      */
     /**
-     * La plantilla del correo del enlace, en el idioma de la empresa.
+     * Las plantillas reescribibles, en el idioma de la empresa.
      *
-     * @return array<string, mixed>
+     * @return list<array<string, mixed>>
      */
-    private function template(string $tenantId): array
+    private function templates(string $tenantId): array
     {
         $locale = $this->tenantLocale($tenantId);
-        $fila = Templates::find($tenantId, Templates::ENLACE_DE_RASTREO, $locale);
 
-        return [
-            'locale' => $locale,
-            'subject' => $fila?->subject,
-            'body' => $fila === null || $fila->body === '' ? null : $fila->body,
-            'tokens' => Templates::FICHAS[Templates::ENLACE_DE_RASTREO],
-        ];
+        return array_map(function (string $evento) use ($tenantId, $locale): array {
+            $fila = Templates::find($tenantId, $evento, $locale);
+
+            return [
+                'event' => $evento,
+                'locale' => $locale,
+                'subject' => $fila?->subject,
+                'body' => $fila === null || $fila->body === '' ? null : $fila->body,
+                'tokens' => Templates::FICHAS[$evento] ?? [],
+            ];
+        }, Templates::EDITABLES);
     }
 
     /** El idioma en el que esta empresa le escribe a sus clientes. */
@@ -224,8 +232,10 @@ final class TenantSettingController
             'accent_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'email_footer' => ['nullable', 'string', 'max:500'],
             'logo' => ['nullable', 'file', 'max:2048', 'mimetypes:image/png,image/jpeg,image/webp,image/svg+xml'],
-            'template_subject' => ['nullable', 'string', 'max:255'],
-            'template_body' => ['nullable', 'string', 'max:4000'],
+            'templates' => ['nullable', 'array'],
+            'templates.*.event' => ['required', 'string', Rule::in(Templates::EDITABLES)],
+            'templates.*.subject' => ['nullable', 'string', 'max:255'],
+            'templates.*.body' => ['nullable', 'string', 'max:4000'],
         ]);
 
         Brand::save(
@@ -247,13 +257,15 @@ final class TenantSettingController
         // en su idioma habrá que poner idioma al cliente primero —está en «lo
         // que falta» de docs/tracking-link.md— y entonces este editor crece con
         // un motivo.
-        Templates::save(
-            (string) $actor->tenantId,
-            Templates::ENLACE_DE_RASTREO,
-            $this->tenantLocale((string) $actor->tenantId),
-            $data['template_subject'] ?? null,
-            $data['template_body'] ?? null,
-        );
+        foreach ($data['templates'] ?? [] as $plantilla) {
+            Templates::save(
+                (string) $actor->tenantId,
+                (string) $plantilla['event'],
+                $this->tenantLocale((string) $actor->tenantId),
+                $plantilla['subject'] ?? null,
+                $plantilla['body'] ?? null,
+            );
+        }
 
         Audit::record(
             $actor,

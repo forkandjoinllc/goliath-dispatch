@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1163 tests, 7267 assertions)
+OK (1180 tests, 7320 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote de la marca por empresa.
+(Cifra del 1 de septiembre, tras el lote del cobro de facturas.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -985,6 +985,38 @@ pasado con `media_count` (se cuenta desde la tabla, no del contador cacheado) y
 con `integration_connections` (no se rellena con filas de plataforma). Cuando el
 nombre de una columna y la decisión correcta no coinciden, gana la decisión y se
 escribe por qué.
+
+### Probar el camino del fallo ANTES que el del éxito
+
+Lote 62, y la mejor decisión de recorrido que he tomado en toda la serie — casi
+por casualidad.
+
+El guion del navegador probaba primero el pago RECHAZADO y luego el aceptado. El
+rechazo funcionó; el pago posterior no hizo nada. La causa: la clave de
+idempotencia estaba atada a la factura y al importe, así que el segundo intento
+chocaba contra el primero. Es decir: **un pago rechazado dejaba la factura
+impagable para siempre.**
+
+Con el orden inverso —pagar primero— el recorrido habría salido verde y el
+defecto habría llegado a producción, donde se manifiesta como «un cliente no
+puede pagarnos y no sabemos por qué».
+
+La regla: **en cualquier flujo con dos desenlaces, recorre primero el malo.** El
+bueno casi siempre está probado; el malo es el que nadie mira, y además deja al
+sistema en el estado desde el que se descubre lo que falta.
+
+### Una ruta pública debajo de un prefijo autenticado se queda tapada sin decir nada
+
+`pay/mock` se llamó primero `invoices/mock-pay`. `auth.php` registra
+`invoices/{invoice}` y se carga ANTES, así que la ruta pública la capturaba
+aquella —con su middleware de sesión— y el transportista acababa en la pantalla
+de acceso.
+
+Lo delator fue que la petición SIN FIRMA devolvía 302 a /login en vez de 403: la
+ruta que contestaba no era la mía. **Cuando una ruta nueva se comporta como si
+tuviera un middleware que no le puse, la pregunta no es qué middleware sobra sino
+qué otra ruta la está capturando** — `route:list` con la ruta exacta lo dice en
+un segundo.
 
 ## Migraciones: por qué todas son reanudables
 
