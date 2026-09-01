@@ -36,7 +36,20 @@ interface Props {
     coiExpiresOn: string | null
     obstacles: string[]
   }
-  can: { update: boolean; changeStatus: boolean; override: boolean }
+  media: {
+    photos: {
+      id: string
+      angle: string
+      caption: string | null
+      contentType: string
+      bytes: number
+      createdAt: string
+    }[]
+    /** Los lados que faltan, como claves de `equipment.media.angles.*`. */
+    missingAngles: string[]
+    angles: string[]
+  }
+  can: { update: boolean; changeStatus: boolean; override: boolean; uploadMedia: boolean }
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -46,7 +59,7 @@ const STATUS_TONE: Record<string, string> = {
   archived: 'bg-steel-100 text-steel-600 ring-steel-300',
 }
 
-export default function EquipmentShow({ type, unit, loads, blockingKeys, verification, can }: Props) {
+export default function EquipmentShow({ type, unit, loads, blockingKeys, verification, media, can }: Props) {
   const { t, locale } = useI18n()
   const s = (key: string): string => {
     const v = unit[key]
@@ -137,6 +150,8 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
         verification={verification}
         can={can}
       />
+
+      <Fotos type={type} unitId={unit.id} media={media} puedeSubir={can.uploadMedia} />
 
       {/* El motivo de estar fuera de servicio. Es lo que explica por qué
           esta unidad no aparece en ningún selector de asignación. */}
@@ -516,5 +531,143 @@ function Verificacion({
         </div>
       ) : null}
     </section>
+  )
+}
+
+/**
+ * Las fotos de la unidad, con los cuatro lados como requisito.
+ *
+ * El sitio público promete «al menos cuatro fotos antes de activarse». Se piden
+ * los cuatro ÁNGULOS y no cuatro ficheros: cuatro fotos del mismo faro cumplen
+ * la frase y no sirven para nada. La pantalla dice cuál falta, que es más útil
+ * que un número.
+ */
+function Fotos({
+  type, unitId, media, puedeSubir,
+}: {
+  type: 'trucks' | 'trailers'
+  unitId: string
+  media: Props['media']
+  puedeSubir: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm<{ angle: string; caption: string; file: File | null }>({
+    angle: media.missingAngles[0] ?? 'front',
+    caption: '',
+    file: null,
+  })
+
+  const completo = media.missingAngles.length === 0
+
+  return (
+    <section className="mt-4 rounded border border-steel-200 bg-white p-4">
+      <p className="text-sm font-semibold text-carbon">{t('equipment.media.title')}</p>
+      <p className="mt-0.5 text-xs text-steel-600">{t('equipment.media.hint')}</p>
+      <p className="text-xs text-steel-600">{t('equipment.media.whyFourAngles')}</p>
+
+      <p
+        className={`mt-3 rounded border p-2 text-sm ${
+          completo
+            ? 'border-success-500 bg-success-50 text-carbon'
+            : 'border-warning-300 bg-warning-50 text-carbon'
+        }`}
+      >
+        {completo
+          ? t('equipment.media.complete')
+          : t('equipment.media.missing', {
+              angles: media.missingAngles.map((a) => t(`equipment.media.angles.${a}`)).join(', '),
+            })}
+      </p>
+
+      {media.photos.length === 0 ? (
+        <p className="mt-3 text-sm text-steel-600">{t('equipment.media.empty')}</p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {media.photos.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded border border-steel-200 p-2">
+              <span className="text-sm text-carbon">
+                {t(`equipment.media.angles.${f.angle}`)}
+                <span className="ml-2 text-xs text-steel-600">{f.createdAt}</span>
+                {f.caption ? <span className="ml-2 text-xs text-steel-700">{f.caption}</span> : null}
+              </span>
+              {puedeSubir ? <QuitarFoto type={type} unitId={unitId} mediaId={f.id} /> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {puedeSubir ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.post(`/equipment/${type}/${unitId}/media`, {
+              preserveScroll: true,
+              forceFormData: true,
+              onSuccess: () => form.reset(),
+            })
+          }}
+          className="mt-3 flex flex-wrap items-end gap-3 border-t border-steel-100 pt-3"
+        >
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-steel-700">{t('equipment.media.angle')}</span>
+            <select
+              value={form.data.angle}
+              onChange={(e) => form.setData('angle', e.target.value)}
+              className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+            >
+              {media.angles.map((a) => (
+                <option key={a} value={a}>{t(`equipment.media.angles.${a}`)}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex min-w-48 flex-col gap-1">
+            <span className="text-xs font-medium text-steel-700">{t('equipment.media.caption')}</span>
+            <input
+              type="text"
+              value={form.data.caption}
+              onChange={(e) => form.setData('caption', e.target.value)}
+              className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
+            />
+          </label>
+
+          <input
+            type="file"
+            accept="image/*"
+            required
+            onChange={(e) => form.setData('file', e.target.files?.[0] ?? null)}
+            className="text-sm"
+          />
+
+          <button
+            type="submit"
+            disabled={form.processing}
+            className="rounded bg-navy-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50"
+          >
+            {t('equipment.media.upload')}
+          </button>
+
+          {form.errors.file ? (
+            <p role="alert" className="w-full text-sm text-danger-700">{form.errors.file}</p>
+          ) : null}
+        </form>
+      ) : null}
+    </section>
+  )
+}
+
+function QuitarFoto({ type, unitId, mediaId }: { type: string; unitId: string; mediaId: string }) {
+  const { t } = useI18n()
+  const form = useForm({ reason: '' })
+
+  return (
+    <button
+      type="button"
+      disabled={form.processing}
+      onClick={() => form.delete(`/equipment/${type}/${unitId}/media/${mediaId}`, { preserveScroll: true })}
+      className="rounded border border-steel-300 bg-white px-3 py-1 text-xs font-medium text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+    >
+      {t('equipment.media.remove')}
+    </button>
   )
 }

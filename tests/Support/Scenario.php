@@ -183,6 +183,29 @@ final class Scenario
             'updated_at' => now(),
         ]);
 
+        // Las cuatro fotos del camión. La puerta de asignación las exige desde
+        // el lote 60 —el sitio público las promete— y sin ellas ninguna prueba
+        // que asigne un camión podría pasar. Es el mismo motivo por el que este
+        // escenario aprueba documentos del transportista: montar una unidad que
+        // NO puede trabajar no sirve para probar nada más que la propia puerta.
+        foreach (['front', 'rear', 'left', 'right'] as $orden => $angulo) {
+            DB::table('equipment_media')->insert([
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenant->id,
+                'equipment_type' => 'truck',
+                'equipment_id' => $truckId,
+                'angle' => $angulo,
+                'media_kind' => 'photo',
+                'storage_key' => 'pruebas/'.$truckId.'-'.$angulo.'.jpg',
+                'content_type' => 'image/jpeg',
+                'byte_size' => 1024,
+                'sha256' => hash('sha256', $truckId.$angulo),
+                'sort_order' => $orden,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
         $driverId = (string) Str::uuid();
         DB::table('drivers')->insert([
             'id' => $driverId,

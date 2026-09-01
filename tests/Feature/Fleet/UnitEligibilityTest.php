@@ -256,3 +256,102 @@ it('la bitácora distingue confirmar de anular', function () {
     expect(DB::table('audit_events')->where('entity_type', 'equipment_verification')->value('action'))
         ->toBe('equipment.verified');
 });
+
+// ────────────────────────────────────────────────────── las fotos de la unidad
+
+it('sin los cuatro lados la unidad no puede ir a una carga', function () {
+    // El sitio público lo promete con un número: «cada camión y remolque
+    // necesita al menos cuatro fotos antes de activarse». En el lote 57 este
+    // motivo se dejó fuera a propósito porque `equipment_media` estaba vacía.
+    signIn($this->scenario, Role::Admin);
+
+    $truckId = camionDeLaCarga($this->scenario);
+    conEstado($truckId, ['status' => 'active']);
+
+    app(TenantContext::class)->withoutTenant(fn () => DB::table('equipment_media')
+        ->where('equipment_id', $truckId)
+        ->where('angle', 'left')
+        ->update(['deleted_at' => now(), 'updated_at' => now()]));
+
+    expect(App\Support\Equipment\Media::missingAngles(
+        (string) $this->scenario->tenant->id, 'truck', $truckId
+    ))->toBe(['left']);
+
+    $this->post("/loads/{$this->scenario->load->id}/resources", [
+        'resource_type' => 'truck',
+        'resource_id' => $truckId,
+    ])->assertSessionHasErrors('resource_id');
+
+    expect(session('errors')->first('resource_id'))
+        ->toContain((string) __('equipment.blocking.insufficientMedia'));
+});
+
+it('cuatro fotos del mismo lado no bastan', function () {
+    // Es toda la diferencia entre cumplir la frase y cumplir lo que la frase
+    // quiere decir.
+    $tenantId = (string) $this->scenario->tenant->id;
+    $truckId = camionDeLaCarga($this->scenario);
+
+    app(TenantContext::class)->withoutTenant(function () use ($truckId, $tenantId) {
+        DB::table('equipment_media')->where('equipment_id', $truckId)->delete();
+
+        foreach (range(1, 4) as $i) {
+            DB::table('equipment_media')->insert([
+                'id' => (string) Illuminate\Support\Str::uuid(),
+                'tenant_id' => $tenantId,
+                'equipment_type' => 'truck',
+                'equipment_id' => $truckId,
+                'angle' => 'front',
+                'media_kind' => 'photo',
+                'storage_key' => "pruebas/{$truckId}-{$i}.jpg",
+                'content_type' => 'image/jpeg',
+                'byte_size' => 1024,
+                'sha256' => hash('sha256', (string) $i),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    });
+
+    expect(App\Support\Equipment\Media::complete($tenantId, 'truck', $truckId))->toBeFalse()
+        ->and(App\Support\Equipment\Media::missingAngles($tenantId, 'truck', $truckId))
+        ->toBe(['rear', 'left', 'right']);
+});
+
+it('se sube una foto y deja de faltar ese lado', function () {
+    Illuminate\Support\Facades\Storage::fake('local');
+
+    signIn($this->scenario, Role::Admin);
+
+    $truckId = camionDeLaCarga($this->scenario);
+
+    app(TenantContext::class)->withoutTenant(fn () => DB::table('equipment_media')
+        ->where('equipment_id', $truckId)
+        ->where('angle', 'rear')
+        ->update(['deleted_at' => now(), 'updated_at' => now()]));
+
+    $this->post("/equipment/trucks/{$truckId}/media", [
+        'angle' => 'rear',
+        'file' => Illuminate\Http\UploadedFile::fake()->image('trasera.jpg'),
+    ])->assertSessionHasNoErrors();
+
+    expect(App\Support\Equipment\Media::missingAngles(
+        (string) $this->scenario->tenant->id, 'truck', $truckId
+    ))->toBe([]);
+});
+
+it('quitar una foto la marca, no la borra', function () {
+    // El fichero lo retira el barrido de huérfanos. Una foto del estado en que
+    // salió el camión es justo lo que alguien reclama nueve meses después.
+    signIn($this->scenario, Role::Admin);
+
+    $truckId = camionDeLaCarga($this->scenario);
+    $fotoId = (string) DB::table('equipment_media')->where('equipment_id', $truckId)->value('id');
+
+    $this->delete("/equipment/trucks/{$truckId}/media/{$fotoId}")->assertSessionHasNoErrors();
+
+    $fila = DB::table('equipment_media')->where('id', $fotoId)->first();
+
+    expect($fila)->not->toBeNull()
+        ->and($fila->deleted_at)->not->toBeNull();
+});

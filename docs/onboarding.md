@@ -87,6 +87,40 @@ cumplimiento.
 correcciones — y no de la fecha de alta. Lo que interesa es cuánto lleva ESTE
 transportista parado en ESTE punto.
 
+## La revalidación de FMCSA revalida
+
+El sitio público dice que «su autoridad ante la FMCSA se revalida automáticamente
+cada 7 días mientras esté activo, no solo una vez al registrarse». Hasta el lote
+60 el barrido de avisos AVISABA a una persona de que tocaba revalidar y ahí se
+acababa: si nadie entraba a pulsar el botón, la foto del registro envejecía sola y
+la carga salía igual. Un aviso mensual que nadie atiende no es una revalidación
+automática; es una bandeja de entrada más llena.
+
+Ahora `notifications:sweep` llama a `App\Support\Fmcsa\Revalidation`, que
+comprueba a los caducados, escribe una fila nueva en `fmcsa_verifications` con su
+número de intento y pone al día el estado del transportista.
+
+**Revalidar va ANTES que avisar.** Avisar primero llenaría la bandeja de
+recordatorios sobre transportistas que ese mismo barrido está a punto de poner al
+día. Se revalida, y solo se avisa de lo que quedó sin revalidar.
+
+**Sin credenciales no se inventa una comprobación.** Si el proveedor no está en
+vivo, no se escribe nada y el barrido lo dice en su resumen. Anotar una
+verificación «simulada» con fecha de hoy sería peor que no revalidar: dejaría a
+todos los transportistas con la marca al día y a nadie comprobado, y apagaría el
+aviso que hoy sí funciona. Falsear la fecha de una comprobación de autoridad es
+de las peores mentiras que este sistema podría contarse a sí mismo.
+
+**El plazo es uno.** `carriers.fmcsa_next_verification_at` se escribía a «dentro
+de un año» y la pantalla lo enseñaba, mientras el barrido usaba
+`tenant_settings.fmcsa_reverification_days` —siete por omisión— para decidir quién
+estaba caducado. Dos números que se contradecían, los dos a la vista. Ahora la
+fecha siguiente sale del plazo de la empresa.
+
+Y la escritura de una comprobación estaba COPIADA en tres sitios —alta, botón de
+verificar y ahora el barrido—, que es donde acabaron difiriendo el número de
+intento y el plazo siguiente. Vive en un sitio.
+
 ## Lo que falta
 
 - **El tablero de tarjetas.** El diccionario portado tiene una sección `board.*`

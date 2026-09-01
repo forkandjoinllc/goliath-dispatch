@@ -21,9 +21,21 @@ final class UnitFacts
         public readonly string $status,
         public readonly ?CarbonImmutable $nextInspectionDueAt,
         public readonly ?CarbonImmutable $registrationExpiresAt,
+        /**
+         * Los lados que faltan por fotografiar. Vacío significa que están los
+         * cuatro; ver App\Support\Equipment\Media.
+         *
+         * Se pasa como dato y no se consulta aquí dentro para que la regla siga
+         * siendo pura: una lista de veinte unidades son dos consultas, no
+         * cuarenta.
+         *
+         * @var list<string>
+         */
+        public readonly array $missingAngles = [],
     ) {}
 
-    public static function fromRow(object $fila): self
+    /** @param  list<string>  $missingAngles */
+    public static function fromRow(object $fila, array $missingAngles = []): self
     {
         $fecha = static fn (mixed $v): ?CarbonImmutable => $v === null || $v === ''
             ? null
@@ -34,6 +46,7 @@ final class UnitFacts
             status: (string) ($fila->status ?? ''),
             nextInspectionDueAt: $fecha($fila->next_inspection_due_at ?? null),
             registrationExpiresAt: $fecha($fila->registration_expires_at ?? null),
+            missingAngles: $missingAngles,
         );
     }
 }

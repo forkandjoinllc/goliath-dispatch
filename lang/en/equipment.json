@@ -144,10 +144,11 @@
         "updated": "Unit {unit} was updated."
     },
     "blocking": {
-        "outOfService": "It is out of service.",
         "archived": "It is archived.",
-        "notVerified": "Nobody has verified it yet.",
         "inspectionOverdue": "The annual inspection is overdue.",
+        "insufficientMedia": "The unit is missing photos.",
+        "notVerified": "Nobody has verified it yet.",
+        "outOfService": "It is out of service.",
         "registrationExpired": "The registration has expired."
     },
     "verification": {
@@ -170,5 +171,30 @@
         "openCoi": "Open the certificate of insurance",
         "coiExpiresOn": "Expires {date}"
     },
-    "blockingTitle": "This unit cannot go on a load:"
+    "blockingTitle": "This unit cannot go on a load:",
+    "media": {
+        "title": "Unit photos",
+        "hint": "All four sides, before the unit goes in service. This is what documents the condition it left in — and what is missed nine months later, when somebody files a claim.",
+        "whyFourAngles": "Four angles are required, not four files: four photos of the same headlight say nothing.",
+        "missing": "Missing: {angles}",
+        "complete": "All four sides are on file.",
+        "add": "Add photo",
+        "angle": "Angle",
+        "caption": "Note (optional)",
+        "upload": "Upload",
+        "remove": "Remove",
+        "removed": "Photo removed.",
+        "added": "Photo added.",
+        "empty": "No photos of this unit yet.",
+        "angles": {
+            "front": "Front",
+            "rear": "Rear",
+            "left": "Left side",
+            "right": "Right side",
+            "vin_plate": "VIN plate",
+            "odometer": "Odometer",
+            "damage": "Damage",
+            "other": "Other"
+        }
+    }
 }

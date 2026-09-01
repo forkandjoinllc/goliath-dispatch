@@ -63,6 +63,18 @@ final class Eligibility
     public const MATRICULA_VENCIDA = 'registrationExpired';
 
     /**
+     * Faltan fotos de la unidad.
+     *
+     * En el lote 57 este motivo se dejó FUERA a propósito: `equipment_media`
+     * estaba vacía y no había forma de cumplirlo, así que ponerlo habría sido
+     * prometer una puerta que no existía — el defecto que ese lote arreglaba.
+     * Entra ahora que las fotos existen, y porque el sitio público lo promete
+     * con un número: «cada camión y remolque necesita al menos cuatro fotos
+     * antes de activarse».
+     */
+    public const FALTAN_FOTOS = 'insufficientMedia';
+
+    /**
      * Todos los motivos por los que esta unidad no puede ir a una carga.
      *
      * Se devuelven TODOS y no el primero: quien prepara la unidad quiere saber
@@ -74,6 +86,10 @@ final class Eligibility
     {
         $hoy = ($at ?? CarbonImmutable::now())->startOfDay();
         $motivos = [];
+
+        if ($facts->missingAngles !== []) {
+            $motivos[] = self::FALTAN_FOTOS;
+        }
 
         if ($facts->status === 'out_of_service') {
             $motivos[] = self::FUERA_DE_SERVICIO;

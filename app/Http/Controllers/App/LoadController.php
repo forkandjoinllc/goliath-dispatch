@@ -23,6 +23,7 @@ use App\Support\InertiaPage;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
 use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\Guards;
 use App\Support\Tracking\CustomerLink;
@@ -607,29 +608,38 @@ final class LoadController
             return ['carriers' => $carriers, 'trucks' => [], 'trailers' => [], 'drivers' => []];
         }
 
-        $units = fn (string $table): array => DB::table($table)
-            ->where('tenant_id', $load->tenant_id)
-            ->where('carrier_id', $load->carrier_id)
-            ->whereNull('deleted_at')
-            ->orderBy('unit_number')
-            ->get(['id', 'unit_number', 'status', 'next_inspection_due_at', 'registration_expires_at'])
-            ->map(function ($r): array {
-                // El desplegable tiene que decir lo MISMO que la puerta. Si aquí
-                // se marcara en regla una unidad que la asignación va a rechazar,
-                // se descubriría el muro chocándose con él: se elige el camión,
-                // se pulsa asignar y sale un error. Por eso los dos sitios leen
-                // la misma regla.
-                $motivos = Eligibility::reasons(UnitFacts::fromRow($r));
+        $tenantId = (string) $load->tenant_id;
 
-                return [
-                    'id' => (string) $r->id,
-                    'label' => (string) $r->unit_number,
-                    'ok' => $motivos === [],
-                    'problem' => null,
-                    'blockingKeys' => $motivos,
-                ];
-            })
-            ->all();
+        $units = function (string $table) use ($load, $tenantId): array {
+            $singular = $table === 'trucks' ? 'truck' : 'trailer';
+
+            return DB::table($table)
+                ->where('tenant_id', $load->tenant_id)
+                ->where('carrier_id', $load->carrier_id)
+                ->whereNull('deleted_at')
+                ->orderBy('unit_number')
+                ->get(['id', 'unit_number', 'status', 'next_inspection_due_at', 'registration_expires_at'])
+                ->map(function ($r) use ($tenantId, $singular): array {
+                    // El desplegable tiene que decir lo MISMO que la puerta. Si
+                    // aquí se marcara en regla una unidad que la asignación va a
+                    // rechazar, se descubriría el muro chocándose con él: se
+                    // elige el camión, se pulsa asignar y sale un error. Por eso
+                    // los dos sitios leen la misma regla.
+                    $motivos = Eligibility::reasons(UnitFacts::fromRow(
+                        $r,
+                        Media::missingAngles($tenantId, $singular, (string) $r->id),
+                    ));
+
+                    return [
+                        'id' => (string) $r->id,
+                        'label' => (string) $r->unit_number,
+                        'ok' => $motivos === [],
+                        'problem' => null,
+                        'blockingKeys' => $motivos,
+                    ];
+                })
+                ->all();
+        };
 
         // Los requisitos se piden UNA vez para toda la lista. La comparación es
         // una función pura y no toca la base, así que veinte conductores son

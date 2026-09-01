@@ -14,9 +14,11 @@ use App\Models\Truck;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\EnumValue;
 use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Equipment\Verification;
 use App\Support\Geo\Regions;
+use App\Support\Storage\DocumentStore;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,6 +51,9 @@ use Inertia\Response;
  */
 final class EquipmentController
 {
+    /** Tope por foto. Una foto de móvil moderna ronda los 4 MB. */
+    private const MAX_FOTO_KB = 15360;
+
     use InertiaPage;
 
     private const PER_PAGE = 25;
@@ -141,12 +146,22 @@ final class EquipmentController
                 'status' => $model->status->value,
                 'next_inspection_due_at' => $model->next_inspection_due_at,
                 'registration_expires_at' => $model->registration_expires_at,
-            ])),
+            ], Media::missingAngles(
+                (string) $actor->tenantId,
+                $this->singular($type),
+                (string) $model->id,
+            ))),
+            'media' => [
+                'photos' => Media::forUnit((string) $actor->tenantId, $this->singular($type), (string) $model->id),
+                'missingAngles' => Media::missingAngles((string) $actor->tenantId, $this->singular($type), (string) $model->id),
+                'angles' => [...Media::ANGULOS, ...Media::OPCIONALES],
+            ],
             'verification' => $this->verification($model, $type),
             'can' => [
                 'update' => $checker->can($actor, 'equipment:update', $context, $policy)->allowed,
                 'changeStatus' => $checker->can($actor, 'equipment:status:update', $context, $policy)->allowed,
                 'override' => $checker->can($actor, 'equipment:verification:override', $context, $policy)->allowed,
+                'uploadMedia' => $checker->can($actor, 'equipment:media:upload', $context, $policy)->allowed,
             ],
         ]);
     }
@@ -380,6 +395,92 @@ final class EquipmentController
         }
 
         return back()->with('success', __('equipment.verification.confirmed'));
+    }
+
+    /**
+     * Subir una foto de la unidad.
+     *
+     * El sitio público promete cuatro; se piden los cuatro LADOS. Ver
+     * App\Support\Equipment\Media para por qué el mínimo es por ángulo y no un
+     * número de ficheros.
+     */
+    public function storeMedia(
+        Request $request,
+        string $type,
+        string $unit,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        DocumentStore $store,
+    ): RedirectResponse {
+        $this->assertType($type);
+
+        $actor = $current->require();
+        $model = $this->find($type, $unit);
+
+        $checker->authorize($actor, 'equipment:media:upload', $this->context($model), $current->policy());
+
+        $data = $request->validate([
+            'angle' => ['required', 'string', Rule::in([...Media::ANGULOS, ...Media::OPCIONALES])],
+            'caption' => ['nullable', 'string', 'max:200'],
+            'file' => [
+                'required',
+                'file',
+                'max:'.self::MAX_FOTO_KB,
+                // Por MIME real y no por la extensión del nombre: `mimetypes:`
+                // mira el contenido con finfo, no la cadena que mandó el
+                // navegador. Mismo criterio que la subida de documentos.
+                'mimetypes:image/jpeg,image/png,image/webp,image/heic',
+            ],
+        ]);
+
+        Media::add(
+            $store,
+            (string) $actor->tenantId,
+            $this->singular($type),
+            (string) $model->id,
+            $data['angle'],
+            $request->file('file'),
+            $data['caption'] ?? null,
+            $actor->auditUserId(),
+        );
+
+        return back()->with('success', __('equipment.media.added'));
+    }
+
+    /**
+     * Quitar una foto.
+     *
+     * Se marca como borrada y el fichero lo retira el barrido de huérfanos del
+     * lote 53. Una foto que documenta el estado de un camión el día que salió es
+     * exactamente el dato que alguien reclama nueve meses después.
+     */
+    public function destroyMedia(
+        Request $request,
+        string $type,
+        string $unit,
+        string $media,
+        CurrentActor $current,
+        PermissionChecker $checker,
+    ): RedirectResponse {
+        $this->assertType($type);
+
+        $actor = $current->require();
+        $model = $this->find($type, $unit);
+
+        $checker->authorize($actor, 'equipment:media:upload', $this->context($model), $current->policy());
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        Media::remove(
+            (string) $actor->tenantId,
+            $media,
+            $actor->auditUserId(),
+            trim((string) ($data['reason'] ?? '')),
+        );
+
+        return back()->with('success', __('equipment.media.removed'));
     }
 
     // ------------------------------------------------------------------ interno

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Services\Fmcsa\FmcsaDirectory;
+use App\Services\Fmcsa\FmcsaVerifier;
+use App\Support\Fmcsa\Revalidation;
 use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
@@ -88,7 +91,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -100,6 +103,21 @@ final class SweepNotifications extends Command
                 }
 
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
+
+                // REVALIDAR VA ANTES QUE AVISAR, y el orden no es un detalle:
+                // avisar primero llenaría la bandeja de recordatorios sobre
+                // transportistas que este mismo barrido está a punto de poner al
+                // día. Se revalida, y solo se avisa de lo que quedó sin
+                // revalidar — que sin credenciales del proveedor son todos, y
+                // entonces el aviso es exactamente lo correcto.
+                if (! $dry) {
+                    $totales['revalidated'] += Revalidation::sweep(
+                        $tenantId,
+                        app(FmcsaVerifier::class),
+                        app(FmcsaDirectory::class),
+                    )['checked'];
+                }
+
                 $totales['carriers'] += $this->transportistasPorRevalidar($tenantId, $dry);
                 $totales['invoices'] += $this->facturasVencidas($tenantId, $dry);
                 $totales['trials'] += $this->periodosDePrueba($tenantId, $dry);
@@ -114,15 +132,24 @@ final class SweepNotifications extends Command
         $this->resumen = ['tenants' => count($empresas)] + $totales;
 
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d%s',
+            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
             $totales['carriers'],
             $totales['invoices'],
             $totales['trials'],
+            $totales['revalidated'],
             $dry ? '  (simulacro: no se escribió nada)' : '',
         ));
+
+        // Y si no se revalidó a nadie habiendo a quién, se dice por qué. Un cero
+        // sin explicación se lee como «no había trabajo», y aquí puede
+        // significar lo contrario: que había y no se pudo.
+        if (! $dry && $totales['revalidated'] === 0 && $totales['carriers'] > 0
+            && ! app(FmcsaDirectory::class)->isLive()) {
+            $this->line('  Sin credenciales de FMCSA: no se revalidó a nadie y por eso salieron los avisos.');
+        }
 
         return self::SUCCESS;
     }

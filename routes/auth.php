@@ -572,6 +572,8 @@ Route::middleware(['auth'])->group(function (): void {
             Route::patch('{unit}', [EquipmentController::class, 'update'])->name('equipment.update');
             Route::post('{unit}/status', [EquipmentController::class, 'status'])->name('equipment.status');
             Route::post('{unit}/verification', [EquipmentController::class, 'verify'])->name('equipment.verify');
+            Route::post('{unit}/media', [EquipmentController::class, 'storeMedia'])->name('equipment.media.store');
+            Route::delete('{unit}/media/{media}', [EquipmentController::class, 'destroyMedia'])->name('equipment.media.destroy');
         });
 });
 

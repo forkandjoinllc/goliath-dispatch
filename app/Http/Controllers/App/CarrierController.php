@@ -19,6 +19,7 @@ use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
 use App\Support\EnumValue;
+use App\Support\Fmcsa\Revalidation;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Locales;
@@ -238,40 +239,10 @@ final class CarrierController
             return;
         }
 
-        $resultado = $verifier->verify(
-            (string) $carrier->dot_number,
-            $carrier->mc_number === null ? null : (string) $carrier->mc_number,
-            (string) $carrier->legal_name,
-        );
-
-        $ahora = now();
-
-        DB::table('fmcsa_verifications')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'tenant_id' => $carrier->tenant_id,
-            'carrier_id' => $carrier->id,
-            'provider' => $verifier->name(),
-            'dot_number' => $carrier->dot_number,
-            'mc_number' => $carrier->mc_number,
-            'status' => $resultado->status->value,
-            'normalized' => json_encode($resultado->normalized),
-            // Solo el digest, nunca el cuerpo entero: la respuesta cruda trae
-            // direcciones y nombres, y esta tabla se conserva años.
-            'raw_payload_digest' => $resultado->rawDigest,
-            'attempt' => 1,
-            'error_message' => $resultado->errorMessage,
-            'created_at' => $ahora,
-            'updated_at' => $ahora,
-        ]);
-
-        DB::table('carriers')->where('id', $carrier->id)->update([
-            'fmcsa_status' => $resultado->status->value,
-            'fmcsa_last_verified_at' => $ahora,
-            'fmcsa_next_verification_at' => $resultado->status === VerificationStatus::Verified
-                ? $ahora->copy()->addYear()
-                : null,
-            'updated_at' => $ahora,
-        ]);
+        // La escritura vive en App\Support\Fmcsa\Revalidation, junto con la del
+        // barrido que revalida cada N días. Estaban copiadas, y una copia es
+        // donde acaban difiriendo el número de intento o el plazo siguiente.
+        Revalidation::runFor($carrier, $verifier);
     }
 
     /**

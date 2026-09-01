@@ -13,6 +13,7 @@ use App\Enums\VerificationStatus;
 use App\Models\Carrier;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
+use App\Support\Fmcsa\Revalidation;
 use App\Support\Onboarding\Transitions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -189,44 +190,18 @@ final class CarrierOnboardingController
 
         $checker->authorize($actor, 'carrier:verification:run', $context, $current->policy());
 
-        $result = $verifier->verify($model->dot_number, $model->mc_number, $model->legal_name);
-        $now = now();
+        // La escritura de la comprobación vive en App\Support\Fmcsa\Revalidation,
+        // que es también quien revalida cada N días desde el barrido. Estaba
+        // copiada en tres sitios, y una copia es donde acaban difiriendo el
+        // número de intento o el plazo de la siguiente — que fue justo lo que
+        // pasó: aquí se programaba «dentro de un año» mientras el barrido daba
+        // por caducado a los siete días.
+        $result = Revalidation::runFor($model, $verifier);
 
-        $attempt = 1 + (int) DB::table('fmcsa_verifications')
-            ->where('carrier_id', $model->id)
-            ->max('attempt');
-
-        DB::transaction(function () use ($model, $result, $verifier, $attempt, $now): void {
-            DB::table('fmcsa_verifications')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $model->tenant_id,
-                'carrier_id' => $model->id,
-                'provider' => $verifier->name(),
-                'dot_number' => $model->dot_number,
-                'mc_number' => $model->mc_number,
-                'status' => $result->status->value,
-                'normalized' => json_encode($result->normalized),
-                // Solo el digest, nunca el cuerpo entero: la respuesta cruda
-                // trae direcciones y nombres, y esta tabla se conserva años.
-                'raw_payload_digest' => $result->rawDigest,
-                'attempt' => $attempt,
-                'error_message' => $result->errorMessage,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-
-            DB::table('carriers')->where('id', $model->id)->update([
-                'fmcsa_status' => $result->status->value,
-                'fmcsa_last_verified_at' => $now,
-                // Reverificación anual solo si salió bien. Un fallo no programa
-                // nada: lo que toca es que alguien mire, no esperar un año.
-                'fmcsa_next_verification_at' => $result->status === VerificationStatus::Verified
-                    ? $now->copy()->addYear()
-                    : null,
-                'last_activity_at' => $now,
-                'updated_at' => $now,
-            ]);
-        });
+        DB::table('carriers')->where('id', $model->id)->update([
+            'last_activity_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         return back()->with(
             $result->status === VerificationStatus::Verified ? 'success' : 'error',

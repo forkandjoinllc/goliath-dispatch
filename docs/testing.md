@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1137 tests, 7203 assertions)
+OK (1150 tests, 7240 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote del enlace que nunca se mandaba.
+(Cifra del 1 de septiembre, tras el lote de lo que se le promete al transportista.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -909,6 +909,47 @@ podía haber añadido un método nuevo al lado; se cambió la firma para que dev
 El coste real fue una línea en un ayudante de pruebas. **Un método con dos
 variantes casi iguales cuesta más para siempre que arreglar dos llamadas hoy**, y
 la variante de más es donde acaba el fallo del que llama a la equivocada.
+
+### Un guardián que caza dentro del mismo lote
+
+Lote 60, y la primera vez que pasa: al meter `insufficientMedia` en
+`Eligibility`, el guardián `EquipmentBlockingTest` —escrito en el lote 57— falló
+en el acto porque faltaba la frase del diccionario en los dos idiomas.
+
+Es exactamente para lo que existía, y merece la pena anotarlo porque cambia el
+cálculo de escribir guardianes: **el que escribí para que un fallo no volviera
+dentro de seis meses me ahorró el mismo fallo dentro de seis minutos.** El coste
+de un guardián se recupera antes de lo que parece cuando se escribe.
+
+### Cuando el escenario de pruebas tiene que envejecer con las reglas
+
+Al exigir cuatro fotos, veintiuna pruebas que no tienen nada que ver con fotos se
+cayeron: todas las que asignan un camión. La tentación es parchear cada una; lo
+correcto fue meter las cuatro fotos en `Scenario::crew()`, que es el método cuyo
+trabajo es «esta carga tiene un camión y un conductor QUE PUEDEN TRABAJAR».
+
+La regla: **cuando una puerta nueva rompe muchas pruebas ajenas, casi siempre lo
+que hay que actualizar es el escenario, no las pruebas.** Un escenario que monta
+una unidad que no puede trabajar no sirve para probar nada más que la propia
+puerta — y si el escenario no puede cumplir la regla nueva, esa es una señal
+sobre la regla, no sobre el escenario.
+
+Efecto secundario útil: la caída dijo de una vez dónde estaban TODOS los sitios
+que dependen de que un camión pueda asignarse.
+
+### El tercer sitio donde estaba copiada la misma escritura
+
+`fmcsa_verifications` se escribía en tres sitios —el alta, el botón de verificar y
+(nuevo) el barrido—. Los dos que ya existían habían divergido sin que nadie lo
+notara: uno contaba el intento con `count()+1` y el otro con `max(attempt)+1`, y
+los dos programaban la siguiente comprobación «dentro de un año» mientras el
+barrido daba por caducado a los siete días.
+
+Nadie lo habría visto leyendo un solo fichero. Se vio al ir a escribir el
+TERCERO, que es cuando uno compara los dos anteriores. Vale la pena escribirlo
+como señal: **si estás a punto de copiar una escritura por segunda vez, ese es el
+momento de moverla; si es la tercera, ve primero a comparar las dos que ya
+existen — habrán divergido.**
 
 ## Migraciones: por qué todas son reanudables
 

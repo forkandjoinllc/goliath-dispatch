@@ -144,10 +144,11 @@
         "updated": "Se actualizó la unidad {unit}."
     },
     "blocking": {
-        "outOfService": "Está fuera de servicio.",
         "archived": "Está archivada.",
-        "notVerified": "Nadie la ha verificado todavía.",
         "inspectionOverdue": "La inspección anual está vencida.",
+        "insufficientMedia": "Faltan fotos de la unidad.",
+        "notVerified": "Nadie la ha verificado todavía.",
+        "outOfService": "Está fuera de servicio.",
         "registrationExpired": "La matrícula está vencida."
     },
     "verification": {
@@ -170,5 +171,30 @@
         "openCoi": "Abrir el certificado de seguro",
         "coiExpiresOn": "Vence el {date}"
     },
-    "blockingTitle": "Esta unidad no puede ir a una carga:"
+    "blockingTitle": "Esta unidad no puede ir a una carga:",
+    "media": {
+        "title": "Fotos de la unidad",
+        "hint": "Los cuatro lados, antes de que la unidad entre en servicio. Es lo que documenta en qué estado salió — y lo que se echa en falta nueve meses después, cuando alguien reclama.",
+        "whyFourAngles": "Se piden los cuatro ángulos y no cuatro ficheros: cuatro fotos del mismo faro no dicen nada.",
+        "missing": "Faltan: {angles}",
+        "complete": "Están los cuatro lados.",
+        "add": "Añadir foto",
+        "angle": "Ángulo",
+        "caption": "Nota (opcional)",
+        "upload": "Subir",
+        "remove": "Quitar",
+        "removed": "Foto quitada.",
+        "added": "Foto añadida.",
+        "empty": "Todavía no hay fotos de esta unidad.",
+        "angles": {
+            "front": "Frente",
+            "rear": "Detrás",
+            "left": "Lado izquierdo",
+            "right": "Lado derecho",
+            "vin_plate": "Placa del VIN",
+            "odometer": "Odómetro",
+            "damage": "Daños",
+            "other": "Otro"
+        }
+    }
 }

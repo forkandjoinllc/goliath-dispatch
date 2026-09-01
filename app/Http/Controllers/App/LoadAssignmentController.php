@@ -11,6 +11,7 @@ use App\Enums\AuditAction;
 use App\Models\Load;
 use App\Support\Audit;
 use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
@@ -310,7 +311,10 @@ final class LoadAssignmentController
         //
         // Ver App\Support\Equipment\Eligibility para qué bloquea y por qué una
         // fecha que no consta no bloquea.
-        $motivos = Eligibility::reasons(UnitFacts::fromRow($unit));
+        $motivos = Eligibility::reasons(UnitFacts::fromRow(
+            $unit,
+            Media::missingAngles((string) $load->tenant_id, $type, $id),
+        ));
 
         if ($motivos !== []) {
             return __('loads.assign.unitBlocked', [
@@ -374,7 +378,10 @@ final class LoadAssignmentController
             // la inspección sin guardar si estaba vencida deja la prueba a medias
             // — obliga a quien lea esto dentro de un año a recalcular la regla de
             // entonces, que quizá ya no exista.
-            'blocking' => $u === null ? [] : Eligibility::reasons(UnitFacts::fromRow($u)),
+            'blocking' => $u === null ? [] : Eligibility::reasons(UnitFacts::fromRow(
+                $u,
+                Media::missingAngles((string) $load->tenant_id, $type, $id),
+            )),
         ];
     }
 

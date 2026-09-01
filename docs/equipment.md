@@ -38,6 +38,7 @@ chocándose con él.
 | `notVerified` | Sigue en `pending_verification` |
 | `inspectionOverdue` | `next_inspection_due_at` es anterior a hoy |
 | `registrationExpired` | `registration_expires_at` es anterior a hoy |
+| `insufficientMedia` | Falta alguno de los cuatro lados fotografiados |
 
 **Una fecha que no consta NO bloquea.** Nula es «nadie lo ha rellenado», no
 «está vencido». Cerrar la puerta por un dato que falta pararía la operación de
@@ -47,6 +48,33 @@ validación de sobredimensión (lote 55) y los topes del plan (lote 56).
 
 Se devuelven TODOS los motivos, no el primero: quien prepara un camión quiere
 saber de una vez todo lo que le falta.
+
+## Las cuatro fotos
+
+La página de transportistas del sitio público promete que «cada camión y remolque
+necesita al menos cuatro fotos antes de activarse», y la portada mete las fotos en
+la lista de cosas que «se verifican automáticamente antes de asignar una carga».
+`equipment_media` estaba vacía. En el lote 57 dejé `insufficient_media` FUERA de
+los bloqueos precisamente para no prometer una puerta que no existía; este es ese
+cabo suelto, atado.
+
+**Se piden cuatro ÁNGULOS, no cuatro ficheros.** Frente, detrás, izquierda y
+derecha. «Al menos cuatro fotos» se cumple con cuatro fotos del mismo faro, y eso
+no sirve para nada: lo que hace falta —para una reclamación, para un seguro, para
+saber en qué estado salió la unidad— son los cuatro lados. Es más estricto que la
+frase y la cumple, y la pantalla dice cuál falta en vez de un número que no
+explica nada.
+
+Hay ángulos opcionales además de los obligatorios: placa del VIN, odómetro,
+daños, otro.
+
+Quitar una foto la MARCA como borrada; el fichero lo retira el barrido de
+huérfanos del lote 53. Una foto que documenta el estado de un camión el día que
+salió es exactamente el dato que alguien reclama nueve meses después.
+
+Se guarda el `sha256` del contenido: sirve para ver si dos fotos son la misma
+subida dos veces —que en un expediente de cuatro ángulos pasa— y para comprobar
+años después que el fichero del almacén sigue siendo el que se subió.
 
 ## Qué significa «verificada»
 
@@ -106,10 +134,9 @@ demostración tiene justo ese caso.
   propone VIN y a veces no, sin que quien lo usa sepa cuál de las dos cosas está
   pasando. La pantalla lo dice con todas las letras: «el sistema no lee el
   certificado: lo mira una persona».
-- **No hay fotos de la unidad.** `equipment_media` sigue vacía y `media_count` en
-  cero, así que `insufficient_media` NO es un motivo de bloqueo — no aparece en
-  `Eligibility` precisamente para no prometer una puerta que no existe. El
-  permiso `equipment:media:upload` ya está en la matriz, esperando.
+- **`media_count` de `equipment_verifications` sigue en cero.** Las fotos se
+  cuentan desde `equipment_media`, que es la fuente; esa columna era un contador
+  cacheado del que nadie depende y no se rellena.
 - **La verificación no caduca.** El estado `expired` del CHECK no lo escribe
   nadie. Cuando el certificado de seguro vence, la verificación hecha contra él
   sigue diciendo `verified`. Lo natural es engancharlo al barrido de avisos, que
