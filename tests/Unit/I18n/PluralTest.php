@@ -32,6 +32,7 @@ use App\Support\Plural;
 const INVARIABLES = [
     // Etiquetas ordinales: el número identifica, no cuenta.
     'carriers.form.contactN' => 'Rótulo: «Contacto 1», «Contacto 2».',
+    'customers.form.contactN' => 'Rótulo: «Contacto 1», «Contacto 2». Igual que el del transportista.',
     'loads.form.stopNumber' => 'Rótulo: «Parada 1», «Parada 2».',
     'loads.documents.stopOption' => 'Rótulo del desplegable: «Parada 2: Laredo, TX».',
     'loads.documents.forStop' => 'Rótulo de la ficha: «Parada 2 · Laredo, TX».',

@@ -15,14 +15,18 @@ use Illuminate\Support\Facades\DB;
  *
  * ## A quién
  *
- * Al contacto PRINCIPAL del cliente, y si no tiene, al correo del propio
+ * Al contacto que ESPERA la carga, elegido por su cargo — ver `PREFERENCIA` y
+ * `destinatario()`—; si el cliente no tiene contactos, al correo del propio
  * cliente. En ese orden y no al revés: `customers.email` suele ser la dirección
  * general de facturación, y el enlace de una carga concreta le sirve a quien la
  * espera, no a contabilidad.
  *
- * Si no hay ninguno de los dos, no se manda y no pasa nada malo. Una carga sin
- * dirección de contacto es un dato que falta, no un error que haya que gritar en
- * mitad de un despacho.
+ * Hasta el lote 64 esto era «el contacto principal», y en la práctica era
+ * siempre el correo general: no había forma de crear un contacto de cliente en
+ * toda la aplicación, así que la búsqueda no encontraba nunca a nadie.
+ *
+ * Si no hay ninguno de los dos, no se manda, y desde el lote 64 se DICE — antes
+ * el «no» se devolvía y quien llamaba lo tiraba.
  *
  * ## Cuándo
  *
@@ -40,33 +44,59 @@ use Illuminate\Support\Facades\DB;
 final class CustomerLink
 {
     /**
+     * Por cargo, a quién le sirve saber dónde va el camión.
+     *
+     * Contabilidad NO está en la lista, y esa ausencia es la decisión: se le
+     * escribe para cobrar, no para contarle que un camión salió de Laredo. Si
+     * no hay ninguno de estos, se cae al principal — ver `destinatario()`.
+     */
+    private const PREFERENCIA = ['traffic', 'dock', 'purchasing'];
+
+    /**
      * Manda el enlace de esta carga al cliente, si procede.
      *
-     * @return bool si se mandó
+     * ## Devuelve el MOTIVO, no un sí o un no
+     *
+     * Antes devolvía `bool` y quien llamaba lo tiraba. Los cuatro «no» son cosas
+     * distintas y solo una es un problema:
+     *
+     *  - `disabled` — la empresa apagó los enlaces públicos. Correcto.
+     *  - `alreadySent` — ya salió uno. Correcto: dos enlaces distintos para la
+     *    misma carga es cómo se consigue que el cliente abra el que no vale.
+     *  - `noRecipient` — el cliente no tiene ni un contacto con correo. Es un
+     *    dato que falta, y hay que decirlo.
+     *  - `failed` — el correo se intentó y no salió. Es el peor, y era el más
+     *    callado: quedaba una línea en el registro que no lee nadie, `sent_at`
+     *    en nulo, y el cliente esperando un aviso que el sitio público le había
+     *    prometido.
+     *
+     * @return 'sent'|'disabled'|'alreadySent'|'noRecipient'|'failed'
      */
-    public static function sendForLoad(string $tenantId, string $loadId, ?string $createdByUserId): bool
+    public static function sendForLoad(string $tenantId, string $loadId, ?string $createdByUserId): string
     {
         if (! TrackingLinks::enabledFor($tenantId)) {
-            return false;
+            return 'disabled';
         }
 
         if (self::yaSeMando($tenantId, $loadId)) {
-            return false;
+            return 'alreadySent';
         }
 
         $destinatario = self::destinatario($tenantId, $loadId);
 
         if ($destinatario === null) {
-            return false;
+            return 'noRecipient';
         }
 
-        return self::emitirYMandar(
+        $salio = self::emitirYMandar(
             $tenantId,
             $loadId,
             $destinatario['email'],
             $destinatario['locale'],
             $createdByUserId,
         );
+
+        return $salio ? 'sent' : 'failed';
     }
 
     /**
@@ -120,52 +150,99 @@ final class CustomerLink
         return $salio;
     }
 
-    /** @return array{email: string, locale: string}|null */
+    /**
+     * A quién y en qué idioma.
+     *
+     * ## A quién
+     *
+     * A quien ESPERA la carga, que no es lo mismo que quien la paga. Se busca
+     * por cargo y en este orden: tráfico, el muelle, compras, el principal, y
+     * cualquiera con correo. Contabilidad queda fuera de la preferencia a
+     * propósito: la factura es suya y el aviso de que un camión va de camino no.
+     *
+     * Es la misma forma de elegir que usa `InvoiceLink` para la factura, con la
+     * lista al revés — y no es casualidad que se parezcan: la pregunta «¿a quién
+     * de esta empresa le importa esto?» es la misma y solo cambia el esto.
+     *
+     * Si no hay ningún contacto, el correo general del cliente. En ese orden y
+     * no al revés: `customers.email` suele ser la dirección de facturación.
+     *
+     * ## En qué idioma
+     *
+     * En el DEL CONTACTO. Hasta este lote no había dónde guardarlo —ni
+     * `customers` ni `customer_contacts` tenían columna— y se caía al idioma de
+     * la empresa, así que una casa que trabaja en inglés les escribía en inglés
+     * a sus clientes hispanohablantes. Los transportistas y los conductores sí
+     * lo tenían; la asimetría no tenía ninguna razón de ser.
+     *
+     * Cuando se cae al correo general del cliente se usa
+     * `customers.preferred_locale`, que es el espejo del contacto principal.
+     *
+     * @return array{email: string, locale: string}|null
+     */
     private static function destinatario(string $tenantId, string $loadId): ?array
     {
         $cliente = DB::table('loads as l')
             ->join('customers as c', 'c.id', '=', 'l.customer_id')
             ->where('l.id', $loadId)
             ->where('l.tenant_id', $tenantId)
-            ->first(['c.id', 'c.email']);
+            ->first(['c.id', 'c.email', 'c.preferred_locale']);
 
         if ($cliente === null) {
             return null;
         }
 
-        $contacto = DB::table('customer_contacts')
+        $contactos = DB::table('customer_contacts')
             ->where('tenant_id', $tenantId)
             ->where('customer_id', $cliente->id)
             ->whereNull('deleted_at')
             ->whereNotNull('email')
-            ->orderByDesc('is_primary')
-            ->value('email');
+            ->where('email', '!=', '')
+            ->get(['email', 'position', 'preferred_locale', 'is_primary']);
 
-        $email = $contacto ?? $cliente->email;
+        $elegido = null;
 
-        if ($email === null || trim((string) $email) === '') {
+        foreach (self::PREFERENCIA as $cargo) {
+            $elegido = $contactos->firstWhere('position', $cargo);
+
+            if ($elegido !== null) {
+                break;
+            }
+        }
+
+        $elegido ??= $contactos->firstWhere('is_primary', 1) ?? $contactos->first();
+
+        if ($elegido !== null) {
+            return [
+                'email' => trim((string) $elegido->email),
+                'locale' => self::idiomaValido($elegido->preferred_locale),
+            ];
+        }
+
+        if ($cliente->email === null || trim((string) $cliente->email) === '') {
             return null;
         }
 
         return [
-            'email' => trim((string) $email),
-            'locale' => self::idiomaDeLaEmpresa($tenantId),
+            'email' => trim((string) $cliente->email),
+            'locale' => self::idiomaValido($cliente->preferred_locale),
         ];
     }
 
+    /** Un idioma que la aplicación sepa hablar, o el respaldo. */
+    private static function idiomaValido(mixed $locale): string
+    {
+        return in_array($locale, ['en', 'es'], true) ? (string) $locale : 'en';
+    }
+
     /**
-     * El idioma del correo.
+     * El idioma de la empresa, que ya solo se usa cuando no hay a quién
+     * preguntárselo: en `sendTo()`, donde alguien teclea una dirección suelta
+     * que no corresponde a ningún contacto.
      *
      * `tenants.default_locale`, y NO el idioma en que está trabajando quien
      * despacha: un despachador que tiene la aplicación en español no decide en
      * qué idioma lee su cliente.
-     *
-     * Es el mejor dato que hay hoy, y es peor de lo que debería: ni `customers`
-     * ni `customer_contacts` tienen columna de idioma, así que una casa que
-     * trabaja en inglés y tiene tres clientes hispanohablantes les escribe en
-     * inglés a los tres. `carriers` sí la tiene —«el idioma en el que se le
-     * escribe a esta persona»— y la asimetría no tiene ninguna razón de ser.
-     * Está en docs/tracking-link.md, en «lo que falta».
      */
     private static function idiomaDeLaEmpresa(string $tenantId): string
     {

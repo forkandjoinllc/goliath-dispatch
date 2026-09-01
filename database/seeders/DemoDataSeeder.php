@@ -702,6 +702,12 @@ class DemoDataSeeder extends Seeder
                 'key' => 'permian', 'name' => 'Permian Basin Equipment Co.',
                 'city' => 'Midland', 'state' => 'TX', 'zip' => '79706', 'line1' => '5900 West Industrial Avenue',
                 'email' => 'ap@permianequip.test', 'phone' => '+1 555 0201', 'terms' => 30, 'credit' => 25_000_00,
+                'locale' => 'en',
+                'contacts' => [
+                    ['Dana', 'Whitfield', 'dana.whitfield@permianequip.test', 'traffic', 'en'],
+                    ['Rosa', 'Cantú', 'rosa.cantu@permianequip.test', 'dock', 'es'],
+                    ['Alan', 'Petrov', 'ap@permianequip.test', 'billing', 'en'],
+                ],
                 'locations' => [
                     ['yard', 'Midland Yard', '5900 West Industrial Avenue', 'Midland', 'TX', '79706'],
                     ['plant', 'Odessa Fabrication Plant', '1400 North Grandview Avenue', 'Odessa', 'TX', '79761'],
@@ -711,6 +717,12 @@ class DemoDataSeeder extends Seeder
                 'key' => 'delgado', 'name' => 'Aceros Delgado S.A. de C.V.',
                 'city' => 'Laredo', 'state' => 'TX', 'zip' => '78041', 'line1' => '8100 San Dario Avenue',
                 'email' => 'cuentas@acerosdelgado.test', 'phone' => '+1 555 0212', 'terms' => 45, 'credit' => 60_000_00,
+                'locale' => 'es',
+                'contacts' => [
+                    ['Marisol', 'Delgado', 'marisol@acerosdelgado.test', 'traffic', 'es'],
+                    ['Javier', 'Ochoa', 'javier.ochoa@acerosdelgado.test', 'purchasing', 'es'],
+                    ['Kimberly', 'Reed', 'cuentas@acerosdelgado.test', 'billing', 'en'],
+                ],
                 'locations' => [
                     ['bodega', 'Bodega Laredo', '8100 San Dario Avenue', 'Laredo', 'TX', '78041'],
                     ['patio', 'Patio San Antonio', '4700 Rittiman Road', 'San Antonio', 'TX', '78218'],
@@ -720,6 +732,11 @@ class DemoDataSeeder extends Seeder
                 'key' => 'harborworks', 'name' => 'Harborworks Marine Fabrication LLC',
                 'city' => 'Savannah', 'state' => 'GA', 'zip' => '31404', 'line1' => '2200 President Street',
                 'email' => 'billing@harborworks.test', 'phone' => '+1 555 0223', 'terms' => 30, 'credit' => 40_000_00,
+                'locale' => 'en',
+                'contacts' => [
+                    ['Theodore', 'Hansen', 'ted.hansen@harborworks.test', 'traffic', 'en'],
+                    ['Ana', 'Beltrán', 'ana.beltran@harborworks.test', 'dock', 'es'],
+                ],
                 'locations' => [
                     ['dock', 'Savannah Dock 4', '2200 President Street', 'Savannah', 'GA', '31404'],
                     ['yard', 'Brunswick Lay-Down Yard', '1900 Newcastle Street', 'Brunswick', 'GA', '31520'],
@@ -729,6 +746,12 @@ class DemoDataSeeder extends Seeder
                 'key' => 'greatlakes', 'name' => 'Great Lakes Wind Components Inc.',
                 'city' => 'Gary', 'state' => 'IN', 'zip' => '46403', 'line1' => '6100 Industrial Highway',
                 'email' => 'accounts@glwindcomp.test', 'phone' => '+1 555 0234', 'terms' => 60, 'credit' => 120_000_00,
+                'locale' => 'en',
+                'contacts' => [
+                    ['Priya', 'Raman', 'priya.raman@glwindcomp.test', 'traffic', 'en'],
+                    ['Miguel', 'Sandoval', 'miguel.sandoval@glwindcomp.test', 'dock', 'es'],
+                    ['Grace', 'Okafor', 'accounts@glwindcomp.test', 'billing', 'en'],
+                ],
                 'locations' => [
                     ['plant', 'Gary Component Plant', '6100 Industrial Highway', 'Gary', 'IN', '46403'],
                     ['staging', 'Peoria Staging Field', '3300 West Farmington Road', 'Peoria', 'IL', '61604'],
@@ -755,8 +778,35 @@ class DemoDataSeeder extends Seeder
                 'credit_limit_cents' => $r['credit'],
                 'credit_approved' => true,
                 'payment_terms_days' => $r['terms'],
+                // El espejo del contacto principal, igual que en la aplicación.
+                'preferred_locale' => $r['locale'],
                 'status' => 'active',
             ]);
+
+            /*
+             * Los contactos, que hasta el lote 64 no existían: la tabla se leía
+             * en la ficha y en el envío del enlace de rastreo, y no la escribía
+             * nadie ni en la aplicación ni aquí.
+             *
+             * Se siembran MEZCLADOS de idioma a propósito. Una casa de despacho
+             * que trabaja en inglés y tiene al del muelle leyendo solo español
+             * es el caso normal en este negocio, y es justo el que hace visible
+             * que el idioma va por persona: si todos los contactos hablaran el
+             * idioma de su empresa, el demo no distinguiría «funciona» de «no
+             * hace nada».
+             */
+            foreach ($r['contacts'] as $i => [$nombre, $apellido, $correo, $cargo, $idioma]) {
+                $this->upsert('customer_contacts', [
+                    'customer_id' => $customerId,
+                    'email' => $correo,
+                ], [
+                    'first_name' => $nombre,
+                    'last_name' => $apellido,
+                    'position' => $cargo,
+                    'preferred_locale' => $idioma,
+                    'is_primary' => $i === 0,
+                ]);
+            }
 
             $locations = [];
 
@@ -1547,7 +1597,7 @@ class DemoDataSeeder extends Seeder
 
         $tablas = [
             'carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents',
-            'trucks', 'trailers', 'drivers', 'customers', 'customer_locations',
+            'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'customer_contacts',
             'loads', 'load_stops',
             // La mitad del dinero. Sin estas filas la demostración enseñaba
             // facturas, cobros y comisiones vacías, y los informes a cero.

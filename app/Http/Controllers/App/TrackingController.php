@@ -144,6 +144,17 @@ final class TrackingController
             // decir POR QUÉ no se puede empezar, no solo que no.
             'session' => $this->sessionPanel($actor, (string) $carga->id),
             'publicTrackingEnabled' => TrackingLinks::enabledFor((string) $actor->tenantId),
+            // La carga salió y al cliente no se le ha mandado NINGÚN enlace.
+            // Es la misma condición que busca el barrido diario, y esta es la
+            // pantalla a la que manda su aviso: conviene que al llegar se vea
+            // sin tener que leer la lista de abajo enlace por enlace.
+            // `EnumValue::of` y no `(string)`: `$carga` viene del modelo y
+            // `status` está casteado a LoadStatus. Un `(string)` sobre un enum
+            // es un Error en ejecución — un 500 con la pantalla en blanco— y lo
+            // cazó la suite, no yo. La misma trampa que documenta
+            // CarrierController::primaryFromColumns.
+            'linkNeverSent' => in_array(EnumValue::of($carga->status), self::EN_RUTA, true)
+                && ! collect($this->links($actor, (string) $carga->id))->contains(fn (array $l): bool => $l['sentAt'] !== null),
             'defaultTtlHours' => TrackingLinks::defaultTtlHours((string) $actor->tenantId),
             'can' => [
                 'manage' => $checker->can($actor, 'tracking:manage', null, $policy)->allowed,

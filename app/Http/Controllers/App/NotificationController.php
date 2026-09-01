@@ -50,6 +50,7 @@ final class NotificationController
         'document.expired',
         'carrier.reverification_due',
         'invoice.overdue',
+        'tracking.link_not_sent',
         'lead.assigned',
         'subscription.trial_ending',
         'subscription.trial_ended',

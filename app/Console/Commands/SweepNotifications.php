@@ -11,6 +11,7 @@ use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
 use App\Support\Tenancy\TenantPolicy;
+use App\Support\Tracking\TrackingLinks;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -48,7 +49,19 @@ final class SweepNotifications extends Command
         {--dry-run : Cuenta lo que avisaría sin escribir nada}
         {--tenant= : Barre solo esta empresa}';
 
-    protected $description = 'Avisa de documentos que caducan, transportistas por revalidar, facturas vencidas y pruebas que terminan';
+    protected $description = 'Avisa de documentos que caducan, transportistas por revalidar, facturas vencidas, pruebas que terminan y enlaces de rastreo que no salieron';
+
+    /**
+     * Estados en los que una carga ya salió y todavía importa avisar de ella.
+     *
+     * Fuera quedan `delivered` y `cancelled`: en la primera el enlace llega
+     * tarde y en la segunda no lleva a ninguna parte.
+     *
+     * @var list<string>
+     */
+    private const EN_LA_CARRETERA = [
+        'dispatched', 'en_route_to_pickup', 'at_pickup', 'in_transit', 'at_delivery',
+    ];
 
     /** Con cuánta antelación se avisa de que un periodo de prueba se acaba. */
     private const AVISO_PRUEBA_DIAS = 5;
@@ -91,7 +104,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -121,6 +134,7 @@ final class SweepNotifications extends Command
                 $totales['carriers'] += $this->transportistasPorRevalidar($tenantId, $dry);
                 $totales['invoices'] += $this->facturasVencidas($tenantId, $dry);
                 $totales['trials'] += $this->periodosDePrueba($tenantId, $dry);
+                $totales['links'] += $this->enlacesQueNoSalieron($tenantId, $dry);
             });
         }
 
@@ -132,7 +146,7 @@ final class SweepNotifications extends Command
         $this->resumen = ['tenants' => count($empresas)] + $totales;
 
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d%s',
+            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
@@ -140,6 +154,7 @@ final class SweepNotifications extends Command
             $totales['invoices'],
             $totales['trials'],
             $totales['revalidated'],
+            $totales['links'],
             $dry ? '  (simulacro: no se escribió nada)' : '',
         ));
 
@@ -330,6 +345,82 @@ final class SweepNotifications extends Command
      * vencidas ya está permanentemente a la vista en el panel, y repetir el
      * aviso cada mes solo lo convertiría en ruido.
      */
+    /**
+     * Cargas despachadas a las que nunca les salió el enlace de rastreo.
+     *
+     * ## Por qué hace falta
+     *
+     * El sitio público le promete al cliente final, en presente y sin
+     * condiciones, que «una vez despachada su carga, recibirá un enlace seguro
+     * por correo electrónico». El envío existe desde el lote 59 y funciona; lo
+     * que no había era qué pasa cuando NO funciona.
+     *
+     * Y cuando no funciona no pasaba nada: `sent_at` se quedaba en nulo, una
+     * línea en el registro que no lee nadie, y el cliente esperando. El aviso
+     * que ahora sale al despachar lo ve quien está delante en ese momento — y
+     * quien está delante puede estar despachando cinco cargas seguidas a las
+     * seis de la mañana. Esto es la red de abajo.
+     *
+     * ## Qué cuenta como «no salió»
+     *
+     * Una carga que pasó por despachada y que hoy no tiene NINGÚN enlace con
+     * `sent_at`. Da igual el motivo —correo caído, cliente sin contacto, enlace
+     * creado a mano y nunca mandado—: desde fuera es lo mismo, y lo que hay que
+     * hacer también.
+     *
+     * No se avisa de las canceladas ni de las entregadas hace tiempo: la
+     * primera ya no va a ninguna parte y en la segunda el enlace llega tarde.
+     * Y no se avisa si la empresa apagó los enlaces públicos, que entonces no
+     * hay ninguna promesa que cumplir.
+     */
+    private function enlacesQueNoSalieron(string $tenantId, bool $dry): int
+    {
+        if (! TrackingLinks::enabledFor($tenantId)) {
+            return 0;
+        }
+
+        $filas = DB::table('loads')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->whereIn('status', self::EN_LA_CARRETERA)
+            ->whereNotExists(fn ($q) => $q
+                ->selectRaw('1')
+                ->from('public_tracking_links')
+                ->whereColumn('public_tracking_links.load_id', 'loads.id')
+                ->whereNotNull('public_tracking_links.sent_at')
+                ->whereNull('public_tracking_links.deleted_at'))
+            ->orderBy('created_at')
+            ->limit(500)
+            ->get(['id', 'load_number']);
+
+        $escritos = 0;
+
+        foreach ($filas as $carga) {
+            if ($dry) {
+                $escritos++;
+
+                continue;
+            }
+
+            // La clave lleva la carga y nada más: se avisa UNA vez por carga.
+            // Con la fecha dentro, el mismo enlace que no salió volvería a
+            // avisar cada mañana hasta que alguien lo mandara, y una campana
+            // que repite deja de mirarse.
+            $escritos += Notifier::toPermissionHolders(
+                tenantId: $tenantId,
+                permission: 'tracking:read',
+                eventKey: 'tracking.link_not_sent',
+                dedupeKey: "tracking.link_not_sent:{$carga->id}",
+                params: ['number' => (string) $carga->load_number],
+                actionUrl: '/loads/'.$carga->id.'/tracking',
+                subjectType: 'load',
+                subjectId: (string) $carga->id,
+            );
+        }
+
+        return $escritos;
+    }
+
     private function facturasVencidas(string $tenantId, bool $dry): int
     {
         $hoy = CarbonImmutable::now()->toDateString();

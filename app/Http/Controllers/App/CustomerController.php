@@ -8,12 +8,15 @@ use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
+use App\Enums\CustomerContactPosition;
 use App\Enums\Scope;
 use App\Models\Customer;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Customers\NameKey;
 use App\Support\Geo\Regions;
+use Illuminate\Support\Str;
 use App\Support\InertiaPage;
+use App\Support\Locales;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -158,6 +161,9 @@ final class CustomerController
         return Inertia::render('App/Customers/Form', [
             'customer' => null,
             'prefill' => $this->prefillFromLead($request, $actor),
+            // La lista cerrada de cargos viaja como CLAVES: las traduce el
+            // cliente. Ver la convención de props traducidas.
+            'contactPositions' => CustomerContactPosition::values(),
             'canOverrideDuplicate' => $checker->can($actor, 'customer:duplicate:override', null, $current->policy())->allowed,
         ]);
     }
@@ -173,11 +179,15 @@ final class CustomerController
 
         $override = $this->resolveDuplicate($request, $checker, $actor, $policy, $key, null);
 
+        $contactos = $this->pullContacts($data);
+
         $customer = new Customer;
         $customer->fill($this->normalizeColumns($data, $key));
         $customer->duplicate_override_by_user_id = $override['userId'];
         $customer->duplicate_override_reason = $override['reason'];
         $customer->save();
+
+        $this->syncContacts($actor, $customer, $contactos);
 
         return redirect()
             ->route('customers.show', $customer->id)
@@ -194,6 +204,7 @@ final class CustomerController
 
         return Inertia::render('App/Customers/Form', [
             'customer' => $this->detail($model),
+            'contactPositions' => CustomerContactPosition::values(),
             'canOverrideDuplicate' => $checker->can($actor, 'customer:duplicate:override', $this->context($model), $current->policy())->allowed,
         ]);
     }
@@ -221,8 +232,12 @@ final class CustomerController
             }
         }
 
+        $contactos = $this->pullContacts($data);
+
         $model->fill($this->normalizeColumns($data, $key));
         $model->save();
+
+        $this->syncContacts($actor, $model, $contactos);
 
         return redirect()
             ->route('customers.show', $model->id)
@@ -443,6 +458,11 @@ final class CustomerController
             // qué. Guardarlo y no enseñarlo sería quedarse con lo peor de las
             // dos opciones: el dato ocupa sitio y nadie lo aprovecha.
             'duplicateOverrideReason' => $c->duplicate_override_reason,
+            // Los contactos viajan con la ficha porque el formulario los edita.
+            // Hasta este lote no había ninguno que editar: la tabla se leía y no
+            // la escribía nadie.
+            'contacts' => $this->contacts($c),
+            'preferredLocale' => (string) $c->preferred_locale,
             'createdAt' => $c->created_at?->toIso8601String(),
         ];
     }
@@ -473,6 +493,118 @@ final class CustomerController
     }
 
     /**
+     * Saca la lista de contactos de $data antes del fill().
+     *
+     * `contacts` no es una columna de `customers`. Si se queda dentro, el modo
+     * estricto de Eloquent —`preventSilentlyDiscardingAttributes`— convierte el
+     * guardado en una excepción. Misma razón y misma forma que en
+     * CarrierController.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>
+     */
+    private function pullContacts(array &$data): array
+    {
+        $contactos = $data['contacts'] ?? [];
+        unset($data['contacts']);
+
+        return array_values(is_array($contactos) ? $contactos : []);
+    }
+
+    /**
+     * Deja los contactos del cliente como los mandó el formulario.
+     *
+     * ## El defecto que arregla
+     *
+     * `customer_contacts` se LEÍA en dos sitios —la ficha del cliente y
+     * `CustomerLink`, que elige a quién mandarle el enlace de rastreo— y no la
+     * escribía nadie. No había en toda la aplicación una sola forma de dar de
+     * alta un contacto de cliente. La sección de la ficha salía vacía siempre, y
+     * el enlace acababa yendo al correo general del cliente, que suele ser el de
+     * facturación: la dirección menos indicada para avisar de que una carga va
+     * de camino.
+     *
+     * ## Cómo
+     *
+     * El primero de la lista es el principal: el ORDEN es el dato, no una
+     * casilla aparte que pueda contradecirlo. Se marca a todos como no
+     * principales antes de poner el nuevo, porque el índice único de la base no
+     * admite dos vivos y hacerlo al revés falla a mitad.
+     *
+     * Los que no vienen se borran EN SUAVE: un contacto nombrado en el
+     * historial de una carga tiene que poder seguir nombrándose.
+     *
+     * @param  list<array<string, mixed>>  $contacts
+     */
+    private function syncContacts(Actor $actor, Customer $customer, array $contacts): void
+    {
+        if ($contacts === []) {
+            return;
+        }
+
+        $ahora = now();
+        $vistos = [];
+
+        DB::table('customer_contacts')
+            ->where('tenant_id', $customer->tenant_id)
+            ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
+            ->update(['is_primary' => false, 'updated_at' => $ahora]);
+
+        foreach ($contacts as $indice => $contacto) {
+            $columnas = [
+                'first_name' => trim((string) ($contacto['first_name'] ?? '')),
+                'last_name' => trim((string) ($contacto['last_name'] ?? '')),
+                'email' => $contacto['email'] ?? null,
+                'phone' => $contacto['phone'] ?? null,
+                'position' => $contacto['position'] ?? CustomerContactPosition::Other->value,
+                'preferred_locale' => $contacto['preferred_locale'] ?? 'en',
+                'is_primary' => $indice === 0,
+                'updated_at' => $ahora,
+            ];
+
+            $id = $contacto['id'] ?? null;
+
+            $existente = $id === null ? null : DB::table('customer_contacts')
+                ->where('tenant_id', $customer->tenant_id)
+                ->where('customer_id', $customer->id)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first(['id']);
+
+            if ($existente !== null) {
+                DB::table('customer_contacts')->where('id', $existente->id)->update($columnas);
+                $vistos[] = (string) $existente->id;
+
+                continue;
+            }
+
+            $nuevo = (string) Str::uuid();
+
+            DB::table('customer_contacts')->insert([
+                ...$columnas,
+                'id' => $nuevo,
+                'tenant_id' => $customer->tenant_id,
+                'customer_id' => $customer->id,
+                'created_at' => $ahora,
+            ]);
+
+            $vistos[] = $nuevo;
+        }
+
+        DB::table('customer_contacts')
+            ->where('tenant_id', $customer->tenant_id)
+            ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
+            ->when($vistos !== [], fn ($q) => $q->whereNotIn('id', $vistos))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => $ahora,
+            ]);
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function contacts(Customer $c): array
@@ -482,13 +614,18 @@ final class CustomerController
             ->whereNull('deleted_at')
             ->orderByDesc('is_primary')
             ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'position', 'is_primary'])
+            ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'position', 'preferred_locale', 'is_primary'])
             ->map(fn ($k): array => [
                 'id' => (string) $k->id,
                 'name' => trim("{$k->first_name} {$k->last_name}"),
+                // Sueltos además del nombre junto: la ficha enseña el nombre y
+                // el formulario necesita los dos campos.
+                'firstName' => (string) $k->first_name,
+                'lastName' => (string) $k->last_name,
                 'email' => $k->email,
                 'phone' => $k->phone,
-                'position' => $k->position,
+                'position' => (string) $k->position,
+                'preferredLocale' => (string) $k->preferred_locale,
                 'isPrimary' => (bool) $k->is_primary,
             ])
             ->all();
@@ -521,6 +658,16 @@ final class CustomerController
      */
     private function validated(Request $request): array
     {
+        // `customers.preferred_locale` es el ESPEJO del contacto principal.
+        // Tener dos controles —uno de empresa y otro por persona— garantizaba
+        // que un día dijeran cosas distintas y nadie supiera cuál manda. Mismo
+        // criterio que en CarrierController.
+        $principal = $request->input('contacts.0.preferred_locale');
+
+        if (is_string($principal) && in_array($principal, Locales::all(), true)) {
+            $request->merge(['preferred_locale' => $principal]);
+        }
+
         return $request->validate([
             'company_name' => ['required', 'string', 'max:200'],
             'website' => ['nullable', 'url', 'max:255'],
@@ -552,6 +699,22 @@ final class CustomerController
             'factoring_company_name' => ['nullable', 'string', 'max:200'],
             'status' => ['required', 'in:active,inactive,on_hold'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'preferred_locale' => ['nullable', Rule::in(Locales::all())],
+
+            // Los contactos. El primero es el principal — el orden de la lista
+            // es el dato, no una casilla aparte que pueda contradecirlo.
+            'contacts' => ['array', 'max:20'],
+            'contacts.*.id' => ['nullable', 'uuid'],
+            'contacts.*.first_name' => ['required', 'string', 'max:100'],
+            'contacts.*.last_name' => ['required', 'string', 'max:100'],
+            'contacts.*.email' => ['nullable', 'email:rfc', 'max:255'],
+            'contacts.*.phone' => ['nullable', 'string', 'max:32'],
+            // Lista cerrada, porque DECIDE algo: el enlace de rastreo va a
+            // quien espera la carga y la factura a quien la paga.
+            'contacts.*.position' => ['required', Rule::in(CustomerContactPosition::values())],
+            // El idioma es POR PERSONA. Quien lleva las compras puede trabajar
+            // en inglés y el del muelle leer solo español.
+            'contacts.*.preferred_locale' => ['required', Rule::in(Locales::all())],
         ]);
     }
 

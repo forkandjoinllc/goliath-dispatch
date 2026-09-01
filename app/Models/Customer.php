@@ -31,6 +31,10 @@ final class Customer extends BaseModel
         'phone_normalized',
         'email',
         'email_normalized',
+        // El idioma en que se le escribe. Es el ESPEJO del contacto principal:
+        // lo pone el controlador desde `contacts.0`, no un campo suelto que
+        // pueda contradecirlo.
+        'preferred_locale',
         'physical_line1',
         'physical_line2',
         'physical_city',

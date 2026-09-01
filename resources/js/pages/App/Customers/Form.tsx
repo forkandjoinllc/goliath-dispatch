@@ -14,6 +14,17 @@ interface Address {
   country: string | null
 }
 
+interface ContactRow {
+  id: string
+  firstName: string
+  lastName: string
+  email: string | null
+  phone: string | null
+  position: string
+  preferredLocale: string
+  isPrimary: boolean
+}
+
 interface CustomerDetail {
   id: string
   companyName: string
@@ -31,6 +42,7 @@ interface CustomerDetail {
   usesFactoring: boolean
   factoringCompanyName: string | null
   notes: string | null
+  contacts: ContactRow[]
 }
 
 interface Props {
@@ -41,6 +53,8 @@ interface Props {
    * campo del que depende la detección de duplicados.
    */
   prefill?: { company_name: string; email: string; phone: string } | null
+  /** Claves de la lista cerrada de cargos. Las traduce esta pantalla. */
+  contactPositions: string[]
   canOverrideDuplicate: boolean
 }
 
@@ -56,10 +70,34 @@ interface Props {
  * duplicado» visible desde el principio invita a rellenarlo por costumbre, y
  * entonces deja de significar nada.
  */
-export default function CustomerForm({ customer, prefill = null, canOverrideDuplicate }: Props) {
+export default function CustomerForm({ customer, prefill = null, contactPositions, canOverrideDuplicate }: Props) {
   const { t } = useI18n()
   // `customer` va primero en cada `??`: al editar, el prospecto no pinta nada.
   const editing = customer !== null
+
+  // Siempre hay al menos una fila. Un cliente sin ningún contacto es lo que
+  // había antes de este lote, y es lo que hacía que el enlace de rastreo
+  // acabara en el correo de facturación.
+  const contactosIniciales =
+    customer !== null && customer.contacts.length > 0
+      ? customer.contacts.map((c) => ({
+          id: c.id as string | null,
+          first_name: c.firstName,
+          last_name: c.lastName,
+          email: c.email ?? '',
+          phone: c.phone ?? '',
+          position: c.position,
+          preferred_locale: c.preferredLocale,
+        }))
+      : [{
+          id: null as string | null,
+          first_name: '',
+          last_name: '',
+          email: prefill?.email ?? '',
+          phone: prefill?.phone ?? '',
+          position: 'traffic',
+          preferred_locale: 'en',
+        }]
 
   const form = useForm({
     company_name: customer?.companyName ?? prefill?.company_name ?? '',
@@ -92,8 +130,27 @@ export default function CustomerForm({ customer, prefill = null, canOverrideDupl
     factoring_company_name: customer?.factoringCompanyName ?? '',
     status: customer?.status ?? 'active',
     notes: customer?.notes ?? '',
+    contacts: contactosIniciales,
     duplicate_override_reason: '',
   })
+
+  const patchContact = (index: number, patch: Partial<(typeof contactosIniciales)[number]>) =>
+    form.setData(
+      'contacts',
+      form.data.contacts.map((c, i) => (i === index ? { ...c, ...patch } : c)),
+    )
+
+  const addContact = () =>
+    form.setData('contacts', [
+      ...form.data.contacts,
+      { id: null, first_name: '', last_name: '', email: '', phone: '', position: 'other', preferred_locale: 'en' },
+    ])
+
+  const removeContact = (index: number) =>
+    form.setData(
+      'contacts',
+      form.data.contacts.filter((_, i) => i !== index),
+    )
 
   // El servidor solo devuelve este error cuando hay un parecido Y el usuario
   // puede anularlo. Su presencia es la señal para enseñar el campo.
@@ -275,6 +332,113 @@ export default function CustomerForm({ customer, prefill = null, canOverrideDupl
               />
             </>
           ) : null}
+        </Section>
+
+        <Section title={t('customers.form.contacts')}>
+          <div className="sm:col-span-2 flex flex-col gap-4">
+            {/* Quién es quién en la empresa del cliente. Hasta este lote la
+                tabla se leía y no la escribía nadie: la lista de la ficha salía
+                vacía siempre y el enlace de rastreo acababa en el correo
+                general, que suele ser el de facturación. */}
+            <p className="text-sm text-steel-700">{t('customers.form.contactsHint')}</p>
+
+            {form.data.contacts.map((c, i) => (
+              <div key={i} className="rounded border border-steel-200 bg-steel-50/60 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-safety-600">
+                    {i === 0
+                      ? t('customers.form.primaryContact')
+                      : t('customers.form.contactN', { n: String(i + 1) })}
+                  </span>
+                  {i > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeContact(i)}
+                      className="text-xs font-medium text-danger-700 underline transition hover:text-danger-900"
+                    >
+                      {t('customers.form.removeContact')}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <TextField
+                    label={t('customers.form.firstName')}
+                    required
+                    maxLength={100}
+                    value={c.first_name}
+                    onChange={(e) => patchContact(i, { first_name: e.target.value })}
+                    error={form.errors[`contacts.${i}.first_name` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('customers.form.lastName')}
+                    required
+                    maxLength={100}
+                    value={c.last_name}
+                    onChange={(e) => patchContact(i, { last_name: e.target.value })}
+                    error={form.errors[`contacts.${i}.last_name` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('customers.form.contactEmail')}
+                    type="email"
+                    maxLength={255}
+                    /* Sin correo no se le puede mandar el enlace, y se dice
+                       aquí en vez de dejar que lo descubra el que espera un
+                       aviso que nunca llega. */
+                    hint={t('customers.form.contactEmailHint')}
+                    value={c.email}
+                    onChange={(e) => patchContact(i, { email: e.target.value })}
+                    error={form.errors[`contacts.${i}.email` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <TextField
+                    label={t('customers.form.contactPhone')}
+                    type="tel"
+                    maxLength={32}
+                    value={c.phone}
+                    onChange={(e) => patchContact(i, { phone: e.target.value })}
+                    error={form.errors[`contacts.${i}.phone` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <SelectField
+                    label={t('customers.form.position')}
+                    hint={t('customers.form.positionHint')}
+                    required
+                    value={c.position}
+                    onChange={(e) => patchContact(i, { position: e.target.value })}
+                    options={contactPositions.map((p) => ({
+                      value: p,
+                      label: t(`customers.positions.${p}`),
+                    }))}
+                    error={form.errors[`contacts.${i}.position` as keyof typeof form.errors] as string | undefined}
+                  />
+                  <SelectField
+                    label={t('customers.form.contactLocale')}
+                    /* Por persona, no por empresa: quien lleva las compras puede
+                       trabajar en inglés y el del muelle leer solo español. El
+                       del primer contacto es además el idioma de la ficha. */
+                    hint={i === 0 ? t('customers.form.contactLocalePrimaryHint') : t('customers.form.contactLocaleHint')}
+                    required
+                    value={c.preferred_locale}
+                    onChange={(e) => patchContact(i, { preferred_locale: e.target.value })}
+                    options={[
+                      { value: 'en', label: 'English' },
+                      { value: 'es', label: 'Español' },
+                    ]}
+                    error={form.errors[`contacts.${i}.preferred_locale` as keyof typeof form.errors] as string | undefined}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <div>
+              <button
+                type="button"
+                onClick={addContact}
+                className="rounded border border-steel-300 bg-white px-4 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+              >
+                {t('customers.form.addContact')}
+              </button>
+            </div>
+          </div>
         </Section>
 
         <Section title={t('customers.form.commercial')}>

@@ -27,7 +27,7 @@ export interface SharedProps {
   auth: { user: AuthUser | null }
   /** El armazón autenticado. Null en el sitio público — ver App\Support\AppShell. */
   shell: Shell | null
-  flash: { success: string | null; error: string | null }
+  flash: { success: string | null; error: string | null; warning: string | null }
   ziggy: ZiggyConfig & { location: string }
   [key: string]: unknown
 }

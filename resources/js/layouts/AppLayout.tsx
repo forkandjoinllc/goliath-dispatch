@@ -131,6 +131,14 @@ export function AppLayout({
                   {flash.success}
                 </p>
               ) : null}
+              {/* Ni éxito ni error: la operación salió y algo de lo que
+                  arrastraba no. Ámbar y `role="status"`, no `alert`: no ha
+                  fallado nada que haya que deshacer. */}
+              {flash.warning ? (
+                <p role="status" className="mt-4 rounded border-l-4 border-warning-500 bg-warning-50 p-3 text-sm text-carbon">
+                  {flash.warning}
+                </p>
+              ) : null}
               {flash.error ? (
                 <p role="alert" className="mt-4 rounded border-l-4 border-danger-500 bg-danger-50 p-3 text-sm text-carbon">
                   {flash.error}

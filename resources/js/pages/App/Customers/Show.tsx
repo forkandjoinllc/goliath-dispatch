@@ -54,6 +54,8 @@ interface Contact {
   email: string | null
   phone: string | null
   position: string | null
+  /** El idioma en que se le escribe. Decide el del enlace de rastreo. */
+  preferredLocale: string
   isPrimary: boolean
 }
 
@@ -213,9 +215,17 @@ export default function CustomerShow({ customer, locations, contacts, loads, can
                 {contacts.map((k) => (
                   <li key={k.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
                     <span className="font-medium text-carbon">{k.name}</span>
+                    {/* El cargo es una CLAVE de una lista cerrada desde este
+                        lote, no texto libre: pintarlo tal cual enseñaba
+                        «traffic» en las dos pantallas y en los dos idiomas. */}
                     {k.position ? (
-                      <span className="text-xs text-steel-600">{k.position}</span>
+                      <span className="text-xs text-steel-600">{t(`customers.positions.${k.position}`)}</span>
                     ) : null}
+                    {/* El idioma se enseña porque DECIDE algo: es en el que
+                        esta persona recibe el enlace de rastreo. */}
+                    <span className="rounded bg-steel-100 px-1.5 py-0.5 text-[11px] font-medium uppercase text-steel-700">
+                      {k.preferredLocale}
+                    </span>
                     <span className="ml-auto text-xs text-steel-600">{k.email ?? k.phone ?? ''}</span>
                   </li>
                 ))}

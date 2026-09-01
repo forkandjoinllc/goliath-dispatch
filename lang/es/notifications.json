@@ -1,89 +1,98 @@
 {
-  "index": {
-    "title": "Avisos",
-    "subtitle": "Lo que el sistema ha visto mientras nadie miraba.",
-    "unreadOnly": "Solo sin leer",
-    "all": "Todos",
-    "markRead": "Marcar como leído",
-    "markAllRead": "Marcar todos como leídos",
-    "empty": "Nada que contar.",
-    "emptyUnread": "Nada sin leer.",
-    "open": "Abrir"
-  },
-  "bell": {
-    "label": "Avisos",
-    "unread": "{n} sin leer",
-    "none": "Ningún aviso sin leer"
-  },
-  "preferences": {
-    "title": "De qué se le avisa",
-    "hint": "Solo para usted, y en esta empresa. Dentro de la aplicación y por correo van activados salvo que los apague.",
-    "inApp": "En la aplicación",
-    "email": "Correo",
-    "saved": "Guardado.",
-    "save": "Guardar"
-  },
-  "events": {
-    "document": {
-      "expiring": {
-        "title": "Caduca un documento: {title}",
-        "body": "«{title}» caduca el {date}. Suba una renovación antes de que venza."
-      },
-      "expired": {
-        "title": "Documento caducado: {title}",
-        "body": "«{title}» caducó el {date}. Hasta que se suba y se apruebe una versión vigente, cuenta como no presentado."
-      }
+    "index": {
+        "title": "Avisos",
+        "subtitle": "Lo que el sistema ha visto mientras nadie miraba.",
+        "unreadOnly": "Solo sin leer",
+        "all": "Todos",
+        "markRead": "Marcar como leído",
+        "markAllRead": "Marcar todos como leídos",
+        "empty": "Nada que contar.",
+        "emptyUnread": "Nada sin leer.",
+        "open": "Abrir"
     },
-    "carrier": {
-      "reverification_due": {
-        "title": "Transportista por revalidar: {name}",
-        "body": "{name} no tiene comprobación en FMCSA dentro del plazo que fijó su empresa."
-      }
+    "bell": {
+        "label": "Avisos",
+        "unread": "{n} sin leer",
+        "none": "Ningún aviso sin leer"
     },
-    "invoice": {
-      "overdue": {
-        "title": "Factura vencida: {number}",
-        "body": "La factura {number} venció el {date} y sigue con saldo pendiente."
-      }
+    "preferences": {
+        "title": "De qué se le avisa",
+        "hint": "Solo para usted, y en esta empresa. Dentro de la aplicación y por correo van activados salvo que los apague.",
+        "inApp": "En la aplicación",
+        "email": "Correo",
+        "saved": "Guardado.",
+        "save": "Guardar"
     },
-    "lead": {
-      "assigned": {
-        "title": "Le han asignado un prospecto",
-        "body": "{name} pasa a ser suyo para darle seguimiento."
-      }
+    "events": {
+        "carrier": {
+            "reverification_due": {
+                "title": "Transportista por revalidar: {name}",
+                "body": "{name} no tiene comprobación en FMCSA dentro del plazo que fijó su empresa."
+            }
+        },
+        "document": {
+            "expiring": {
+                "title": "Caduca un documento: {title}",
+                "body": "«{title}» caduca el {date}. Suba una renovación antes de que venza."
+            },
+            "expired": {
+                "title": "Documento caducado: {title}",
+                "body": "«{title}» caducó el {date}. Hasta que se suba y se apruebe una versión vigente, cuenta como no presentado."
+            }
+        },
+        "invoice": {
+            "overdue": {
+                "title": "Factura vencida: {number}",
+                "body": "La factura {number} venció el {date} y sigue con saldo pendiente."
+            }
+        },
+        "lead": {
+            "assigned": {
+                "title": "Le han asignado un prospecto",
+                "body": "{name} pasa a ser suyo para darle seguimiento."
+            }
+        },
+        "subscription": {
+            "trial_ending": {
+                "title": "Su periodo de prueba acaba el {date}",
+                "body": "A partir de esa fecha la cuenta queda como impagada hasta resolver el cobro. No se borra nada."
+            },
+            "trial_ended": {
+                "title": "Su periodo de prueba acabó el {date}",
+                "body": "La cuenta queda como impagada. No se ha borrado nada ni se ha dejado a nadie fuera."
+            }
+        },
+        "tracking": {
+            "link_not_sent": {
+                "title": "Al cliente no le llegó el rastreo: {number}",
+                "body": "La carga {number} salió y no se le mandó al cliente el enlace de rastreo. El sitio público le promete que lo recibirá al despacharse."
+            }
+        }
     },
-    "subscription": {
-      "trial_ending": {
-        "title": "Su periodo de prueba acaba el {date}",
-        "body": "A partir de esa fecha la cuenta queda como impagada hasta resolver el cobro. No se borra nada."
-      },
-      "trial_ended": {
-        "title": "Su periodo de prueba acabó el {date}",
-        "body": "La cuenta queda como impagada. No se ha borrado nada ni se ha dejado a nadie fuera."
-      }
+    "eventNames": {
+        "carrier": {
+            "reverification_due": "Transportistas por revalidar"
+        },
+        "document": {
+            "expiring": "Documentos que caducan",
+            "expired": "Documentos ya caducados"
+        },
+        "invoice": {
+            "overdue": "Facturas vencidas"
+        },
+        "lead": {
+            "assigned": "Un prospecto asignado a usted"
+        },
+        "subscription": {
+            "trial_ending": "Su prueba se acaba",
+            "trial_ended": "Su prueba acabó"
+        },
+        "tracking": {
+            "link_not_sent": "Enlaces de rastreo que no salieron"
+        }
+    },
+    "flash": {
+        "read": "Marcado como leído.",
+        "allRead": "Todos marcados como leídos."
     }
-  },
-  "eventNames": {
-    "document": {
-      "expiring": "Documentos que caducan",
-      "expired": "Documentos ya caducados"
-    },
-    "carrier": {
-      "reverification_due": "Transportistas por revalidar"
-    },
-    "invoice": {
-      "overdue": "Facturas vencidas"
-    },
-    "lead": {
-      "assigned": "Un prospecto asignado a usted"
-    },
-    "subscription": {
-      "trial_ending": "Su prueba se acaba",
-      "trial_ended": "Su prueba acabó"
-    }
-  },
-  "flash": {
-    "read": "Marcado como leído.",
-    "allRead": "Todos marcados como leídos."
-  }
 }

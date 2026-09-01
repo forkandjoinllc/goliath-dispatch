@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1203 tests, 7435 assertions)
+OK (1216 tests, 7484 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote de las posiciones de rastreo.
+(Cifra del 1 de septiembre, tras el lote de la voz del cliente.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -1162,6 +1162,60 @@ La pantalla ofrecía «Anotar llegada» en las dos paradas, y el servidor rechaz
 segunda mientras la primera no esté anotada. Es la misma lección del desplegable
 que no coincidía con la puerta de asignación (lote 57), y volvió a encontrarla el
 navegador.
+
+## Lecciones del lote de la voz del cliente (64)
+
+### Un mensaje de fallo dentro de un matcher variádico anula la aserción
+
+`expect($x)->not->toContain('billing', 'mensaje de fallo…')` **no** hace lo que
+parece. `toContain` es variádico: el mensaje se toma por una segunda aguja, y la
+negación pasa a ser «no contiene AMBAS». Como el mensaje nunca está en el texto,
+la aserción es cierta siempre.
+
+La prueba estaba en verde con el defecto puesto. Lo descubrió el sabotaje, que es
+justo para lo que existe: **una prueba que no se ha visto fallar no se ha
+visto**. Donde haga falta un mensaje, `expect(str_contains(...))->toBeFalse('…')`.
+
+### `Mail::fake()` no ve un correo mandado con `Mail::raw()`
+
+Solo registra Mailables. Para un envío en crudo hay que escuchar el suceso
+`MessageSending`, que sí se dispara — y entonces **no** se puede llamar a
+`Mail::fake()`, porque el falso no manda nada y el suceso no llega a existir. En
+pruebas el transporte ya es `array`, así que no hace falta falsear nada.
+
+Y el cuerpo se lee con `getTextBody()`: `getBody()` devuelve una parte MIME, y un
+`(string)` sobre ella es un error en ejecución.
+
+### `(string)` sobre una columna casteada a enum es un 500
+
+`$carga->status` viene de un modelo y está casteado a `LoadStatus`. Un `(string)`
+encima no es una conversión torpe: es un `Error` de PHP, o sea una pantalla en
+blanco. Se usa `EnumValue::of()`.
+
+Esta vez lo cazó la suite —cuatro pruebas de rastreo se pusieron rojas de golpe
+por un 500— y no el navegador, que es la excepción agradable de las últimas diez
+entregas. El mismo caso está documentado desde hace lotes en
+`CarrierController::primaryFromColumns`, y aun así volvió a pasar: una trampa
+documentada sigue siendo una trampa.
+
+### Cambiar el tipo de retorno rompe las pruebas que lo asumían, y está bien
+
+`CustomerLink::sendForLoad()` pasó de `bool` a devolver el motivo. La prueba que
+decía `->toBeTrue()` se puso roja inmediatamente, y ese fallo es la señal
+correcta: alguien tiene que releer qué esperaba. Es lo contrario del cambio que
+se cuela porque el tipo seguía encajando.
+
+### El escenario de pruebas es un caso, no el caso
+
+Van dos lotes seguidos con esto. En el 63, `Scenario` escribe ciudad y estado a
+mano en las paradas, y el código nuevo leía solo esa columna: en el demo —que usa
+ubicaciones del cliente— el lugar salía en blanco. En el 64, `Scenario` crea
+clientes sin contactos, que era exactamente el estado que el lote venía a
+arreglar.
+
+Cuando un lote cambia de dónde sale un dato, hay que sembrar el caso nuevo en el
+demo y mirarlo con el navegador. La suite verde solo dice que el caso viejo sigue
+funcionando.
 
 ## Qué falta
 

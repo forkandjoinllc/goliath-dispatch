@@ -60,6 +60,8 @@ interface Props {
   checkCalls: CheckCall[]
   links: TrackingLink[]
   publicTrackingEnabled: boolean
+  /** La carga va en camino y al cliente no se le ha mandado ningún enlace. */
+  linkNeverSent: boolean
   defaultTtlHours: number
   newLinkUrl: string | null
   session: {
@@ -87,7 +89,7 @@ interface Props {
 }
 
 export default function TrackingShow({
-  load, stops, timeline, checkCalls, links, publicTrackingEnabled, defaultTtlHours, newLinkUrl, session, can,
+  load, stops, timeline, checkCalls, links, publicTrackingEnabled, linkNeverSent, defaultTtlHours, newLinkUrl, session, can,
 }: Props) {
   const { t } = useI18n()
 
@@ -111,6 +113,16 @@ export default function TrackingShow({
             <p className="text-sm font-semibold text-carbon">{t('tracking.publicLink.rawTokenWarning')}</p>
             <p className="mt-2 break-all font-mono text-sm text-navy-800">{nuevoEnlace}</p>
           </div>
+        ) : null}
+
+        {/* Lo primero de la pantalla cuando pasa, porque es lo que hay que
+            arreglar y porque aquí llega quien pulsó el aviso del barrido. El
+            sitio público le promete al cliente que recibe el enlace al
+            despacharse la carga. */}
+        {linkNeverSent && publicTrackingEnabled ? (
+          <p className="rounded border-l-4 border-warning-500 bg-warning-50 p-3 text-sm text-carbon">
+            {t('tracking.publicLink.neverSentWarning')}
+          </p>
         ) : null}
 
         <Sesion load={load} session={session} puede={can.manage} />

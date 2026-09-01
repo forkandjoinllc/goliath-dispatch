@@ -83,6 +83,17 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                /*
+                 * Un tercer canal, y hacía falta uno.
+                 *
+                 * Hay resultados que no son ninguna de las dos cosas: la carga
+                 * se despachó —éxito— y al cliente no se le pudo avisar. Con
+                 * dos canales eso obligaba a elegir entre callarlo o teñir de
+                 * rojo una operación que salió bien, y lo primero era lo que
+                 * pasaba: el fallo del correo quedaba en el registro y nadie lo
+                 * veía.
+                 */
+                'warning' => fn () => $request->session()->get('warning'),
             ],
         ];
     }

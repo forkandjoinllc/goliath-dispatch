@@ -534,17 +534,43 @@ final class LoadController
         // Esto es la promesa que el sitio público hace en cinco sitios: «una vez
         // despachada su carga, recibirá un enlace seguro por correo». Hasta el
         // lote 59 no salía ninguno. Ver App\Support\Tracking\CustomerLink.
+        $enlace = null;
+
         if ($action === 'dispatched') {
-            CustomerLink::sendForLoad(
+            $enlace = CustomerLink::sendForLoad(
                 (string) $model->tenant_id,
                 (string) $model->id,
                 $actor->auditUserId(),
             );
         }
 
-        return back()->with('success', __('loads.transition.done', [
-            'status' => __("nav.status.load.{$target->value}"),
-        ]));
+        $hecho = __('loads.transition.done', ['status' => __("nav.status.load.{$target->value}")]);
+
+        /*
+         * Y se DICE si el enlace salió.
+         *
+         * Antes el resultado se tiraba: si el correo fallaba quedaba una línea
+         * en el registro que no lee nadie, `sent_at` en nulo y el cliente
+         * esperando un aviso que el sitio público le había prometido. Quien
+         * despacha está delante en ese momento y es quien puede arreglarlo —
+         * reenviar desde la pantalla de rastreo, o darle un correo al cliente—,
+         * así que es a quien hay que contárselo.
+         *
+         * Los dos «no» que son correctos —la empresa apagó los enlaces, o ya
+         * salió uno— no dicen nada: un aviso que aparece cuando todo va bien
+         * deja de leerse, y entonces tampoco se lee el que importa.
+         */
+        if ($enlace === 'sent') {
+            return back()->with('success', $hecho.' '.__('loads.transition.linkSent'));
+        }
+
+        if ($enlace === 'noRecipient' || $enlace === 'failed') {
+            return back()
+                ->with('success', $hecho)
+                ->with('warning', __("loads.transition.link.{$enlace}"));
+        }
+
+        return back()->with('success', $hecho);
     }
 
     // ------------------------------------------------------------------ interno

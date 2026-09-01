@@ -86,19 +86,21 @@ filtrar por correo lo que la página controla.
 
 ## Lo que falta
 
-- **El idioma es por empresa, no por cliente.** Ni `customers` ni
-  `customer_contacts` tienen columna de idioma, así que una casa que trabaja en
-  inglés escribe en inglés también a sus clientes hispanohablantes. `carriers` sí
-  la tiene —«el idioma en el que se le escribe a esta persona»— y la asimetría no
-  tiene ninguna razón de ser.
+- ~~El idioma es por empresa, no por cliente.~~ Hecho en el lote 64:
+  `customers` y `customer_contacts` tienen su columna, el enlace se manda en el
+  idioma del contacto que lo recibe, y el destinatario se elige por cargo — a
+  quien espera la carga, no a contabilidad. Ver docs/customer-voice.md.
 - ~~El correo no lleva la cara de la empresa.~~ Hecho en el lote 61: el asunto y
   el cuerpo los puede escribir la empresa, y su pie va al final. Ver
   docs/branding.md — el logo sigue sin viajar dentro del correo, y ahí se explica
   por qué.
 - **No se avisa de nada más.** Solo el despacho manda correo al cliente. Ni la
   entrega, ni un retraso, ni el comprobante.
-- **No hay reintento.** Si el correo falla, falla: queda el `sent_at` en nulo y
-  alguien tiene que darse cuenta. La tabla `job_queue` existe y está vacía.
+- **No hay reintento.** Si el correo falla, falla, y alguien tiene que
+  reenviarlo a mano. Lo que ya no pasa —desde el lote 64— es que no se entere
+  nadie: quien despacha lo ve en el momento, la pantalla de rastreo lo dice
+  mientras la carga siga en la carretera, y el barrido diario lo saca por la
+  campana. La tabla `job_queue` existe y sigue vacía.
 
 ## Dónde vive
 

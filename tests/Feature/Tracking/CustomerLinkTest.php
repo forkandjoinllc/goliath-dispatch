@@ -80,8 +80,10 @@ it('no manda dos veces la misma carga', function () {
     $tenantId = (string) $this->scenario->tenant->id;
     $loadId = (string) $this->scenario->load->id;
 
-    expect(CustomerLink::sendForLoad($tenantId, $loadId, null))->toBeTrue()
-        ->and(CustomerLink::sendForLoad($tenantId, $loadId, null))->toBeFalse();
+    // Desde el lote 64 devuelve el MOTIVO y no un sí o un no: los cuatro «no»
+    // son cosas distintas y solo dos son un problema.
+    expect(CustomerLink::sendForLoad($tenantId, $loadId, null))->toBe('sent')
+        ->and(CustomerLink::sendForLoad($tenantId, $loadId, null))->toBe('alreadySent');
 
     expect(DB::table('public_tracking_links')->where('load_id', $loadId)->count())->toBe(1);
 });
