@@ -13,8 +13,14 @@ use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\TenantContext;
+use App\Services\Tracking\PositionReport;
+use App\Services\Tracking\StopDerivedTrackingProvider;
+use App\Services\Tracking\TrackingProvider;
 use App\Support\Tracking\Consent;
 use App\Support\Tracking\CustomerLink;
+use App\Support\Tracking\Ingestion;
+use App\Support\Tracking\StopProgress;
+use App\Support\Tracking\Timeline;
 use App\Support\Tracking\Sessions;
 use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
@@ -126,6 +132,7 @@ final class TrackingController
                 'status' => EnumValue::of($carga->status),
             ],
             'stops' => $this->stops($actor, (string) $carga->id),
+            'timeline' => Timeline::paraDespacho((string) $actor->tenantId, (string) $carga->id),
             'checkCalls' => $this->checkCalls($actor, (string) $carga->id),
             'links' => $this->links($actor, (string) $carga->id),
             // El enlace recién creado llega por el flash de la sesión y se lee
@@ -171,9 +178,10 @@ final class TrackingController
         ]);
 
         $ahora = CarbonImmutable::now();
+        $llamadaId = (string) Str::uuid();
 
         DB::table('check_calls')->insert([
-            'id' => (string) Str::uuid(),
+            'id' => $llamadaId,
             'tenant_id' => $actor->tenantId,
             'load_id' => $carga->id,
             'scheduled_for' => CarbonImmutable::parse($data['scheduled_for']),
@@ -185,6 +193,14 @@ final class TrackingController
             'created_at' => $ahora,
             'updated_at' => $ahora,
         ]);
+
+        // Una llamada de control HECHA con un sitio anotado es un parte de
+        // posición: alguien llamó y el conductor dijo dónde estaba. Que viva
+        // también en la línea de tiempo es lo que hace que el cliente vea ese
+        // dato — hasta ahora la página pública enseñaba la última llamada y nada
+        // más, y las llamadas y los sucesos eran dos historias separadas de la
+        // misma carga.
+        $this->anotarLlamada($actor, (string) $carga->id, $llamadaId, $data['location_summary'] ?? null, $data['completed'] ? $ahora : null);
 
         return back()->with('success', __('tracking.checkCalls.saved'));
     }
@@ -232,9 +248,174 @@ final class TrackingController
             return back()->with('error', __('tracking.checkCalls.alreadyDone'));
         }
 
+        // Se relee el sitio en vez de usar `$data`: al completar se puede no
+        // mandar `location_summary`, y entonces el que vale es el que la llamada
+        // ya tuviera. `DB::raw('location_summary')` arriba lo conserva, y aquí
+        // habría que adivinarlo.
+        $guardado = DB::table('check_calls')->where('id', $checkCall)->value('location_summary');
+
+        $this->anotarLlamada($actor, (string) $carga->id, $checkCall, $guardado, $ahora);
+
         return back()->with('success', __('tracking.checkCalls.completed'));
     }
 
+
+    /**
+     * La llamada de control, en la línea de tiempo.
+     *
+     * Solo si está HECHA y solo si trae un sitio: una llamada agendada para el
+     * jueves no dice dónde está nadie, y una hecha sin anotar el sitio tampoco.
+     * La referencia es la llamada, así que completarla y luego editarla no
+     * duplica el suceso.
+     */
+    private function anotarLlamada(Actor $actor, string $loadId, string $llamadaId, ?string $lugar, ?CarbonImmutable $hecha): void
+    {
+        if ($hecha === null || $lugar === null || trim($lugar) === '') {
+            return;
+        }
+
+        Ingestion::manual((string) $actor->tenantId, $loadId, new PositionReport(
+            eventType: 'location_update',
+            occurredAt: $hecha,
+            reference: "call:{$llamadaId}",
+            locationLabel: trim($lugar),
+        ));
+    }
+
+    /**
+     * El camión llegó a una parada, o salió de ella.
+     *
+     * Las dos por la misma puerta porque son el mismo gesto con distinto verbo,
+     * y porque las reglas que las separan —no se sale de donde no se ha llegado,
+     * no se llega a la segunda sin pasar por la primera— viven juntas en
+     * `StopProgress` y no en dos controladores.
+     *
+     * Esto NO depende de que haya sesión de rastreo ni de que el conductor haya
+     * consentido nada: es despacho documentando el viaje, que es lo que hace
+     * con o sin GPS. Ver `Ingestion::manual`.
+     */
+    public function storeStopProgress(Request $request, string $load, string $stop, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'tracking:read', null, $policy);
+        $checker->authorize($actor, 'tracking:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        $data = $request->validate([
+            'event' => ['required', 'string', Rule::in(['arrived', 'departed'])],
+            // Se puede fechar hacia atrás —despacho se entera media hora
+            // después— pero no hacia adelante: una llegada futura es un error de
+            // tecleo, y colada en la línea de tiempo se queda arriba del todo
+            // hasta que el reloj la alcanza.
+            'occurred_at' => ['required', 'date', 'before_or_equal:now'],
+        ]);
+
+        $cuando = CarbonImmutable::parse($data['occurred_at']);
+
+        try {
+            if ($data['event'] === 'arrived') {
+                StopProgress::llegada((string) $actor->tenantId, (string) $carga->id, $stop, $cuando);
+            } else {
+                StopProgress::salida((string) $actor->tenantId, (string) $carga->id, $stop, $cuando);
+            }
+        } catch (\RuntimeException $e) {
+            return back()->with('error', __('tracking.errors.'.$e->getMessage()));
+        }
+
+        return back()->with('success', __('tracking.stopProgress.saved'));
+    }
+
+    /**
+     * Avanzar el camión imaginario. Herramienta de desarrollo.
+     *
+     * Solo con el proveedor deducido: con uno de verdad atado, meter posiciones
+     * inventadas en la misma tabla donde entran las suyas sería contaminar el
+     * único sitio donde se puede comprobar qué pasó de verdad. El diccionario
+     * portado ya traía este botón y su `errors.simulationNotAvailable`.
+     */
+    public function simulate(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'tracking:read', null, $policy);
+        $checker->authorize($actor, 'tracking:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+        $proveedor = app(TrackingProvider::class);
+
+        /*
+         * Dos condiciones, y la segunda la encontré mirando la pantalla y no el
+         * código: mientras no exista un adaptador de GPS real, el proveedor
+         * atado es el deducido TAMBIÉN EN PRODUCCIÓN. Con solo la primera
+         * condición, cualquier administrador tendría en su servidor de verdad un
+         * botón que mete sucesos inventados en la línea de tiempo que su cliente
+         * está mirando por un enlace.
+         *
+         * Una herramienta de desarrollo que existe en producción no es una
+         * herramienta de desarrollo.
+         */
+        if (App::environment('production') || ! $proveedor instanceof StopDerivedTrackingProvider) {
+            return back()->with('error', __('tracking.errors.simulationNotAvailable'));
+        }
+
+        $sesion = Sessions::abierta((string) $actor->tenantId, (string) $carga->id);
+
+        if ($sesion === null) {
+            return back()->with('error', __('tracking.errors.noOpenSession'));
+        }
+
+        $data = $request->validate([
+            'minutes' => ['required', 'integer', 'min:1', 'max:10080'],
+        ]);
+
+        $partes = $proveedor->simulate(
+            (string) $sesion->id,
+            $this->stopsForSimulation($actor, (string) $carga->id),
+            CarbonImmutable::parse((string) $sesion->started_at),
+            (int) $data['minutes'],
+        );
+
+        $nuevos = Ingestion::ingest(
+            (string) $actor->tenantId,
+            (string) $sesion->id,
+            $proveedor->name(),
+            $partes,
+        );
+
+        return back()->with('success', __('tracking.session.simulateSuccess', [
+            'minutes' => (int) $data['minutes'],
+            'count' => $nuevos,
+        ]));
+    }
+
+    /**
+     * @return list<array{id: string, stop_type: string, city: ?string, state: ?string}>
+     */
+    private function stopsForSimulation(Actor $actor, string $loadId): array
+    {
+        // La ubicación del cliente cuando la hay, igual que en `stops()`: sin
+        // esto el camión imaginario recorrería paradas sin nombre.
+        return DB::table('load_stops as s')
+            ->leftJoin('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+            ->where('s.tenant_id', $actor->tenantId)
+            ->where('s.load_id', $loadId)
+            ->whereNull('s.deleted_at')
+            ->orderBy('s.sequence')
+            ->get([
+                's.id', 's.stop_type',
+                DB::raw('coalesce(cl.city, s.city) as city'),
+                DB::raw('coalesce(cl.state, s.state) as state'),
+            ])
+            ->map(static fn (object $s): array => [
+                'id' => (string) $s->id,
+                'stop_type' => (string) $s->stop_type,
+                'city' => $s->city,
+                'state' => $s->state,
+            ])
+            ->all();
+    }
 
     /**
      * Crear un enlace para un cliente.
@@ -410,9 +591,35 @@ final class TrackingController
             ? null
             : DB::table('drivers')->where('id', $driverId)->first(['id', 'first_name', 'last_name', 'user_id']);
 
+        $proveedor = app(TrackingProvider::class);
+
         return [
             'startedAt' => $abierta?->started_at === null ? null : substr((string) $abierta->started_at, 0, 16),
             'running' => $abierta !== null,
+            // El resumen que la sesión guarda. Nulo mientras no haya llegado un
+            // parte, y entonces la pantalla dice que no ha llegado ninguno en
+            // vez de enseñar un hueco.
+            'lastLocation' => $abierta?->last_location_label,
+            'lastEventAt' => $abierta?->last_event_at === null ? null : substr((string) $abierta->last_event_at, 0, 16),
+            'health' => $abierta === null ? null : (string) $abierta->health_status,
+            // Las dos cifras y no el porcentaje que guarda la sesión: «50 % del
+            // recorrido» con el camión recién llegado a la recogida es falso, y
+            // «1 de 2 paradas» es lo que se sabe. Ver Ingestion::paradas.
+            'progress' => Ingestion::paradas($tenantId, $loadId),
+            // Nulo SIEMPRE hoy, y la pantalla lo dice con `session.noEta`. Una
+            // llegada estimada necesita millas y velocidad, y esta aplicación no
+            // tiene ni las unas ni la otra: `StopDerivedRouteProvider` devuelve
+            // `totalMiles = null` a propósito. Una estimación sobre una
+            // distancia inventada es peor que ninguna, porque alguien la usa
+            // para prometerle una hora a un cliente.
+            'etaAt' => $abierta?->eta_at === null ? null : substr((string) $abierta->eta_at, 0, 16),
+            'provider' => $proveedor->name(),
+            'providerIsLive' => $proveedor->isLive(),
+            // El botón de simular, solo donde el servidor lo va a aceptar. Ver
+            // `simulate()`: en producción se niega aunque el proveedor sea el
+            // deducido.
+            'canSimulate' => ! App::environment('production')
+                && $proveedor instanceof StopDerivedTrackingProvider,
             'driver' => $conductor === null ? null : [
                 'id' => (string) $conductor->id,
                 'name' => trim($conductor->first_name.' '.$conductor->last_name),

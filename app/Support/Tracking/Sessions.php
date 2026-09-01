@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Tracking;
 
 use App\Authorization\Actor;
+use App\Services\Tracking\PositionReport;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -17,14 +18,20 @@ use Illuminate\Support\Str;
  * ## Qué es una sesión aquí, y qué no
  *
  * Una sesión es el hecho de que ESTA carga está siendo seguida, con ESTE
- * conductor, bajo ESTE consentimiento. No trae posiciones: el proveedor de GPS
- * —Trucker Tools, MacroPoint, Highway— no está conectado, y la pantalla lo dice
- * desde antes de este lote con todas las letras. Construir una sesión que
- * fingiera posiciones sería peor que no tenerla.
+ * conductor, bajo ESTE consentimiento. No PRODUCE posiciones: el proveedor de
+ * GPS —Trucker Tools, MacroPoint, Highway— sigue sin estar conectado, y una
+ * sesión que fingiera posiciones sería peor que no tenerla.
  *
- * Lo que la sesión sí hace, y es todo el punto del lote, es SER LO QUE EL
+ * Lo que sí hace, y es todo el punto de la sesión, es SER LO QUE EL
  * CONSENTIMIENTO ABRE Y CIERRA. Sin una sesión que arrancar, «el rastreo no
  * puede iniciarse sin consentimiento» no tiene sujeto.
+ *
+ * Desde el lote de la ingesta la sesión además RESUME lo que se sabe de la
+ * carga —última posición, salud, paradas hechas— para que la página del cliente
+ * no tenga que recorrer todos los sucesos en cada visita. Ese resumen es una
+ * caché de `tracking_events` y se reconstruye con `Ingestion::resumir`; abrir
+ * una sesión lo rellena con lo que ya hubiera, que es lo que evita que el panel
+ * diga «aún no se ha reportado ninguna posición» encima de una que sí está.
  *
  * ## El consentimiento queda escrito EN la sesión
  *
@@ -86,6 +93,20 @@ final class Sessions
             'updated_at' => $ahora,
         ]);
 
+        // El comienzo, en la línea de tiempo. Usa `event.session_started`, que el
+        // diccionario portado ya traía traducido en los dos idiomas.
+        Ingestion::manual($tenantId, $loadId, new PositionReport(
+            eventType: 'session_started',
+            occurredAt: $ahora,
+            reference: "session:{$id}:started",
+        ));
+
+        // Y se adopta lo que ya se sabía de la carga. Sin esto, una sesión
+        // abierta después de anotar la llegada nacía diciendo «aún no se ha
+        // reportado ninguna posición» encima de una línea de tiempo que sí la
+        // enseñaba.
+        Ingestion::resumir($tenantId, $id);
+
         return $id;
     }
 
@@ -98,10 +119,18 @@ final class Sessions
             return false;
         }
 
+        $ahora = CarbonImmutable::now();
+
         DB::table('tracking_sessions')->where('id', $sesion->id)->update([
-            'ended_at' => CarbonImmutable::now(),
-            'updated_at' => CarbonImmutable::now(),
+            'ended_at' => $ahora,
+            'updated_at' => $ahora,
         ]);
+
+        Ingestion::manual($tenantId, $loadId, new PositionReport(
+            eventType: 'session_ended',
+            occurredAt: $ahora,
+            reference: "session:{$sesion->id}:ended",
+        ));
 
         return true;
     }

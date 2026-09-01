@@ -506,6 +506,14 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('loads/{load}/check-calls/{checkCall}/complete', [TrackingController::class, 'completeCheckCall'])->name('tracking.checkCalls.complete');
     Route::post('loads/{load}/tracking/start', [TrackingController::class, 'startSession'])->name('tracking.session.start');
     Route::post('loads/{load}/tracking/stop', [TrackingController::class, 'stopSession'])->name('tracking.session.stop');
+    // La llegada y la salida de una parada: el hecho más básico del viaje, y
+    // hasta este lote el único que no se podía escribir.
+    Route::post('loads/{load}/stops/{stop}/progress', [TrackingController::class, 'storeStopProgress'])
+        ->name('tracking.stops.progress');
+    // Herramienta de desarrollo; el propio controlador se niega si algún día
+    // hay un proveedor de rastreo de verdad atado.
+    Route::post('loads/{load}/tracking/simulate', [TrackingController::class, 'simulate'])
+        ->name('tracking.session.simulate');
     Route::post('loads/{load}/tracking-links', [TrackingController::class, 'storeLink'])->name('tracking.links.store');
     Route::post('loads/{load}/tracking-links/send', [TrackingController::class, 'sendLink'])->name('tracking.links.send');
     Route::post('loads/{load}/tracking-links/{link}/revoke', [TrackingController::class, 'revokeLink'])->name('tracking.links.revoke');

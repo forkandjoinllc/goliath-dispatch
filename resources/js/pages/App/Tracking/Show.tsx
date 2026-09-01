@@ -41,9 +41,22 @@ interface TrackingLink {
   state: 'active' | 'expired' | 'revoked'
 }
 
+interface TimelineEntry {
+  id: string
+  /** Clave de `tracking.event.*`, no la frase: la pinta el cliente. */
+  type: string
+  /** Verdadero cuando lo anotó una persona de despacho, no un aparato. */
+  reportedByPerson: boolean
+  provider: string
+  location: string | null
+  at: string
+  stopId: string | null
+}
+
 interface Props {
   load: { id: string; number: string; status: string }
   stops: Stop[]
+  timeline: TimelineEntry[]
   checkCalls: CheckCall[]
   links: TrackingLink[]
   publicTrackingEnabled: boolean
@@ -58,12 +71,23 @@ interface Props {
      * Clave y no frase: ver la convención de props traducidas.
      */
     blockedBy: string | null
+    /** El resumen que guarda la sesión. Nulos mientras no llegue un parte. */
+    lastLocation: string | null
+    lastEventAt: string | null
+    health: string | null
+    progress: { done: number; total: number }
+    /** Nulo siempre hoy: sin millas no hay estimación que no sea inventada. */
+    etaAt: string | null
+    provider: string
+    providerIsLive: boolean
+    /** Falso en producción: la simulación es una herramienta de desarrollo. */
+    canSimulate: boolean
   }
   can: { manage: boolean; createLink: boolean; revokeLink: boolean }
 }
 
 export default function TrackingShow({
-  load, stops, checkCalls, links, publicTrackingEnabled, defaultTtlHours, newLinkUrl, session, can,
+  load, stops, timeline, checkCalls, links, publicTrackingEnabled, defaultTtlHours, newLinkUrl, session, can,
 }: Props) {
   const { t } = useI18n()
 
@@ -90,7 +114,8 @@ export default function TrackingShow({
         ) : null}
 
         <Sesion load={load} session={session} puede={can.manage} />
-        <Paradas stops={stops} />
+        <Paradas load={load} stops={stops} puede={can.manage} />
+        <LineaDeTiempo entradas={timeline} />
         <LlamadasDeControl load={load} checkCalls={checkCalls} puede={can.manage} />
         <Enlaces
           load={load}
@@ -105,12 +130,28 @@ export default function TrackingShow({
   )
 }
 
-function Paradas({ stops }: { stops: Stop[] }) {
+/**
+ * Las paradas, y ahora también los botones para anotar que el camión llegó y
+ * que salió.
+ *
+ * Ese par de botones es todo el defecto de este lote: `actual_arrival_at` se
+ * leía aquí, en la ficha de la carga y en la página del cliente, y no había en
+ * toda la aplicación una sola forma de escribirlo. El cliente veía «pendiente»
+ * en cada parada para siempre, incluso con la carga entregada.
+ */
+function Paradas({
+  load, stops, puede,
+}: {
+  load: { id: string }
+  stops: Stop[]
+  puede: boolean
+}) {
   const { t } = useI18n()
 
   return (
     <section className="rounded border border-steel-200 bg-white p-4">
-      <p className="text-sm font-semibold text-carbon">{t('tracking.stops.title')}</p>
+      <p className="text-sm font-semibold text-carbon">{t('tracking.stopProgress.title')}</p>
+      <p className="mt-0.5 text-xs text-steel-600">{t('tracking.stopProgress.hint')}</p>
 
       <ol className="mt-3 flex flex-col gap-3">
         {stops.map((s) => (
@@ -131,9 +172,128 @@ function Paradas({ stops }: { stops: Stop[] }) {
                 : t('tracking.stops.pending')}
               {s.departedAt ? ` · ${t('tracking.stops.departed', { date: s.departedAt })}` : ''}
             </p>
+
+            {puede ? (
+              <AnotarParada
+                load={load}
+                stop={s}
+                // Se puede anotar la llegada solo si TODAS las anteriores están
+                // anotadas. El servidor ya lo exige —`earlierStopNotArrived`—;
+                // sin esto la pantalla ofrecía el botón en las dos paradas y el
+                // de la segunda no podía hacer otra cosa que fallar. Un control
+                // que la puerta va a rechazar no es una comodidad, es una
+                // trampa: es la misma lección del desplegable que no coincidía
+                // con la puerta de asignación.
+                puedeLlegar={stops.every((otra) => otra.sequence >= s.sequence || otra.arrivedAt !== null)}
+              />
+            ) : null}
           </li>
         ))}
       </ol>
+    </section>
+  )
+}
+
+/**
+ * El par de botones de una parada.
+ *
+ * La hora se puede corregir hacia atrás porque despacho se entera después: el
+ * campo viene con «ahora» puesto y se cambia si hace falta. Hacia adelante lo
+ * impide el servidor, no esto.
+ *
+ * Se enseña solo el botón que toca —llegada mientras no haya llegada, salida
+ * después— en vez de los dos siempre con uno deshabilitado. Un botón apagado
+ * invita a preguntarse por qué; no enseñarlo cuando no cabe es más claro y es
+ * además lo que hacen las reglas del servidor.
+ */
+function AnotarParada({
+  load, stop, puedeLlegar,
+}: {
+  load: { id: string }
+  stop: Stop
+  puedeLlegar: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm({ event: 'arrived', occurred_at: ahoraLocal() })
+
+  if (stop.departedAt !== null) {
+    return null
+  }
+
+  const verbo = stop.arrivedAt === null ? 'arrived' : 'departed'
+
+  if (verbo === 'arrived' && ! puedeLlegar) {
+    return null
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-end gap-2">
+      <label className="flex flex-col text-xs text-steel-600">
+        {t('tracking.stopProgress.whenLabel')}
+        <input
+          type="datetime-local"
+          value={form.data.occurred_at}
+          onChange={(e) => form.setData('occurred_at', e.target.value)}
+          className="mt-0.5 rounded border border-steel-300 px-2 py-1 text-sm text-carbon"
+        />
+      </label>
+      <button
+        type="button"
+        disabled={form.processing}
+        onClick={() => {
+          // `transform` no encadena en esta versión de Inertia: devuelve void y
+          // se aplica al siguiente envío. Dos sentencias, no una cadena.
+          form.transform((d) => ({ ...d, event: verbo }))
+          form.post(`/loads/${load.id}/stops/${stop.id}/progress`, { preserveScroll: true })
+        }}
+        className="rounded bg-navy-700 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50"
+      >
+        {t(`tracking.stopProgress.${verbo}Button`)}
+      </button>
+    </div>
+  )
+}
+
+/** «Ahora» en el formato que quiere un `datetime-local`, en la hora del navegador. */
+function ahoraLocal(): string {
+  const d = new Date()
+  const desplazado = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+
+  return desplazado.toISOString().slice(0, 16)
+}
+
+/**
+ * Lo que se sabe del viaje, en orden y con su procedencia.
+ *
+ * Cada línea dice si la anotó una persona o la reportó un aparato, y eso no es
+ * un detalle de implementación que se le escape al usuario: es la diferencia
+ * entre «el camión reportó» y «alguien nos dijo». Hoy son todas de personas, y
+ * conviene que se vea.
+ */
+function LineaDeTiempo({ entradas }: { entradas: TimelineEntry[] }) {
+  const { t } = useI18n()
+
+  return (
+    <section className="rounded border border-steel-200 bg-white p-4">
+      <p className="text-sm font-semibold text-carbon">{t('tracking.timeline.title')}</p>
+      <p className="mt-0.5 text-xs text-steel-600">{t('tracking.timeline.hint')}</p>
+
+      {entradas.length === 0 ? (
+        <p className="mt-3 text-sm text-steel-600">{t('tracking.timeline.empty')}</p>
+      ) : (
+        <ol className="mt-3 flex flex-col gap-2">
+          {entradas.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-baseline gap-x-2 border-l-2 border-steel-200 pl-3">
+              <span className="text-sm font-medium text-carbon">{t(`tracking.event.${e.type}`)}</span>
+              {e.location ? <span className="text-sm text-steel-700">{e.location}</span> : null}
+              <span className="text-xs text-steel-600">{e.at}</span>
+              <span className="text-xs text-steel-500">
+                {e.reportedByPerson ? t('tracking.timeline.byPerson') : t('tracking.timeline.byProvider')}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   )
 }
@@ -495,8 +655,10 @@ const CAMPO =
  * cosas mandan a sitios distintos —una a la carga, otra a la ficha del
  * conductor— y confundirlas cuesta una llamada.
  *
- * Y dice lo que la sesión NO trae: posiciones. El proveedor de GPS no está
- * conectado y esta pantalla lo ha dicho siempre; abrir una sesión no lo cambia.
+ * Y dice de dónde salen las posiciones. No hay proveedor de GPS conectado: las
+ * que se ven las anota despacho, y la pantalla no puede dar a entender otra
+ * cosa. Antes de este lote decía que la sesión no traía posiciones NINGUNAS,
+ * que era verdad y ya no lo es.
  */
 function Sesion({
   load, session, puede,
@@ -536,6 +698,57 @@ function Sesion({
         </p>
       ) : null}
 
+      {session.running ? (
+        <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-steel-600">
+              {t('tracking.session.lastPosition')}
+            </dt>
+            <dd className="mt-0.5 text-sm text-carbon">
+              {session.lastLocation ?? t('tracking.session.noPositionYet')}
+              {/* La hora acompaña a la POSICIÓN, no a la sesión: sin sitio no
+                  hay «desde cuándo», y enseñarla debajo de «aún no se ha
+                  reportado ninguna posición» era decir dos cosas a la vez. */}
+              {session.lastLocation !== null && session.lastEventAt !== null ? (
+                <span className="block text-xs text-steel-600">
+                  {t('tracking.session.lastPositionAt', { date: session.lastEventAt })}
+                </span>
+              ) : null}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-steel-600">{t('tracking.health.title')}</dt>
+            <dd className="mt-0.5 text-sm text-carbon">
+              {t(`tracking.health.${session.health ?? 'unknown'}`)}
+              <span className="block text-xs text-steel-600">
+                {session.progress.total === 0
+                  ? t('tracking.session.noProgress')
+                  : t('tracking.session.progress', {
+                      done: session.progress.done,
+                      total: session.progress.total,
+                    })}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-steel-600">
+              {t('tracking.session.provider')}
+            </dt>
+            <dd className="mt-0.5 text-sm text-carbon">
+              {session.provider}
+              {/* La llegada estimada NO se calcula, y el hueco se explica en vez
+                  de dejarse en blanco: sin millas de ruta cualquier estimación
+                  sería una hora inventada que alguien le promete a un cliente. */}
+              <span className="block text-xs text-steel-600">
+                {session.etaAt === null
+                  ? t('tracking.session.noEta')
+                  : t('tracking.session.eta', { date: session.etaAt })}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      ) : null}
+
       {puede ? (
         <button
           type="button"
@@ -552,7 +765,50 @@ function Sesion({
           {session.running ? t('tracking.session.stopButton') : t('tracking.session.startButton')}
         </button>
       ) : null}
+
+      {puede && session.running && session.canSimulate ? (
+        <SimularMovimiento load={load} />
+      ) : null}
     </section>
+  )
+}
+
+/**
+ * Avanzar el camión imaginario. Herramienta de desarrollo, y lo dice.
+ *
+ * Solo aparece sin proveedor de verdad atado. Con uno conectado, meter
+ * posiciones inventadas en la misma tabla donde entran las suyas contaminaría el
+ * único sitio donde se puede comprobar qué pasó de verdad — el servidor también
+ * se niega, esto es solo no enseñar el botón.
+ */
+function SimularMovimiento({ load }: { load: { id: string } }) {
+  const { t } = useI18n()
+  const form = useForm({ minutes: '180' })
+
+  return (
+    <div className="mt-4 rounded border border-dashed border-steel-300 p-3">
+      <p className="text-xs text-steel-600">{t('tracking.session.simulateHint')}</p>
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <label className="flex flex-col text-xs text-steel-600">
+          {t('tracking.session.simulateMinutesLabel')}
+          <input
+            type="number"
+            min={1}
+            value={form.data.minutes}
+            onChange={(e) => form.setData('minutes', e.target.value)}
+            className="mt-0.5 w-28 rounded border border-steel-300 px-2 py-1 text-sm text-carbon"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={form.processing}
+          onClick={() => form.post(`/loads/${load.id}/tracking/simulate`, { preserveScroll: true })}
+          className="rounded border border-steel-300 px-3 py-1.5 text-sm font-semibold text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+        >
+          {t('tracking.session.simulateButton')}
+        </button>
+      </div>
+    </div>
   )
 }
 

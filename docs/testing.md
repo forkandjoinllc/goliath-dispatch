@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1180 tests, 7320 assertions)
+OK (1203 tests, 7435 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote del cobro de facturas.
+(Cifra del 1 de septiembre, tras el lote de las posiciones de rastreo.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -1074,6 +1074,94 @@ Cada llamada usa una IP distinta del rango TEST-NET-1 (RFC 5737). El limitador
 de accesos permite 20 por minuto y por IP: un fichero con veinticinco pruebas
 empezaría a recibir 429 a partir de la vigésima, y el fallo parecería un
 problema de autorización cuando sería el limitador haciendo su trabajo.
+
+## Lecciones del lote de las posiciones (63)
+
+### `insertOrIgnore` se traga MUCHO más que un duplicado
+
+Degrada a aviso **todos** los errores del INSERT: una columna que no admite
+nulos, un CHECK que no se cumple, un tipo que no cabe. Los tres se ven
+exactamente igual que el choque contra el índice único, que es el que se
+buscaba.
+
+Se descubrió con el navegador. La llegada a la parada se guardaba, la pantalla
+decía «Anotado.», y la línea de tiempo se quedaba vacía: a la base de datos de
+desarrollo le faltaba una migración de este mismo lote y `session_id` seguía
+siendo NOT NULL. Ninguna prueba lo habría visto —en la base de pruebas la
+migración sí estaba—, y en producción habría sido un botón que dice que anotó lo
+que no anotó.
+
+La regla que queda: **si `insertOrIgnore` devuelve cero, hay que comprobar por el
+índice único que la fila esté.** Si no está, la escritura falló y hay que gritar.
+Una consulta más solo en ese camino.
+
+### Probar el camino nuevo con datos del demo, no solo del escenario
+
+`StopProgress` leía `load_stops.city` y el lugar del suceso salía en blanco. No
+era un descuido: una parada puede apuntar a una ficha de `customer_locations` en
+vez de llevar la dirección escrita a mano, y entonces la columna suelta está
+vacía. `LoadController` y el panel de rastreo ya hacían el `leftJoin`; el código
+nuevo no.
+
+Las pruebas pasaban porque `Scenario` escribe ciudad y estado a mano en las
+paradas. **El escenario de pruebas es un caso, no el caso**: el demo usa
+ubicaciones, y los clientes de verdad también.
+
+### Una herramienta de desarrollo que existe en producción no lo es
+
+El botón de simular movimiento se cerró primero con `instanceof
+StopDerivedTrackingProvider`, que parecía suficiente. No lo era: mientras no
+exista un adaptador de GPS real, **ese es el proveedor atado también en
+producción**. Cualquier administrador habría tenido en su servidor de verdad un
+botón que mete sucesos inventados en la línea de tiempo que su cliente está
+mirando por un enlace.
+
+La condición del entorno hacía falta además de la del proveedor. Y el texto de
+ayuda tuvo que decirlo: prometía «solo mientras el proveedor simulado esté
+activo», que después de la segunda puerta ya no era toda la verdad.
+
+### Probar el flip de entorno rompe la sesión del cliente de pruebas
+
+`app()->detectEnvironment(fn () => 'production')` a mitad de una prueba deja la
+petición siguiente sin sesión, y el fallo sale como «se esperaba un mensaje y
+llegó null», que no se parece en nada a la causa.
+
+Lo que sí funciona: sustituir la atadura del contenedor por un proveedor que dice
+ser de verdad —eso prueba la mitad del `instanceof` de forma limpia— y dejar la
+condición del entorno a un guardián que la busca en el código. Dos pruebas
+pequeñas y honestas en vez de una grande y frágil.
+
+### El resumen se calcula sobre lo que se sabe, no sobre lo que trajo la sesión
+
+El panel decía «aún no se ha reportado ninguna posición» justo encima de una
+línea de tiempo que enseñaba la llegada al origen. Pasa siempre que se anota algo
+**antes** de abrir la sesión, que es el orden normal.
+
+Dos pantallas contiguas que se contradicen son peores que una vacía: la vacía se
+entiende. Es la tercera vez que aparece este defecto (lotes 56, 61 y este).
+
+### Un suceso no es una posición
+
+Contar «rastreo iniciado» para la salud de la sesión la ponía en «saludable» sin
+que nadie hubiera dicho dónde estaba el camión, y dejaba una hora colgando debajo
+de «aún no se ha reportado ninguna posición». La salud mide el tiempo desde la
+última **posición**, que es lo que quiere decir «señal perdida».
+
+### Una fracción honesta dentro de una frase falsa
+
+El avance se calculaba bien —paradas hechas sobre paradas totales— y se enseñaba
+como «50 % del recorrido completado». Con el camión recién llegado a la recogida,
+el recorrido no ha empezado: la cifra era cierta y la frase no. Se cambió a «1 de
+2 paradas hechas», que es exactamente lo que se sabe.
+
+Conviene releer la frase que envuelve un número, no solo comprobar el número.
+
+### El botón que la puerta va a rechazar
+
+La pantalla ofrecía «Anotar llegada» en las dos paradas, y el servidor rechaza la
+segunda mientras la primera no esté anotada. Es la misma lección del desplegable
+que no coincidía con la puerta de asignación (lote 57), y volvió a encontrarla el
+navegador.
 
 ## Qué falta
 

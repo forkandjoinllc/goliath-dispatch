@@ -11,6 +11,8 @@ use App\Services\Fmcsa\DirectoryFmcsaVerifier;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Services\Payments\InvoicePaymentProvider;
+use App\Services\Tracking\StopDerivedTrackingProvider;
+use App\Services\Tracking\TrackingProvider;
 use App\Services\Payments\MockInvoicePaymentProvider;
 use App\Services\Billing\BillingProvider;
 use App\Services\Billing\MockBillingProvider;
@@ -62,6 +64,17 @@ class AppServiceProvider extends ServiceProvider
         // que haya un proveedor de rutas con credenciales, esta línea cambia de
         // clase. Ver App\Support\Routing\RouteProvider.
         $this->app->singleton(RouteProvider::class, StopDerivedRouteProvider::class);
+
+        // De dónde salen las posiciones de un camión. Hoy de ninguna parte: el
+        // adaptador deducido no reporta nada solo y lo dice —`isLive()` es
+        // falso—, y lo que se ve en la pantalla lo escribe una persona de
+        // despacho. El día que haya cuenta de Trucker Tools, MacroPoint o
+        // Highway, esta línea cambia de clase y la ingesta no se entera.
+        //
+        // No se ata en función de una credencial como FMCSA o Stripe porque no
+        // hay ninguna que mirar todavía: no existe el adaptador real. Cuando
+        // exista, este `singleton` se parecerá a los otros dos.
+        $this->app->singleton(TrackingProvider::class, StopDerivedTrackingProvider::class);
 
         // Los diccionarios usan `{nombre}` porque los lee también el cliente.
         // Se sustituye el traductor para que `__()` los entienda igual — ver

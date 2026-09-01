@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Support\Branding\Brand;
+use App\Support\Tracking\Ingestion;
+use App\Support\Tracking\Timeline;
 use App\Support\InertiaPage;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
@@ -87,7 +89,11 @@ final class TrackingController
                         : substr((string) $carga->planned_delivery_at, 0, 10),
                 ],
                 'stops' => $this->stops($tenantId, (string) $carga->id),
-                'lastUpdate' => $this->lastCheckCall($tenantId, (string) $carga->id),
+                'lastUpdate' => $this->ultimaPosicion($tenantId, (string) $carga->id),
+                // Menos que el panel: sin coordenadas y sin los sucesos del
+                // consentimiento, que son asunto del conductor y su empresa.
+                'timeline' => Timeline::paraCliente($tenantId, (string) $carga->id),
+                'progress' => Ingestion::paradas($tenantId, (string) $carga->id),
             ];
         });
 
@@ -117,6 +123,8 @@ final class TrackingController
             'load' => null,
             'stops' => [],
             'lastUpdate' => null,
+            'timeline' => [],
+            'progress' => null,
             'tenantName' => null,
             // Un enlace roto no dice de quién era: si lo dijera, probar tokens
             // al azar serviría para averiguar qué empresas usan esto.
@@ -180,27 +188,44 @@ final class TrackingController
             ->all();
     }
 
-    /** @return array<string, mixed>|null */
-    private function lastCheckCall(string $tenantId, string $loadId): ?array
+    /**
+     * La última posición conocida, venga de donde venga.
+     *
+     * Antes esto miraba SOLO las llamadas de control, y esa era la mitad del
+     * defecto que este lote arregla: un camión que llegó a su destino y cuya
+     * llegada marcó despacho seguía enseñándole al cliente la llamada de
+     * teléfono de anteayer, porque la llegada no estaba en ninguna tabla que
+     * esta página leyera.
+     *
+     * Ahora sale de `tracking_events`, donde entran las dos cosas y donde
+     * entrarán las del proveedor de GPS el día que lo haya, sin tocar esta
+     * función.
+     *
+     * Las NOTAS de la llamada siguen sin viajar y nunca deben: son para despacho
+     * y pueden decir cualquier cosa sobre el conductor o sobre el propio
+     * cliente. Lo que viaja es el sitio, que es justo lo que se escribe para
+     * poder contarlo.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function ultimaPosicion(string $tenantId, string $loadId): ?array
     {
-        $fila = DB::table('check_calls')
+        $fila = DB::table('tracking_events')
             ->where('tenant_id', $tenantId)
             ->where('load_id', $loadId)
-            ->whereNotNull('completed_at')
-            ->whereNull('deleted_at')
-            ->orderByDesc('completed_at')
-            ->first(['completed_at', 'location_summary']);
+            ->whereNotNull('location_label')
+            ->orderByDesc('occurred_at')
+            ->first(['occurred_at', 'location_label', 'provider']);
 
         if ($fila === null) {
             return null;
         }
 
         return [
-            // Las NOTAS no viajan: son para despacho y pueden decir cualquier
-            // cosa sobre el conductor o sobre el propio cliente. El resumen de
-            // ubicación sí, que es justo lo que se escribe para poder contarlo.
-            'at' => substr((string) $fila->completed_at, 0, 16),
-            'location' => $fila->location_summary,
+            'at' => substr((string) $fila->occurred_at, 0, 16),
+            'location' => $fila->location_label,
+            // Que el cliente sepa si se lo dijo un aparato o una persona.
+            'reportedByPerson' => $fila->provider === Ingestion::MANUAL,
         ];
     }
 }

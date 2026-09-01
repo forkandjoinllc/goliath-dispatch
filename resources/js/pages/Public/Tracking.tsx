@@ -20,7 +20,20 @@ interface Props {
     plannedDeliveryOn: string | null
   } | null
   stops: Stop[]
-  lastUpdate: { at: string; location: string | null } | null
+  lastUpdate: { at: string; location: string | null; reportedByPerson: boolean } | null
+  /**
+   * Lo que ha pasado, en orden. Menos que el panel de despacho: sin
+   * coordenadas y sin los sucesos del consentimiento del conductor, que son
+   * asunto entre él y su empresa y no de quien compró un flete.
+   */
+  timeline: {
+    id: string
+    type: string
+    reportedByPerson: boolean
+    location: string | null
+    at: string
+  }[]
+  progress: { done: number; total: number } | null
   tenantName: string | null
   /**
    * La cara de la empresa. Nula en un enlace roto: decir de quién era
@@ -47,7 +60,9 @@ interface Props {
  * mandan a la persona a sitios distintos. Los tres devuelven 404 igual; lo que
  * cambia es el texto.
  */
-export default function PublicTracking({ state, load, stops, lastUpdate, tenantName, brand }: Props) {
+export default function PublicTracking({
+  state, load, stops, lastUpdate, timeline, progress, tenantName, brand,
+}: Props) {
   const { t } = useI18n()
 
   if (state !== 'active' || load === null) {
@@ -87,6 +102,21 @@ export default function PublicTracking({ state, load, stops, lastUpdate, tenantN
             ? t('tracking.publicPage.noUpdatesYet')
             : (lastUpdate.location ?? t('tracking.publicPage.noUpdatesYet'))}
         </p>
+        {/* De dónde salió el dato. Un cliente que lee «Laredo, TX» merece saber
+            si lo dijo un aparato del camión o una persona que llamó por
+            teléfono: las dos cosas son ciertas y no valen lo mismo. */}
+        {lastUpdate !== null ? (
+          <p className="mt-1 text-xs text-steel-600">
+            {lastUpdate.reportedByPerson
+              ? t('tracking.publicPage.reportedByPerson')
+              : t('tracking.publicPage.reportedByProvider')}
+          </p>
+        ) : null}
+        {progress !== null && progress.total > 0 ? (
+          <p className="mt-2 text-xs text-steel-700">
+            {t('tracking.publicPage.progressLabel', { done: progress.done, total: progress.total })}
+          </p>
+        ) : null}
       </div>
 
       <h2 className="mt-6 text-sm font-semibold text-carbon">{t('tracking.publicPage.stopsTitle')}</h2>
@@ -121,6 +151,25 @@ export default function PublicTracking({ state, load, stops, lastUpdate, tenantN
           </li>
         ))}
       </ol>
+
+      {timeline.length > 0 ? (
+        <>
+          <h2 className="mt-6 text-sm font-semibold text-carbon">
+            {t('tracking.publicPage.timelineTitle')}
+          </h2>
+          <ol className="mt-2 flex flex-col gap-2">
+            {timeline.map((e) => (
+              <li key={e.id} className="border-l-2 border-steel-200 pl-3" style={brand ? { borderColor: brand.accentColor } : undefined}>
+                <p className="text-sm text-carbon">
+                  {t(`tracking.event.${e.type}`)}
+                  {e.location ? ` · ${e.location}` : ''}
+                </p>
+                <p className="text-xs text-steel-600">{e.at}</p>
+              </li>
+            ))}
+          </ol>
+        </>
+      ) : null}
 
       {tenantName ? (
         <p className="mt-8 border-t border-steel-200 pt-4 text-xs text-steel-600">
