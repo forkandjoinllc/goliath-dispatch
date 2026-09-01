@@ -8,6 +8,7 @@ use App\Http\Controllers\Marketing\PageController;
 use App\Http\Controllers\Public\BillingWebhookController;
 use App\Http\Controllers\Public\MockCheckoutController;
 use App\Http\Controllers\Public\SignatureController as PublicSignatureController;
+use App\Http\Controllers\Public\BrandLogoController;
 use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
 use App\Support\Locales;
 use App\Support\Marketing\Site;
@@ -96,6 +97,18 @@ Route::middleware('throttle:6,60')->group(function (): void {
 */
 Route::middleware('throttle:30,1')->get('t/{token}', PublicTrackingController::class)
     ->name('public.tracking');
+
+/*
+|--------------------------------------------------------------------------
+| El logo de una empresa
+|--------------------------------------------------------------------------
+|
+| Público y sin firmar: lo pinta la página de rastreo, que abre un cliente desde
+| un correo y sin cuenta. Ver App\Http\Controllers\Public\BrandLogoController
+| para por qué una firma caducable no vale aquí.
+*/
+Route::middleware('throttle:120,1')->get('b/{tenant}/logo', BrandLogoController::class)
+    ->name('public.brand.logo');
 
 foreach (Locales::all() as $code) {
     Route::middleware('throttle:30,1')

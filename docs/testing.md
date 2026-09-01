@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1150 tests, 7240 assertions)
+OK (1163 tests, 7267 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote de lo que se le promete al transportista.
+(Cifra del 1 de septiembre, tras el lote de la marca por empresa.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -950,6 +950,41 @@ TERCERO, que es cuando uno compara los dos anteriores. Vale la pena escribirlo
 como señal: **si estás a punto de copiar una escritura por segunda vez, ese es el
 momento de moverla; si es la tercera, ve primero a comparar las dos que ya
 existen — habrán divergido.**
+
+### El ajuste que se guarda y no se ve: casi lo repito yo
+
+Lote 61. Añadí dos colores editables —principal y de acento—, los validé, los
+guardé, los pasé a la página pública como variables CSS… y solo pinté el
+principal. El de acento se guardaba, se validaba, se previsualizaba en el propio
+formulario, y no aparecía en ninguna parte de la página que ve el cliente.
+
+Es exactamente el defecto del lote 55 —un ajuste que se edita y no lee nadie—
+introducido por mí, seis lotes después de dedicar uno entero a quitarlo. **Lo vi
+mirando la captura del navegador, no leyendo el código**: el código parecía
+correcto porque la variable estaba puesta; lo que faltaba era que alguien la
+usara.
+
+La regla práctica que saco: **cuando un lote añade un ajuste, la comprobación no
+es «¿se guarda?» sino «¿dónde lo veo?»** — y hay que poder señalarlo con el dedo
+en una captura. Una previsualización del propio ajuste no cuenta: es el ajuste
+mirándose al espejo.
+
+### Un nombre de columna no es una especificación
+
+`tenant_branding` tiene `email_header_html` y `email_footer_html`. El nombre
+invita a guardar HTML. Guardarlo habría sido regalar un vector de suplantación:
+ese texto lo escribe un cliente nuestro y lo lee un tercero que no nos conoce, y
+un bloque con formato es exactamente lo que usa quien suplanta.
+
+Se guarda texto, se escapa al leer, y el guardián lo fija — porque es la clase de
+decisión que alguien deshace dentro de seis meses «para que se vea mejor», y el
+nombre de la columna estará ahí dándole la razón.
+
+Vale como regla general: **el esquema portado propone, no obliga.** Ya había
+pasado con `media_count` (se cuenta desde la tabla, no del contador cacheado) y
+con `integration_connections` (no se rellena con filas de plataforma). Cuando el
+nombre de una columna y la decisión correcta no coinciden, gana la decisión y se
+escribe por qué.
 
 ## Migraciones: por qué todas son reanudables
 

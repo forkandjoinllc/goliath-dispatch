@@ -22,6 +22,17 @@ interface Props {
   stops: Stop[]
   lastUpdate: { at: string; location: string | null } | null
   tenantName: string | null
+  /**
+   * La cara de la empresa. Nula en un enlace roto: decir de quién era
+   * convertiría probar tokens al azar en una forma de averiguar qué empresas
+   * usan esto.
+   */
+  brand: {
+    name: string
+    logoUrl: string | null
+    primaryColor: string
+    accentColor: string
+  } | null
 }
 
 /**
@@ -36,14 +47,14 @@ interface Props {
  * mandan a la persona a sitios distintos. Los tres devuelven 404 igual; lo que
  * cambia es el texto.
  */
-export default function PublicTracking({ state, load, stops, lastUpdate, tenantName }: Props) {
+export default function PublicTracking({ state, load, stops, lastUpdate, tenantName, brand }: Props) {
   const { t } = useI18n()
 
   if (state !== 'active' || load === null) {
     const clave = state === 'expired' ? 'expired' : state === 'revoked' ? 'revoked' : 'notFound'
 
     return (
-      <Marco titulo={t('tracking.publicPage.title')}>
+      <Marco titulo={t('tracking.publicPage.title')} brand={brand}>
         <h1 className="font-display text-2xl font-bold text-carbon">
           {t(`tracking.publicPage.${clave}Title`)}
         </h1>
@@ -53,7 +64,7 @@ export default function PublicTracking({ state, load, stops, lastUpdate, tenantN
   }
 
   return (
-    <Marco titulo={`${t('tracking.publicPage.title')} — ${load.number}`}>
+    <Marco titulo={`${t('tracking.publicPage.title')} — ${load.number}`} brand={brand}>
       <p className="text-xs uppercase tracking-wide text-steel-600">
         {t('tracking.publicPage.loadLabel', { loadNumber: load.number })}
       </p>
@@ -80,8 +91,15 @@ export default function PublicTracking({ state, load, stops, lastUpdate, tenantN
 
       <h2 className="mt-6 text-sm font-semibold text-carbon">{t('tracking.publicPage.stopsTitle')}</h2>
       <ol className="mt-2 flex flex-col gap-3">
+        {/* El color de acento se USA, no solo se guarda. Una empresa que elige
+            dos colores y solo ve uno tiene medio ajuste inerte, que es el
+            defecto que el lote 55 existió para quitar. */}
         {stops.map((s, i) => (
-          <li key={i} className="border-l-2 border-steel-200 pl-3">
+          <li
+            key={i}
+            className="border-l-2 border-steel-200 pl-3"
+            style={brand ? { borderColor: brand.accentColor } : undefined}
+          >
             <p className="text-sm font-medium text-carbon">
               {t(`tracking.stops.${s.type === 'pickup' ? 'pickup' : 'delivery'}`)}
               {' · '}
@@ -113,16 +131,41 @@ export default function PublicTracking({ state, load, stops, lastUpdate, tenantN
   )
 }
 
-function Marco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Marco({
+  titulo, brand, children,
+}: {
+  titulo: string
+  brand?: Props['brand']
+  children: React.ReactNode
+}) {
   return (
     <>
       <Head title={titulo}>
         {/* Una página con un token en la dirección no se indexa. */}
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <main className="min-h-screen bg-steel-50 px-4 py-10">
-        <div className="mx-auto max-w-2xl rounded border border-steel-200 bg-white p-6 sm:p-8">
+      {/* Los colores entran como VARIABLES, no como una hoja de estilos de la
+          empresa: un color mal puesto puede dejar un texto feo, pero no puede
+          ejecutar nada. Ver App\Support\Branding\Brand. */}
+      <main
+        className="min-h-screen bg-steel-50 px-4 py-10"
+        style={brand ? ({ '--marca': brand.primaryColor, '--acento': brand.accentColor } as React.CSSProperties) : undefined}
+      >
+        <div className="mx-auto max-w-2xl overflow-hidden rounded border border-steel-200 bg-white">
+          <div
+            className="h-2 w-full"
+            style={{ backgroundColor: brand ? 'var(--marca)' : undefined }}
+          />
+          <div className="p-6 sm:p-8">
+          {brand?.logoUrl ? (
+            <img
+              src={brand.logoUrl}
+              alt={brand.name}
+              className="mb-6 h-10 w-auto"
+            />
+          ) : null}
           {children}
+          </div>
         </div>
       </main>
     </>

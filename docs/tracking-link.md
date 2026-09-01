@@ -91,10 +91,10 @@ filtrar por correo lo que la página controla.
   inglés escribe en inglés también a sus clientes hispanohablantes. `carriers` sí
   la tiene —«el idioma en el que se le escribe a esta persona»— y la asimetría no
   tiene ninguna razón de ser.
-- **El correo no lleva la cara de la empresa.** Sale como texto plano con el
-  nombre de la casa de despacho y nada más. `tenant_branding` y
-  `notification_templates` siguen vacías: un correo que sale al cliente de otra
-  empresa debería llevar su logo y su redacción, no la nuestra.
+- ~~El correo no lleva la cara de la empresa.~~ Hecho en el lote 61: el asunto y
+  el cuerpo los puede escribir la empresa, y su pie va al final. Ver
+  docs/branding.md — el logo sigue sin viajar dentro del correo, y ahí se explica
+  por qué.
 - **No se avisa de nada más.** Solo el despacho manda correo al cliente. Ni la
   entrega, ni un retraso, ni el comprobante.
 - **No hay reintento.** Si el correo falla, falla: queda el `sent_at` en nulo y

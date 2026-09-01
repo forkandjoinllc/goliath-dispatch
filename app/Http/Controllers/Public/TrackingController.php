@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Support\Branding\Brand;
 use App\Support\InertiaPage;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
@@ -101,6 +102,10 @@ final class TrackingController
         return Inertia::render('Public/Tracking', [
             ...$datos,
             'tenantName' => $this->tenantName($tenantId),
+            // La cara de la empresa. Esta página la abre el cliente de la casa
+            // de despacho, no un usuario nuestro: es el sitio donde más raro
+            // queda que salgan nuestros colores. Ver App\Support\Branding\Brand.
+            'brand' => Brand::for($tenantId),
             'state' => 'active',
         ])->toResponse($request);
     }
@@ -113,6 +118,9 @@ final class TrackingController
             'stops' => [],
             'lastUpdate' => null,
             'tenantName' => null,
+            // Un enlace roto no dice de quién era: si lo dijera, probar tokens
+            // al azar serviría para averiguar qué empresas usan esto.
+            'brand' => null,
         ])->toResponse($request)->setStatusCode(404);
     }
 

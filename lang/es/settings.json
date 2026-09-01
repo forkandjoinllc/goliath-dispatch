@@ -74,5 +74,23 @@
         "periodEnds": "Fin del periodo",
         "cancelling": "Se cancela al terminar el periodo",
         "none": "No hay ninguna suscripción registrada."
+    },
+    "brand": {
+        "title": "La cara de su empresa",
+        "note": "Esto es lo que ve el cliente al que le mandan el enlace de rastreo: en la página que abre y al pie del correo que la lleva. No cambia nada dentro de la aplicación — su equipo la sigue viendo igual.",
+        "logo": "Logo",
+        "logoHint": "PNG, JPG, WEBP o SVG, hasta 2 MB. Se ve en la página pública de rastreo.",
+        "primaryColor": "Color principal",
+        "accentColor": "Color de acento",
+        "colorHint": "En formato #RRGGBB.",
+        "emailFooter": "Pie de los correos al cliente",
+        "emailFooterHint": "Texto plano: su dirección, su teléfono, lo que quiera que aparezca al final. No se admite marcado — ese texto lo lee alguien que no le conoce a usted ni a nosotros, y un bloque con formato es lo que usa quien suplanta.",
+        "save": "Guardar",
+        "saved": "Marca guardada.",
+        "preview": "Así se ve la barra de la página pública",
+        "templateTitle": "El texto del correo del enlace",
+        "templateNote": "Si lo deja en blanco se manda el de siempre. Fichas disponibles: {tokens}.",
+        "templateSubject": "Asunto",
+        "templateBody": "Cuerpo"
     }
 }

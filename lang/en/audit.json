@@ -188,6 +188,7 @@
         "report": "Report",
         "saas_plan": "SaaS plan",
         "tenant": "Company",
+        "tenant_branding": "Company branding",
         "tenant_settings": "Company settings",
         "tenant_subscription": "Company subscription",
         "user_tenant_membership": "User membership"

@@ -74,5 +74,23 @@
         "periodEnds": "Period ends",
         "cancelling": "Cancels at the end of the period",
         "none": "No subscription on file."
+    },
+    "brand": {
+        "title": "Your company’s face",
+        "note": "This is what the customer sees when you send them a tracking link: on the page they open, and at the foot of the email that carries it. Nothing inside the app changes — your team still sees it as it is.",
+        "logo": "Logo",
+        "logoHint": "PNG, JPG, WEBP or SVG, up to 2 MB. Shown on the public tracking page.",
+        "primaryColor": "Primary colour",
+        "accentColor": "Accent colour",
+        "colorHint": "In #RRGGBB format.",
+        "emailFooter": "Footer for customer emails",
+        "emailFooterHint": "Plain text: your address, your phone, whatever you want at the end. No markup — that text is read by somebody who knows neither you nor us, and a formatted block is what impersonators use.",
+        "save": "Save",
+        "saved": "Branding saved.",
+        "preview": "This is the public page bar",
+        "templateTitle": "The wording of the link email",
+        "templateNote": "Leave it blank and the standard one is sent. Available tokens: {tokens}.",
+        "templateSubject": "Subject",
+        "templateBody": "Body"
     }
 }

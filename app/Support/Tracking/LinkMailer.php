@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Tracking;
 
+use App\Support\Branding\Brand;
+use App\Support\Branding\Templates;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -46,22 +48,69 @@ final class LinkMailer
      *
      * @return array{to: string, subject: string, body: string}
      */
-    public static function compose(string $to, string $url, string $tenantName, string $locale): array
-    {
+    public static function compose(
+        string $to,
+        string $url,
+        string $tenantName,
+        string $locale,
+        ?string $tenantId = null,
+    ): array {
+        $fichas = ['tenant' => $tenantName, 'url' => $url];
+
+        // El texto de siempre, que es el respaldo cuando la empresa no ha
+        // escrito el suyo. Se resuelve SIEMPRE: una plantilla a medias —con
+        // cuerpo y sin asunto— no puede dejar el correo sin asunto.
+        $porDefecto = [
+            'subject' => self::linea('tracking.email.subject', $locale, $fichas),
+            'body' => self::linea('tracking.email.body', $locale, $fichas),
+        ];
+
+        $mensaje = $tenantId === null
+            ? $porDefecto
+            : Templates::render(
+                $tenantId,
+                Templates::ENLACE_DE_RASTREO,
+                $locale,
+                $fichas,
+                $porDefecto['subject'],
+                $porDefecto['body'],
+            );
+
         return [
             'to' => $to,
-            'subject' => self::linea('tracking.email.subject', $locale, ['tenant' => $tenantName]),
-            'body' => self::linea('tracking.email.body', $locale, [
-                'tenant' => $tenantName,
-                'url' => $url,
-            ]),
+            'subject' => $mensaje['subject'],
+            'body' => $mensaje['body'].self::pie($tenantId),
         ];
     }
 
-    /** @return bool si salió */
-    public static function send(string $to, string $url, string $tenantName, string $locale): bool
+    /**
+     * El pie de la empresa, si lo ha puesto.
+     *
+     * Va como TEXTO, escapado de marcado por App\Support\Branding\Brand. Lo
+     * escribe el administrador de una empresa y lo lee un tercero que no nos
+     * conoce: admitir marcado libre ahí sería regalar un vector de suplantación
+     * a cambio de dejar poner negritas.
+     */
+    private static function pie(?string $tenantId): string
     {
-        $mensaje = self::compose($to, $url, $tenantName, $locale);
+        if ($tenantId === null) {
+            return '';
+        }
+
+        $pie = Brand::for($tenantId)['emailFooter'];
+
+        return $pie === null ? '' : "\n\n—\n".$pie;
+    }
+
+    /** @return bool si salió */
+    public static function send(
+        string $to,
+        string $url,
+        string $tenantName,
+        string $locale,
+        ?string $tenantId = null,
+    ): bool {
+        $mensaje = self::compose($to, $url, $tenantName, $locale, $tenantId);
 
         try {
             Mail::mailer(config('mail.default'))->raw(

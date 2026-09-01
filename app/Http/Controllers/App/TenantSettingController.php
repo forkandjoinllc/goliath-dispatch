@@ -11,6 +11,10 @@ use App\Enums\CommissionBasis;
 use App\Support\Audit;
 use App\Support\Finance\FeeBase;
 use App\Support\Geo\Regions;
+use App\Support\Branding\Brand;
+use App\Support\Branding\Templates;
+use App\Support\Storage\DocumentStore;
+use App\Support\TenantContext;
 use App\Support\InertiaPage;
 use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
@@ -73,6 +77,12 @@ final class TenantSettingController
                 'operationalPurgeYears' => (int) ($fila->operational_purge_years_after_archive ?? 0),
                 'financialRetentionYears' => (int) ($fila->financial_retention_years ?? 0),
             ],
+            // La cara de la empresa: su logo, sus colores y su pie de correo.
+            // Se edita aquí y se ve donde mira alguien que NO es usuario nuestro
+            // — la página pública de rastreo y el correo que la reparte. Ver
+            // App\Support\Branding\Brand.
+            'branding' => Brand::for((string) $actor->tenantId),
+            'template' => $this->template((string) $actor->tenantId),
             'feeBases' => array_map(static fn (FeeBase $b): string => $b->value, FeeBase::cases()),
             'commissionBases' => array_map(static fn (CommissionBasis $b): string => $b->value, CommissionBasis::cases()),
             'can' => [
@@ -164,6 +174,97 @@ final class TenantSettingController
         abort_if($fila === null, 404);
 
         return $fila;
+    }
+
+    /**
+     * Guardar la cara de la empresa.
+     *
+     * Aparte del formulario de ajustes porque lleva un fichero: mezclarlo
+     * obligaría a mandar el formulario entero como multipart cada vez que
+     * alguien cambia un plazo de pago.
+     */
+    /**
+     * La plantilla del correo del enlace, en el idioma de la empresa.
+     *
+     * @return array<string, mixed>
+     */
+    private function template(string $tenantId): array
+    {
+        $locale = $this->tenantLocale($tenantId);
+        $fila = Templates::find($tenantId, Templates::ENLACE_DE_RASTREO, $locale);
+
+        return [
+            'locale' => $locale,
+            'subject' => $fila?->subject,
+            'body' => $fila === null || $fila->body === '' ? null : $fila->body,
+            'tokens' => Templates::FICHAS[Templates::ENLACE_DE_RASTREO],
+        ];
+    }
+
+    /** El idioma en el que esta empresa le escribe a sus clientes. */
+    private function tenantLocale(string $tenantId): string
+    {
+        $locale = app(TenantContext::class)->withoutTenant(fn () => DB::table('tenants')
+            ->where('id', $tenantId)
+            ->value('default_locale'));
+
+        return in_array($locale, ['en', 'es'], true) ? (string) $locale : 'en';
+    }
+
+    public function branding(Request $request, CurrentActor $current, PermissionChecker $checker, DocumentStore $store): RedirectResponse
+    {
+        $actor = $current->require();
+        $checker->authorize($actor, 'tenant:settings:update', null, $current->policy());
+
+        $data = $request->validate([
+            // Un color es un dato con forma, no una cadena cualquiera: se exige
+            // `#RRGGBB` aquí y se vuelve a comprobar al leer, porque una defensa
+            // que solo está en el formulario se salta con un `update`.
+            'primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'accent_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'email_footer' => ['nullable', 'string', 'max:500'],
+            'logo' => ['nullable', 'file', 'max:2048', 'mimetypes:image/png,image/jpeg,image/webp,image/svg+xml'],
+            'template_subject' => ['nullable', 'string', 'max:255'],
+            'template_body' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        Brand::save(
+            (string) $actor->tenantId,
+            $data['primary_color'] ?? null,
+            $data['accent_color'] ?? null,
+            $data['email_footer'] ?? null,
+        );
+
+        if ($request->hasFile('logo')) {
+            Brand::saveLogo($store, (string) $actor->tenantId, $request->file('logo'));
+        }
+
+        // El texto del correo al cliente, en el idioma de la empresa.
+        //
+        // UNO y no dos: el correo sale en `tenants.default_locale`, así que un
+        // segundo editor para el otro idioma sería un campo que nadie usa y que
+        // nadie sabría que existe. Cuando haga falta escribirle a cada cliente
+        // en su idioma habrá que poner idioma al cliente primero —está en «lo
+        // que falta» de docs/tracking-link.md— y entonces este editor crece con
+        // un motivo.
+        Templates::save(
+            (string) $actor->tenantId,
+            Templates::ENLACE_DE_RASTREO,
+            $this->tenantLocale((string) $actor->tenantId),
+            $data['template_subject'] ?? null,
+            $data['template_body'] ?? null,
+        );
+
+        Audit::record(
+            $actor,
+            AuditAction::SettingsUpdated,
+            entityType: 'tenant_branding',
+            entityId: (string) $actor->tenantId,
+            entityLabel: (string) $actor->tenantId,
+            after: ['branding' => true],
+        );
+
+        return back()->with('success', __('settings.brand.saved'));
     }
 
     /**

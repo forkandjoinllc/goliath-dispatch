@@ -53,10 +53,23 @@ interface Props {
   }
   feeBases: string[]
   commissionBases: string[]
+  branding: {
+    name: string
+    logoUrl: string | null
+    primaryColor: string
+    accentColor: string
+    emailFooter: string | null
+  }
+  template: {
+    locale: string
+    subject: string | null
+    body: string | null
+    tokens: string[]
+  }
   can: { update: boolean }
 }
 
-export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, can }: Props) {
+export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, branding, template, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
 
@@ -292,6 +305,11 @@ export default function SettingsIndex({ settings, subscription = null, readOnly,
           </div>
         ) : null}
       </form>
+
+      {/* Va en SU PROPIO formulario y no dentro del de arriba: lleva un fichero,
+          y mezclarlo obligaría a mandar el formulario entero como multipart cada
+          vez que alguien cambia un plazo de pago. */}
+      <Marca branding={branding} template={template} bloqueado={bloqueado} />
     </AppLayout>
   )
 }
@@ -459,5 +477,152 @@ function Plan({ subscription }: { subscription: Subscription | null }) {
         <p className="mt-3 text-sm text-warning-800">{t('settings.subscription.cancelling')}</p>
       ) : null}
     </section>
+  )
+}
+
+/**
+ * La cara de la empresa.
+ *
+ * Lo que se edita aquí NO cambia nada dentro de la aplicación: cambia lo que ve
+ * el cliente al que le mandan un enlace de rastreo — la página que abre y el pie
+ * del correo que la lleva. La nota de la sección lo dice, porque «marca» en un
+ * panel de ajustes suena a que va a cambiarlo todo.
+ */
+function Marca({
+  branding, template, bloqueado,
+}: {
+  branding: Props['branding']
+  template: Props['template']
+  bloqueado: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm<{
+    primary_color: string
+    accent_color: string
+    email_footer: string
+    template_subject: string
+    template_body: string
+    logo: File | null
+  }>({
+    primary_color: branding.primaryColor,
+    accent_color: branding.accentColor,
+    email_footer: branding.emailFooter ?? '',
+    template_subject: template.subject ?? '',
+    template_body: template.body ?? '',
+    logo: null,
+  })
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.post('/settings/branding', { preserveScroll: true, forceFormData: true })
+      }}
+      className="mt-6 flex max-w-3xl flex-col gap-6"
+    >
+      <Seccion titulo={t('settings.brand.title')} nota={t('settings.brand.note')}>
+        <div className="sm:col-span-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-steel-600">
+            {t('settings.brand.preview')}
+          </p>
+          <div className="mt-1 overflow-hidden rounded border border-steel-200 bg-white">
+            <div className="h-2 w-full" style={{ backgroundColor: form.data.primary_color }} />
+            <div className="flex items-center gap-3 p-3">
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.name} className="h-8 w-auto" />
+              ) : (
+                <span className="text-sm font-semibold text-carbon">{branding.name}</span>
+              )}
+              <span className="text-xs" style={{ color: form.data.accent_color }}>
+                {branding.name}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <Campo label={t('settings.brand.logo')} hint={t('settings.brand.logoHint')} error={form.errors.logo}>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            disabled={bloqueado}
+            onChange={(e) => form.setData('logo', e.target.files?.[0] ?? null)}
+            className="text-sm"
+          />
+        </Campo>
+
+        <Campo label={t('settings.brand.primaryColor')} hint={t('settings.brand.colorHint')} error={form.errors.primary_color}>
+          <input
+            type="color"
+            disabled={bloqueado}
+            value={form.data.primary_color}
+            onChange={(e) => form.setData('primary_color', e.target.value.toUpperCase())}
+            className="h-10 w-20 rounded border border-steel-300"
+          />
+        </Campo>
+
+        <Campo label={t('settings.brand.accentColor')} hint={t('settings.brand.colorHint')} error={form.errors.accent_color}>
+          <input
+            type="color"
+            disabled={bloqueado}
+            value={form.data.accent_color}
+            onChange={(e) => form.setData('accent_color', e.target.value.toUpperCase())}
+            className="h-10 w-20 rounded border border-steel-300"
+          />
+        </Campo>
+
+        <Campo
+          label={t('settings.brand.emailFooter')}
+          hint={t('settings.brand.emailFooterHint')}
+          error={form.errors.email_footer}
+        >
+          <textarea
+            rows={3}
+            maxLength={500}
+            disabled={bloqueado}
+            value={form.data.email_footer}
+            onChange={(e) => form.setData('email_footer', e.target.value)}
+            className={CAMPO}
+          />
+        </Campo>
+      </Seccion>
+
+      <Seccion
+        titulo={t('settings.brand.templateTitle')}
+        nota={t('settings.brand.templateNote', { tokens: template.tokens.map((k) => `{${k}}`).join(', ') })}
+      >
+        <Campo label={t('settings.brand.templateSubject')} error={form.errors.template_subject}>
+          <input
+            type="text"
+            maxLength={255}
+            disabled={bloqueado}
+            value={form.data.template_subject}
+            onChange={(e) => form.setData('template_subject', e.target.value)}
+            className={CAMPO}
+          />
+        </Campo>
+        <Campo label={t('settings.brand.templateBody')} error={form.errors.template_body}>
+          <textarea
+            rows={6}
+            maxLength={4000}
+            disabled={bloqueado}
+            value={form.data.template_body}
+            onChange={(e) => form.setData('template_body', e.target.value)}
+            className={CAMPO}
+          />
+        </Campo>
+      </Seccion>
+
+      {! bloqueado ? (
+        <div>
+          <button
+            type="submit"
+            disabled={form.processing}
+            className="rounded bg-navy-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50"
+          >
+            {t('settings.brand.save')}
+          </button>
+        </div>
+      ) : null}
+    </form>
   )
 }

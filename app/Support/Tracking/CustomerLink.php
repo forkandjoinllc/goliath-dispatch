@@ -110,6 +110,7 @@ final class CustomerLink
             url('/'.$locale.'/t/'.$enlace['token']),
             self::nombreDeLaEmpresa($tenantId),
             $locale,
+            $tenantId,
         );
 
         if ($salio) {

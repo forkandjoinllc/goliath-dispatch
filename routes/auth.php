@@ -311,6 +311,7 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::get('settings', [TenantSettingController::class, 'edit'])->name('settings.edit');
     Route::patch('settings', [TenantSettingController::class, 'update'])->name('settings.update');
+    Route::post('settings/branding', [TenantSettingController::class, 'branding'])->name('settings.branding');
 
     /*
     | Plataforma
