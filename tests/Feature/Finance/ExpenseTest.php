@@ -52,6 +52,26 @@ function gasto(Scenario $scenario, string $code, int $cents, ?string $loadId = n
 
     expect($id)->not->toBeNull();
 
+    /*
+     * Y su recibo, si la categoría lo exige.
+     *
+     * Desde el lote 66 un gasto de una categoría con recibo obligatorio no se
+     * puede aprobar sin él, y la mitad de las categorías de serie lo exigen —el
+     * combustible, entre ellas—. Se arregla EL AYUDANTE y no las pruebas: lo que
+     * comprueban es que un gasto aprobado mueve el dinero, no cómo llegó a
+     * aprobarse, y montar un gasto que no puede aprobarse no probaría nada más
+     * que la puerta nueva.
+     *
+     * Es la misma decisión que se tomó en el lote 60, cuando exigir cuatro fotos
+     * al equipo rompió veintiuna pruebas ajenas: el escenario tiene que producir
+     * cosas que PUEDEN trabajar.
+     */
+    if ((bool) categoria($scenario, $code)->requires_receipt) {
+        test()->post("/expenses/{$id}/receipt", [
+            'file' => \Illuminate\Http\UploadedFile::fake()->create('recibo.pdf', 40, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+    }
+
     return (string) $id;
 }
 

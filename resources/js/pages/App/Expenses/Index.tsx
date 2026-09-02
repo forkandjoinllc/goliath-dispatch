@@ -17,6 +17,10 @@ interface Row {
   description: string | null
   incurredOn: string | null
   rejectionReason: string | null
+  /** El recibo, si lo tiene. Nulo cuando no hay. */
+  receipt: { id: string; url: string } | null
+  /** Si su categoría exigía recibo EL DÍA QUE SE PRESENTÓ. */
+  requiresReceipt: boolean
   /** La carga ya tiene cifras congeladas: este gasto no las cambia. */
   loadFrozen?: boolean
 }
@@ -83,7 +87,7 @@ export default function ExpensesIndex({ expenses, filters, statuses, totals, can
           ) : null}
 
           {expenses.data.map((e) => (
-            <ExpenseCard key={e.id} expense={e} canApprove={can.approve} />
+            <ExpenseCard key={e.id} expense={e} canApprove={can.approve} canSubmit={can.submit} />
           ))}
         </div>
 
@@ -93,12 +97,23 @@ export default function ExpensesIndex({ expenses, filters, statuses, totals, can
   )
 }
 
-function ExpenseCard({ expense: e, canApprove }: { expense: Row; canApprove: boolean }) {
+function ExpenseCard({
+  expense: e, canApprove, canSubmit,
+}: {
+  expense: Row
+  canApprove: boolean
+  canSubmit: boolean
+}) {
   const { t, locale } = useI18n()
   const [rechazando, setRechazando] = useState(false)
 
   const decidir = useForm({})
   const rechazo = useForm({ reason: '' })
+
+  // `useForm({})` tipa sus errores por el payload, que aquí está vacío: el
+  // error llega en `status`, que el servidor añade y el tipo no conoce. Se lee
+  // por índice en vez de ensuciar el payload con un campo que no se manda.
+  const errorDeDecision = (decidir.errors as Record<string, string | undefined>).status
 
   return (
     <div className="rounded border border-steel-200 bg-white p-4">
@@ -130,11 +145,28 @@ function ExpenseCard({ expense: e, canApprove }: { expense: Row; canApprove: boo
         </div>
       </div>
 
+      {/* El recibo. La insignia y el aviso van juntos y antes de los botones:
+          quien va a aprobar tiene que ver que falta el papel ANTES de pulsar,
+          no descubrirlo en el error de validación. */}
+      <Recibo gasto={e} puedeSubir={canApprove || canSubmit} puedeQuitar={canApprove} />
+
       {/* Si la carga ya está facturada o liquidada, aprobar esto no cambia esos
           documentos: sus cifras están congeladas. Se dice antes de pulsar. */}
       {e.loadFrozen && e.status === 'submitted' ? (
         <p className="mt-3 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
           {t('expenses.index.frozenWarning')}
+        </p>
+      ) : null}
+
+      {/* Por qué NO se pudo decidir.
+          La puerta del recibo devuelve un error de validación en `status`, y
+          esta pantalla no pintaba ningún error: se pulsaba «Aprobar», la puerta
+          lo paraba bien, y quien lo pulsó no veía absolutamente nada. Una
+          puerta silenciosa se vive como un botón roto. Lo encontró el
+          navegador, no la suite. */}
+      {errorDeDecision ? (
+        <p role="alert" className="mt-3 rounded border-l-4 border-danger-500 bg-danger-50 p-2 text-sm text-carbon">
+          {errorDeDecision}
         </p>
       ) : null}
 
@@ -201,6 +233,102 @@ function ExpenseCard({ expense: e, canApprove }: { expense: Row; canApprove: boo
             <p role="alert" className="text-xs text-danger-700">{rechazo.errors.reason}</p>
           ) : null}
         </form>
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * El recibo de un gasto: si lo hay, si hace falta, y cómo ponerlo.
+ *
+ * `requiresReceipt` viene de la copia CONGELADA del gasto, no de la categoría
+ * de hoy: marcar «peajes» como categoría con recibo el mes que viene no puede
+ * dejar mal aprobados los peajes de este.
+ */
+function Recibo({
+  gasto: e, puedeSubir, puedeQuitar,
+}: {
+  gasto: Row
+  puedeSubir: boolean
+  puedeQuitar: boolean
+}) {
+  const { t } = useI18n()
+  const subida = useForm<{ file: File | null }>({ file: null })
+  const quitar = useForm({})
+
+  // Ni tiene recibo ni le hace falta: no se dice nada. Un aviso que sale
+  // siempre deja de leerse, y entonces tampoco se lee el que importa.
+  if (e.receipt === null && ! e.requiresReceipt) {
+    return null
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 rounded border border-steel-200 bg-steel-50/60 p-2.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-steel-600">
+        {t('expenses.receipt.title')}
+      </span>
+
+      {e.receipt !== null ? (
+        <a
+          href={e.receipt.url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm font-medium text-navy-700 underline hover:text-navy-900"
+        >
+          {t('expenses.receipt.view')}
+        </a>
+      ) : (
+        <span className="rounded bg-warning-100 px-2 py-0.5 text-xs font-medium text-carbon">
+          {t('expenses.receipt.missing')}
+        </span>
+      )}
+
+      {e.requiresReceipt ? (
+        <span className="text-xs text-steel-600">
+          {/* La frase larga solo mientras la decisión esté por tomar. Sobre un
+              gasto YA aprobado, «sin él no se puede aprobar» se contradice con
+              lo que la propia tarjeta dice dos líneas más arriba: se aprobó.
+              Ahí lo que queda es constancia de que falta el papel. */}
+          {e.receipt === null && e.status === 'submitted'
+            ? t('expenses.receipt.requiredHint')
+            : t('expenses.receipt.required')}
+        </span>
+      ) : null}
+
+      {puedeSubir ? (
+        <label className="ml-auto cursor-pointer text-sm font-medium text-navy-700 underline hover:text-navy-900">
+          {e.receipt === null ? t('expenses.receipt.upload') : t('expenses.receipt.replace')}
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/*"
+            disabled={subida.processing}
+            onChange={(ev) => {
+              const f = ev.target.files?.[0]
+              if (f === undefined) return
+              subida.setData('file', f)
+              // `transform` no encadena en esta versión de Inertia: devuelve
+              // void y se aplica al siguiente envío.
+              subida.transform(() => ({ file: f }))
+              subida.post(`/expenses/${e.id}/receipt`, {
+                preserveScroll: true,
+                forceFormData: true,
+                onFinish: () => { ev.target.value = '' },
+              })
+            }}
+          />
+        </label>
+      ) : null}
+
+      {puedeQuitar && e.receipt !== null ? (
+        <button
+          type="button"
+          disabled={quitar.processing}
+          onClick={() => quitar.delete(`/expenses/${e.id}/receipt`, { preserveScroll: true })}
+          className="text-sm font-medium text-danger-700 underline hover:text-danger-900 disabled:opacity-50"
+        >
+          {t('expenses.receipt.remove')}
+        </button>
       ) : null}
     </div>
   )

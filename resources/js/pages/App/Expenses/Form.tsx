@@ -10,6 +10,8 @@ interface Category {
   labelEn: string
   labelEs: string
   treatment: string
+  /** Si esta categoría exige recibo. Se congela en el gasto al presentarlo. */
+  requiresReceipt: boolean
 }
 
 interface LoadChoice {
@@ -158,6 +160,16 @@ export default function ExpenseForm({ categories, loads, loadFrozen = false }: P
           {categoriaElegida ? (
             <p className="mt-1 text-xs text-steel-600">
               {t(`expenses.treatmentHelp.${categoriaElegida.treatment}`)}
+            </p>
+          ) : null}
+
+          {/* Que exige recibo se dice AQUÍ, al elegir la categoría, y no
+              después: quien presenta el gasto tiene el tique delante en ese
+              momento y ya no lo tendrá cuando el revisor se lo devuelva. El
+              recibo se adjunta desde la lista, una vez presentado. */}
+          {categoriaElegida?.requiresReceipt ? (
+            <p className="mt-2 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs text-carbon">
+              {t('expenses.receipt.requiredHint')}
             </p>
           ) : null}
 

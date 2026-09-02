@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1228 tests, 7520 assertions)
+OK (1241 tests, 7574 assertions)
 ```
 
-(Cifra del 2 de septiembre, tras el lote de los sitios del cliente.
+(Cifra del 2 de septiembre, tras el lote del recibo del gasto.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -1260,6 +1260,50 @@ código, y una de las dos no tiene red debajo.
 
 Antes de apoyarse en «la base no lo admitiría», conviene mirar el esquema de esa
 tabla concreta.
+
+## Lecciones del lote del recibo (66)
+
+### Una puerta silenciosa se vive como un botón roto
+
+La puerta del recibo funcionaba: el gasto no se aprobaba. Pero la lista de
+gastos no pintaba ningún error, así que al pulsar «Aprobar» no pasaba
+absolutamente nada visible. La suite estaba en verde —el estado seguía en
+`submitted`, que es lo que comprueba— y la pantalla era inutilizable.
+
+Lo encontró el navegador, otra vez. **Una puerta nueva necesita dos cosas: que
+cierre y que se sepa por qué.** Vale la pena buscar dónde se pinta el error
+ANTES de dar la puerta por hecha.
+
+### El aviso que se contradice con la tarjeta que lo rodea
+
+«Esta categoría exige recibo. Sin él no se puede aprobar el gasto» salía también
+sobre gastos ya aprobados —los que la migración retrollenó—, dos líneas debajo
+de la palabra «Aprobado».
+
+Tercera o cuarta vez que aparece este defecto. La regla que va quedando: un texto
+en futuro o en condicional tiene que mirar el estado, porque la misma frase es
+verdad antes de una decisión y mentira después.
+
+### Cuando una puerta nueva rompe pruebas ajenas, se arregla el AYUDANTE
+
+Tres pruebas de finanzas se pusieron rojas: daban de alta gastos de combustible
+—categoría que exige recibo— y los aprobaban. Lo que comprueban es que un gasto
+aprobado mueve el dinero, no cómo llegó a aprobarse.
+
+Se arregló el ayudante `gasto()` para que adjunte el recibo cuando la categoría
+lo exige. Igual que en el lote 60, cuando exigir cuatro fotos al equipo rompió
+veintiuna pruebas: **el escenario tiene que producir cosas que pueden trabajar.**
+
+### El demo también tiene que enseñar el caso nuevo
+
+El sembrador insertaba gastos sin la copia congelada, así que la primera pasada
+del recorrido no enseñó nada: ni insignia, ni aviso, ni recibo. Se sembró la
+copia y se dejó UNO a propósito sin recibo, para que la pantalla enseñe los dos
+estados.
+
+Van tres lotes seguidos con esto. Cuando un lote añade una columna que decide
+algo, hay que sembrarla — y sembrar los dos lados, o el demo no distingue
+«funciona» de «no mira nada».
 
 ## Qué falta
 

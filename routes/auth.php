@@ -262,6 +262,11 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
     Route::post('expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
     Route::post('expenses/{expense}/reimburse', [ExpenseController::class, 'reimburse'])->name('expenses.reimburse');
+    // El recibo del gasto. `expenses.receipt_document_id` existía desde el
+    // primer día y no la escribía nadie.
+    Route::post('expenses/{expense}/receipt', [ExpenseController::class, 'storeReceipt'])->name('expenses.receipt.store');
+    Route::delete('expenses/{expense}/receipt', [ExpenseController::class, 'destroyReceipt'])->name('expenses.receipt.destroy');
+    Route::get('expenses/{expense}/receipt', [ExpenseController::class, 'showReceipt'])->name('expenses.receipt.show');
 
     /*
     | Asignaciones de despachador

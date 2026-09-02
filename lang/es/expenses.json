@@ -1,68 +1,83 @@
 {
-  "index": {
-    "title": "Gastos",
-    "subtitle": "Combustible, peajes, descarga, adelantos. Lo que costó una carga más allá de la tarifa — y quién acaba pagándolo.",
-    "pending": "Esperando revisión",
-    "counting": "Ya cuenta en el cálculo",
-    "status": "Estado",
-    "anyStatus": "Cualquier estado",
-    "create": "Nuevo gasto",
-    "empty": "Ningún gasto coincide.",
-    "frozenWarning": "Esta carga ya está facturada o liquidada. Esas cifras están congeladas, así que aprobar esto no las cambia — haría falta una nota de crédito o un ajuste.",
-    "approve": "Aprobar",
-    "reject": "Rechazar",
-    "reimburse": "Marcar reembolsado",
-    "rejectReason": "¿Por qué se rechaza? Lo va a leer quien lo presentó.",
-    "confirmReject": "Confirmar rechazo"
-  },
-  "form": {
-    "title": "Nuevo gasto",
-    "subtitle": "Un gasto pertenece a una carga. Hasta que alguien lo apruebe no mueve un céntimo.",
-    "load": "Carga",
-    "chooseLoad": "Carga",
-    "searchLoad": "Escriba un número de carga",
-    "noLoads": "Ninguna carga coincide.",
-    "loadHint": "Escriba tres caracteres del número de carga.",
-    "changeLoad": "Cambiar",
-    "frozenWarning": "Esta carga ya está facturada o liquidada. Sus cifras están congeladas: un gasto añadido ahora no va a aparecer en esos documentos.",
-    "what": "Qué se gastó",
-    "category": "Categoría",
-    "chooseCategory": "Elija una categoría",
-    "amount": "Importe (USD)",
-    "incurredOn": "Fecha del gasto",
-    "incurredHint": "Cuándo se gastó el dinero, no hoy.",
-    "description": "Descripción",
-    "descriptionHint": "Dónde, para qué, número de recibo. Quien lo revise solo ve lo que escriba aquí.",
-    "approvalNote": "Presentarlo no lo aprueba. Alguien con permiso de aprobación tiene que revisarlo antes de que cuente en una factura o una liquidación.",
-    "submit": "Presentar gasto",
-    "cancel": "Cancelar"
-  },
-  "status": {
-    "submitted": "Presentado",
-    "approved": "Aprobado",
-    "rejected": "Rechazado",
-    "reimbursed": "Reembolsado"
-  },
-  "treatment": {
-    "excluded_from_commission": "Excluido de la comisión",
-    "reimbursable_to_carrier": "Reembolsable al transportista",
-    "tenant_absorbed": "Lo asumimos nosotros",
-    "carrier_deduction": "Se le descuenta al transportista"
-  },
-  "treatmentHelp": {
-    "excluded_from_commission": "El dinero pasó por nuestras manos pero no es nuestro para cobrar comisión: sale de la base sobre la que se calcula.",
-    "reimbursable_to_carrier": "Lo adelantó el transportista y se le devuelve. Sube su liquidación.",
-    "tenant_absorbed": "Lo pagamos nosotros y no se repercute. Baja nuestro margen.",
-    "carrier_deduction": "Se le retiene al transportista. Baja su liquidación."
-  },
-  "errors": {
-    "loadNotFound": "Esa carga no existe o no es suya.",
-    "categoryNotFound": "Esa categoría no existe o ya no está activa.",
-    "badTransition": "Ese gasto ya no está en un estado donde esto se pueda hacer. Recargue la página."
-  },
-  "flash": {
-    "submitted": "Gasto presentado. Cuenta cuando alguien lo apruebe.",
-    "decided": "Gasto actualizado.",
-    "decidedButFrozen": "Gasto actualizado. Su carga ya está facturada o liquidada, así que esas cifras congeladas no cambiaron."
-  }
+    "errors": {
+        "badTransition": "Ese gasto ya no está en un estado donde esto se pueda hacer. Recargue la página.",
+        "categoryNotFound": "Esa categoría no existe o ya no está activa.",
+        "loadNotFound": "Esa carga no existe o no es suya.",
+        "receiptRequired": "Este gasto no se puede aprobar sin recibo: su categoría lo exigía cuando se presentó. Adjúntelo, o rechácelo si no lo hay."
+    },
+    "flash": {
+        "submitted": "Gasto presentado. Cuenta cuando alguien lo apruebe.",
+        "decided": "Gasto actualizado.",
+        "decidedButFrozen": "Gasto actualizado. Su carga ya está facturada o liquidada, así que esas cifras congeladas no cambiaron."
+    },
+    "form": {
+        "title": "Nuevo gasto",
+        "subtitle": "Un gasto pertenece a una carga. Hasta que alguien lo apruebe no mueve un céntimo.",
+        "load": "Carga",
+        "chooseLoad": "Carga",
+        "searchLoad": "Escriba un número de carga",
+        "noLoads": "Ninguna carga coincide.",
+        "loadHint": "Escriba tres caracteres del número de carga.",
+        "changeLoad": "Cambiar",
+        "frozenWarning": "Esta carga ya está facturada o liquidada. Sus cifras están congeladas: un gasto añadido ahora no va a aparecer en esos documentos.",
+        "what": "Qué se gastó",
+        "category": "Categoría",
+        "chooseCategory": "Elija una categoría",
+        "amount": "Importe (USD)",
+        "incurredOn": "Fecha del gasto",
+        "incurredHint": "Cuándo se gastó el dinero, no hoy.",
+        "description": "Descripción",
+        "descriptionHint": "Dónde, para qué, número de recibo. Quien lo revise solo ve lo que escriba aquí.",
+        "approvalNote": "Presentarlo no lo aprueba. Alguien con permiso de aprobación tiene que revisarlo antes de que cuente en una factura o una liquidación.",
+        "submit": "Presentar gasto",
+        "cancel": "Cancelar"
+    },
+    "index": {
+        "title": "Gastos",
+        "subtitle": "Combustible, peajes, descarga, adelantos. Lo que costó una carga más allá de la tarifa — y quién acaba pagándolo.",
+        "pending": "Esperando revisión",
+        "counting": "Ya cuenta en el cálculo",
+        "status": "Estado",
+        "anyStatus": "Cualquier estado",
+        "create": "Nuevo gasto",
+        "empty": "Ningún gasto coincide.",
+        "frozenWarning": "Esta carga ya está facturada o liquidada. Esas cifras están congeladas, así que aprobar esto no las cambia — haría falta una nota de crédito o un ajuste.",
+        "approve": "Aprobar",
+        "reject": "Rechazar",
+        "reimburse": "Marcar reembolsado",
+        "rejectReason": "¿Por qué se rechaza? Lo va a leer quien lo presentó.",
+        "confirmReject": "Confirmar rechazo"
+    },
+    "receipt": {
+        "accepted": "PDF o foto, hasta 20 MB.",
+        "missing": "Sin recibo",
+        "none": "Este gasto no tiene recibo.",
+        "remove": "Quitar",
+        "removed": "Se quitó el recibo. La aprobación que ya se dio no cambia; lo que ya no hay es papel.",
+        "replace": "Sustituir",
+        "required": "Requiere recibo",
+        "requiredHint": "Esta categoría exige recibo. Sin él no se puede aprobar el gasto.",
+        "title": "Recibo",
+        "upload": "Adjuntar recibo",
+        "uploaded": "Recibo adjuntado.",
+        "view": "Ver el recibo"
+    },
+    "status": {
+        "submitted": "Presentado",
+        "approved": "Aprobado",
+        "rejected": "Rechazado",
+        "reimbursed": "Reembolsado"
+    },
+    "treatment": {
+        "excluded_from_commission": "Excluido de la comisión",
+        "reimbursable_to_carrier": "Reembolsable al transportista",
+        "tenant_absorbed": "Lo asumimos nosotros",
+        "carrier_deduction": "Se le descuenta al transportista"
+    },
+    "treatmentHelp": {
+        "excluded_from_commission": "El dinero pasó por nuestras manos pero no es nuestro para cobrar comisión: sale de la base sobre la que se calcula.",
+        "reimbursable_to_carrier": "Lo adelantó el transportista y se le devuelve. Sube su liquidación.",
+        "tenant_absorbed": "Lo pagamos nosotros y no se repercute. Baja nuestro margen.",
+        "carrier_deduction": "Se le retiene al transportista. Baja su liquidación."
+    }
 }

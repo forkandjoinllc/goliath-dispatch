@@ -13,13 +13,16 @@ use App\Enums\Scope;
 use App\Models\Expense;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Documents\ExpenseFile;
 use App\Support\InertiaPage;
+use App\Support\Storage\DocumentStore;
 use App\Support\Loads\LoadScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -42,6 +45,15 @@ use Inertia\Response;
  */
 final class ExpenseController
 {
+    /**
+     * Cuánto puede pesar un recibo.
+     *
+     * La foto de un tique con el móvil de alguien ronda los tres o cuatro
+     * megabytes; veinte deja sitio de sobra para un PDF escaneado y sigue
+     * frenando a quien suba un vídeo por error.
+     */
+    private const RECIBO_MAX_KB = 20480;
+
     use InertiaPage;
 
     private const PER_PAGE = 25;
@@ -181,7 +193,7 @@ final class ExpenseController
             ->where('id', $data['category_id'])
             ->whereNull('deleted_at')
             ->where('active', true)
-            ->first(['id', 'treatment', 'label_en']);
+            ->first(['id', 'treatment', 'label_en', 'requires_receipt']);
 
         if ($categoria === null) {
             throw ValidationException::withMessages(['category_id' => __('expenses.errors.categoryNotFound')]);
@@ -200,6 +212,10 @@ final class ExpenseController
             'category_id' => $categoria->id,
             // El tratamiento se CONGELA aquí. Ver la cabecera de la clase.
             'treatment_snapshot' => $categoria->treatment,
+            // Y si exigía recibo, por el mismo motivo: marcar «peajes» como
+            // categoría con recibo el trimestre que viene no puede dejar mal
+            // aprobados los peajes de este.
+            'requires_receipt_snapshot' => (bool) $categoria->requires_receipt,
             'amount_cents' => (int) $data['amount_cents'],
             'description' => $data['description'] ?? null,
             'incurred_on' => $data['incurred_on'] ?? null,
@@ -257,6 +273,113 @@ final class ExpenseController
 
     // ------------------------------------------------------------------ ayudas
 
+    /**
+     * Adjuntar el recibo de un gasto.
+     *
+     * Quien puede presentar gastos puede adjuntar el recibo del suyo, y quien
+     * aprueba puede adjuntarlo de cualquiera: los dos casos son reales —el
+     * conductor que se acuerda de la foto al día siguiente, y quien revisa y la
+     * recibe por WhatsApp— y los dos acaban en el mismo sitio.
+     *
+     * El estrechamiento por ámbito de `find()` es lo que impide que alguien
+     * cuelgue un recibo en el gasto de una carga que no lleva.
+     */
+    public function storeReceipt(
+        Request $request,
+        string $expense,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        DocumentStore $store,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'expense:read', null, $policy);
+        $model = $this->find($checker, $actor, $scope, $expense);
+
+        if (! $checker->can($actor, 'expense:approve', $this->resourceContext($model), $policy)->allowed) {
+            $checker->authorize($actor, 'expense:submit', null, $policy);
+        }
+
+        $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'max:'.self::RECIBO_MAX_KB,
+                // Por MIME real y no por la extensión: `mimetypes:` mira el
+                // contenido con finfo, no la cadena que mandó el navegador.
+                // Mismo criterio que los documentos de la carga.
+                'mimetypes:application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff',
+            ],
+        ]);
+
+        ExpenseFile::attach($actor, (string) $model->id, $request->file('file'), $store);
+
+        return back()->with('success', __('expenses.receipt.uploaded'));
+    }
+
+    /**
+     * Quitar el recibo.
+     *
+     * No desaprueba nada: reescribir una decisión que alguien tomó con el papel
+     * delante sería peor que dejar constancia de que el papel ya no está. La
+     * pantalla lo enseña, y la bitácora del documento guarda quién lo quitó.
+     */
+    public function destroyReceipt(
+        string $expense,
+        CurrentActor $current,
+        PermissionChecker $checker,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'expense:read', null, $policy);
+        $model = $this->find($checker, $actor, $scope, $expense);
+
+        $checker->authorize($actor, 'expense:approve', $this->resourceContext($model), $policy);
+
+        return ExpenseFile::detach($actor, (string) $model->id)
+            ? back()->with('success', __('expenses.receipt.removed'))
+            : back()->with('error', __('expenses.receipt.none'));
+    }
+
+    /**
+     * Ver el recibo.
+     *
+     * Redirige a un enlace FIRMADO y de vida corta, que es como se sirven todos
+     * los ficheros de esta aplicación: la comprobación de permisos ocurre aquí,
+     * una vez, y el visor de PDF del navegador o el móvil de quien lo abre no
+     * necesitan sesión. Ver DocumentFileController.
+     */
+    public function showReceipt(
+        string $expense,
+        CurrentActor $current,
+        PermissionChecker $checker,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'expense:read', null, $policy);
+        $model = $this->find($checker, $actor, $scope, $expense);
+
+        if ($model->receipt_document_id === null) {
+            return back()->with('error', __('expenses.receipt.none'));
+        }
+
+        $clave = DB::table('documents as d')
+            ->join('document_versions as v', 'v.id', '=', 'd.current_version_id')
+            ->where('d.tenant_id', $actor->tenantId)
+            ->where('d.id', $model->receipt_document_id)
+            ->value('v.storage_key');
+
+        if ($clave === null) {
+            return back()->with('error', __('expenses.receipt.none'));
+        }
+
+        return redirect()->to(URL::temporarySignedRoute(
+            'documents.file',
+            now()->addMinutes(5),
+            ['key' => base64_encode((string) $clave)],
+        ));
+    }
+
     private function decide(
         string $id,
         CurrentActor $current,
@@ -285,6 +408,30 @@ final class ExpenseController
         if (! $permitido) {
             throw ValidationException::withMessages([
                 'status' => __('expenses.errors.badTransition'),
+            ]);
+        }
+
+        /*
+         * La puerta del recibo.
+         *
+         * «El revisor no puede aprobar un gasto al que le falte un recibo
+         * obligatorio» lo decía el diccionario portado desde el primer día, y
+         * no había nada detrás: ni forma de adjuntar un recibo ni comprobación
+         * al aprobar. Un gasto aprobado se rebota al cliente en la factura o se
+         * descuenta de la liquidación del transportista, así que aprobar sin
+         * papel es firmar un agujero que aparece meses después, cuando alguien
+         * lo discute.
+         *
+         * Solo al APROBAR. Rechazar un gasto sin recibo tiene que seguir
+         * siendo posible —es, de hecho, lo que hay que hacer con él— y
+         * reembolsar uno ya aprobado también: la decisión con papel ya se tomó.
+         *
+         * Se mira la copia congelada del gasto y no la categoría de hoy. Ver la
+         * migración que la añadió.
+         */
+        if ($nuevo === 'approved' && $model->requires_receipt_snapshot && $model->receipt_document_id === null) {
+            throw ValidationException::withMessages([
+                'status' => __('expenses.errors.receiptRequired'),
             ]);
         }
 
@@ -386,6 +533,13 @@ final class ExpenseController
             'description' => $e->description,
             'incurredOn' => $e->incurred_on?->toDateString(),
             'rejectionReason' => $e->rejection_reason,
+            // El recibo: si lo tiene, y si su categoría lo exige. Las dos
+            // cosas, porque «no tiene» y «no le hace falta» se pintan distinto.
+            'receipt' => $e->receipt_document_id === null ? null : [
+                'id' => (string) $e->receipt_document_id,
+                'url' => route('expenses.receipt.show', ['expense' => $e->id]),
+            ],
+            'requiresReceipt' => (bool) $e->requires_receipt_snapshot,
         ];
     }
 
@@ -468,6 +622,11 @@ final class ExpenseController
                 // quería «combustible» cambia quién paga, y eso no debería
                 // descubrirse en la liquidación.
                 'treatment' => (string) $c->treatment,
+                // Y si exige recibo. La columna se consultaba aquí desde el
+                // primer día y se tiraba justo antes de mandarla: el navegador
+                // nunca la vio, así que ni se avisaba al dar de alta el gasto
+                // ni había puerta al aprobarlo.
+                'requiresReceipt' => (bool) $c->requires_receipt,
             ])
             ->all();
     }

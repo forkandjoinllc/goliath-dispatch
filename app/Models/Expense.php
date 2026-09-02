@@ -27,6 +27,9 @@ final class Expense extends BaseModel
         'carrier_id',
         'category_id',
         'treatment_snapshot',
+        // Si la categoría exigía recibo el día que se presentó. Copia
+        // congelada, igual que el tratamiento y por la misma razón.
+        'requires_receipt_snapshot',
         'amount_cents',
         'description',
         'incurred_on',
@@ -48,6 +51,7 @@ final class Expense extends BaseModel
     {
         return [
             'treatment_snapshot' => ExpenseTreatment::class,
+            'requires_receipt_snapshot' => 'boolean',
             'amount_cents' => 'integer',
             'incurred_on' => 'immutable_datetime',
             'status' => ExpenseStatus::class,

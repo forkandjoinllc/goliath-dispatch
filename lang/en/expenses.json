@@ -1,68 +1,83 @@
 {
-  "index": {
-    "title": "Expenses",
-    "subtitle": "Fuel, tolls, lumper, advances. What a load cost beyond the rate — and who ends up paying it.",
-    "pending": "Waiting for review",
-    "counting": "Counting in the math",
-    "status": "Status",
-    "anyStatus": "Any status",
-    "create": "New expense",
-    "empty": "No expenses match.",
-    "frozenWarning": "This load is already invoiced or settled. Those figures are frozen, so approving this will not change them — you would need a credit or an adjustment.",
-    "approve": "Approve",
-    "reject": "Reject",
-    "reimburse": "Mark reimbursed",
-    "rejectReason": "Why is it rejected? The person who submitted it will read this.",
-    "confirmReject": "Confirm rejection"
-  },
-  "form": {
-    "title": "New expense",
-    "subtitle": "An expense belongs to a load. Until someone approves it, it moves no money.",
-    "load": "Load",
-    "chooseLoad": "Load",
-    "searchLoad": "Type a load number",
-    "noLoads": "No loads match.",
-    "loadHint": "Type three characters of the load number.",
-    "changeLoad": "Change",
-    "frozenWarning": "This load is already invoiced or settled. Its figures are frozen: an expense added now will not appear on those documents.",
-    "what": "What was spent",
-    "category": "Category",
-    "chooseCategory": "Choose a category",
-    "amount": "Amount (USD)",
-    "incurredOn": "Date incurred",
-    "incurredHint": "When the money was spent, not today.",
-    "description": "Description",
-    "descriptionHint": "Where, what for, receipt number. Whoever reviews it only sees what you write here.",
-    "approvalNote": "Submitting does not approve it. Someone with approval rights has to review it before it counts on an invoice or a settlement.",
-    "submit": "Submit expense",
-    "cancel": "Cancel"
-  },
-  "status": {
-    "submitted": "Submitted",
-    "approved": "Approved",
-    "rejected": "Rejected",
-    "reimbursed": "Reimbursed"
-  },
-  "treatment": {
-    "excluded_from_commission": "Excluded from commission",
-    "reimbursable_to_carrier": "Reimbursable to carrier",
-    "tenant_absorbed": "Absorbed by us",
-    "carrier_deduction": "Deducted from carrier"
-  },
-  "treatmentHelp": {
-    "excluded_from_commission": "The money passed through us but is not ours to take a fee on: it comes out of the commission base.",
-    "reimbursable_to_carrier": "The carrier fronted it and gets it back. It raises the settlement.",
-    "tenant_absorbed": "We pay it and do not pass it on. It lowers our margin.",
-    "carrier_deduction": "It is held back from the carrier. It lowers the settlement."
-  },
-  "errors": {
-    "loadNotFound": "That load does not exist or is not yours.",
-    "categoryNotFound": "That category does not exist or is no longer active.",
-    "badTransition": "That expense is no longer in a state where this can be done. Reload the page."
-  },
-  "flash": {
-    "submitted": "Expense submitted. It counts once someone approves it.",
-    "decided": "Expense updated.",
-    "decidedButFrozen": "Expense updated. Its load is already invoiced or settled, so those frozen figures did not change."
-  }
+    "errors": {
+        "badTransition": "That expense is no longer in a state where this can be done. Reload the page.",
+        "categoryNotFound": "That category does not exist or is no longer active.",
+        "loadNotFound": "That load does not exist or is not yours.",
+        "receiptRequired": "This expense cannot be approved without a receipt: its category required one when it was submitted. Attach it, or reject the expense if there is none."
+    },
+    "flash": {
+        "submitted": "Expense submitted. It counts once someone approves it.",
+        "decided": "Expense updated.",
+        "decidedButFrozen": "Expense updated. Its load is already invoiced or settled, so those frozen figures did not change."
+    },
+    "form": {
+        "title": "New expense",
+        "subtitle": "An expense belongs to a load. Until someone approves it, it moves no money.",
+        "load": "Load",
+        "chooseLoad": "Load",
+        "searchLoad": "Type a load number",
+        "noLoads": "No loads match.",
+        "loadHint": "Type three characters of the load number.",
+        "changeLoad": "Change",
+        "frozenWarning": "This load is already invoiced or settled. Its figures are frozen: an expense added now will not appear on those documents.",
+        "what": "What was spent",
+        "category": "Category",
+        "chooseCategory": "Choose a category",
+        "amount": "Amount (USD)",
+        "incurredOn": "Date incurred",
+        "incurredHint": "When the money was spent, not today.",
+        "description": "Description",
+        "descriptionHint": "Where, what for, receipt number. Whoever reviews it only sees what you write here.",
+        "approvalNote": "Submitting does not approve it. Someone with approval rights has to review it before it counts on an invoice or a settlement.",
+        "submit": "Submit expense",
+        "cancel": "Cancel"
+    },
+    "index": {
+        "title": "Expenses",
+        "subtitle": "Fuel, tolls, lumper, advances. What a load cost beyond the rate — and who ends up paying it.",
+        "pending": "Waiting for review",
+        "counting": "Counting in the math",
+        "status": "Status",
+        "anyStatus": "Any status",
+        "create": "New expense",
+        "empty": "No expenses match.",
+        "frozenWarning": "This load is already invoiced or settled. Those figures are frozen, so approving this will not change them — you would need a credit or an adjustment.",
+        "approve": "Approve",
+        "reject": "Reject",
+        "reimburse": "Mark reimbursed",
+        "rejectReason": "Why is it rejected? The person who submitted it will read this.",
+        "confirmReject": "Confirm rejection"
+    },
+    "receipt": {
+        "accepted": "PDF or photo, up to 20 MB.",
+        "missing": "No receipt",
+        "none": "This expense has no receipt.",
+        "remove": "Remove",
+        "removed": "The receipt was removed. The approval already given does not change; what is gone is the paper.",
+        "replace": "Replace",
+        "required": "Receipt required",
+        "requiredHint": "This category requires a receipt. The expense cannot be approved without one.",
+        "title": "Receipt",
+        "upload": "Attach receipt",
+        "uploaded": "Receipt attached.",
+        "view": "View receipt"
+    },
+    "status": {
+        "submitted": "Submitted",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "reimbursed": "Reimbursed"
+    },
+    "treatment": {
+        "excluded_from_commission": "Excluded from commission",
+        "reimbursable_to_carrier": "Reimbursable to carrier",
+        "tenant_absorbed": "Absorbed by us",
+        "carrier_deduction": "Deducted from carrier"
+    },
+    "treatmentHelp": {
+        "excluded_from_commission": "The money passed through us but is not ours to take a fee on: it comes out of the commission base.",
+        "reimbursable_to_carrier": "The carrier fronted it and gets it back. It raises the settlement.",
+        "tenant_absorbed": "We pay it and do not pass it on. It lowers our margin.",
+        "carrier_deduction": "It is held back from the carrier. It lowers the settlement."
+    }
 }

@@ -1281,7 +1281,7 @@ class DemoDataSeeder extends Seeder
     {
         $categories = DB::table('expense_categories')
             ->where('tenant_id', $this->tenantId)
-            ->get(['id', 'code', 'treatment'])
+            ->get(['id', 'code', 'treatment', 'requires_receipt'])
             ->keyBy('code');
 
         $admin = DB::table('user_tenant_memberships')
@@ -1296,6 +1296,10 @@ class DemoDataSeeder extends Seeder
             // no se ha ejecutado.
             return;
         }
+
+        // El primero que exija recibo se queda SIN él, para que el demo enseñe
+        // los dos estados. Ver dónde se usa.
+        $conRecibo = false;
 
         $rows = [
             ['GD-24003', 'permit', 340000, 'Permiso de sobredimensión Texas–Oklahoma'],
@@ -1329,12 +1333,19 @@ class DemoDataSeeder extends Seeder
             // Es lo que exige la columna: `treatment_snapshot`. Si mañana se
             // reclasifica «peajes» de retención a absorbido, las liquidaciones
             // ya cerradas no pueden cambiar de importe.
-            $this->upsert('expenses', [
+            $exigeRecibo = (bool) $categories[$code]->requires_receipt;
+
+            $gastoId = $this->upsert('expenses', [
                 'load_id' => $load->id,
                 'category_id' => $categories[$code]->id,
             ], [
                 'carrier_id' => $load->carrier_id,
                 'treatment_snapshot' => $categories[$code]->treatment,
+                // La copia congelada de si la categoría exigía recibo. Sin ella
+                // el demo enseñaba gastos aprobados de categorías que exigen
+                // recibo sin decirlo, que es justo el estado que este lote vino
+                // a quitar.
+                'requires_receipt_snapshot' => $exigeRecibo,
                 'amount_cents' => $cents,
                 'description' => $description,
                 'incurred_on' => Carbon::now()->subDays(random_int(3, 20)),
@@ -1343,7 +1354,79 @@ class DemoDataSeeder extends Seeder
                 'reviewed_by_user_id' => $admin,
                 'reviewed_at' => Carbon::now()->subDays(2),
             ]);
+
+            /*
+             * Y el recibo, a los que lo exigían.
+             *
+             * Se deja UNO a propósito sin él —el primero de los que lo exigen—
+             * para que el demo enseñe los dos estados: el gasto con su papel y
+             * el que lo está pidiendo. Si todos lo tuvieran, la pantalla no
+             * distinguiría «funciona» de «no mira nada», que es el mismo motivo
+             * por el que el escenario de pruebas no asigna todos los
+             * transportistas al mismo despachador.
+             */
+            if ($exigeRecibo && $conRecibo) {
+                $this->reciboDeGasto($gastoId, $admin);
+            }
+
+            $conRecibo = $conRecibo || $exigeRecibo;
         }
+    }
+
+    /**
+     * Un recibo de mentira colgado de un gasto.
+     *
+     * Se escribe como documento de verdad —fila en `documents`, su versión Y su
+     * fichero— porque es lo que hace la aplicación: así el demo enseña el enlace
+     * «ver el recibo» funcionando y no un adorno.
+     *
+     * El fichero hace falta. La primera versión de este método lo daba por
+     * innecesario —«lo que se está enseñando es el circuito»— y lo cazó el
+     * guardián que dejó el lote 53: todo documento sembrado tiene que tener su
+     * fichero, porque un demo donde «ver el recibo» da error es exactamente la
+     * clase de mentira que este proyecto lleva veinte lotes quitando. El
+     * guardián tenía razón y el comentario no.
+     */
+    private function reciboDeGasto(string $expenseId, string $admin): void
+    {
+        $documentId = $this->upsert('documents', [
+            'owner_type' => 'expense',
+            'owner_id' => $expenseId,
+        ], [
+            'document_type' => 'receipt',
+            'title' => 'recibo-demo.pdf',
+            'is_required' => false,
+            'review_status' => 'pending',
+            'uploaded_by_user_id' => $admin,
+        ]);
+
+        $clave = 'documents/demo/recibo-'.$expenseId.'.pdf';
+
+        $versionId = $this->upsert('document_versions', [
+            'document_id' => $documentId,
+            'version_number' => 1,
+        ], [
+            'storage_key' => $clave,
+            'original_filename' => 'recibo-demo.pdf',
+            'content_type' => 'application/pdf',
+            'byte_size' => 24576,
+            'sha256' => hash('sha256', $expenseId),
+            'malware_scan_status' => 'pending',
+            'uploaded_by_user_id' => $admin,
+        ]);
+
+        DB::table('documents')->where('id', $documentId)->update([
+            'current_version_id' => $versionId,
+            'updated_at' => now(),
+        ]);
+
+        DB::table('expenses')->where('id', $expenseId)->update([
+            'receipt_document_id' => $documentId,
+            'updated_at' => now(),
+        ]);
+
+        // Y el FICHERO, no solo las filas.
+        $this->placeholderPdf($clave);
     }
 
     /**
