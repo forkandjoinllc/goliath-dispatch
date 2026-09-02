@@ -32,6 +32,7 @@ Por cargo, y en este orden:
 
 | Orden | Cargo | Por qué |
 |---|---|---|
+| 0 | quien lleva el sitio de entrega | Añadido en el lote 65 — ver docs/customer-places.md |
 | 1 | `traffic` | Quien mueve la carga día a día |
 | 2 | `dock` | Quien la carga o descarga y quiere saber a qué hora llega |
 | 3 | `purchasing` | Quien contrató el flete |
@@ -123,6 +124,7 @@ que haya que deshacer.
   existe y sigue vacía.
 - **Solo el despacho manda correo al cliente.** Ni la entrega, ni un retraso, ni
   el comprobante.
-- **`customer_contact_locations` sigue sin usarse.** Saber que el del muelle de
-  Laredo es Fulano y el de San Antonio es Mengano permitiría mandar el aviso al
-  del sitio donde va la carga, en vez de al de tráfico de toda la empresa.
+- ~~`customer_contact_locations` sigue sin usarse.~~ Hecho en el lote 65: cada
+  contacto se ata a los sitios que lleva, y el enlace va antes a quien lleva el
+  sitio donde se ENTREGA que a quien lleva el tráfico de toda la empresa. Ver
+  docs/customer-places.md.

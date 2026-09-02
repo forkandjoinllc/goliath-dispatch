@@ -15,9 +15,10 @@ use Illuminate\Support\Facades\DB;
  *
  * ## A quién
  *
- * Al contacto que ESPERA la carga, elegido por su cargo — ver `PREFERENCIA` y
- * `destinatario()`—; si el cliente no tiene contactos, al correo del propio
- * cliente. En ese orden y no al revés: `customers.email` suele ser la dirección
+ * Al contacto que ESPERA la carga: primero quien lleva el SITIO donde se
+ * entrega, y dentro de esos, por cargo — ver `PREFERENCIA` y `destinatario()`.
+ * Si nadie lleva ese sitio, por cargo en toda la empresa; si el cliente no
+ * tiene contactos, al correo del propio cliente. En ese orden y no al revés: `customers.email` suele ser la dirección
  * general de facturación, y el enlace de una carga concreta le sirve a quien la
  * espera, no a contabilidad.
  *
@@ -155,8 +156,12 @@ final class CustomerLink
      *
      * ## A quién
      *
-     * A quien ESPERA la carga, que no es lo mismo que quien la paga. Se busca
-     * por cargo y en este orden: tráfico, el muelle, compras, el principal, y
+     * A quien ESPERA la carga, que no es lo mismo que quien la paga.
+     *
+     * Primero se estrecha a quien lleva el sitio donde se ENTREGA —un cliente
+     * con cuatro plantas tiene a alguien en cada una— y dentro de ese grupo se
+     * busca por cargo: tráfico, el muelle, compras. Si nadie lleva ese sitio, la
+     * misma búsqueda por cargo en toda la empresa; luego el principal, luego
      * cualquiera con correo. Contabilidad queda fuera de la preferencia a
      * propósito: la factura es suya y el aviso de que un camión va de camino no.
      *
@@ -198,19 +203,28 @@ final class CustomerLink
             ->whereNull('deleted_at')
             ->whereNotNull('email')
             ->where('email', '!=', '')
-            ->get(['email', 'position', 'preferred_locale', 'is_primary']);
+            ->get(['id', 'email', 'position', 'preferred_locale', 'is_primary']);
 
-        $elegido = null;
+        /*
+         * Antes que nada: quien lleva EL SITIO al que va esta carga.
+         *
+         * Un cliente con cuatro plantas tiene a alguien en cada una, y el que
+         * quiere saber que un camión va de camino a Odessa es el de Odessa —no
+         * quien lleva el tráfico de toda la empresa desde otra ciudad—. Con la
+         * preferencia por cargo a secas, ese aviso llegaba siempre al mismo
+         * sitio, y en un cliente grande casi nunca al correcto.
+         *
+         * Se mira la ENTREGA y no la recogida: el enlace es para quien espera la
+         * carga. Ver `contactosDelDestino()`.
+         */
+        $delDestino = self::contactosDelDestino($tenantId, $loadId, $contactos);
 
-        foreach (self::PREFERENCIA as $cargo) {
-            $elegido = $contactos->firstWhere('position', $cargo);
+        $elegido = self::porCargo($delDestino) ?? self::porCargo($contactos);
 
-            if ($elegido !== null) {
-                break;
-            }
-        }
-
-        $elegido ??= $contactos->firstWhere('is_primary', 1) ?? $contactos->first();
+        $elegido ??= $delDestino->firstWhere('is_primary', 1)
+            ?? $contactos->firstWhere('is_primary', 1)
+            ?? $delDestino->first()
+            ?? $contactos->first();
 
         if ($elegido !== null) {
             return [
@@ -227,6 +241,67 @@ final class CustomerLink
             'email' => trim((string) $cliente->email),
             'locale' => self::idiomaValido($cliente->preferred_locale),
         ];
+    }
+
+    /**
+     * De una lista de contactos, el primero cuyo cargo esté en la preferencia.
+     *
+     * @param  \Illuminate\Support\Collection<int, object>  $contactos
+     */
+    private static function porCargo(\Illuminate\Support\Collection $contactos): ?object
+    {
+        foreach (self::PREFERENCIA as $cargo) {
+            $encontrado = $contactos->firstWhere('position', $cargo);
+
+            if ($encontrado !== null) {
+                return $encontrado;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Los contactos atados al sitio donde se ENTREGA esta carga.
+     *
+     * La última parada de entrega, que es donde acaba el viaje. Si esa parada
+     * no apunta a ningún sitio —dirección escrita a mano— o nadie está atado a
+     * él, se devuelve la lista vacía y el que llama se cae a la preferencia por
+     * cargo de toda la empresa, que es lo que había antes y sigue siendo un
+     * respaldo razonable.
+     *
+     * @param  \Illuminate\Support\Collection<int, object>  $contactos
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    private static function contactosDelDestino(
+        string $tenantId,
+        string $loadId,
+        \Illuminate\Support\Collection $contactos,
+    ): \Illuminate\Support\Collection {
+        $sitio = DB::table('load_stops')
+            ->where('tenant_id', $tenantId)
+            ->where('load_id', $loadId)
+            ->where('stop_type', 'delivery')
+            ->whereNull('deleted_at')
+            ->whereNotNull('customer_location_id')
+            ->orderByDesc('sequence')
+            ->value('customer_location_id');
+
+        if ($sitio === null) {
+            return $contactos->take(0);
+        }
+
+        $ids = DB::table('customer_contact_locations')
+            ->where('tenant_id', $tenantId)
+            ->where('location_id', $sitio)
+            ->whereNull('deleted_at')
+            ->pluck('contact_id')
+            ->map(static fn ($id): string => (string) $id)
+            ->all();
+
+        return $contactos->filter(
+            static fn (object $c): bool => in_array((string) $c->id, $ids, true),
+        )->values();
     }
 
     /** Un idioma que la aplicación sepa hablar, o el respaldo. */

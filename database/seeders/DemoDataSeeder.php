@@ -795,8 +795,10 @@ class DemoDataSeeder extends Seeder
              * idioma de su empresa, el demo no distinguiría «funciona» de «no
              * hace nada».
              */
+            $contactIds = [];
+
             foreach ($r['contacts'] as $i => [$nombre, $apellido, $correo, $cargo, $idioma]) {
-                $this->upsert('customer_contacts', [
+                $contactIds[] = $this->upsert('customer_contacts', [
                     'customer_id' => $customerId,
                     'email' => $correo,
                 ], [
@@ -823,6 +825,33 @@ class DemoDataSeeder extends Seeder
                     'timezone' => in_array($state, ['GA'], true) ? 'America/New_York' : 'America/Chicago',
                     'is_primary' => $i === 0,
                 ]);
+            }
+
+            /*
+             * Quién lleva cada sitio.
+             *
+             * `customer_contact_locations` tampoco la escribía nadie —ni la
+             * aplicación ni este sembrador— y es la que contesta la pregunta que
+             * de verdad importa al mandar un aviso: quién es el del muelle AL
+             * QUE VA esta carga.
+             *
+             * Se ata al SEGUNDO contacto —el del muelle— con el segundo sitio, a
+             * propósito: si todos los contactos llevaran todos los sitios, el
+             * demo no distinguiría «elige bien» de «no mira los sitios».
+             */
+            $sitiosPorOrden = array_values($locations);
+
+            foreach ($r['contacts'] as $i => $_) {
+                $sitio = $sitiosPorOrden[$i] ?? null;
+
+                if ($sitio === null || ! isset($contactIds[$i])) {
+                    continue;
+                }
+
+                $this->upsert('customer_contact_locations', [
+                    'contact_id' => $contactIds[$i],
+                    'location_id' => $sitio,
+                ], []);
             }
 
             $out[$r['key']] = ['id' => $customerId, 'locations' => $locations];
@@ -1597,7 +1626,7 @@ class DemoDataSeeder extends Seeder
 
         $tablas = [
             'carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents',
-            'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'customer_contacts',
+            'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'customer_contacts', 'customer_contact_locations',
             'loads', 'load_stops',
             // La mitad del dinero. Sin estas filas la demostración enseñaba
             // facturas, cobros y comisiones vacías, y los informes a cero.

@@ -263,7 +263,7 @@ final class LoadController
             return back()->withInput()->with('error', __('billing.limits.reached.loadsThisMonth'));
         }
 
-        $data = $this->validated($request, true);
+        $data = $this->validated($request, $actor, true);
         $canMoney = $checker->can($actor, 'load:financials:update', null, $policy)->allowed;
 
         $load = DB::transaction(function () use ($data, $actor, $canMoney): Load {
@@ -347,7 +347,7 @@ final class LoadController
 
         abort_unless($canFreight || $canMoney, 403);
 
-        $data = $this->validated($request, $canFreight);
+        $data = $this->validated($request, $actor, $canFreight);
 
         DB::transaction(function () use ($model, $data, $canMoney, $canFreight, $actor): void {
             $before = [
@@ -772,6 +772,34 @@ final class LoadController
                 ])
                 ->all(),
 
+            /*
+             * Los sitios de cada cliente, para que una parada pueda apuntar a
+             * uno en vez de repetir la dirección a mano.
+             *
+             * Van TODOS los clientes en una sola carga y no por petición al
+             * elegir cliente: son pocas filas, el formulario cambia de cliente
+             * sin recargar, y una petición por cambio de desplegable convierte
+             * un formulario en algo que parpadea.
+             */
+            'customerLocations' => DB::table('customer_locations')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at')
+                ->orderByDesc('is_primary')
+                ->orderBy('name')
+                ->get(['id', 'customer_id', 'name', 'line1', 'city', 'state', 'postal_code', 'country', 'timezone'])
+                ->map(fn ($r): array => [
+                    'id' => (string) $r->id,
+                    'customerId' => (string) $r->customer_id,
+                    'name' => (string) $r->name,
+                    'line1' => $r->line1,
+                    'city' => $r->city,
+                    'state' => $r->state,
+                    'postalCode' => $r->postal_code,
+                    'country' => $r->country,
+                    'timezone' => $r->timezone,
+                ])
+                ->all(),
+
             'equipmentTypes' => DB::table('equipment_types')
                 ->where('tenant_id', $actor->tenantId)
                 ->whereNull('deleted_at')
@@ -1038,7 +1066,7 @@ final class LoadController
     /**
      * @return array<string, mixed>
      */
-    private function validated(Request $request, bool $withFreight = true): array
+    private function validated(Request $request, Actor $actor, bool $withFreight = true): array
     {
         // Quien solo puede tocar el dinero no manda mercancía ni paradas, así
         // que exigírselas lo dejaría fuera con un error de validación que no
@@ -1069,7 +1097,35 @@ final class LoadController
             'stops.*.id' => ['nullable', 'string', 'size:36'],
             'stops.*.stop_type' => ['required', 'in:pickup,delivery'],
             'stops.*.facility_name' => ['nullable', 'string', 'max:200'],
-            'stops.*.customer_location_id' => ['nullable', 'string', 'size:36'],
+            /*
+             * El sitio del cliente al que apunta esta parada.
+             *
+             * Se comprueba que sea DE ESTE CLIENTE y de esta empresa, y no solo
+             * que mida 36 caracteres. Antes bastaba con la longitud: el
+             * navegador podía mandar el identificador de una instalación de
+             * otro cliente —o de otra empresa— y los ocho lectores que hacen
+             * `leftJoin` con `customer_locations` habrían enseñado su nombre y
+             * su dirección en la confirmación de tarifa que firma el
+             * transportista y en la página pública de rastreo.
+             *
+             * No es una comprobación de forma: es la frontera. Ver el guardián.
+             */
+            'stops.*.customer_location_id' => ['nullable', 'uuid', function (string $attribute, mixed $value, Closure $fail) use ($request, $actor): void {
+                if ($value === null || $value === '') {
+                    return;
+                }
+
+                $existe = DB::table('customer_locations')
+                    ->where('tenant_id', $actor->tenantId)
+                    ->where('customer_id', $request->input('customer_id'))
+                    ->where('id', $value)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (! $existe) {
+                    $fail(__('loads.errors.locationNotOfCustomer'));
+                }
+            }],
             'stops.*.line1' => ['nullable', 'string', 'max:200'],
             'stops.*.city' => ['nullable', 'string', 'max:120'],
             'stops.*.country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
@@ -1386,6 +1442,7 @@ final class LoadController
                 's.state', 's.country', 's.postal_code', 's.timezone', 's.appointment_type',
                 's.window_start', 's.window_end', 's.actual_arrival_at', 's.actual_departure_at',
                 's.detention_minutes', 's.instructions', 's.contact_name', 's.contact_phone',
+                's.customer_location_id',
                 'cl.name as location_name', 'cl.line1 as location_line1', 'cl.city as location_city',
                 'cl.state as location_state', 'cl.country as location_country',
                 'cl.postal_code as location_postal',
@@ -1394,6 +1451,10 @@ final class LoadController
                 'id' => (string) $s->id,
                 'type' => (string) $s->stop_type,
                 'sequence' => (int) $s->sequence,
+                // A qué sitio apunta, si apunta a alguno. Sin esto el
+                // formulario no podía volver a enseñar la elección hecha, y al
+                // guardar de nuevo la perdía.
+                'customerLocationId' => $s->customer_location_id === null ? null : (string) $s->customer_location_id,
                 // La parada puede apuntar a una ubicación del cliente o llevar su
                 // propia dirección escrita a mano. Se prefiere la del cliente
                 // cuando existe: es la que alguien mantiene al día.

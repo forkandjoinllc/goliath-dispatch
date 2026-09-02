@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1216 tests, 7484 assertions)
+OK (1228 tests, 7520 assertions)
 ```
 
-(Cifra del 1 de septiembre, tras el lote de la voz del cliente.
+(Cifra del 2 de septiembre, tras el lote de los sitios del cliente.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -1216,6 +1216,50 @@ arreglar.
 Cuando un lote cambia de dónde sale un dato, hay que sembrar el caso nuevo en el
 demo y mirarlo con el navegador. La suite verde solo dice que el caso viejo sigue
 funcionando.
+
+## Lecciones del lote de los sitios (65)
+
+### Una aserción por `grep` puede pasar por el motivo equivocado
+
+La prueba del formulario de carga buscaba `customer_location_id` a secas. El
+sabotaje —quitar la línea que RELLENA el campo— la dejó en verde, porque el
+nombre sigue apareciendo en la interfaz del borrador y en los `disabled`.
+
+Segunda vez en dos lotes que el sabotaje encuentra una prueba que pasa por el
+motivo equivocado (la anterior fue el mensaje dentro de un matcher variádico).
+La regla que queda: **buscar la línea que hace el trabajo, no la palabra que la
+nombra** — `customer_location_id: sitio.id`, no `customer_location_id`.
+
+### La mitad del defecto que está en el servidor es la fácil de ver
+
+`load_stops.customer_location_id` se validaba y se guardaba desde el primer día,
+y ocho lectores lo leían. Leyendo solo el servidor, la función parecía completa.
+El que no lo mandaba nunca era el formulario, porque el campo no existía.
+
+Cuando una columna sale null en producción y el código del servidor parece
+correcto, hay que ir a mirar quién la ENVÍA. Es la misma forma del defecto del
+lote 63 (`actual_arrival_at` se leía en tres pantallas y nadie la escribía), con
+el agravante de que aquí sí había código de escritura: le faltaba el remitente.
+
+### Una clave foránea que llega del navegador es una frontera
+
+`customer_location_id` se validaba como «una cadena de 36 caracteres». Ocho
+lectores hacen `leftJoin` con `customer_locations`, así que ese identificador
+—elegido por el navegador— podía traer a la pantalla el nombre y la dirección de
+la instalación de otro cliente, o de otra empresa, incluido el papel que firma el
+transportista.
+
+Una regla de forma (`size:36`, `uuid`) no es una validación de una clave foránea.
+Lo que hay que comprobar es de quién es la fila.
+
+### Índices que existen en una tabla y no en su hermana
+
+`customer_contacts` tiene índice único sobre el principal; `customer_locations`
+no. Dos tablas que se editan igual, se pintan igual y se sincronizan con el mismo
+código, y una de las dos no tiene red debajo.
+
+Antes de apoyarse en «la base no lo admitiría», conviene mirar el esquema de esa
+tabla concreta.
 
 ## Qué falta
 

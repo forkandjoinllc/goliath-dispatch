@@ -8,6 +8,8 @@ import { useI18n } from '@/lib/i18n'
 interface StopDraft {
   id: string | null
   stop_type: 'pickup' | 'delivery'
+  /** El sitio del cliente al que apunta, o vacío si la dirección va a mano. */
+  customer_location_id: string
   facility_name: string
   line1: string
   city: string
@@ -37,6 +39,17 @@ interface Props {
   requirements?: Record<string, unknown>[]
   choices: {
     customers: { id: string; name: string }[]
+    customerLocations: {
+      id: string
+      customerId: string
+      name: string
+      line1: string | null
+      city: string | null
+      state: string | null
+      postalCode: string | null
+      country: string | null
+      timezone: string | null
+    }[]
     carriers: { id: string; name: string; dispatchFeeBps: number }[]
     equipmentTypes: { id: string; code: string; labelEn: string; labelEs: string }[]
   }
@@ -69,6 +82,7 @@ function blankStop(type: 'pickup' | 'delivery'): StopDraft {
   return {
     id: null,
     stop_type: type,
+    customer_location_id: '',
     facility_name: '',
     line1: '',
     city: '',
@@ -110,6 +124,7 @@ export default function LoadForm({
       ? stops.map((s) => ({
           id: String(s.id),
           stop_type: s.type as 'pickup' | 'delivery',
+          customer_location_id: (s.customerLocationId as string) ?? '',
           facility_name: (s.name as string) ?? '',
           line1: (s.line1 as string) ?? '',
           city: (s.city as string) ?? '',
@@ -188,6 +203,41 @@ export default function LoadForm({
     const next = stopList.map((s, i) => (i === index ? { ...s, ...patch } : s))
     setStopList(next)
     form.setData('stops', next)
+  }
+
+  /** Los sitios del cliente elegido ahora mismo. */
+  const sitiosDelCliente = choices.customerLocations.filter(
+    (l) => l.customerId === form.data.customer_id,
+  )
+
+  /**
+   * Elegir un sitio copia su dirección a la parada.
+   *
+   * Se COPIA y no solo se referencia porque una parada tiene que poder
+   * sobrevivir a que el sitio cambie de dirección el año que viene: lo que se
+   * despachó se despachó a donde se despachó. Los lectores prefieren la
+   * dirección de la ficha, así que mientras el sitio siga vivo enseñan la suya
+   * — y si alguien lo borra, la copia sigue diciendo dónde fue.
+   */
+  const elegirSitio = (index: number, id: string) => {
+    const sitio = choices.customerLocations.find((l) => l.id === id)
+
+    if (sitio === undefined) {
+      patchStop(index, { customer_location_id: '' })
+
+      return
+    }
+
+    patchStop(index, {
+      customer_location_id: sitio.id,
+      facility_name: sitio.name,
+      line1: sitio.line1 ?? '',
+      city: sitio.city ?? '',
+      state: sitio.state ?? '',
+      country: sitio.country ?? 'US',
+      postal_code: sitio.postalCode ?? '',
+      timezone: sitio.timezone ?? 'America/Chicago',
+    })
   }
 
   const addStop = (type: 'pickup' | 'delivery') => {
@@ -409,11 +459,36 @@ export default function LoadForm({
                 </div>
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {/* El sitio del cliente. Elegir uno rellena la dirección y la
+                      BLOQUEA: los ocho sitios que leen esta parada prefieren la
+                      dirección de la ficha del cliente, así que un texto
+                      editado a mano por encima de un sitio elegido no se vería
+                      en ninguna parte — ni en el papel que firma el
+                      transportista ni en la página del cliente. Misma regla y
+                      mismo aviso que los campos que vienen del registro FMCSA. */}
+                  {sitiosDelCliente.length > 0 ? (
+                    <div className="sm:col-span-2">
+                      <SelectField
+                        label={t('loads.form.customerLocation')}
+                        hint={t('loads.form.customerLocationHint')}
+                        value={stop.customer_location_id}
+                        onChange={(e) => elegirSitio(index, e.target.value)}
+                        options={[
+                          { value: '', label: t('loads.form.customerLocationManual') },
+                          ...sitiosDelCliente.map((l) => ({ value: l.id, label: l.name })),
+                        ]}
+                        error={form.errors[`stops.${index}.customer_location_id` as keyof typeof form.errors] as string | undefined}
+                      />
+                    </div>
+                  ) : null}
+
                   <div className="sm:col-span-2">
                     <TextField
                       label={t('loads.form.facilityName')}
                       maxLength={200}
                       value={stop.facility_name}
+                      disabled={stop.customer_location_id !== ''}
+                      hint={stop.customer_location_id !== '' ? t('loads.form.fromCustomerLocation') : undefined}
                       onChange={(e) => patchStop(index, { facility_name: e.target.value })}
                     />
                   </div>
@@ -422,12 +497,14 @@ export default function LoadForm({
                       label={t('loads.form.line1')}
                       maxLength={200}
                       value={stop.line1}
+                      disabled={stop.customer_location_id !== ''}
                       onChange={(e) => patchStop(index, { line1: e.target.value })}
                     />
                   </div>
                   <TextField
                     label={t('loads.form.city')}
                     maxLength={120}
+                    disabled={stop.customer_location_id !== ''}
                     value={stop.city}
                     onChange={(e) => patchStop(index, { city: e.target.value })}
                   />
@@ -436,16 +513,22 @@ export default function LoadForm({
                     state={stop.state}
                     onChange={(v) => patchStop(index, { country: v.country, state: v.state })}
                     stateLabel={t('loads.form.state')}
+                    disabled={stop.customer_location_id !== ''}
                   />
                   <TextField
                     label={t('loads.form.postalCode')}
                     maxLength={12}
                     value={stop.postal_code}
+                    disabled={stop.customer_location_id !== ''}
                     onChange={(e) => patchStop(index, { postal_code: e.target.value })}
                   />
                   <SelectField
                     label={t('loads.form.timezone')}
                     value={stop.timezone}
+                    /* El huso NO se bloquea aunque venga del sitio: una cita
+                       puede pactarse en otro huso —un muelle en la frontera,
+                       una planta que trabaja con la hora del cliente— y esa es
+                       una decisión de esta carga, no de la instalación. */
                     onChange={(e) => patchStop(index, { timezone: e.target.value })}
                     options={TIMEZONES.map((z) => ({ value: z, label: z.replace('America/', '') }))}
                   />

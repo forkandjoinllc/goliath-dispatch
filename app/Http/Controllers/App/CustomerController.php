@@ -179,6 +179,7 @@ final class CustomerController
 
         $override = $this->resolveDuplicate($request, $checker, $actor, $policy, $key, null);
 
+        $sitios = $this->pullList($data, 'locations');
         $contactos = $this->pullContacts($data);
 
         $customer = new Customer;
@@ -187,7 +188,10 @@ final class CustomerController
         $customer->duplicate_override_reason = $override['reason'];
         $customer->save();
 
-        $this->syncContacts($actor, $customer, $contactos);
+        // Los sitios PRIMERO: los contactos se atan a ellos por índice, y un
+        // sitio nuevo no tiene identificador hasta que se guarda.
+        $idsDeSitios = $this->syncLocations($actor, $customer, $sitios);
+        $this->syncContacts($actor, $customer, $contactos, $idsDeSitios);
 
         return redirect()
             ->route('customers.show', $customer->id)
@@ -232,12 +236,14 @@ final class CustomerController
             }
         }
 
+        $sitios = $this->pullList($data, 'locations');
         $contactos = $this->pullContacts($data);
 
         $model->fill($this->normalizeColumns($data, $key));
         $model->save();
 
-        $this->syncContacts($actor, $model, $contactos);
+        $idsDeSitios = $this->syncLocations($actor, $model, $sitios);
+        $this->syncContacts($actor, $model, $contactos, $idsDeSitios);
 
         return redirect()
             ->route('customers.show', $model->id)
@@ -462,6 +468,7 @@ final class CustomerController
             // Hasta este lote no había ninguno que editar: la tabla se leía y no
             // la escribía nadie.
             'contacts' => $this->contacts($c),
+            'locations' => $this->locations($c),
             'preferredLocale' => (string) $c->preferred_locale,
             'createdAt' => $c->created_at?->toIso8601String(),
         ];
@@ -477,16 +484,23 @@ final class CustomerController
             ->whereNull('deleted_at')
             ->orderByDesc('is_primary')
             ->orderBy('name')
-            ->get(['id', 'name', 'line1', 'city', 'state', 'postal_code', 'timezone', 'hours', 'is_primary'])
+            ->get([
+                'id', 'name', 'line1', 'line2', 'city', 'state', 'postal_code', 'country',
+                'timezone', 'phone', 'hours', 'instructions', 'is_primary',
+            ])
             ->map(fn ($l): array => [
                 'id' => (string) $l->id,
                 'name' => (string) $l->name,
                 'line1' => $l->line1,
+                'line2' => $l->line2,
                 'city' => $l->city,
                 'state' => $l->state,
                 'postalCode' => $l->postal_code,
+                'country' => $l->country,
                 'timezone' => $l->timezone,
+                'phone' => $l->phone,
                 'hours' => $l->hours,
+                'instructions' => $l->instructions,
                 'isPrimary' => (bool) $l->is_primary,
             ])
             ->all();
@@ -505,10 +519,127 @@ final class CustomerController
      */
     private function pullContacts(array &$data): array
     {
-        $contactos = $data['contacts'] ?? [];
-        unset($data['contacts']);
+        return $this->pullList($data, 'contacts');
+    }
 
-        return array_values(is_array($contactos) ? $contactos : []);
+    /**
+     * Saca una lista anidada de $data antes del fill().
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<array<string, mixed>>
+     */
+    private function pullList(array &$data, string $clave): array
+    {
+        $lista = $data[$clave] ?? [];
+        unset($data[$clave]);
+
+        return array_values(is_array($lista) ? $lista : []);
+    }
+
+    /**
+     * Deja los sitios del cliente como los mandó el formulario.
+     *
+     * ## El defecto que arregla
+     *
+     * `customer_locations` —las instalaciones del cliente: «Gary Component
+     * Plant», «Bodega Laredo»— se LEÍA en ocho sitios y no la escribía nadie.
+     * Ni la aplicación ni una ruta ni un formulario; solo el sembrador del
+     * demo. En una instalación de verdad no había ni una, así que cada parada
+     * de cada carga llevaba la dirección tecleada otra vez, y el nombre de la
+     * instalación que sale en la confirmación de tarifa que FIRMA el
+     * transportista era lo que alguien hubiera escrito ese día.
+     *
+     * ## El principal se decide por el orden, y aquí no hay índice que ayude
+     *
+     * A diferencia de `customer_contacts`, esta tabla NO tiene índice único
+     * sobre el principal. O sea que la base admitiría dos, y la regla vive
+     * entera en este método: se ponen todos a no-principal y luego el primero
+     * de la lista a principal. El orden de la lista es el dato.
+     *
+     * ## Un sitio que ya se usó no se borra de verdad
+     *
+     * Borrado en suave, y por una razón concreta: `load_stops.customer_location_id`
+     * apunta aquí, y ocho lectores hacen `leftJoin` con esta tabla. Un borrado
+     * duro dejaría la parada de una carga entregada hace un año sin el nombre
+     * de la instalación donde se entregó — y ese nombre está en un papel
+     * firmado.
+     *
+     * @param  list<array<string, mixed>>  $locations
+     * @return list<string>  los ids resultantes, en el mismo orden que llegaron
+     */
+    private function syncLocations(Actor $actor, Customer $customer, array $locations): array
+    {
+        if ($locations === []) {
+            return [];
+        }
+
+        $ahora = now();
+        $ids = [];
+
+        DB::table('customer_locations')
+            ->where('tenant_id', $customer->tenant_id)
+            ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
+            ->update(['is_primary' => false, 'updated_at' => $ahora]);
+
+        foreach ($locations as $indice => $sitio) {
+            $columnas = [
+                'name' => trim((string) ($sitio['name'] ?? '')),
+                'line1' => $sitio['line1'] ?? null,
+                'line2' => $sitio['line2'] ?? null,
+                'city' => $sitio['city'] ?? null,
+                'state' => $sitio['state'] ?? null,
+                'country' => $sitio['country'] ?? Regions::DEFAULT_COUNTRY,
+                'postal_code' => $sitio['postal_code'] ?? null,
+                'timezone' => $sitio['timezone'] ?? null,
+                'phone' => $sitio['phone'] ?? null,
+                'hours' => $sitio['hours'] ?? null,
+                'instructions' => $sitio['instructions'] ?? null,
+                'is_primary' => $indice === 0,
+                'updated_at' => $ahora,
+            ];
+
+            $id = $sitio['id'] ?? null;
+
+            $existente = $id === null ? null : DB::table('customer_locations')
+                ->where('tenant_id', $customer->tenant_id)
+                ->where('customer_id', $customer->id)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first(['id']);
+
+            if ($existente !== null) {
+                DB::table('customer_locations')->where('id', $existente->id)->update($columnas);
+                $ids[] = (string) $existente->id;
+
+                continue;
+            }
+
+            $nuevo = (string) Str::uuid();
+
+            DB::table('customer_locations')->insert([
+                ...$columnas,
+                'id' => $nuevo,
+                'tenant_id' => $customer->tenant_id,
+                'customer_id' => $customer->id,
+                'created_at' => $ahora,
+            ]);
+
+            $ids[] = $nuevo;
+        }
+
+        DB::table('customer_locations')
+            ->where('tenant_id', $customer->tenant_id)
+            ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
+            ->when($ids !== [], fn ($q) => $q->whereNotIn('id', $ids))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => $ahora,
+            ]);
+
+        return $ids;
     }
 
     /**
@@ -535,8 +666,9 @@ final class CustomerController
      * historial de una carga tiene que poder seguir nombrándose.
      *
      * @param  list<array<string, mixed>>  $contacts
+     * @param  list<string>  $locationIds  ids de los sitios, por índice de la lista
      */
-    private function syncContacts(Actor $actor, Customer $customer, array $contacts): void
+    private function syncContacts(Actor $actor, Customer $customer, array $contacts, array $locationIds = []): void
     {
         if ($contacts === []) {
             return;
@@ -575,6 +707,7 @@ final class CustomerController
             if ($existente !== null) {
                 DB::table('customer_contacts')->where('id', $existente->id)->update($columnas);
                 $vistos[] = (string) $existente->id;
+                $this->syncContactLocations($actor, $customer, (string) $existente->id, $contacto, $locationIds);
 
                 continue;
             }
@@ -590,6 +723,7 @@ final class CustomerController
             ]);
 
             $vistos[] = $nuevo;
+            $this->syncContactLocations($actor, $customer, $nuevo, $contacto, $locationIds);
         }
 
         DB::table('customer_contacts')
@@ -597,6 +731,74 @@ final class CustomerController
             ->where('customer_id', $customer->id)
             ->whereNull('deleted_at')
             ->when($vistos !== [], fn ($q) => $q->whereNotIn('id', $vistos))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'updated_at' => $ahora,
+            ]);
+    }
+
+    /**
+     * A qué sitios va esta persona.
+     *
+     * `customer_contact_locations` tampoco la escribía nadie, y es la que
+     * contesta la pregunta que importa al mandar un aviso: quién es el del
+     * muelle AL QUE VA ESTA CARGA. Sin ella solo se puede avisar a quien lleva
+     * el tráfico de toda la empresa, que en un cliente con cuatro plantas es
+     * casi nunca la persona correcta.
+     *
+     * Los sitios llegan por ÍNDICE de la lista del formulario y no por id: un
+     * sitio recién creado en el mismo envío no tiene identificador hasta que se
+     * guarda, y pedirle al navegador que lo invente sería darle a él la última
+     * palabra sobre a qué fila apunta una clave foránea.
+     *
+     * @param  array<string, mixed>  $contacto
+     * @param  list<string>  $locationIds
+     */
+    private function syncContactLocations(
+        Actor $actor,
+        Customer $customer,
+        string $contactId,
+        array $contacto,
+        array $locationIds,
+    ): void {
+        $indices = is_array($contacto['locations'] ?? null) ? $contacto['locations'] : [];
+        $ahora = now();
+
+        $quiere = [];
+
+        foreach ($indices as $i) {
+            $id = $locationIds[(int) $i] ?? null;
+
+            if ($id !== null) {
+                $quiere[$id] = true;
+            }
+        }
+
+        $quiere = array_keys($quiere);
+
+        foreach ($quiere as $locationId) {
+            // `updateOrInsert` contra el índice único (contact_id, location_id):
+            // un vínculo que se quitó y se vuelve a poner revive la misma fila
+            // en vez de chocar con su propio borrado en suave.
+            DB::table('customer_contact_locations')->updateOrInsert(
+                ['contact_id' => $contactId, 'location_id' => $locationId],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $customer->tenant_id,
+                    'deleted_at' => null,
+                    'deleted_by' => null,
+                    'updated_at' => $ahora,
+                    'created_at' => $ahora,
+                ],
+            );
+        }
+
+        DB::table('customer_contact_locations')
+            ->where('tenant_id', $customer->tenant_id)
+            ->where('contact_id', $contactId)
+            ->whereNull('deleted_at')
+            ->when($quiere !== [], fn ($q) => $q->whereNotIn('location_id', $quiere))
             ->update([
                 'deleted_at' => $ahora,
                 'deleted_by' => $actor->auditUserId(),
@@ -616,6 +818,12 @@ final class CustomerController
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'email', 'phone', 'position', 'preferred_locale', 'is_primary'])
             ->map(fn ($k): array => [
+                'locationIds' => DB::table('customer_contact_locations')
+                    ->where('contact_id', $k->id)
+                    ->whereNull('deleted_at')
+                    ->pluck('location_id')
+                    ->map(static fn ($id): string => (string) $id)
+                    ->all(),
                 'id' => (string) $k->id,
                 'name' => trim("{$k->first_name} {$k->last_name}"),
                 // Sueltos además del nombre junto: la ficha enseña el nombre y
@@ -701,6 +909,37 @@ final class CustomerController
             'notes' => ['nullable', 'string', 'max:5000'],
             'preferred_locale' => ['nullable', Rule::in(Locales::all())],
 
+            /*
+             * Los SITIOS del cliente: sus instalaciones.
+             *
+             * La tabla se leía en ocho sitios —esta ficha, la confirmación de
+             * tarifa que firma el transportista, los documentos de la carga, los
+             * permisos, el panel de rastreo y la página pública del cliente— y no
+             * la escribía nadie. En una instalación de verdad había CERO, así que
+             * cada parada llevaba la dirección tecleada otra vez y el nombre de
+             * la instalación que salía en el papel firmado era lo que alguien
+             * escribió ese día.
+             */
+            'locations' => ['array', 'max:50'],
+            'locations.*.id' => ['nullable', 'uuid'],
+            'locations.*.name' => ['required', 'string', 'max:200'],
+            'locations.*.line1' => ['nullable', 'string', 'max:200'],
+            'locations.*.line2' => ['nullable', 'string', 'max:200'],
+            'locations.*.city' => ['nullable', 'string', 'max:120'],
+            'locations.*.country' => ['nullable', 'string', Rule::in(Regions::countryCodes())],
+            // El estado se valida contra el país de SU MISMA fila: un cliente
+            // puede tener una bodega en Texas y otra en Nuevo León.
+            'locations.*.state' => ['nullable', 'string', 'max:3', function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                $pais = $request->input(str_replace('.state', '.country', $attribute));
+
+                (new SubdivisionOfCountry(is_string($pais) ? $pais : null))->validate($attribute, $value, $fail);
+            }],
+            'locations.*.postal_code' => ['nullable', 'string', 'max:12'],
+            'locations.*.timezone' => ['nullable', 'string', 'max:64'],
+            'locations.*.phone' => ['nullable', 'string', 'max:32'],
+            'locations.*.hours' => ['nullable', 'string', 'max:200'],
+            'locations.*.instructions' => ['nullable', 'string', 'max:2000'],
+
             // Los contactos. El primero es el principal — el orden de la lista
             // es el dato, no una casilla aparte que pueda contradecirlo.
             'contacts' => ['array', 'max:20'],
@@ -715,6 +954,10 @@ final class CustomerController
             // El idioma es POR PERSONA. Quien lleva las compras puede trabajar
             // en inglés y el del muelle leer solo español.
             'contacts.*.preferred_locale' => ['required', Rule::in(Locales::all())],
+            // A qué sitios va esta persona. Índices de la lista de arriba, no
+            // identificadores: un sitio recién creado todavía no tiene id.
+            'contacts.*.locations' => ['array', 'max:50'],
+            'contacts.*.locations.*' => ['integer', 'min:0'],
         ]);
     }
 
