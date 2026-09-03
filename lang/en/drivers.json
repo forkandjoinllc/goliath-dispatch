@@ -123,7 +123,6 @@
     "cdlClass": "CDL class",
     "anyClass": "Not set",
     "endorsements": "Endorsements",
-    "endorsementsHint": "H hazmat · N tank · T doubles/triples · P passenger · X hazmat+tank",
     "restrictions": "Restrictions",
     "licenceExpires": "Licence expires",
     "medicalExpires": "Medical card expires",
@@ -167,5 +166,26 @@
     "permanent_resident": "Permanent resident",
     "employment_authorization": "Employment authorization (EAD)",
     "other": "Other"
+  },
+  "cdlClass": {
+    "A": "Class A",
+    "B": "Class B",
+    "C": "Class C"
+  },
+  "endorsements": {
+    "H": "Hazardous materials",
+    "N": "Tank vehicles",
+    "P": "Passengers",
+    "S": "School bus",
+    "T": "Double/triple trailers",
+    "X": "Combination of tank vehicle and hazardous materials"
+  },
+  "restrictions": {
+    "L": "No air brake equipped vehicle",
+    "Z": "No full air brake equipped vehicle",
+    "E": "No manual transmission",
+    "O": "No tractor-trailer",
+    "M": "No Class A bus",
+    "V": "Medical variance documentation required"
   }
 }

@@ -1449,3 +1449,58 @@ no.
 **Analizar después de guardar no es analizar.** El orden es la garantía. Un
 borrado posterior que falle deja en el almacén exactamente el fichero que se
 acaba de decidir que no debía estar.
+
+## El tablero canban y las letras de la licencia
+
+**Un comentario de una prueba puede ser una decisión que ya se tomó.** Al barrer
+los diccionarios encontré nueve ficheros con 1.524 claves que ninguna pantalla
+puede cargar, y propuse moverlos fuera de `lang/`. Existía desde hacía lotes
+`PortedDictionariesTest`, que dice que esos ficheros son los diccionarios
+portados de la aplicación original, que se guardan A PROPÓSITO como media
+especificación de los dominios que faltan, y que la convención no se cambia.
+Comprobé el hecho con rigor y no comprobé si alguien ya lo había decidido. Antes
+de proponer quitar algo, hay que buscar la prueba que lo defiende.
+
+**Un «pendiente» apuntado en una lista no se hace solo.** Esa misma prueba tenía
+cinco entradas que decían «Pendiente de repasar contra X.json» y llevaban lotes
+sin tocarse. La sexta, la que sí se repasó, dejó anotado lo que encontró: un
+suceso de aviso que faltaba y que hacía decir «renuévelo antes de que venza»
+sobre un documento ya caducado. La lista funcionaba como registro y no como
+trabajo.
+
+**Un guardián que empareja por convención deja fuera lo que no la sigue.**
+`PortedDictionariesTest` emparejaba `X.json` con `Xs.json`. `finance.json` —el
+portado más grande, 383 claves— se construyó repartido en seis diccionarios que
+no se llaman «finances», así que no tenía pareja: la prueba pasaba en verde
+diciendo que todo estaba repasado, sobre el fichero que nadie había mirado
+nunca. Una regla de emparejamiento es una aserción sobre los nombres, y los
+nombres se salen de la regla.
+
+**Una letra no es un dato: es una clave que hay que descifrar.** Los endosos de
+una licencia se enseñaban como «H, N, T» y las restricciones no se enseñaban en
+absoluto, con la columna llena. El vocabulario completo llevaba desde el puerto
+escrito en los dos idiomas. Un dato de cumplimiento que hay que descifrar no se
+comprueba: se mira por encima.
+
+**Una lista escrita en la pantalla y otra en la validación acaban discrepando.**
+La constante `ENDORSEMENTS` del formulario llevaba un comentario que decía «son
+cinco y no cambian» encima de una lista de SEIS, mientras el servidor aceptaba
+cualquier cadena de cuatro caracteres. Tres sitios tenían que coincidir —lo que
+se ofrece, lo que se acepta y lo que se sabe nombrar— y no había ninguno que
+mandara.
+
+**El sabotaje que no aplica no es un sabotaje.** Uno de los ocho de este lote
+pasó en verde y me lo creí un momento: el parche no había llegado a tocar el
+fichero porque su condición miraba una palabra que también aparecía en un
+comentario. Un sabotaje hay que verlo cambiar el fichero antes de leer el
+resultado.
+
+**En un tablero, ofrecer de más se paga más caro.** Arrastrar INVITA: la columna
+se ilumina, la persona suelta y el servidor dice que no. Por eso los destinos
+legales de cada tarjeta los calcula el servidor y la pantalla no lleva copia del
+grafo — y por eso una columna ilegal ni siquiera acepta la tarjeta.
+
+**Lo que la columna ya dice, la tarjeta no lo repite.** Al pasar la cola a
+tablero, el motivo «la incorporación no está aprobada» empezó a salir en rojo en
+todas las tarjetas de seis de las siete columnas: repetía la cabecera. Un aviso
+que aparece siempre deja de leerse y arrastra consigo a los que sí importan.

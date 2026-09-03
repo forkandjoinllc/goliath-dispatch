@@ -139,9 +139,21 @@ export default function DriverShow({ driver, carriers, loads, can }: Props) {
                   : '—'}
               </Item>
               <Item label={t('drivers.detail.licenceState')}>{driver.licenseState ?? '—'}</Item>
-              <Item label={t('drivers.detail.cdlClass')}>{driver.cdlClass ?? '—'}</Item>
+              <Item label={t('drivers.detail.cdlClass')}>
+                {driver.cdlClass === null ? '—' : t(`drivers.cdlClass.${driver.cdlClass}`)}
+              </Item>
+              {/* Con su nombre, no unidos por comas.
+                  Decía «H, N, T». Quien mira esta ficha para decidir si este
+                  conductor puede llevar algo tenía que saberse la tabla de la
+                  FMCSA de memoria, y un dato de cumplimiento que hay que
+                  descifrar no se comprueba: se mira por encima.
+                  Las restricciones —lo que NO puede conducir— no salían en
+                  ningún sitio, con la columna llena. */}
               <Item label={t('drivers.detail.endorsements')}>
-                {driver.endorsements.length > 0 ? driver.endorsements.join(', ') : '—'}
+                <Codigos codigos={driver.endorsements} espacio="endorsements" />
+              </Item>
+              <Item label={t('drivers.detail.restrictions')}>
+                <Codigos codigos={driver.restrictions} espacio="restrictions" />
               </Item>
               <Expiry
                 label={t('drivers.detail.licenceExpires')}
@@ -459,5 +471,24 @@ function ConsentimientoDeRastreo({
           una puerta, no un dictamen sobre qué hay que pedir ni cómo. */}
       <p className="mt-2 text-[11px] text-steel-500">{t('tracking.consent.notLegalAdvice')}</p>
     </div>
+  )
+}
+
+/** Los códigos de una licencia, cada uno con su nombre. */
+function Codigos({ codigos, espacio }: { codigos: string[]; espacio: 'endorsements' | 'restrictions' }) {
+  const { t } = useI18n()
+
+  if (codigos.length === 0) {
+    return <>—</>
+  }
+
+  return (
+    <span className="flex flex-wrap gap-1">
+      {codigos.map((c) => (
+        <span key={c} className="rounded bg-navy-50 px-1.5 py-0.5 text-xs text-carbon">
+          <span className="font-bold">{c}</span> — {t(`drivers.${espacio}.${c}`)}
+        </span>
+      ))}
+    </span>
   )
 }

@@ -39,7 +39,7 @@ const PORTADOS_REVISADOS = [
     'documents' => 'Se escribió antes de esta prueba. Pendiente de repasar contra document.json.',
     'carriers' => 'Se escribió antes de esta prueba. Sin solape.',
     'loads' => 'Se escribió antes de esta prueba. Pendiente de repasar contra load.json.',
-    'drivers' => 'Se escribió antes de esta prueba. Pendiente de repasar contra driver.json.',
+    'drivers' => 'Repasado: de driver.json se adoptaron las TRES tablas de la licencia —clase, endosos y restricciones— con su nombre en los dos idiomas. La pantalla enseñaba letras sueltas («H, N, T») y las restricciones no salían en ningún sitio con la columna llena. Lo demás de ese portado —portal del conductor, relación con varios transportistas, revisión de licencia— describe dominios sin construir.',
     'customers' => 'Se escribió antes de esta prueba. Pendiente de repasar contra customer.json.',
     'assignments' => 'Se escribió antes de esta prueba. Pendiente de repasar contra assignment.json.',
     'reports' => 'Se escribió antes de esta prueba. Sin solape.',
@@ -78,6 +78,57 @@ it('un diccionario nuevo con portado detrás está revisado', function () {
         '',
         'Lea el portado —suele traer estados y matices que no se le ocurren a uno—',
         'y luego añada el par a PORTADOS_REVISADOS diciendo qué tomó de él.',
+    ]));
+});
+
+it('los portados sin pareja en singular/plural también se repasan', function () {
+    // EL AGUJERO DE ESTA PRUEBA. Solo empareja `X` con `Xs`, así que un portado
+    // cuyo dominio se construyó con OTRO nombre nunca se compara con nada.
+    //
+    // `finance.json` es el mayor de los nueve —383 claves— y su dominio se
+    // construyó repartido en `invoices`, `payments`, `settlements`,
+    // `commissions`, `expenses` y `factoring`. Ni una de esas seis termina en
+    // «finance»+s, así que el portado más grande del repositorio llevaba desde
+    // el puerto sin que nadie lo mirase, y esta prueba decía que todo estaba
+    // repasado.
+    //
+    // @var array<string, string>
+    $sinPareja = [
+        'finance' => 'PENDIENTE de repasar contra invoices, payments, settlements, commissions, expenses y factoring.',
+        'report' => 'Repasado: describe un selector con cinco informes con nombre que no existen. reports.json es otro producto —el informe por periodo— y no toma nada de él.',
+        'carrier' => 'Repasado en su día: sin solape.',
+    ];
+
+    $raiz = dirname(__DIR__, 3);
+    $huerfanos = [];
+
+    foreach (glob($raiz.'/lang/es/*.json') ?: [] as $ruta) {
+        $portado = basename($ruta, '.json');
+
+        // Un portado es el que NINGUNA pantalla puede cargar. La lista de
+        // espacios que se cargan vive en los controladores; aquí basta con la
+        // convención: si existe su plural, ya lo cubre la prueba de arriba.
+        if (is_file($raiz."/lang/es/{$portado}s.json")) {
+            continue;
+        }
+
+        if (! in_array($portado, ['assignment', 'carrier', 'customer', 'document', 'driver', 'finance', 'load', 'notification', 'report'], true)) {
+            continue;
+        }
+
+        if (! array_key_exists($portado, $sinPareja)) {
+            $huerfanos[] = $portado;
+        }
+    }
+
+    sort($huerfanos);
+
+    expect($huerfanos)->toBe([], implode("\n", [
+        'Portados sin pareja plural que nadie ha repasado:',
+        ...$huerfanos,
+        '',
+        'No tienen un `Xs.json` que dispare la prueba de arriba, así que hay que',
+        'nombrarlos aquí a mano diciendo contra qué se compararon.',
     ]));
 });
 

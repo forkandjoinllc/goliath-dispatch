@@ -10,10 +10,16 @@ interface Props {
   driver: Record<string, unknown> | null
   carriers: { id: string; name: string }[]
   selectedCarriers: string[]
+  /**
+   * Las tres tablas de la licencia, del servidor.
+   *
+   * Vivían aquí como una constante `ENDORSEMENTS` con un comentario que decía
+   * «son cinco y no cambian» encima de una lista de seis. La lista en la
+   * pantalla y la validación en el controlador podían decir cosas distintas,
+   * y lo decían: la validación admitía cualquier cadena de cuatro caracteres.
+   */
+  codes: { cdlClass: string[]; endorsements: string[]; restrictions: string[] }
 }
-
-/** Los endosos de una CDL. Son cinco y no cambian. */
-const ENDORSEMENTS = ['H', 'N', 'T', 'P', 'X', 'S']
 
 /** Espejo de App\Enums\WorkAuthorization. */
 const WORK_AUTHORIZATIONS = [
@@ -26,7 +32,7 @@ const WORK_AUTHORIZATIONS = [
 /** Los tramos que piden los clientes. 31 se pinta como «más de 30». */
 const RECORD_YEARS = [0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 31]
 
-export default function DriverForm({ driver, carriers, selectedCarriers }: Props) {
+export default function DriverForm({ driver, carriers, selectedCarriers, codes }: Props) {
   const { t } = useI18n()
   const editing = driver !== null
   const g = (key: string): string => {
@@ -74,12 +80,11 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
     form.setData('carrier_ids', next)
   }
 
-  const toggleEndorsement = (code: string) => {
-    const next = form.data.endorsements.includes(code)
-      ? form.data.endorsements.filter((e) => e !== code)
-      : [...form.data.endorsements, code]
+  const alternar = (campo: 'endorsements' | 'restrictions', code: string) => {
+    const actual = form.data[campo]
+    const next = actual.includes(code) ? actual.filter((e) => e !== code) : [...actual, code]
 
-    form.setData('endorsements', next)
+    form.setData(campo, next)
   }
 
   const submit = (e: React.FormEvent) => {
@@ -180,7 +185,8 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
             onChange={(e) => form.setData('cdl_class', e.target.value)}
             options={[
               { value: '', label: t('drivers.form.anyClass') },
-              ...['A', 'B', 'C'].map((c) => ({ value: c, label: c })),
+              // La letra sola no dice nada. «Clase A» sí.
+              ...codes.cdlClass.map((c) => ({ value: c, label: t(`drivers.cdlClass.${c}`) })),
             ]}
           />
           <TextField
@@ -198,31 +204,29 @@ export default function DriverForm({ driver, carriers, selectedCarriers }: Props
             error={form.errors.medical_card_expires_at}
           />
 
-          <div className="sm:col-span-2">
-            <span className="text-sm font-medium text-carbon">{t('drivers.form.endorsements')}</span>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {ENDORSEMENTS.map((code) => {
-                const on = form.data.endorsements.includes(code)
+          {/* Endosos y restricciones, con su nombre.
+              Los endosos eran seis botones cuadrados con una LETRA dentro y una
+              leyenda apretada debajo que además se dejaba fuera la S. Quien da
+              de alta a un conductor tenía que saberse la tabla de la FMCSA de
+              memoria.
+              Y las restricciones no estaban: la columna existía, el formulario
+              las llevaba en sus datos y las devolvía tal cual al guardar, sin un
+              solo control para ponerlas. */}
+          <Codigos
+            titulo={t('drivers.form.endorsements')}
+            codigos={codes.endorsements}
+            elegidos={form.data.endorsements}
+            espacio="endorsements"
+            onAlternar={(c) => alternar('endorsements', c)}
+          />
 
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => toggleEndorsement(code)}
-                    aria-pressed={on}
-                    className={`h-9 w-9 rounded border text-sm font-bold transition ${
-                      on
-                        ? 'border-navy-700 bg-navy-700 text-white'
-                        : 'border-steel-300 bg-white text-steel-700 hover:bg-navy-50'
-                    }`}
-                  >
-                    {code}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-1 text-xs text-steel-600">{t('drivers.form.endorsementsHint')}</p>
-          </div>
+          <Codigos
+            titulo={t('drivers.form.restrictions')}
+            codigos={codes.restrictions}
+            elegidos={form.data.restrictions}
+            espacio="restrictions"
+            onAlternar={(c) => alternar('restrictions', c)}
+          />
         </Section>
 
         <fieldset className="rounded border border-steel-200 bg-white p-5">
@@ -412,5 +416,55 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       </legend>
       <div className="mt-2 grid gap-4 sm:grid-cols-2">{children}</div>
     </fieldset>
+  )
+}
+
+/**
+ * Una tabla de códigos de licencia, como botones que se encienden.
+ *
+ * El botón enseña la LETRA —es lo que va impreso en la licencia y lo que se
+ * busca con la vista— y el nombre completo va debajo y en el `title`, para que
+ * nadie tenga que saberse la tabla de la FMCSA para rellenar esto.
+ */
+function Codigos({
+  titulo, codigos, elegidos, espacio, onAlternar,
+}: {
+  titulo: string
+  codigos: string[]
+  elegidos: string[]
+  espacio: 'endorsements' | 'restrictions'
+  onAlternar: (code: string) => void
+}) {
+  const { t } = useI18n()
+
+  return (
+    <div className="sm:col-span-2">
+      <span className="text-sm font-medium text-carbon">{titulo}</span>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {codigos.map((code) => {
+          const on = elegidos.includes(code)
+          const nombre = t(`drivers.${espacio}.${code}`)
+
+          return (
+            <button
+              key={code}
+              type="button"
+              onClick={() => onAlternar(code)}
+              aria-pressed={on}
+              aria-label={`${code} — ${nombre}`}
+              title={`${code} — ${nombre}`}
+              className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-sm transition ${
+                on
+                  ? 'border-navy-700 bg-navy-700 text-white'
+                  : 'border-steel-300 bg-white text-steel-700 hover:bg-navy-50'
+              }`}
+            >
+              <span className="font-bold">{code}</span>
+              <span className="text-xs">{nombre}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }

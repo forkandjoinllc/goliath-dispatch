@@ -14,6 +14,7 @@ use App\Enums\WorkAuthorization;
 use App\Models\Driver;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
+use App\Support\Drivers\Cdl;
 use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
@@ -67,6 +68,22 @@ final class DriverController
         'status' => 'status',
         'license_expires_at' => 'license_expires_at',
         'medical_card_expires_at' => 'medical_card_expires_at',
+    ];
+
+    /**
+     * Las tres tablas de la licencia, para la pantalla.
+     *
+     * Se mandan desde aquí porque el formulario llevaba la suya: una constante
+     * `ENDORSEMENTS` en el TSX, con un comentario que decía «son cinco y no
+     * cambian» encima de una lista de SEIS. Con la lista en un sitio y la
+     * validación en otro, las dos podían decir cosas distintas — y lo decían.
+     *
+     * @var array<string, list<string>>
+     */
+    private const CODIGOS = [
+        'cdlClass' => Cdl::CLASES,
+        'endorsements' => Cdl::ENDOSOS,
+        'restrictions' => Cdl::RESTRICCIONES,
     ];
 
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
@@ -158,6 +175,7 @@ final class DriverController
             'driver' => null,
             'carriers' => $this->carrierChoices($actor),
             'selectedCarriers' => [],
+            'codes' => self::CODIGOS,
         ]);
     }
 
@@ -200,6 +218,7 @@ final class DriverController
             'driver' => $this->detail($model),
             'carriers' => $this->carrierChoices($actor),
             'selectedCarriers' => collect($this->carriers($model))->pluck('id')->all(),
+            'codes' => self::CODIGOS,
         ]);
     }
 
@@ -850,9 +869,13 @@ final class DriverController
             // base. No se valida su forma: cada estado tiene la suya y una
             // expresión regular «inteligente» rechazaría licencias válidas.
             'license_number' => ['nullable', 'string', 'max:40'],
-            'cdl_class' => ['nullable', 'in:A,B,C'],
+            'cdl_class' => ['nullable', Rule::in(Cdl::CLASES)],
             'endorsements' => ['array'],
-            'endorsements.*' => ['string', 'max:4'],
+            // Contra el VOCABULARIO, no contra una longitud. `max:4` admitía
+            // cualquier cadena de cuatro caracteres: se guardaba `ZZ` y la
+            // ficha pintaba una letra que no significa nada y que ningún
+            // diccionario sabe nombrar.
+            'endorsements.*' => [Rule::in(Cdl::ENDOSOS)],
 
             // Aptitud. Todo opcional: se puede dar de alta, verificar, asignar
             // y pagar a un conductor sin rellenar nada de esto.
@@ -867,7 +890,7 @@ final class DriverController
             'record_checked_at' => ['nullable', 'date'],
             'record_notes' => ['nullable', 'string', 'max:2000'],
             'restrictions' => ['array'],
-            'restrictions.*' => ['string', 'max:4'],
+            'restrictions.*' => [Rule::in(Cdl::RESTRICCIONES)],
             'license_expires_at' => ['nullable', 'date'],
             'medical_card_expires_at' => ['nullable', 'date'],
             'status' => ['nullable', 'in:available,on_load,off_duty,inactive'],

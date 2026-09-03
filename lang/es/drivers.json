@@ -123,7 +123,6 @@
     "cdlClass": "Clase de CDL",
     "anyClass": "Sin definir",
     "endorsements": "Endosos",
-    "endorsementsHint": "H materiales peligrosos · N cisterna · T dobles/triples · P pasajeros · X peligrosos+cisterna",
     "restrictions": "Restricciones",
     "licenceExpires": "La licencia vence",
     "medicalExpires": "La tarjeta médica vence",
@@ -167,5 +166,26 @@
     "permanent_resident": "Residente permanente",
     "employment_authorization": "Autorización de empleo (EAD)",
     "other": "Otra"
+  },
+  "cdlClass": {
+    "A": "Clase A",
+    "B": "Clase B",
+    "C": "Clase C"
+  },
+  "endorsements": {
+    "H": "Materiales peligrosos",
+    "N": "Vehículos cisterna",
+    "P": "Pasajeros",
+    "S": "Autobús escolar",
+    "T": "Remolques dobles/triples",
+    "X": "Combinación de vehículo cisterna y materiales peligrosos"
+  },
+  "restrictions": {
+    "L": "Sin vehículo con frenos de aire",
+    "Z": "Sin vehículo con frenos de aire completo",
+    "E": "Sin transmisión manual",
+    "O": "Sin tractocamión con remolque",
+    "M": "Sin autobús Clase A",
+    "V": "Se requiere documentación de exención médica"
   }
 }

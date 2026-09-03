@@ -674,11 +674,11 @@ class DemoDataSeeder extends Seeder
         $now = Carbon::now();
 
         $rows = [
-            ['key' => 'salas', 'first' => 'Eduardo', 'last' => 'Salas', 'locale' => 'es', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OnLoad, 'licenseDays' => 512, 'medicalDays' => 88, 'verification' => VerificationStatus::Verified],
-            ['key' => 'brennan', 'first' => 'Maureen', 'last' => 'Brennan', 'locale' => 'en', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 240, 'medicalDays' => 19, 'verification' => VerificationStatus::Verified],
-            ['key' => 'quiroga', 'first' => 'Javier', 'last' => 'Quiroga', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 800, 'medicalDays' => 300, 'verification' => VerificationStatus::Verified],
-            ['key' => 'delatorre', 'first' => 'Ana Lucía', 'last' => 'De la Torre', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OffDuty, 'licenseDays' => 130, 'medicalDays' => -6, 'verification' => VerificationStatus::Pending],
-            ['key' => 'okafor', 'first' => 'Chidi', 'last' => 'Okafor', 'locale' => 'en', 'carrier' => 'northline', 'state' => 'IN', 'class' => 'A', 'status' => DriverStatus::Inactive, 'licenseDays' => 410, 'medicalDays' => 200, 'verification' => VerificationStatus::NotStarted],
+            ['key' => 'salas', 'endorsements' => ['H', 'N', 'X'], 'restrictions' => [], 'first' => 'Eduardo', 'last' => 'Salas', 'locale' => 'es', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OnLoad, 'licenseDays' => 512, 'medicalDays' => 88, 'verification' => VerificationStatus::Verified],
+            ['key' => 'brennan', 'endorsements' => ['T'], 'restrictions' => ['E'], 'first' => 'Maureen', 'last' => 'Brennan', 'locale' => 'en', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 240, 'medicalDays' => 19, 'verification' => VerificationStatus::Verified],
+            ['key' => 'quiroga', 'endorsements' => ['H', 'T'], 'restrictions' => [], 'first' => 'Javier', 'last' => 'Quiroga', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 800, 'medicalDays' => 300, 'verification' => VerificationStatus::Verified],
+            ['key' => 'delatorre', 'endorsements' => [], 'restrictions' => ['L', 'V'], 'first' => 'Ana Lucía', 'last' => 'De la Torre', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OffDuty, 'licenseDays' => 130, 'medicalDays' => -6, 'verification' => VerificationStatus::Pending],
+            ['key' => 'okafor', 'endorsements' => ['N'], 'restrictions' => [], 'first' => 'Chidi', 'last' => 'Okafor', 'locale' => 'en', 'carrier' => 'northline', 'state' => 'IN', 'class' => 'A', 'status' => DriverStatus::Inactive, 'licenseDays' => 410, 'medicalDays' => 200, 'verification' => VerificationStatus::NotStarted],
         ];
 
         $ids = [];
@@ -701,6 +701,15 @@ class DemoDataSeeder extends Seeder
                 'license_number_last4' => $last4,
                 'license_number_hash' => hash('sha256', "demo:{$r['key']}:{$last4}"),
                 'cdl_class' => $r['class'],
+                // Endosos y restricciones DE VERDAD, no vacíos.
+                //
+                // Las dos columnas se sembraban vacías porque no se veían en
+                // ninguna pantalla: los endosos salían como letras sueltas
+                // —«H, N, T»— y las restricciones no salían en absoluto. Un
+                // demo con las dos vacías enseña un conductor que no existe:
+                // en esta industria casi todo el mundo lleva algún endoso.
+                'endorsements' => json_encode($r['endorsements']),
+                'restrictions' => json_encode($r['restrictions']),
                 'license_expires_at' => $now->copy()->addDays($r['licenseDays']),
                 'medical_card_expires_at' => $now->copy()->addDays($r['medicalDays']),
                 'status' => $r['status']->value,
