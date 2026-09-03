@@ -304,9 +304,21 @@ it('un permiso sin tramitar bloquea la compuerta', function () {
     $this->post("/loads/{$id}/permits/ready")->assertRedirect();
     expect(DB::table('loads')->where('id', $id)->value('permit_ready_approved_at'))->toBeNull();
 
-    // Emitido, ya pasa.
+    // Emitido, sigue sin pasar: falta el PAPEL.
+    //
+    // Hasta el lote 67 aquí bastaba con marcarlo emitido, y esa era justo la
+    // mentira: la casilla decía que estaba y el conductor salía sin el permiso
+    // que le piden en una báscula.
     $permisoId = DB::table('permits')->where('load_id', $id)->value('id');
     $this->post("/loads/{$id}/permits/items/{$permisoId}", ['status' => 'issued'])->assertRedirect();
+
+    $this->post("/loads/{$id}/permits/ready")->assertRedirect();
+    expect(DB::table('loads')->where('id', $id)->value('permit_ready_approved_at'))->toBeNull();
+
+    // Con el papel adjunto, ya pasa.
+    $this->post("/loads/{$id}/papers/permit/{$permisoId}", [
+        'file' => \Illuminate\Http\UploadedFile::fake()->create('permiso.pdf', 60, 'application/pdf'),
+    ])->assertSessionHasNoErrors();
 
     $this->post("/loads/{$id}/permits/ready")->assertRedirect();
     expect(DB::table('loads')->where('id', $id)->value('permit_ready_approved_at'))->not->toBeNull();

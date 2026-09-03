@@ -56,70 +56,24 @@ final class LoadFile
         ?string $stopId = null,
         ?string $title = null,
     ): Document {
-        // Fuera de la transacción a propósito: subir el fichero al
-        // almacenamiento puede tardar, y una transacción abierta mientras tanto
-        // mantiene bloqueadas las filas de `documents` para todos los demás.
-        $storageKey = $store->put((string) $actor->tenantId, $file);
+        // La escritura común —documento, versión, puntero y bitácora— vive en
+        // `Attachment` desde el lote 67. Aquí queda lo que es de la carga: la
+        // fila de `load_documents`, que es la que le da tipo dentro del viaje y
+        // la que puede apuntar a una parada concreta.
+        $document = Attachment::store($actor, 'load', $loadId, $documentType, $file, $store, $title);
 
-        return DB::transaction(function () use ($actor, $loadId, $documentType, $file, $storageKey, $stopId, $title): Document {
-            $document = new Document;
-            $document->document_type = $documentType;
-            $document->owner_type = 'load';
-            $document->owner_id = $loadId;
-            $document->title = $title ?? $file->getClientOriginalName();
-            // Ninguno de los tipos de carga es obligatorio para el
-            // cumplimiento del transportista. Ver DocumentTypes.
-            $document->is_required = false;
-            $document->review_status = 'pending';
-            $document->uploaded_by_user_id = $actor->auditUserId();
-            $document->save();
+        DB::table('load_documents')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $document->tenant_id,
+            'load_id' => $loadId,
+            'document_id' => $document->id,
+            'document_type' => $documentType,
+            'stop_id' => $stopId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-            $versionId = (string) Str::uuid();
-
-            DB::table('document_versions')->insert([
-                'id' => $versionId,
-                'tenant_id' => $document->tenant_id,
-                'document_id' => $document->id,
-                'version_number' => 1,
-                'storage_key' => $storageKey,
-                'original_filename' => mb_substr((string) $file->getClientOriginalName(), 0, 255),
-                'content_type' => (string) $file->getMimeType(),
-                'byte_size' => (int) $file->getSize(),
-                'sha256' => hash_file('sha256', (string) $file->getRealPath()),
-                // Sin antivirus configurado no se miente diciendo que está
-                // limpio: queda pendiente, y el trabajo que lo escanee lo
-                // marcará cuando exista.
-                'malware_scan_status' => 'pending',
-                'uploaded_by_user_id' => $actor->auditUserId(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $document->current_version_id = $versionId;
-            $document->save();
-
-            DB::table('load_documents')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $document->tenant_id,
-                'load_id' => $loadId,
-                'document_id' => $document->id,
-                'document_type' => $documentType,
-                'stop_id' => $stopId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            Audit::record(
-                actor: $actor,
-                action: AuditAction::DocumentUploaded,
-                entityType: 'document',
-                entityId: $document->id,
-                entityLabel: (string) $document->title,
-                after: ['loadId' => $loadId, 'type' => $documentType, 'stopId' => $stopId],
-            );
-
-            return $document;
-        });
+        return $document;
     }
 
     /**

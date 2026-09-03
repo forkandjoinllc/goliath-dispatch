@@ -111,7 +111,14 @@ it('el recibo se puede escribir', function (): void {
 
     // Y como documento de verdad, no en un almacén aparte: así hereda la
     // retención, el barrido de huérfanos y el enlace firmado.
-    expect(str_contains($codigo, "owner_type = 'expense'"))->toBeTrue();
+    //
+    // Se busca el DUEÑO que se le pasa a `Attachment`, no la asignación a mano:
+    // desde el lote 67 la escritura común vive allí, y esta prueba estaba
+    // anclada a una línea que se movió. Es lo que tiene que pasar cuando algo
+    // se refactoriza — la prueba avisa y se relee, no se borra.
+    expect(str_contains($codigo, "Attachment::store(\$actor, 'expense'"))->toBeTrue(
+        'El recibo dejó de escribirse como documento con dueño `expense`.'
+    );
 });
 
 it('la pantalla enseña lo que la puerta exige', function (): void {

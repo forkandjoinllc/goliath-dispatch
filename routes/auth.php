@@ -409,6 +409,18 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('loads/{load}/permits/items/{permit}', [PermitController::class, 'updatePermit'])->name('permits.items.update');
     Route::post('loads/{load}/escorts', [PermitController::class, 'storeEscort'])->name('permits.escorts.store');
     Route::post('loads/{load}/escorts/{escort}', [PermitController::class, 'updateEscort'])->name('permits.escorts.update');
+    /*
+     * Los papeles: el del permiso, el del estudio de ruta y el de la escolta.
+     * Las tres columnas existían desde el primer día y no las escribía nadie,
+     * mientras la puerta de despacho decía «los papeles están todos».
+     *
+     * `{slot}` es una ranura de una lista CERRADA — ver Papers::RANURAS— y no
+     * un nombre de columna: sin esa lista, el navegador elegiría qué columna se
+     * escribe.
+     */
+    Route::post('loads/{load}/papers/{slot}/{row}', [PermitController::class, 'storePaper'])->name('permits.papers.store');
+    Route::delete('loads/{load}/papers/{slot}/{row}', [PermitController::class, 'destroyPaper'])->name('permits.papers.destroy');
+    Route::get('loads/{load}/papers/{slot}/{row}', [PermitController::class, 'showPaper'])->name('permits.papers.show');
 
     /*
     | Confirmación de tarifa

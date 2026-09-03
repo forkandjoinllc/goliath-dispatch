@@ -24,10 +24,10 @@ y cada prueba que escribe se envuelve en `DatabaseTransactions`.
 **29 de agosto de 2026**, contra MySQL 8.0.46 real:
 
 ```
-OK (1241 tests, 7574 assertions)
+OK (1254 tests, 7626 assertions)
 ```
 
-(Cifra del 2 de septiembre, tras el lote del recibo del gasto.
+(Cifra del 3 de septiembre, tras el lote de los papeles del permiso.
 Los párrafos siguientes describen el estado del 29 por la mañana, que es cuando
 la suite pasó de no arrancar a estar entera en verde.)
 
@@ -1304,6 +1304,42 @@ estados.
 Van tres lotes seguidos con esto. Cuando un lote añade una columna que decide
 algo, hay que sembrarla — y sembrar los dos lados, o el demo no distingue
 «funciona» de «no mira nada».
+
+## Lecciones del lote de los papeles (67)
+
+### Dos pasadas del recorrido no son dos pruebas independientes
+
+La puerta parecía no cerrar en el navegador: se pulsaba «aprobar» y la carga
+quedaba aprobada aunque el permiso no tuviera papel. La puerta estaba bien. Lo
+que pasaba es que la **primera** pasada del recorrido había subido el papel al
+final, así que la segunda encontró el permiso ya completo.
+
+Un recorrido que modifica datos deja el mundo distinto para el siguiente. Si una
+pasada tiene que comprobar un estado concreto, hay que **reponer ese estado
+antes**, no confiar en que sigue como al empezar.
+
+### Sembrar datos a mano puede inventar valores que la base acepta
+
+Para el recorrido inserté una escolta de tipo `lead`, que no existe: los tipos
+válidos son `pilot_car`, `police`, `height_pole` y `route_survey`. La pantalla
+enseñó `oversize.escorts.type.lead` en crudo y por un momento pareció una clave
+de traducción que faltaba.
+
+No lo era: era **mi dato**. Pero destapó algo real — `escorts.escort_type` no
+tiene restricción en el esquema, así que cualquier vía de escritura que no sea
+el controlador puede meter un tipo inventado. Lista cerrada en el código,
+abierta en la base. Segunda vez en tres lotes que aparece esa asimetría.
+
+### La tercera copia es la que obliga a extraer
+
+`LoadFile` y `ExpenseFile` escribían el mismo documento con su versión; los
+papeles del permiso iban a ser la tercera. La regla de la casa —comparar las dos
+que existen antes de copiar la tercera— llevó a `Attachment`, y comparándolas se
+vio que la parte común era mayor de lo que parecía y la distinta más pequeña:
+solo **a qué se cuelga** el documento.
+
+Extraerlo con la suite delante costó minutos y dejó un guardián que impide que
+vuelvan a divergir.
 
 ## Qué falta
 

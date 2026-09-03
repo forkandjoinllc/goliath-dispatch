@@ -37,6 +37,10 @@ interface Evaluacion {
 
 interface Permiso {
   id: string
+  /** El papel que el conductor tiene que llevar. Nulo si no se ha adjuntado. */
+  hasDocument: boolean
+  /** El estudio de ruta, cuando el estado lo exige. */
+  hasRouteSurvey: boolean
   state: string
   number: string | null
   type: string | null
@@ -49,6 +53,7 @@ interface Permiso {
 
 interface Escolta {
   id: string
+  hasDocument: boolean
   type: string
   state: string | null
   provider: string | null
@@ -556,6 +561,24 @@ function Permisos({
                 {p.costCents > 0 ? ` · $${(p.costCents / 100).toFixed(2)}` : ''}
               </p>
               {p.notes ? <p className="mt-1 text-sm text-carbon">{p.notes}</p> : null}
+
+              {/* Los papeles. Hasta este lote las tres columnas existían y no
+                  las escribía nadie, mientras la puerta de despacho decía «los
+                  papeles están todos». */}
+              <Papel
+                loadId={loadId} slot="permit" row={p.id} hay={p.hasDocument} puede={puede}
+                etiqueta={t('oversize.permits.documentLabel')}
+                ayuda={t('oversize.papers.permitHint')}
+                /* Un permiso emitido sin su papel BLOQUEA, así que se avisa en
+                   ámbar; en los demás estados todavía no toca. */
+                urgente={p.status === 'issued'}
+              />
+              <Papel
+                loadId={loadId} slot="route_survey" row={p.id} hay={p.hasRouteSurvey} puede={puede}
+                etiqueta={t('oversize.permits.routeSurveyDocumentLabel')}
+                ayuda={t('oversize.papers.routeSurveyHint')}
+              />
+
               {puede ? <CambiarEstadoPermiso loadId={loadId} permiso={p} options={options} /> : null}
             </li>
           ))}
@@ -686,11 +709,107 @@ function Escoltas({
                 {[e.provider, e.contactName, e.contactPhone, e.scheduledFor].filter(Boolean).join(' · ') || '—'}
               </p>
               {e.notes ? <p className="mt-1 text-sm text-carbon">{e.notes}</p> : null}
+
+              <Papel
+                loadId={loadId} slot="escort" row={e.id} hay={e.hasDocument} puede={puede}
+                etiqueta={t('oversize.escorts.documentLabel')}
+                ayuda={t('oversize.papers.escortHint')}
+              />
             </li>
           ))}
         </ul>
       )}
     </section>
+  )
+}
+
+/**
+ * Un papel: si está, cómo verlo, cómo ponerlo y cómo quitarlo.
+ *
+ * Las tres ranuras —permiso, estudio de ruta y escolta— usan este mismo
+ * componente porque el gesto es el mismo. Lo que cambia es el rótulo, la ayuda
+ * y si su ausencia bloquea.
+ */
+function Papel({
+  loadId, slot, row, hay, puede, etiqueta, ayuda, urgente = false,
+}: {
+  loadId: string
+  slot: 'permit' | 'route_survey' | 'escort'
+  row: string
+  hay: boolean
+  puede: boolean
+  etiqueta: string
+  ayuda: string
+  urgente?: boolean
+}) {
+  const { t } = useI18n()
+  const subida = useForm<{ file: File | null }>({ file: null })
+  const quitar = useForm({})
+
+  // Ni está ni lo puede poner quien mira: no se dice nada. Un hueco que nadie
+  // puede rellenar solo hace la pantalla más larga.
+  if (! hay && ! puede) {
+    return null
+  }
+
+  return (
+    <div
+      className={`mt-2 flex flex-wrap items-center gap-2 rounded border p-2 text-sm ${
+        ! hay && urgente ? 'border-warning-500 bg-warning-50' : 'border-steel-200 bg-steel-50/60'
+      }`}
+    >
+      <span className="text-xs font-medium uppercase tracking-wide text-steel-600">{etiqueta}</span>
+
+      {hay ? (
+        <a
+          href={`/loads/${loadId}/papers/${slot}/${row}`}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-navy-700 underline hover:text-navy-900"
+        >
+          {t('oversize.papers.view')}
+        </a>
+      ) : (
+        <span className="text-xs text-steel-700">{t('oversize.papers.missing')}</span>
+      )}
+
+      {! hay ? <span className="text-xs text-steel-600">{ayuda}</span> : null}
+
+      {puede ? (
+        <label className="ml-auto cursor-pointer font-medium text-navy-700 underline hover:text-navy-900">
+          {hay ? t('oversize.papers.replace') : t('oversize.papers.upload')}
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/*"
+            disabled={subida.processing}
+            onChange={(ev) => {
+              const f = ev.target.files?.[0]
+              if (f === undefined) return
+              // `transform` no encadena en esta versión de Inertia: devuelve
+              // void y se aplica al siguiente envío.
+              subida.transform(() => ({ file: f }))
+              subida.post(`/loads/${loadId}/papers/${slot}/${row}`, {
+                preserveScroll: true,
+                forceFormData: true,
+                onFinish: () => { ev.target.value = '' },
+              })
+            }}
+          />
+        </label>
+      ) : null}
+
+      {puede && hay ? (
+        <button
+          type="button"
+          disabled={quitar.processing}
+          onClick={() => quitar.delete(`/loads/${loadId}/papers/${slot}/${row}`, { preserveScroll: true })}
+          className="font-medium text-danger-700 underline hover:text-danger-900 disabled:opacity-50"
+        >
+          {t('oversize.papers.remove')}
+        </button>
+      ) : null}
+    </div>
   )
 }
 

@@ -14,6 +14,9 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\Oversize\Evaluator;
+use App\Support\Documents\Attachment;
+use App\Support\Oversize\Papers;
+use App\Support\Storage\DocumentStore;
 use App\Support\Oversize\Rules;
 use App\Support\Plural;
 use App\Support\Routing\RouteProvider;
@@ -22,6 +25,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -55,6 +59,14 @@ final class PermitController
     use InertiaPage;
 
     /** @var list<string> */
+    /**
+     * Cuánto puede pesar un papel.
+     *
+     * Un permiso estatal escaneado son dos o tres megabytes; veinte deja sitio
+     * de sobra y sigue frenando a quien suba un vídeo por error.
+     */
+    private const PAPEL_MAX_KB = 20480;
+
     private const ESTADOS_PERMISO = ['pending', 'requested', 'issued', 'expired', 'rejected', 'not_required'];
 
     /** @var list<string> */
@@ -175,6 +187,11 @@ final class PermitController
                 ->get()
                 ->map(fn (object $p): array => [
                     'id' => (string) $p->id,
+                    // Si los papeles están, no CUÁLES son: la pantalla solo
+                    // necesita saber si hay que subir algo, y el documento se
+                    // pide por su ruta con un enlace firmado.
+                    'hasDocument' => $p->document_id !== null,
+                    'hasRouteSurvey' => $p->route_survey_document_id !== null,
                     'state' => (string) $p->state_code,
                     'number' => $p->permit_number,
                     'type' => $p->permit_type,
@@ -192,6 +209,7 @@ final class PermitController
                 ->get()
                 ->map(fn (object $e): array => [
                     'id' => (string) $e->id,
+                    'hasDocument' => $e->document_id !== null,
                     'type' => (string) $e->escort_type,
                     'state' => $e->state_code,
                     'provider' => $e->provider_name,
@@ -342,6 +360,32 @@ final class PermitController
             ->whereIn('status', ['pending', 'requested', 'expired', 'rejected'])
             ->count();
 
+        /*
+         * Y los papeles, que es lo que esta puerta dice que comprueba.
+         *
+         * Hasta este lote «los papeles están todos» quería decir «ningún
+         * permiso está pendiente». Un permiso marcado como emitido sin su
+         * documento contaba como hecho, y el conductor salía sin el papel que
+         * le piden en una báscula. Ahora se exige el documento, y que no caduque
+         * antes de la entrega planificada.
+         */
+        $faltas = Papers::faltan(
+            (string) $actor->tenantId,
+            (string) $carga->id,
+            $carga->planned_delivery_at === null
+                ? null
+                : CarbonImmutable::parse((string) $carga->planned_delivery_at),
+        );
+
+        if ($faltas !== []) {
+            $primera = $faltas[0];
+
+            return back()->with('error', __(
+                'oversize.readiness.'.$primera['reason'],
+                ['state' => $primera['state'], 'n' => count($faltas)],
+            ));
+        }
+
         if ($pendientes > 0) {
             // Plural::key y no la clave a secas: «1 requisito(s) pendiente(s)»
             // es el plural de barra que la regla del proyecto existe para
@@ -360,6 +404,120 @@ final class PermitController
         ]);
 
         return back()->with('success', __('oversize.readiness.success'));
+    }
+
+    /**
+     * Colgar un papel: el del permiso, el del estudio de ruta o el de la
+     * escolta.
+     *
+     * Una sola puerta para las tres ranuras porque el gesto es el mismo y la
+     * lista de ranuras es cerrada — ver `Papers::RANURAS`. La ranura llega del
+     * navegador, así que sin esa lista un nombre de columna elegido por el
+     * cliente acabaría en un `update()`.
+     */
+    public function storePaper(
+        Request $request,
+        string $load,
+        string $slot,
+        string $row,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        DocumentStore $store,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'permit:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        if (! Papers::conoce($slot)) {
+            throw new NotFoundHttpException;
+        }
+
+        $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'max:'.self::PAPEL_MAX_KB,
+                // Por MIME real y no por la extensión del nombre. Mismo criterio
+                // que los documentos de la carga y el recibo del gasto.
+                'mimetypes:application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff',
+            ],
+        ]);
+
+        $colgado = Papers::attach($actor, $slot, (string) $carga->id, $row, $request->file('file'), $store);
+
+        if (! $colgado) {
+            throw new NotFoundHttpException;
+        }
+
+        return back()->with('success', __('oversize.papers.uploaded'));
+    }
+
+    /** Quitar un papel. */
+    public function destroyPaper(
+        string $load,
+        string $slot,
+        string $row,
+        CurrentActor $current,
+        PermissionChecker $checker,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'permit:manage', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        return Papers::detach($actor, $slot, (string) $carga->id, $row)
+            ? back()->with('success', __('oversize.papers.removed'))
+            : back()->with('error', __('oversize.papers.none'));
+    }
+
+    /**
+     * Ver un papel.
+     *
+     * Redirige a un enlace FIRMADO y de vida corta: la comprobación de permisos
+     * ocurre aquí, una vez, y el visor de PDF del navegador no necesita sesión.
+     */
+    public function showPaper(
+        string $load,
+        string $slot,
+        string $row,
+        CurrentActor $current,
+        PermissionChecker $checker,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'permit:read', null, $policy);
+
+        $carga = $this->findLoad($actor, $checker, $scope, $load);
+
+        if (! Papers::conoce($slot)) {
+            throw new NotFoundHttpException;
+        }
+
+        ['tabla' => $tabla, 'columna' => $columna] = Papers::RANURAS[$slot];
+
+        $documentId = DB::table($tabla)
+            ->where('tenant_id', $actor->tenantId)
+            ->where('load_id', $carga->id)
+            ->where('id', $row)
+            ->whereNull('deleted_at')
+            ->value($columna);
+
+        $clave = $documentId === null
+            ? null
+            : Attachment::storageKey((string) $actor->tenantId, (string) $documentId);
+
+        if ($clave === null) {
+            return back()->with('error', __('oversize.papers.none'));
+        }
+
+        return redirect()->to(URL::temporarySignedRoute(
+            'documents.file',
+            now()->addMinutes(5),
+            ['key' => base64_encode($clave)],
+        ));
     }
 
     public function storePermit(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
