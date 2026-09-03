@@ -319,6 +319,31 @@ class DemoDataSeeder extends Seeder
                 'factoring' => false,
                 'notes' => 'Solicitud iniciada desde el formulario público; sin documentos todavía.',
             ],
+            [
+                // El que espera a que la casa empiece a mirarlo.
+                //
+                // `submitted` es la PRIMERA columna del tablero y el primer
+                // tramo del orden de la cola —es trabajo de la casa, no del
+                // transportista— y sin embargo no había ni un transportista en
+                // ese estado: la columna que más importa salía siempre vacía en
+                // una demostración. Enseñar el tablero sin el caso que lo ordena
+                // es enseñar el mueble sin el trabajo.
+                'key' => 'redcedar',
+                'legal_name' => 'Red Cedar Heavy Haul LLC',
+                'dba' => null,
+                'dot' => '3620194', 'mc' => '1244077',
+                'first' => 'Dana', 'last' => 'Okonkwo',
+                'email' => 'compliance@redcedarhh.test', 'phone' => '+1 555 0188',
+                'locale' => 'en',
+                'city' => 'Memphis', 'state' => 'TN', 'zip' => '38118',
+                'line1' => '4120 Delp Street',
+                'onboarding' => OnboardingStatus::Submitted,
+                'fmcsa' => VerificationStatus::Pending,
+                'fee_bps' => 1000,
+                'approved_days_ago' => null,
+                'factoring' => false,
+                'notes' => 'Paquete completo recibido; a la espera de que alguien abra la revisión.',
+            ],
         ];
 
         $ids = [];
@@ -398,6 +423,7 @@ class DemoDataSeeder extends Seeder
             'sierra' => [OnboardingStatus::CorrectionsRequired, ['authority' => true, 'insurance' => false, 'agreement' => false, 'fmcsa' => false, 'w9' => true]],
             'bluewater' => [OnboardingStatus::Suspended, ['authority' => true, 'insurance' => false, 'agreement' => true, 'fmcsa' => true, 'w9' => true]],
             'granito' => [OnboardingStatus::Draft, ['authority' => false, 'insurance' => false, 'agreement' => false, 'fmcsa' => false, 'w9' => false]],
+            'redcedar' => [OnboardingStatus::Submitted, ['authority' => true, 'insurance' => true, 'agreement' => false, 'fmcsa' => false, 'w9' => true]],
         ];
 
         foreach ($plan as $key => [$status, $checklist]) {

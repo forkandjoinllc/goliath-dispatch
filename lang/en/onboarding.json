@@ -76,13 +76,18 @@
   },
   "board": {
     "title": "Onboarding board",
-    "assignedDispatcher": "Assigned dispatcher",
-    "unassigned": "Unassigned",
-    "missingDocuments": "Missing documents",
-    "verificationProblems": "Verification problems",
-    "expiringSoon": "Expiring soon",
     "lastActivity": "Last activity",
-    "noCards": "No carriers in this status."
+    "noCards": "No carriers in this status.",
+    "dropHint": "Drag a card to another column to move the onboarding. Only the steps the workflow allows will accept it.",
+    "notAllowed": "Not available from here",
+    "moves": "Move",
+    "noMoves": "No step is available from here.",
+    "filterAll": "All",
+    "filterReady": "Can haul",
+    "filterBlocked": "Blocked",
+    "reasonRequired": "This step needs a written reason.",
+    "cancel": "Cancel",
+    "moving": "Moving…"
   },
   "queue": {
     "title": "Onboarding",

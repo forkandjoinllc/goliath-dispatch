@@ -76,13 +76,18 @@
   },
   "board": {
     "title": "Tablero de incorporación",
-    "assignedDispatcher": "Despachador asignado",
-    "unassigned": "Sin asignar",
-    "missingDocuments": "Documentos faltantes",
-    "verificationProblems": "Problemas de verificación",
-    "expiringSoon": "Por vencer",
     "lastActivity": "Última actividad",
-    "noCards": "No hay transportistas en este estado."
+    "noCards": "No hay transportistas en este estado.",
+    "dropHint": "Arrastre una tarjeta a otra columna para mover el alta. Solo la aceptarán los pasos que el flujo permite.",
+    "notAllowed": "No se puede desde aquí",
+    "moves": "Mover",
+    "noMoves": "No hay ningún paso disponible desde aquí.",
+    "filterAll": "Todos",
+    "filterReady": "Puede llevar carga",
+    "filterBlocked": "Bloqueado",
+    "reasonRequired": "Este paso necesita un motivo escrito.",
+    "cancel": "Cancelar",
+    "moving": "Moviendo…"
   },
   "queue": {
     "title": "Incorporación",

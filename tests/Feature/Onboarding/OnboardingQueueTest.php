@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Role;
+use App\Support\Documents\DocumentTypes;
 use App\Support\Loads\Guards;
 use App\Support\Onboarding\Readiness;
 use App\Support\TenantContext;
@@ -251,19 +252,39 @@ it('un aprobado con todo al día no sale como bloqueado', function () {
     });
 });
 
-it('filtra por estado', function () {
+it('filtra por si puede llevar carga, no por estado', function () {
+    // El filtro por estado se fue con el tablero: las columnas SON los estados,
+    // así que filtrar por estado era enseñar una sola columna. Lo que el tablero
+    // no contesta de un vistazo es quién está atascado.
     estadoDeIncorporacion($this->scenario, 'submitted');
 
     signIn($this->scenario, Role::Admin);
 
-    $this->get('/onboarding?status=submitted')->assertInertia(function (Assert $p) {
+    $este = (string) $this->scenario->assignedCarrier->id;
+
+    // Sin papeles aprobados no puede llevar carga.
+    $this->get('/onboarding?ready=blocked')->assertInertia(function (Assert $p) use ($este) {
         $ids = collect($p->toArray()['props']['carriers'])->pluck('id')->all();
-        expect($ids)->toContain((string) $this->scenario->assignedCarrier->id);
+        expect(in_array($este, $ids, true))->toBeTrue();
     });
 
-    $this->get('/onboarding?status=rejected')->assertInertia(function (Assert $p) {
+    $this->get('/onboarding?ready=ready')->assertInertia(function (Assert $p) use ($este) {
         $ids = collect($p->toArray()['props']['carriers'])->pluck('id')->all();
-        expect($ids)->not->toContain((string) $this->scenario->assignedCarrier->id);
+        expect(in_array($este, $ids, true))->toBeFalse();
+    });
+});
+
+it('un parámetro de filtro inventado no esconde a nadie', function () {
+    estadoDeIncorporacion($this->scenario, 'submitted');
+
+    signIn($this->scenario, Role::Admin);
+
+    // Un valor que no está en la lista se ignora y se ve todo. Tratarlo como
+    // «no coincide con nada» dejaría el tablero vacío ante una URL vieja, y
+    // quien lo mire creerá que no hay transportistas.
+    $this->get('/onboarding?ready=loquesea')->assertInertia(function (Assert $p) {
+        $ids = collect($p->toArray()['props']['carriers'])->pluck('id')->all();
+        expect(in_array((string) $this->scenario->assignedCarrier->id, $ids, true))->toBeTrue();
     });
 });
 
@@ -299,7 +320,7 @@ it('cada documento requerido tiene su etiqueta en los dos idiomas', function () 
     // El catálogo portado traía cinco tipos y el catálogo de documentos exige
     // tres, uno de los cuales —`carrier_agreement`— no estaba: la pantalla
     // enseñaba la clave cruda. Esto lo cierra para los que vengan.
-    $requeridos = App\Support\Documents\DocumentTypes::forOwner('carrier');
+    $requeridos = DocumentTypes::forOwner('carrier');
 
     foreach (['es', 'en'] as $idioma) {
         $diccionario = json_decode(

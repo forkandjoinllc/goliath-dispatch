@@ -59,6 +59,34 @@ final class Transitions
         ],
     ];
 
+    /**
+     * El grafo entero, para quien tenga que PINTARLO y no solo consultarlo.
+     *
+     * Lo pide el tablero de incorporación: una columna por estado y una tarjeta
+     * que solo se puede soltar donde el grafo admite. Sin esto, el tablero
+     * llevaría su propia copia de estas siete reglas en TypeScript —sería la
+     * tercera— y el día que alguien añadiera una arista aquí, el tablero
+     * seguiría ofreciendo las de antes: una pantalla que invita a un movimiento
+     * que el servidor va a negar.
+     *
+     * @return array<string, array{from: list<string>, to: string, permission: string, reason: bool}>
+     */
+    public static function graph(): array
+    {
+        $salida = [];
+
+        foreach (self::GRAPH as $accion => [$desde, $permiso]) {
+            $salida[$accion] = [
+                'from' => array_map(static fn (OnboardingStatus $s): string => $s->value, $desde),
+                'to' => (string) self::target($accion)?->value,
+                'permission' => $permiso,
+                'reason' => self::requiresReason($accion),
+            ];
+        }
+
+        return $salida;
+    }
+
     /** El estado real al que lleva una acción (`reinstate` no es un estado). */
     public static function target(string $action): ?OnboardingStatus
     {

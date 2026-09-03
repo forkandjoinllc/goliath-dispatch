@@ -7,10 +7,10 @@ namespace App\Http\Controllers\App;
 use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
-use App\Enums\OnboardingStatus;
 use App\Enums\Scope;
 use App\Support\InertiaPage;
 use App\Support\Onboarding\Readiness;
+use App\Support\Onboarding\Transitions;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -54,24 +54,43 @@ final class OnboardingController
 
         $this->usesDictionary($request, ['onboarding', 'carriers', 'documents', 'signature', 'nav', 'common', 'validation']);
 
-        $estado = (string) $request->query('status', '');
-        $estados = array_map(static fn (OnboardingStatus $s): string => $s->value, OnboardingStatus::cases());
-        $estado = in_array($estado, $estados, true) ? $estado : '';
+        // El filtro ya NO es por estado. En un tablero las columnas SON los
+        // estados, así que filtrar por estado es enseñar una sola columna: una
+        // pregunta que el propio tablero ya contesta de un vistazo.
+        //
+        // Lo que no contesta —y es lo que se pregunta quien lleva cumplimiento—
+        // es quién está atascado. `blocked` incluye el caso que esta pantalla
+        // existe para encontrar: el aprobado con un documento vencido, que
+        // ninguna lista por estado enseña porque sigue en `approved`.
+        $preparacion = (string) $request->query('ready', '');
+        $preparacion = in_array($preparacion, self::PREPARACION, true) ? $preparacion : '';
 
         $transportistas = $this->scoped($actor, $scope)
             ->leftJoin('carrier_onboardings as o', 'o.carrier_id', '=', 'c.id')
-            ->when($estado !== '', fn (Builder $q) => $q->where('c.onboarding_status', $estado))
             ->orderByRaw(self::ORDEN)
             ->orderBy('c.legal_name')
             ->limit(300)
             ->get([
                 'c.id', 'c.legal_name', 'c.dot_number', 'c.mc_number', 'c.onboarding_status',
                 'c.created_at', 'c.approved_at', 'c.suspended_at', 'c.suspension_reason',
+                'c.last_activity_at',
                 'o.submitted_at', 'o.review_started_at', 'o.corrections_requested_at',
                 'o.correction_notes', 'o.rejection_reason',
             ]);
 
-        $filas = $transportistas->map(function (object $c) use ($actor): array {
+        // Los tres permisos, UNA vez. Se comprueban sin contexto de
+        // transportista igual que el bloque `can` de siempre, y por la misma
+        // razón: en los ámbitos que ven más de un transportista la respuesta no
+        // depende de cuál sea. Y da igual que se afine o no — esto solo decide
+        // qué se PINTA. El servidor vuelve a comprobarlo todo en la transición.
+        $permisos = [];
+
+        foreach (Transitions::graph() as $regla) {
+            $permisos[$regla['permission']] ??= $checker
+                ->can($actor, $regla['permission'], null, $policy)->allowed;
+        }
+
+        $filas = $transportistas->map(function (object $c) use ($actor, $permisos): array {
             $estado = Readiness::forCarrier((string) $actor->tenantId, (string) $c->id);
 
             return [
@@ -100,11 +119,27 @@ final class OnboardingController
                 'signature' => $estado['signature'],
                 'fmcsaCheckedAt' => $estado['fmcsaCheckedAt'],
                 'canHaul' => $estado['blocking'] === [] && $estado['missingDocuments'] === [],
+                'lastActivityAt' => $this->minute($c->last_activity_at),
+                // A dónde puede ir ESTA tarjeta. Sale del grafo del servidor, no
+                // de una copia en la pantalla: el tablero no puede ofrecer un
+                // movimiento que la transición vaya a negar porque no sabe
+                // ninguno que ella no le haya dicho.
+                'moves' => $this->movimientos((string) $c->onboarding_status, $permisos),
             ];
         })->all();
 
+        $visibles = $preparacion === ''
+            ? $filas
+            : array_values(array_filter(
+                $filas,
+                static fn (array $f): bool => $preparacion === 'ready' ? $f['canHaul'] : ! $f['canHaul'],
+            ));
+
         return Inertia::render('App/Onboarding/Index', [
-            'carriers' => $filas,
+            'carriers' => $visibles,
+            // Una columna por estado, en el orden del recorrido y no en el
+            // alfabético: `draft` a la izquierda y los dos terminales al final.
+            'columns' => self::COLUMNAS,
             // Aprobados que aun así no pueden llevar carga. Ninguna lista por
             // estado los enseña: siguen en `approved`, y sin embargo su camión
             // no sale. Es el caso que esta pantalla existe para encontrar.
@@ -112,13 +147,16 @@ final class OnboardingController
                 $filas,
                 static fn (array $f): bool => $f['status'] === 'approved' && ! $f['canHaul'],
             )),
-            'filters' => ['status' => $estado],
-            'statuses' => $estados,
-            'counts' => $this->scoped($actor, $scope)
-                ->selectRaw('c.onboarding_status as estado, count(*) as total')
-                ->groupBy('c.onboarding_status')
-                ->pluck('total', 'estado')
-                ->all(),
+            'filters' => ['ready' => $preparacion],
+            // Los recuentos salen de las filas YA calculadas y no de una
+            // consulta aparte. Con una consulta `group by` el chip diría un
+            // número y el tablero enseñaría otro en cuanto el filtro estuviera
+            // puesto — dos respuestas a la misma pregunta en la misma pantalla.
+            'counts' => [
+                'all' => count($filas),
+                'ready' => count(array_filter($filas, static fn (array $f): bool => $f['canHaul'])),
+                'blocked' => count(array_filter($filas, static fn (array $f): bool => ! $f['canHaul'])),
+            ],
             'can' => [
                 'review' => $checker->can($actor, 'carrier:onboarding:review', null, $policy)->allowed,
                 'approve' => $checker->can($actor, 'carrier:onboarding:approve', null, $policy)->allowed,
@@ -135,6 +173,53 @@ final class OnboardingController
      * `approved` primero y enterraría lo urgente.
      */
     private const ORDEN = "field(c.onboarding_status, 'submitted', 'under_review', 'corrections_required', 'draft', 'suspended', 'approved', 'rejected')";
+
+    /** @var list<string> */
+    private const PREPARACION = ['ready', 'blocked'];
+
+    /**
+     * El orden de las columnas del tablero.
+     *
+     * Es el recorrido del alta, de izquierda a derecha, con los dos terminales
+     * al final. NO se deriva de `OnboardingStatus::cases()`: el orden de un enum
+     * es el orden en que alguien escribió los casos, y que hoy coincida no es
+     * una razón para que el tablero dependa de ello.
+     *
+     * @var list<string>
+     */
+    private const COLUMNAS = [
+        'draft', 'submitted', 'under_review', 'corrections_required',
+        'approved', 'suspended', 'rejected',
+    ];
+
+    /**
+     * Los movimientos legales de una tarjeta, con el permiso ya resuelto.
+     *
+     * @param  array<string, bool>  $permisos
+     * @return list<array{action: string, to: string, reason: bool}>
+     */
+    private function movimientos(string $estado, array $permisos): array
+    {
+        $salida = [];
+
+        foreach (Transitions::graph() as $accion => $regla) {
+            if (! in_array($estado, $regla['from'], true)) {
+                continue;
+            }
+
+            if (($permisos[$regla['permission']] ?? false) !== true) {
+                continue;
+            }
+
+            $salida[] = [
+                'action' => $accion,
+                'to' => $regla['to'],
+                'reason' => $regla['reason'],
+            ];
+        }
+
+        return $salida;
+    }
 
     private function scoped(Actor $actor, Scope $scope): Builder
     {
