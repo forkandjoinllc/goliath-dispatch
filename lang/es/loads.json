@@ -9,8 +9,6 @@
         "at_delivery": "Marcar en la entrega",
         "delivered": "Marcar entregada",
         "pod_received": "Marcar comprobante recibido",
-        "invoiced": "Marcar facturada",
-        "paid": "Marcar pagada",
         "cancelled": "Cancelar carga"
     },
     "appointmentType": {
@@ -128,7 +126,13 @@
         "licenseExpires": "Licencia vence",
         "medicalExpires": "Tarjeta médica vence",
         "pickup": "Recogida",
-        "delivery": "Entrega"
+        "delivery": "Entrega",
+        "source": {
+            "user": "Una persona",
+            "tracking_provider": "El rastreo del vehículo",
+            "system_job": "Facturación",
+            "webhook": "Un sistema externo"
+        }
     },
     "documents": {
         "title": "Papeles de la carga",

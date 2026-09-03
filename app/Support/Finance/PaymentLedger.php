@@ -7,6 +7,7 @@ namespace App\Support\Finance;
 use App\Authorization\Actor;
 use App\Enums\AuditAction;
 use App\Support\Audit;
+use App\Support\Loads\BillingState;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -40,7 +41,7 @@ final class PaymentLedger
      * Anota un cobro y recalcula la factura.
      *
      * @param  array{amount_cents: int, method: string, status: string, reference: ?string, received_at: ?string, notes: ?string}  $data
-     * @return string  el id del cobro
+     * @return string el id del cobro
      */
     public static function record(Actor $actor, object $invoice, array $data): string
     {
@@ -195,6 +196,13 @@ final class PaymentLedger
             'paid_at' => $saldo <= 0 && $cobrado > 0 ? $ahora : null,
             'updated_at' => $ahora,
         ]);
+
+        // Y las cargas de la factura, al día con ella. En los dos sentidos: un
+        // reembolso que reabra la factura devuelve sus cargas a `invoiced`. Sin
+        // esta línea la ficha de carga seguiría diciendo «Cobrada» encima de una
+        // factura que vuelve a deber, que es la misma contradicción que este
+        // método existe para no tener un nivel más arriba.
+        BillingState::sincronizarCobro((string) $actor->tenantId, $invoiceId, $ahora);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
+use App\Enums\LoadStatus;
 use App\Enums\Scope;
 use App\Models\CarrierSettlement;
 use App\Models\Load;
@@ -465,7 +466,7 @@ final class SettlementController
                     ->whereColumn('l.carrier_id', 'c.id')
                     ->where('l.tenant_id', $actor->tenantId)
                     ->whereNull('l.deleted_at')
-                    ->where('l.status', 'delivered')
+                    ->whereIn('l.status', LoadStatus::delivered())
                     ->whereNotExists(fn ($sub) => $this->settledExists($sub, $actor));
             })
             ->orderBy('c.legal_name')
@@ -501,7 +502,7 @@ final class SettlementController
             ->where('l.tenant_id', $actor->tenantId)
             ->where('l.carrier_id', $carrierId)
             ->whereNull('l.deleted_at')
-            ->where('l.status', 'delivered')
+            ->whereIn('l.status', LoadStatus::delivered())
             ->whereNotExists(fn ($q) => $this->settledExists($q, $actor));
     }
 

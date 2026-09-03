@@ -346,10 +346,15 @@ export default function LoadShow({
                       {h.from ? `${statusLabel(h.from)} → ` : ''}
                       {dt(h.at)}
                       {h.by ? ` · ${h.by}` : ''}
-                      {/* Quién lo movió: una persona, el GPS o un trabajo
-                          automático. Solo se dice cuando NO fue una persona —
-                          «user» en cada fila sería ruido. */}
-                      {h.source !== 'user' ? ` · ${h.source}` : ''}
+                      {/* Quién lo movió: una persona, el GPS o el dominio de
+                          finanzas. Solo se dice cuando NO fue una persona —
+                          «user» en cada fila sería ruido.
+
+                          Se pintaba el valor CRUDO. La rama era inalcanzable
+                          —nada escribía un origen distinto de `user`— así que
+                          nadie vio nunca «system_job» en pantalla. Ahora que
+                          facturar mueve la carga sola, sí se ve. */}
+                      {h.source !== 'user' ? ` · ${t(`loads.detail.source.${h.source}`)}` : ''}
                     </span>
                     {h.reason ? (
                       <span className="w-full text-xs text-steel-700">{h.reason}</span>

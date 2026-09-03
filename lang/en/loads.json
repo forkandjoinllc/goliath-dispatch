@@ -9,8 +9,6 @@
         "at_delivery": "Mark at delivery",
         "delivered": "Mark delivered",
         "pod_received": "Mark POD received",
-        "invoiced": "Mark invoiced",
-        "paid": "Mark paid",
         "cancelled": "Cancel load"
     },
     "appointmentType": {
@@ -128,7 +126,13 @@
         "licenseExpires": "License expires",
         "medicalExpires": "Medical card expires",
         "pickup": "Pickup",
-        "delivery": "Delivery"
+        "delivery": "Delivery",
+        "source": {
+            "user": "A person",
+            "tracking_provider": "Vehicle tracking",
+            "system_job": "Billing",
+            "webhook": "External system"
+        }
     },
     "documents": {
         "title": "Load paperwork",

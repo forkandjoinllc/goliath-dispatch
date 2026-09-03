@@ -17,28 +17,30 @@ use App\Models\Customer;
 use App\Models\Load;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
+use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\Media;
+use App\Support\Equipment\UnitFacts;
 use App\Support\Finance\LoadCalculator;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
-use App\Support\Equipment\Eligibility;
-use App\Support\Equipment\Media;
-use App\Support\Equipment\UnitFacts;
 use App\Support\Loads\Guards;
-use App\Support\Tracking\CustomerLink;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
-use App\Support\Plans\Limits;
+use App\Support\Loads\StatusLabel;
 use App\Support\Loads\Transitions;
 use App\Support\Messaging\Narrator;
+use App\Support\Plans\Limits;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use App\Support\Tracking\CustomerLink;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -215,7 +217,6 @@ final class LoadController
             ],
         ]);
     }
-
 
     public function create(Request $request, CurrentActor $current, PermissionChecker $checker): Response|RedirectResponse
     {
@@ -423,7 +424,7 @@ final class LoadController
         if (! Transitions::allowedFrom($action, $model->status)) {
             return back()->withErrors([
                 'action' => __('loads.transition.illegal', [
-                    'from' => __("nav.status.load.{$model->status->value}"),
+                    'from' => StatusLabel::of($model->status),
                 ]),
             ]);
         }
@@ -544,7 +545,7 @@ final class LoadController
             );
         }
 
-        $hecho = __('loads.transition.done', ['status' => __("nav.status.load.{$target->value}")]);
+        $hecho = __('loads.transition.done', ['status' => StatusLabel::of($target)]);
 
         /*
          * Y se DICE si el enlace salió.
@@ -1192,7 +1193,6 @@ final class LoadController
         return $data;
     }
 
-
     /**
      * @return Builder<Load>
      */
@@ -1291,7 +1291,7 @@ final class LoadController
      * En DOS consultas, no una por fila. Con veinticinco cargas en pantalla la
      * diferencia son cincuenta viajes a la base de datos por cada listado.
      *
-     * @param  \Illuminate\Support\Collection<int, Load>  $rows
+     * @param  Collection<int, Load>  $rows
      * @return array{customers: array<string, string>, carriers: array<string, string>}
      */
     private function relatedNames($rows): array

@@ -10,6 +10,7 @@ use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Enums\PaymentMethod;
+use App\Enums\Scope;
 use App\Models\Invoice;
 use App\Models\Load;
 use App\Support\Audit;
@@ -18,6 +19,7 @@ use App\Support\Finance\InvoiceBuilder;
 use App\Support\Finance\InvoiceLink;
 use App\Support\Finance\PaymentLedger;
 use App\Support\InertiaPage;
+use App\Support\Loads\BillingState;
 use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -402,6 +404,13 @@ final class InvoiceController
             'updated_at' => $ahora,
         ]);
 
+        // Anular es lo que se hace para poder volver a facturar, así que las
+        // cargas de esta factura vuelven a `pod_received` y reaparecen en el
+        // panel de pendientes. Sin esta línea la carga se quedaría diciendo
+        // «Facturada» mientras el panel la vuelve a ofrecer — la contradicción
+        // que hacía peligrosa la proyección, y la razón por la que existe.
+        BillingState::alAnular((string) $actor->tenantId, (string) $model->id, $ahora);
+
         Audit::record(
             $actor,
             AuditAction::FinancialChanged,
@@ -426,7 +435,7 @@ final class InvoiceController
     /**
      * @return Builder<Invoice>
      */
-    private function scoped(PermissionChecker $checker, Actor $actor, \App\Enums\Scope $scope): Builder
+    private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
     {
         // El rol transportista tiene `invoice:read` con alcance Carrier. Aquí
         // eso es un filtro por `carrier_id`, no un 403: que vea lo que se le
@@ -437,7 +446,7 @@ final class InvoiceController
         );
     }
 
-    private function find(PermissionChecker $checker, Actor $actor, \App\Enums\Scope $scope, string $id): Invoice
+    private function find(PermissionChecker $checker, Actor $actor, Scope $scope, string $id): Invoice
     {
         $invoice = $this->scoped($checker, $actor, $scope)->whereKey($id)->first();
 
@@ -640,7 +649,7 @@ final class InvoiceController
             ->where('l.tenant_id', $actor->tenantId)
             ->where('l.carrier_id', $carrierId)
             ->whereNull('l.deleted_at')
-            ->where('l.status', 'delivered')
+            ->whereIn('l.status', Billable::ESTADOS)
             ->whereNotExists(fn ($q) => $this->invoicedExists($q, $actor));
     }
 
@@ -654,7 +663,7 @@ final class InvoiceController
             ->whereColumn('l.carrier_id', $carrierColumn)
             ->where('l.tenant_id', $actor->tenantId)
             ->whereNull('l.deleted_at')
-            ->where('l.status', 'delivered')
+            ->whereIn('l.status', Billable::ESTADOS)
             ->whereNotExists(fn ($sub) => $this->invoicedExists($sub, $actor));
     }
 
@@ -701,5 +710,4 @@ final class InvoiceController
             // incobrable ya se dio por perdida y no es trabajo pendiente.
             ->whereNotIn('invoices.status', ['draft', 'voided', 'paid', 'uncollectable']);
     }
-
 }

@@ -23,6 +23,26 @@ use Illuminate\Support\Facades\DB;
 final class Billable
 {
     /**
+     * Los estados en los que una carga se puede facturar.
+     *
+     * ERAN SOLO `delivered`, y eso era un fallo con la forma de una regla. El
+     * ciclo de vida dice que una carga entregada avanza a `pod_received` en
+     * cuanto se cuelga el comprobante firmado —el papel que se enseña para
+     * cobrar—, y esa consulta la dejaba fuera. Hacer lo correcto sacaba la carga
+     * de la pantalla de facturar: quien colgaba el comprobante perdía la carga
+     * de vista, y quien no lo colgaba seguía pudiendo facturarla. El incentivo
+     * estaba exactamente del revés.
+     *
+     * El literal vivía copiado en tres consultas —ésta y dos de
+     * `InvoiceController`— pese al comentario de al lado que explicaba por qué
+     * la mitad «ya facturada» de la regla estaba extraída aquí. La mitad de una
+     * regla extraída es la mitad de una regla copiada.
+     *
+     * @var list<string>
+     */
+    public const ESTADOS = ['delivered', 'pod_received'];
+
+    /**
      * El cuerpo de un `whereNotExists` que descarta las cargas ya facturadas.
      *
      * `$loadColumn` es la columna de la consulta de fuera que apunta a la
@@ -52,7 +72,7 @@ final class Billable
         return DB::table('loads as l')
             ->where('l.tenant_id', $tenantId)
             ->whereNull('l.deleted_at')
-            ->where('l.status', 'delivered')
+            ->whereIn('l.status', self::ESTADOS)
             ->whereNotExists(fn (Builder $q) => self::invoicedExists($q, $tenantId, 'l.id'));
     }
 }

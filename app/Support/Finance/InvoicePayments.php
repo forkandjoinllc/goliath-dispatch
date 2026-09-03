@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Support\Finance;
 
+use App\Support\Loads\BillingState;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -95,7 +97,7 @@ final class InvoicePayments
                 'created_at' => $ahora,
                 'updated_at' => $ahora,
             ]);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+        } catch (UniqueConstraintViolationException) {
             return null;
         }
 
@@ -195,6 +197,12 @@ final class InvoicePayments
             'paid_at' => $saldo === 0 ? $ahora : $factura->paid_at,
             'updated_at' => $ahora,
         ]);
+
+        // Cobrada la factura, sus cargas quedan cobradas. La misma regla del
+        // párrafo de arriba, un nivel más abajo: con saldo pendiente no se mueve
+        // nada. Un pago parcial que marcara la carga como cobrada sería la misma
+        // pérdida silenciosa, contada en la pantalla que más se mira.
+        BillingState::sincronizarCobro((string) $factura->tenant_id, $invoiceId, $ahora);
     }
 
     /**

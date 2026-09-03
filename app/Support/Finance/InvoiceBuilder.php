@@ -6,6 +6,7 @@ namespace App\Support\Finance;
 
 use App\Authorization\Actor;
 use App\Models\Load;
+use App\Support\Loads\BillingState;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,7 +40,7 @@ final class InvoiceBuilder
 
     /**
      * @param  list<Load>  $loads  cargas del MISMO transportista
-     * @return string  el id de la factura
+     * @return string el id de la factura
      */
     public function fromLoads(Actor $actor, string $carrierId, array $loads, int $paymentTermsDays): string
     {
@@ -88,11 +89,13 @@ final class InvoiceBuilder
                 'updated_at' => $ahora,
             ];
 
-            // Qué cargas están facturadas NO se marca con una columna en
-            // `loads`. Se sabe preguntando por las líneas de factura vivas, que
-            // es donde está el hecho. Una columna paralela solo puede
-            // desincronizarse: se anula una factura y la carga se queda marcada
-            // como facturada para siempre.
+            // Qué cargas están facturadas NO se decide con una columna en
+            // `loads`: el hecho está en estas líneas, y quien pregunte que
+            // pregunte aquí —`Billable`—. `loads.status` es una PROYECCIÓN de
+            // esa respuesta, no una segunda verdad; la escribe `BillingState`
+            // al final de este método y la deshace al anular. Ese «al anular»
+            // es lo que faltaba, y es la razón por la que durante mucho tiempo
+            // esto no se escribió en absoluto.
         }
 
         DB::table('invoices')->insert([
@@ -113,6 +116,18 @@ final class InvoiceBuilder
         ]);
 
         DB::table('invoice_line_items')->insert($lineas);
+
+        // Y la carga deja de estar «pendiente de facturar» en el mismo acto.
+        // Antes no pasaba nada aquí: el panel dejaba de contarla —lee las
+        // líneas— pero su ficha seguía en `pod_received`, y la única forma de
+        // moverla era un botón que no comprobaba que esta factura existiera.
+        BillingState::alFacturar(
+            (string) $actor->tenantId,
+            $invoiceId,
+            array_map(static fn (Load $l): string => (string) $l->id, $loads),
+            CarbonImmutable::parse($ahora),
+            $actor->auditUserId(),
+        );
 
         return $invoiceId;
     }

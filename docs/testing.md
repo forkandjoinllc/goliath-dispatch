@@ -1354,3 +1354,50 @@ vuelvan a divergir.
   `QcMobileDirectory` se prueba con `Http::fake()`, lo que demuestra el mapeo de
   la respuesta, **no** el contrato del proveedor. La primera consulta con clave
   de verdad puede exigir ajustar nombres de campo.
+
+## Lote 68 — la carga que dice facturada
+
+**Un comentario puede ser la denuncia del código que tiene debajo.** La
+declaración de `invoiced` en `Transitions::GRAPH` llevaba encima un comentario
+que decía que facturar «lo hace el dominio de finanzas al emitir la factura».
+No lo hacía. Cuando un comentario y su línea se contradicen, el comentario
+suele ser la intención original y la línea, la deuda. Merece la pena leer los
+comentarios buscando esa contradicción: es un barrido nuevo y dio dos defectos
+en un solo fichero.
+
+**La mitad de una regla extraída es la mitad de una regla copiada.**
+`InvoiceController` explicaba en un comentario por qué la mitad «¿ya está
+facturada?» vivía en `Billable` —dos copias se separan— mientras la otra mitad,
+«¿qué estados son facturables?», estaba copiada como el literal `'delivered'`
+en cinco consultas. Extraer una regla a medias deja el problema y además la
+sensación de haberlo resuelto.
+
+**Un estado alcanzable de más rompe consultas que nadie tocó.** En cuanto
+facturar movió la carga sola, todas las consultas que preguntaban «¿está
+entregada?» comparando contra `'delivered'` empezaron a perder cargas de vista.
+La primera en caer habría sido la de liquidaciones: dinero que se le debe al
+transportista y deja de verse. Antes de hacer alcanzable un estado nuevo, hay
+que barrer quién compara contra los viejos.
+
+**El sembrador es una prueba.** La primera versión de `alFacturar()` solo
+avanzaba desde `pod_received`; parecía razonable hasta que corrió el sembrador
+y dejó tres cargas entregadas dentro de una factura de verdad diciendo
+«Entregada». La misma contradicción que el lote quitaba, vista desde el otro
+lado. Ninguna prueba unitaria lo habría enseñado tan rápido como sembrar.
+
+**Una vuelta atrás no debe llevar el destino escrito.** Anular una factura
+devuelve la carga al estado del que salió, y ese estado es dato, no constante:
+se lee del historial. Un destino fijo habría inventado un comprobante de
+entrega que nunca llegó, en la única tabla a la que la gente acude cuando ya no
+se fía de las demás.
+
+**`toContain` sigue siendo variádico.** Segunda vez, después del lote 64. El
+mensaje de fallo se convirtió en una segunda aguja y la aserción pasaba siempre.
+La forma segura sigue siendo `expect(in_array(...))->toBeTrue('mensaje')`.
+
+**Una prueba que espera un 404 lo consigue escribiendo mal la ruta.** Dos
+pruebas afirmaban que la transición «facturada» ya no existía posteando contra
+`/loads/{id}/transition/invoiced`. La ruta real es `/loads/{id}/status/{action}`:
+las dos pasaban con el defecto puesto. Lo destapó el sabotaje, no la prueba. Una
+aserción negativa —404, «no contiene», «no aparece»— hay que verla fallar antes
+de creérsela.

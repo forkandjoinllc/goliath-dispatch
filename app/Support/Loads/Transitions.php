@@ -52,15 +52,56 @@ final class Transitions
         'in_transit' => [[LoadStatus::AtPickup], 'load:status:update'],
         'at_delivery' => [[LoadStatus::InTransit], 'load:status:update'],
         'delivered' => [[LoadStatus::AtDelivery], 'load:status:update'],
-        // El comprobante de entrega firmado. Sin él no se factura.
+        // El comprobante de entrega firmado. Sin él no se factura. Es el
+        // último paso que da una persona: de aquí en adelante manda finanzas.
         'pod_received' => [[LoadStatus::Delivered], 'load:status:update'],
-        // Facturar no es un cambio de estado a mano: lo hace el dominio de
-        // finanzas al emitir la factura. Se declara aquí para que el grafo esté
-        // completo y para que la pantalla enseñe el paso, pero exige el permiso
-        // de facturación, que un despachador no tiene.
-        'invoiced' => [[LoadStatus::PodReceived], 'invoice:create'],
-        'paid' => [[LoadStatus::Invoiced], 'payment:record'],
     ];
+
+    /**
+     * Los pasos que NO da nadie a mano.
+     *
+     * `invoiced` y `paid` vivían arriba, como acciones de pantalla, debajo de un
+     * comentario que decía que facturar «lo hace el dominio de finanzas al
+     * emitir la factura». No lo hacía: la ficha de carga enseñaba un botón
+     * «Facturada» que no comprobaba nada, y emitir una factura de verdad no
+     * movía la carga. Se podía marcar una carga como cobrada sin que existiera
+     * un solo cobro.
+     *
+     * Ahora los escribe {@see BillingState} y solo él, como consecuencia de
+     * emitir, cobrar o anular una factura. No están en `GRAPH` a propósito: lo
+     * que no aparece ahí no tiene botón, y `permission()` devuelve nulo, así que
+     * un POST a mano contra `loads/{load}/transition/invoiced` se queda en un
+     * 404 sin llegar a mirar la carga.
+     *
+     * La tercera es la única arista del ciclo que va hacia atrás, y existe
+     * porque anular una factura es justo lo que se hace para volver a facturar.
+     *
+     * `invoice:voided` no lleva destino fijo: devuelve la carga al estado del
+     * que la sacó la factura que se anula, leído del historial. Puede ser
+     * cualquiera de los dos facturables, y por eso se listan los dos.
+     *
+     * @var array<string, array{0: list<LoadStatus>, 1: list<LoadStatus>}>
+     */
+    private const SYSTEM = [
+        'invoice:issued' => [
+            [LoadStatus::Delivered, LoadStatus::PodReceived],
+            [LoadStatus::Invoiced],
+        ],
+        'invoice:settled' => [
+            [LoadStatus::Invoiced],
+            [LoadStatus::Paid],
+        ],
+        'invoice:voided' => [
+            [LoadStatus::Invoiced],
+            [LoadStatus::Delivered, LoadStatus::PodReceived],
+        ],
+    ];
+
+    /** Los saltos reservados al dominio de finanzas, para quien los audite. */
+    public static function systemEdges(): array
+    {
+        return self::SYSTEM;
+    }
 
     /**
      * Cancelar es la primera excepción: se puede desde casi cualquier sitio.

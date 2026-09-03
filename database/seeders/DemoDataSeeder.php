@@ -8,14 +8,15 @@ use App\Authorization\Actor;
 use App\Enums\DocumentType;
 use App\Enums\DriverStatus;
 use App\Enums\EquipmentStatus;
-use App\Enums\Locale;
 use App\Enums\LoadStatus;
+use App\Enums\Locale;
 use App\Enums\OnboardingStatus;
 use App\Enums\Role;
 use App\Enums\StopType;
 use App\Enums\VerificationStatus;
 use App\Models\Load;
 use App\Support\Customers\NameKey;
+use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionLedger;
 use App\Support\Finance\InvoiceBuilder;
 use App\Support\Finance\PaymentLedger;
@@ -24,6 +25,7 @@ use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -880,7 +882,7 @@ class DemoDataSeeder extends Seeder
             ['GD-24003', 'greatlakes', 'atlas', LoadStatus::Dispatched, 'rgn', 'Wind turbine nacelle', 96_000, 2, true, 480, 12_400_00, 9_920_00],
             ['GD-24004', 'harborworks', null, LoadStatus::Available, 'lowboy', 'Marine crane boom', 78_500, 6, true, 720, 9_800_00, null],
             ['GD-24005', 'permian', 'cordillera', LoadStatus::PodReceived, 'flatbed', 'Pipe bundles', 46_000, -20, false, 205, 1_680_00, 1_344_00],
-            ['GD-24006', 'greatlakes', 'atlas', LoadStatus::Invoiced, 'double_drop', 'Transformer housing', 62_400, -34, true, 545, 7_250_00, 5_800_00],
+            ['GD-24006', 'greatlakes', 'atlas', LoadStatus::PodReceived, 'double_drop', 'Transformer housing', 62_400, -34, true, 545, 7_250_00, 5_800_00],
             ['GD-24007', 'delgado', null, LoadStatus::Draft, 'flatbed', 'Perfiles estructurales', 41_000, 9, false, 288, 1_950_00, null],
             ['GD-24008', 'harborworks', 'bluewater', LoadStatus::Cancelled, 'flatbed', 'Deck plating', 38_000, -8, false, 190, 1_400_00, 1_120_00],
 
@@ -888,10 +890,19 @@ class DemoDataSeeder extends Seeder
             // tiempo. Son las que le dan material a la mitad del dinero: con una
             // sola entregada salía UNA factura, un cobro y una comisión, y las
             // pantallas de facturas, cobros, liquidaciones e informes parecían
-            // vacías en una demostración. `delivered` y no `pod_received` ni
-            // `invoiced` porque es el único estado que la aplicación considera
-            // facturable — un sembrador que se salte esa regla enseña un
-            // producto que no existe.
+            // vacías en una demostración.
+            //
+            // `delivered` y no `invoiced`: sembrar el estado final a mano es
+            // justo la mentira que este lote quita. Antes GD-24006 se sembraba
+            // en `invoiced` SIN UNA SOLA FACTURA detrás — la ficha decía
+            // «Facturada» y el panel seguía contándola como pendiente. Ahora
+            // ninguna carga nace facturada: la mueve `BillingState` cuando
+            // `money()` emite la factura de verdad, unas líneas más abajo.
+            //
+            // `pod_received` sí es facturable desde este lote, y GD-24006 lo
+            // demuestra: llega con su comprobante colgado, entra en la factura
+            // y sale de ella en `invoiced` con una fila de historial que dice
+            // que no lo movió una persona.
             ['GD-24009', 'permian', 'atlas', LoadStatus::Delivered, 'rgn', 'Excavator, tracked', 71_000, -46, true, 690, 8_600_00, 6_880_00],
             ['GD-24010', 'delgado', 'cordillera', LoadStatus::Delivered, 'flatbed', 'Bobinas de aluminio', 44_500, -30, false, 340, 2_480_00, 1_984_00],
             ['GD-24011', 'greatlakes', 'bluewater', LoadStatus::Delivered, 'step_deck', 'Press brake frame', 58_200, -18, false, 415, 3_950_00, 3_160_00],
@@ -933,10 +944,10 @@ class DemoDataSeeder extends Seeder
                 'planned_pickup_at' => $pickupAt,
                 'planned_delivery_at' => $deliveryAt,
                 'actual_pickup_at' => $past && $status !== LoadStatus::Cancelled ? $pickupAt->copy()->addMinutes(35) : null,
-                'actual_delivery_at' => $past && in_array($status, [LoadStatus::Delivered, LoadStatus::PodReceived, LoadStatus::Invoiced], true)
+                'actual_delivery_at' => $past && in_array($status, [LoadStatus::Delivered, LoadStatus::PodReceived], true)
                     ? $deliveryAt->copy()->addMinutes(50)
                     : null,
-                'pod_received_at' => in_array($status, [LoadStatus::PodReceived, LoadStatus::Invoiced], true)
+                'pod_received_at' => in_array($status, [LoadStatus::PodReceived], true)
                     ? $deliveryAt->copy()->addHours(6)
                     : null,
                 'cancelled_at' => $status === LoadStatus::Cancelled ? $pickupAt->copy()->subDay() : null,
@@ -981,12 +992,25 @@ class DemoDataSeeder extends Seeder
                 'window_start' => $deliveryAt,
                 'window_end' => $deliveryAt->copy()->addHours(6),
                 'planned_arrival_at' => $deliveryAt,
-                'actual_arrival_at' => in_array($status, [LoadStatus::Delivered, LoadStatus::PodReceived, LoadStatus::Invoiced], true)
+                'actual_arrival_at' => in_array($status, [LoadStatus::Delivered, LoadStatus::PodReceived], true)
                     ? $deliveryAt->copy()->addMinutes(40)
                     : null,
             ]);
 
             $this->loadCrew($loadId, $status, $carrierKey, $carriers, $drivers, $oversize);
+
+            // El comprobante de entrega de las que ya lo tienen.
+            //
+            // `pod_received` se sembraba escribiendo la columna y nada más, sin
+            // el papel. La aplicación NO deja alcanzar ese estado sin él
+            // —Guards::forPod()— así que la demostración enseñaba una carga en
+            // un estado que el producto rechaza, y desde este lote además
+            // facturable. Un dato que contradice una puerta es peor que no
+            // tenerlo: enseña una forma de trabajar que la aplicación va a
+            // negar.
+            if ($status === LoadStatus::PodReceived) {
+                $this->comprobanteDeEntrega($loadId, $number);
+            }
         }
 
         // El contador arranca donde termina la serie sembrada.
@@ -1430,6 +1454,68 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
+     * El comprobante de entrega firmado, colgado de la carga.
+     *
+     * Documento de verdad —fila en `documents`, su versión, su fichero y la fila
+     * de `load_documents` que le da tipo dentro del viaje—, igual que
+     * `reciboDeGasto()` y por la misma razón: un demo donde «ver el comprobante»
+     * da error es la clase de mentira que este proyecto lleva veinte lotes
+     * quitando.
+     *
+     * El tipo es `pod`. No `proof_of_delivery`, que no lo admite el CHECK del
+     * esquema y que ya costó una vez que `pod_received` fuera inalcanzable en
+     * producción —ver Guards::forPod().
+     */
+    private function comprobanteDeEntrega(string $loadId, string $loadNumber): void
+    {
+        $admin = $this->users['admin@demo.test'] ?? null;
+
+        if ($admin === null) {
+            return;
+        }
+
+        $documentId = $this->upsert('documents', [
+            'owner_type' => 'load',
+            'owner_id' => $loadId,
+        ], [
+            'document_type' => 'pod',
+            'title' => "comprobante-{$loadNumber}.pdf",
+            'is_required' => true,
+            'review_status' => 'approved',
+            'uploaded_by_user_id' => $admin,
+        ]);
+
+        $clave = "documents/demo/pod-{$loadId}.pdf";
+
+        $versionId = $this->upsert('document_versions', [
+            'document_id' => $documentId,
+            'version_number' => 1,
+        ], [
+            'storage_key' => $clave,
+            'original_filename' => "comprobante-{$loadNumber}.pdf",
+            'content_type' => 'application/pdf',
+            'byte_size' => 24576,
+            'sha256' => hash('sha256', "pod:{$loadId}"),
+            'malware_scan_status' => 'pending',
+            'uploaded_by_user_id' => $admin,
+        ]);
+
+        DB::table('documents')->where('id', $documentId)->update([
+            'current_version_id' => $versionId,
+            'updated_at' => now(),
+        ]);
+
+        $this->upsert('load_documents', [
+            'load_id' => $loadId,
+            'document_id' => $documentId,
+        ], [
+            'document_type' => 'pod',
+        ]);
+
+        $this->placeholderPdf($clave);
+    }
+
+    /**
      * La mitad del dinero: facturar, cobrar, liquidar y devengar comisiones.
      *
      * LLAMA AL CÓDIGO REAL —InvoiceBuilder, PaymentLedger, SettlementBuilder,
@@ -1462,7 +1548,7 @@ class DemoDataSeeder extends Seeder
 
         $porTransportista = Load::query()
             ->where('tenant_id', $this->tenantId)
-            ->where('status', 'delivered')
+            ->whereIn('status', Billable::ESTADOS)
             ->whereNotNull('carrier_id')
             ->where('carrier_gross_rate_cents', '>', 0)
             ->orderBy('load_number')
@@ -1564,7 +1650,7 @@ class DemoDataSeeder extends Seeder
     /**
      * Liquida al primer transportista, para que la pantalla no salga vacía.
      *
-     * @param  \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, Load>>  $porTransportista
+     * @param  Collection<string, Collection<int, Load>>  $porTransportista
      */
     private function settle(Actor $actor, $porTransportista): void
     {
