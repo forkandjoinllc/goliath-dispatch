@@ -80,7 +80,6 @@
     "replacing": "This will add a new version. The previous version stays in the history.",
     "success": "Document uploaded and queued for review.",
     "newVersionSuccess": "New version uploaded. Review status reset to pending.",
-    "scanning": "Scanning for malware…",
     "issueDate": "Issue date",
     "expirationDate": "Expiration date",
     "originalFilename": "File name",

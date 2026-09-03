@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Support\Branding\Brand;
 use App\Support\Branding\Templates;
+use Tests\Support\Source;
 
 /**
  * Lo que una empresa escribe sobre su marca no puede hacer daño a quien lo lee.
@@ -39,17 +40,10 @@ function raizMarca(): string
 
 function codigoDeMarcaSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('el pie y el color se limpian al leer, no solo al escribir', function (): void {

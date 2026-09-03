@@ -14,15 +14,17 @@ use App\Models\Document;
 use App\Support\Audit;
 use App\Support\Documents\DocumentScope;
 use App\Support\Documents\DocumentTypes;
+use App\Support\Documents\Scanning;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
+use App\Support\Storage\DocumentStore;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
-use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -289,9 +291,16 @@ final class DocumentController
         }
 
         $file = $request->file('file');
+
+        // ANTES de guardar. Si el analizador encuentra algo, `put()` no llega a
+        // llamarse y el fichero no entra en el almacén — que es lo que el
+        // diccionario lleva prometiendo desde el principio con
+        // «no pasó el análisis de seguridad y no se almacenó».
+        $veredicto = Scanning::revisar($file, $actor);
+
         $storageKey = $store->put((string) $actor->tenantId, $file);
 
-        $document = DB::transaction(function () use ($existing, $data, $file, $storageKey, $actor): Document {
+        $document = DB::transaction(function () use ($existing, $data, $file, $storageKey, $actor, $veredicto): Document {
             $document = $existing;
 
             if ($document === null) {
@@ -335,10 +344,9 @@ final class DocumentController
                 // El hash del contenido. Es lo que responde «¿este PDF es el
                 // mismo que firmaron?» sin depender del nombre ni de la fecha.
                 'sha256' => hash_file('sha256', $file->getRealPath()),
-                // Sin antivirus configurado no se miente diciendo que está
-                // limpio: queda pendiente, y el trabajo que lo escanee lo
-                // marcará cuando exista.
-                'malware_scan_status' => 'pending',
+                // Lo que dijo el analizador. Sin antivirus configurado eso es
+                // `unavailable`, y NO `clean`.
+                ...Scanning::columnas($veredicto),
                 'uploaded_by_user_id' => $actor->auditUserId(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -657,7 +665,7 @@ final class DocumentController
      * Los nombres de los dueños de esta página, en cuatro consultas y no una
      * por fila.
      *
-     * @param  \Illuminate\Support\Collection<int, Document>  $rows
+     * @param  Collection<int, Document>  $rows
      * @return array<string, string>
      */
     private function ownerNames($rows): array

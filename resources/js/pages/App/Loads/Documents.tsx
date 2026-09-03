@@ -145,7 +145,11 @@ function Fila({ loadId, papel, can }: { loadId: string; papel: Papel; can: { dow
       <p className="mt-0.5 text-xs text-steel-600">
         {t('loads.documents.attachedAt', { date: papel.attachedAt.slice(0, 16) })}
         {papel.byteSize !== null ? ` · ${peso(papel.byteSize)}` : ''}
-        {papel.malwareScanStatus === 'pending' ? ` · ${t('loads.documents.scanPending')}` : ''}
+        {/* Cada estado con su frase. Decía «Pendiente de análisis», que
+            prometía uno en camino que no venía nunca. */}
+        {papel.malwareScanStatus !== null && papel.malwareScanStatus !== 'clean'
+          ? ` · ${t(`loads.documents.scan.${papel.malwareScanStatus}`)}`
+          : ''}
       </p>
 
       <div className="mt-1 flex flex-wrap gap-3">

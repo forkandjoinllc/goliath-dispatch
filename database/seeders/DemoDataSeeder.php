@@ -15,7 +15,10 @@ use App\Enums\Role;
 use App\Enums\StopType;
 use App\Enums\VerificationStatus;
 use App\Models\Load;
+use App\Services\Malware\ScanVerdict;
+use App\Services\Malware\UnavailableFileScanner;
 use App\Support\Customers\NameKey;
+use App\Support\Documents\Scanning;
 use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionLedger;
 use App\Support\Finance\InvoiceBuilder;
@@ -23,6 +26,7 @@ use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\SettlementBuilder;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -518,8 +522,16 @@ class DemoDataSeeder extends Seeder
                 'byte_size' => random_int(80_000, 400_000),
                 'sha256' => hash('sha256', "demo:{$carrierId}:{$type->value}:1"),
                 'page_count' => random_int(1, 4),
-                'malware_scan_status' => 'clean',
-                'malware_scan_at' => $now->copy()->subDays(10),
+                // `unavailable` y no `clean`. Sembrar «limpio» enseñaba un
+                // estado que producción NO PUEDE alcanzar: no hay antivirus
+                // atado, así que ningún fichero subido de verdad llegará jamás
+                // a decir eso. Una demostración que enseña un visto bueno de
+                // seguridad que el producto no sabe dar es la peor clase de
+                // demostración que hay.
+                ...Scanning::columnas(ScanVerdict::sinAnalizador(
+                    UnavailableFileScanner::NOMBRE,
+                    CarbonImmutable::parse($now->copy()->subDays(10)),
+                )),
                 'extraction_status' => 'not_started',
                 'uploaded_by_user_id' => $this->users['admin@demo.test'] ?? null,
             ]);
@@ -1435,7 +1447,8 @@ class DemoDataSeeder extends Seeder
             'content_type' => 'application/pdf',
             'byte_size' => 24576,
             'sha256' => hash('sha256', $expenseId),
-            'malware_scan_status' => 'pending',
+            // Lo mismo que arriba: el estado que produce esta instalación.
+            ...Scanning::columnas(ScanVerdict::sinAnalizador(UnavailableFileScanner::NOMBRE)),
             'uploaded_by_user_id' => $admin,
         ]);
 
@@ -1496,7 +1509,8 @@ class DemoDataSeeder extends Seeder
             'content_type' => 'application/pdf',
             'byte_size' => 24576,
             'sha256' => hash('sha256', "pod:{$loadId}"),
-            'malware_scan_status' => 'pending',
+            // Lo mismo que arriba: el estado que produce esta instalación.
+            ...Scanning::columnas(ScanVerdict::sinAnalizador(UnavailableFileScanner::NOMBRE)),
             'uploaded_by_user_id' => $admin,
         ]);
 

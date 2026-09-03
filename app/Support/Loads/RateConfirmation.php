@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Loads;
 
+use App\Support\Documents\Scanning;
 use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Dompdf\Dompdf;
@@ -85,7 +86,10 @@ final class RateConfirmation
             'content_type' => 'application/pdf',
             'byte_size' => strlen($pdf),
             'sha256' => $sha,
-            'malware_scan_status' => 'not_scanned',
+            // Un fichero que se generó este mismo servidor: no viene de fuera y
+            // no hay nada que mandar a analizar. `not_scanned` dice eso, y es
+            // distinto de `unavailable`, que dice que sí se quiso mirar.
+            ...Scanning::propio(),
             'created_at' => $ahora,
             'updated_at' => $ahora,
         ]);
@@ -234,7 +238,7 @@ final class RateConfirmation
      * comprobando lo mismo, con una prueba que se rompe cuando la librería
      * cambie de compresión.
      *
-     * @param array<string, mixed> $d
+     * @param  array<string, mixed>  $d
      */
     public static function html(array $d, string $locale): string
     {
@@ -316,7 +320,7 @@ final class RateConfirmation
 
     private static function toPdf(string $html): string
     {
-        $opciones = new Options();
+        $opciones = new Options;
         $opciones->set('isRemoteEnabled', false);
         $opciones->set('isHtml5ParserEnabled', true);
         $opciones->set('defaultFont', 'DejaVu Sans');

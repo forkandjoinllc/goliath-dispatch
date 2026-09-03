@@ -162,11 +162,17 @@
         "wholeLoad": "Whole load",
         "attachedAt": "Uploaded on {date}",
         "download": "Download",
-        "scanPending": "Scan pending",
         "podBlockedTitle": "Proof of delivery cannot be marked as received yet",
         "podReady": "A proof of delivery is attached: the load can now be marked as POD received.",
         "podReceivedAt": "Proof of delivery received on {date}",
-        "maxSize": "The file cannot be larger than {mb} MB."
+        "maxSize": "The file cannot be larger than {mb} MB.",
+        "scan": {
+            "clean": "scanned",
+            "infected": "flagged by the scanner",
+            "unavailable": "not scanned — no scanner configured",
+            "not_scanned": "generated here",
+            "pending": "scan unfinished"
+        }
     },
     "eligibility": {
         "meets": "Meets",

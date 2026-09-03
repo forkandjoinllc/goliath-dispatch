@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\Scenario;
 
@@ -66,7 +67,7 @@ it('la carga de otra empresa no existe para quien pregunta', function () {
     // 404 y no 403: un 403 confirmaría que la carga existe.
     signIn($this->scenario, Role::Dispatcher);
 
-    $this->get('/loads/'.\Illuminate\Support\Str::uuid().'/documents')->assertNotFound();
+    $this->get('/loads/'.Str::uuid().'/documents')->assertNotFound();
 });
 
 /* ── Subir ──────────────────────────────────────────────────────────────── */
@@ -106,7 +107,9 @@ it('subir un comprobante escribe el documento, su versión y el enlace', functio
     expect((int) $version->version_number)->toBe(1);
     expect((string) $version->sha256)->toHaveLength(64);
     // Sin antivirus configurado no se dice que está limpio.
-    expect((string) $version->malware_scan_status)->toBe('pending');
+    // `unavailable`, no `pending`: el análisis ocurre en la misma petición y
+    // sin antivirus configurado el veredicto es «no había con qué». Lote 69.
+    expect((string) $version->malware_scan_status)->toBe('unavailable');
 });
 
 it('el comprobante subido abre la puerta que estaba cerrada para siempre', function () {
@@ -218,7 +221,7 @@ it('descolgar borra el enlace y deja el documento en pie', function () {
 it('descolgar un enlace de otra carga no encuentra nada', function () {
     signIn($this->scenario, Role::Dispatcher);
 
-    $this->delete("/loads/{$this->scenario->load->id}/documents/".\Illuminate\Support\Str::uuid())
+    $this->delete("/loads/{$this->scenario->load->id}/documents/".Str::uuid())
         ->assertNotFound();
 });
 
@@ -244,7 +247,7 @@ it('el sitio de una parada sale de la ubicación del cliente', function () {
     // escribe como la escribe la aplicación de verdad.
     $parada = paradaDeEntrega($this->scenario);
     $nombre = 'Muelle 4 de Savannah';
-    $ubicacion = (string) \Illuminate\Support\Str::uuid();
+    $ubicacion = (string) Str::uuid();
 
     app(TenantContext::class)->runAs($this->scenario->tenant->id, function () use ($ubicacion, $nombre, $parada) {
         DB::table('customer_locations')->insert([

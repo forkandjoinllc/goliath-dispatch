@@ -96,12 +96,18 @@
         "filename": "Nombre original",
         "size": "Tamaño",
         "checksum": "Suma de verificación",
-        "scanPending": "Todavía sin analizar contra malware",
         "current": "Actual",
         "download": "Descargar",
         "newVersion": "Subir una versión nueva",
         "versionsHint": "Una subida nueva nunca pisa la anterior. Si alguien discute qué decía el seguro en marzo, la respuesta está aquí.",
-        "back": "Volver a documentos"
+        "back": "Volver a documentos",
+        "scan": {
+            "clean": "Analizado, sin malware",
+            "infected": "El analizador marcó este archivo y no se almacenó",
+            "unavailable": "Sin analizar: esta instalación no tiene antivirus configurado",
+            "not_scanned": "Lo generó este sistema, así que no se mandó a analizar",
+            "pending": "El análisis no llegó a terminar"
+        }
     },
     "form": {
         "title": "Subir documento",

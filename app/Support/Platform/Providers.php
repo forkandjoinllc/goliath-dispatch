@@ -6,6 +6,7 @@ namespace App\Support\Platform;
 
 use App\Services\Billing\BillingProvider;
 use App\Services\Fmcsa\FmcsaDirectory;
+use App\Services\Malware\FileScanner;
 use App\Support\Routing\RouteProvider;
 use App\Support\Routing\StopDerivedRouteProvider;
 use App\Support\Signatures\Seal;
@@ -58,6 +59,7 @@ final class Providers
     {
         return [
             self::fmcsa(),
+            self::antivirus(),
             self::almacenamiento(),
             self::rutas(),
             self::correo(),
@@ -81,6 +83,34 @@ final class Providers
                 ? (string) Config::get('services.fmcsa.base_url')
                 : 'FMCSA_WEBKEY',
             'envVar' => ! $directorio->isLive(),
+        ];
+    }
+
+    /**
+     * Quién mira los ficheros que se suben.
+     *
+     * Faltaba, y era la ausencia más cara de esta pantalla: la aplicación
+     * enseñaba «Todavía sin analizar contra malware» debajo de cada fichero y no
+     * había ningún sitio donde se dijera que no hay antivirus. Quien instalaba
+     * esto podía leer el inventario entero de proveedores sin enterarse.
+     *
+     * @return array<string, mixed>
+     */
+    private static function antivirus(): array
+    {
+        $scanner = app(FileScanner::class);
+
+        return [
+            'key' => 'malware',
+            'interface' => 'FileScanner',
+            'bound' => class_basename($scanner),
+            // `mock` y no `fallback`. El disco local es `fallback` porque guarda
+            // ficheros de verdad; esto no analiza nada de nada, y llamarlo
+            // «funciona pero no es lo ideal» sería suavizar justo lo que no hay
+            // que suavizar.
+            'status' => $scanner->isLive() ? 'live' : 'mock',
+            'detail' => $scanner->isLive() ? $scanner->name() : null,
+            'envVar' => false,
         ];
     }
 

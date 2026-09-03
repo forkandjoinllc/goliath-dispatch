@@ -139,7 +139,8 @@
             "changed": "Cambió el rol"
         },
         "security": {
-            "rate_limited": "Alcanzó el límite de peticiones"
+            "rate_limited": "Alcanzó el límite de peticiones",
+            "malware_blocked": "Archivo bloqueado por el analizador de malware"
         },
         "settings": {
             "updated": "Cambió los ajustes"

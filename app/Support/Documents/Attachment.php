@@ -56,13 +56,18 @@ final class Attachment
         DocumentStore $store,
         ?string $title = null,
     ): Document {
+        // ANTES de guardar, no después. Si el veredicto rechaza, `put()` no
+        // llega a llamarse: el fichero no entra en el almacén, y no hay que
+        // confiar en que un borrado posterior funcione para que no esté ahí.
+        $veredicto = Scanning::revisar($file, $actor);
+
         // FUERA de la transacción a propósito: subir el fichero al
         // almacenamiento puede tardar, y una transacción abierta mientras tanto
         // mantiene bloqueadas filas de `documents` para todos los demás.
         $storageKey = $store->put((string) $actor->tenantId, $file);
 
         return DB::transaction(function () use (
-            $actor, $ownerType, $ownerId, $documentType, $file, $storageKey, $title,
+            $actor, $ownerType, $ownerId, $documentType, $file, $storageKey, $title, $veredicto,
         ): Document {
             $document = new Document;
             $document->document_type = $documentType;
@@ -90,10 +95,10 @@ final class Attachment
                 'content_type' => (string) $file->getMimeType(),
                 'byte_size' => (int) $file->getSize(),
                 'sha256' => hash_file('sha256', (string) $file->getRealPath()),
-                // Sin antivirus configurado no se miente diciendo que está
-                // limpio: queda pendiente, y el trabajo que lo escanee lo
-                // marcará cuando exista.
-                'malware_scan_status' => 'pending',
+                // Lo que dijo el analizador. Sin antivirus configurado eso es
+                // `unavailable`, y NO `clean`: decir «limpio» sin haber mirado
+                // sería un visto bueno de seguridad que nadie ha dado.
+                ...Scanning::columnas($veredicto),
                 'uploaded_by_user_id' => $actor->auditUserId(),
                 'created_at' => now(),
                 'updated_at' => now(),

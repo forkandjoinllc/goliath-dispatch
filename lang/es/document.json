@@ -80,7 +80,6 @@
     "replacing": "Esto agregará una nueva versión. La versión anterior permanece en el historial.",
     "success": "Documento subido y en espera de revisión.",
     "newVersionSuccess": "Nueva versión subida. El estado de revisión volvió a pendiente.",
-    "scanning": "Analizando en busca de malware…",
     "issueDate": "Fecha de emisión",
     "expirationDate": "Fecha de vencimiento",
     "originalFilename": "Nombre del archivo",

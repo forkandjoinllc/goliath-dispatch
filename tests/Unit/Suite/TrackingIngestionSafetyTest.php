@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Services\Tracking\StopDerivedTrackingProvider;
 use App\Support\Tracking\Ingestion;
 use App\Support\Tracking\Timeline;
+use Carbon\CarbonImmutable;
+use Tests\Support\Source;
 
 /**
  * Que las posiciones no se inventen, no se dupliquen y no se le enseñen de más
@@ -40,17 +42,10 @@ function raizIngesta(): string
 
 function codigoDeIngestaSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('el proveedor deducido no reporta nada por su cuenta y lo dice', function (): void {
@@ -81,7 +76,7 @@ it('el proveedor deducido nunca produce una coordenada', function (): void {
     $partes = (new StopDerivedTrackingProvider)->simulate(
         'sesion-1',
         $paradas,
-        \Carbon\CarbonImmutable::parse('2026-09-01 06:00:00'),
+        CarbonImmutable::parse('2026-09-01 06:00:00'),
         minutos: 10000,
     );
 
@@ -103,7 +98,7 @@ it('la simulación es idempotente por construcción', function (): void {
     ];
 
     $proveedor = new StopDerivedTrackingProvider;
-    $desde = \Carbon\CarbonImmutable::parse('2026-09-01 06:00:00');
+    $desde = CarbonImmutable::parse('2026-09-01 06:00:00');
 
     // Dos llamadas iguales tienen que dar las MISMAS referencias: es lo que hace
     // que la segunda choque contra el índice único en vez de duplicar la línea
@@ -185,7 +180,7 @@ it('los umbrales de salud están ordenados', function (): void {
     // «desactualizado» para siempre.
     expect(Ingestion::HORAS_PERDIDO)->toBeGreaterThan(Ingestion::HORAS_DESACTUALIZADO);
 
-    $ahora = \Carbon\CarbonImmutable::now();
+    $ahora = CarbonImmutable::now();
 
     expect(Ingestion::salud(false, $ahora))->toBe('healthy')
         ->and(Ingestion::salud(false, $ahora->subHours(Ingestion::HORAS_DESACTUALIZADO)))->toBe('stale')

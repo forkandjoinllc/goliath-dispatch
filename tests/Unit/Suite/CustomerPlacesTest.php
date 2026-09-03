@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Tests\Support\Source;
+
 /**
  * Que los sitios del cliente se puedan escribir, que una parada no pueda
  * apuntar al sitio de otro, y que un sitio usado no desaparezca.
@@ -40,17 +42,10 @@ function raizSitios(): string
 
 function codigoDeSitiosSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('los sitios del cliente se pueden escribir', function (): void {
@@ -84,7 +79,7 @@ it('una parada no puede apuntar al sitio de otro cliente', function (): void {
         .'lectores la enseñarían — incluido el papel que firma el transportista.'
     );
 
-    expect(str_contains($m[0], "customer_id"))->toBeTrue(
+    expect(str_contains($m[0], 'customer_id'))->toBeTrue(
         'La comprobación del sitio ya no mira el cliente de la carga.'
     );
 });

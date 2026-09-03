@@ -162,11 +162,17 @@
         "wholeLoad": "Toda la carga",
         "attachedAt": "Subido el {date}",
         "download": "Descargar",
-        "scanPending": "Pendiente de análisis",
         "podBlockedTitle": "Todavía no se puede marcar el comprobante como recibido",
         "podReady": "Hay comprobante de entrega: ya se puede marcar la carga como comprobante recibido.",
         "podReceivedAt": "Comprobante recibido el {date}",
-        "maxSize": "El fichero no puede pasar de {mb} MB."
+        "maxSize": "El fichero no puede pasar de {mb} MB.",
+        "scan": {
+            "clean": "analizado",
+            "infected": "marcado por el analizador",
+            "unavailable": "sin analizar — no hay antivirus",
+            "not_scanned": "generado aquí",
+            "pending": "análisis sin terminar"
+        }
     },
     "eligibility": {
         "meets": "Cumple",

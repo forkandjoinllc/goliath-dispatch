@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Support\Branding\Templates;
+use App\Support\Finance\InvoiceLink;
+use Tests\Support\Source;
 
 /**
  * La página pública de una factura no puede enseñar de más, ni cobrar dos veces.
@@ -31,17 +33,10 @@ function raizFactura(): string
 
 function codigoDeFacturaSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('la página pública pide las columnas una a una', function (): void {
@@ -83,6 +78,6 @@ it('el esquema mantiene el índice único de idempotencia', function (): void {
 it('el correo de la factura es un evento de plantilla declarado', function (): void {
     // Si se puede reescribir, tiene que estar en la lista y tener sus fichas
     // documentadas — es lo que comprueba BrandSafetyTest para los demás.
-    expect(App\Support\Finance\InvoiceLink::EVENTO)->toBe('invoice.sent')
-        ->and(Templates::FICHAS)->toHaveKey(App\Support\Finance\InvoiceLink::EVENTO);
+    expect(InvoiceLink::EVENTO)->toBe('invoice.sent')
+        ->and(Templates::FICHAS)->toHaveKey(InvoiceLink::EVENTO);
 });

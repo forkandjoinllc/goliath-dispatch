@@ -7,26 +7,28 @@ namespace App\Providers;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Listeners\ActivateVerifiedUser;
-use App\Services\Fmcsa\DirectoryFmcsaVerifier;
-use App\Services\Fmcsa\FmcsaDirectory;
-use App\Services\Fmcsa\FmcsaVerifier;
-use App\Services\Payments\InvoicePaymentProvider;
-use App\Services\Tracking\StopDerivedTrackingProvider;
-use App\Services\Tracking\TrackingProvider;
-use App\Services\Payments\MockInvoicePaymentProvider;
 use App\Services\Billing\BillingProvider;
 use App\Services\Billing\MockBillingProvider;
 use App\Services\Billing\StripeBillingProvider;
+use App\Services\Fmcsa\DirectoryFmcsaVerifier;
+use App\Services\Fmcsa\FmcsaDirectory;
+use App\Services\Fmcsa\FmcsaVerifier;
 use App\Services\Fmcsa\MockFmcsaDirectory;
 use App\Services\Fmcsa\MockFmcsaVerifier;
 use App\Services\Fmcsa\QcMobileDirectory;
+use App\Services\Malware\FileScanner;
+use App\Services\Malware\UnavailableFileScanner;
+use App\Services\Payments\InvoicePaymentProvider;
+use App\Services\Payments\MockInvoicePaymentProvider;
+use App\Services\Tracking\StopDerivedTrackingProvider;
+use App\Services\Tracking\TrackingProvider;
 use App\Support\Database\MillisecondGrammar;
-use App\Support\TenantContext;
-use App\Translation\BraceTranslator;
 use App\Support\Routing\RouteProvider;
 use App\Support\Routing\StopDerivedRouteProvider;
 use App\Support\Storage\DocumentStore;
 use App\Support\Storage\LocalDocumentStore;
+use App\Support\TenantContext;
+use App\Translation\BraceTranslator;
 use App\Translation\JsonNamespaceLoader;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +77,18 @@ class AppServiceProvider extends ServiceProvider
         // hay ninguna que mirar todavía: no existe el adaptador real. Cuando
         // exista, este `singleton` se parecerá a los otros dos.
         $this->app->singleton(TrackingProvider::class, StopDerivedTrackingProvider::class);
+
+        // Quién mira los ficheros que se suben. Hoy nadie: el adaptador atado no
+        // analiza y lo dice —devuelve `unavailable`, nunca `clean`—, y la
+        // pantalla escribe con todas las letras que en esta instalación no se
+        // analiza. El día que haya un ClamAV o una API con credenciales, esta
+        // línea cambia de clase y ni los controladores ni las pantallas se
+        // enteran: el veredicto pasa a ser `clean` o `infected` y el rechazo,
+        // que ya está escrito, empieza a dispararse.
+        //
+        // NO se ata en función de una credencial, como el rastreo y por el mismo
+        // motivo: todavía no existe el adaptador real que mirar.
+        $this->app->singleton(FileScanner::class, UnavailableFileScanner::class);
 
         // Los diccionarios usan `{nombre}` porque los lee también el cliente.
         // Se sustituye el traductor para que `__()` los entienda igual — ver

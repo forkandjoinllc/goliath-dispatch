@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Oversize\Papers;
+use Tests\Support\Source;
 
 /**
  * «Los papeles están todos» tiene que querer decir eso.
@@ -38,17 +39,10 @@ function raizPapeles(): string
 
 function codigoDePapelesSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('la puerta de los papeles los comprueba de verdad', function (): void {

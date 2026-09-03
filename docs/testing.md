@@ -1401,3 +1401,51 @@ pruebas afirmaban que la transición «facturada» ya no existía posteando cont
 las dos pasaban con el defecto puesto. Lo destapó el sabotaje, no la prueba. Una
 aserción negativa —404, «no contiene», «no aparece»— hay que verla fallar antes
 de creérsela.
+
+## Lote 69 — el fichero que nadie revisa
+
+**Una aguja escrita sin espacios no encuentra código que los tiene.** Los
+guardianes de `tests/Unit/Suite` quitan los comentarios con `token_get_all()`
+antes de buscar, y eso NO quita los espacios en blanco: el tokenizador los
+devuelve como un token más. Varias agujas estaban escritas compactas
+—`'malware_scan_status'=>'clean'`, `'invoiced'=>[[LoadStatus...`— y por tanto no
+podían casar jamás. Esas comprobaciones pasaban siempre, con el defecto puesto y
+sin él. **Cuatro de ellas llevaban un lote entero en verde sin comprobar nada.**
+Lo destapó un sabotaje: se volvió a poner el `clean` que el guardián prohibía y
+el guardián no se movió.
+
+De ahí salió `Tests\Support\Source`, con dos funciones y no una
+—`sinComentarios()` y `compacta()`— y el cuerpo que estaba copiado en quince
+ficheros ahora vive en uno. Quince copias es lo que hace falta para que dos de
+ellas dejen de significar lo mismo sin que nadie lo note.
+
+**Un sabotaje por aserción, no por lote.** Es la tercera vez que una
+comprobación pasa por el motivo equivocado —lote 65 el grep flojo, lote 68 la
+ruta mal escrita, ésta— y las tres veces el patrón fue el mismo: sabotear el
+defecto grande, ver fallar ALGO, y dar por verificado el conjunto. Cada
+aserción negativa hay que verla fallar por separado.
+
+**Una aguja demasiado ancha señala a inocentes.** Al arreglar lo anterior, el
+guardián de «quién escribe el estado de dinero de una carga» empezó a acusar a
+`CommissionLedger` y a `SettlementController`, que escriben el estado de una
+comisión y el de una liquidación: otras dos tablas con una columna llamada
+`status`. La comprobación se hace ahora por SENTENCIA, exigiendo que la tabla y
+el valor estén en la misma. Una aserción de código que no acota la tabla no está
+comprobando lo que dice comprobar.
+
+**Un simulacro no puede dar un visto bueno.** La tentación al construir un
+adaptador de mentira para un antivirus es devolver «limpio» y quitarse el aviso
+de encima. Todos los demás simulacros del proyecto siguen la misma regla y
+conviene tenerla escrita: el adaptador simulado devuelve «no sé», nunca «está
+bien». La diferencia entre `unavailable` y `clean` es la diferencia entre no
+haber mirado y haber mirado.
+
+**Dos motivos para no hacer algo son dos estados.** «No se analizó porque lo
+generamos nosotros» y «no se analizó porque no había con qué» se parecen lo
+suficiente como para querer juntarlos en uno, y juntarlos habría borrado la
+única información que le importa a quien lee la pantalla: si se quiso mirar o
+no.
+
+**Analizar después de guardar no es analizar.** El orden es la garantía. Un
+borrado posterior que falle deja en el almacén exactamente el fichero que se
+acaba de decidir que no debía estar.

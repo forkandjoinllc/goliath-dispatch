@@ -157,9 +157,20 @@ export default function DocumentShow({ document, owner, versions, reviews, can }
                     <code className="rounded bg-navy-50 px-1 py-0.5 tabular-nums">{v.sha256Prefix}…</code>
                   </p>
                   {/* Sin antivirus configurado no se dice que está limpio. Es
-                      una afirmación que nadie ha comprobado. */}
-                  {v.scanStatus === 'pending' ? (
-                    <p className="mt-0.5 text-xs text-safety-700">{t('documents.detail.scanPending')}</p>
+                      una afirmación que nadie ha comprobado.
+
+                      Y tampoco se dice «todavía sin analizar», que es lo que
+                      decía antes: eso promete un análisis en camino, y no venía
+                      ninguno. Cada estado tiene su frase, y la de una
+                      instalación sin antivirus lo dice con todas las letras. */}
+                  {v.scanStatus !== 'clean' ? (
+                    <p
+                      className={`mt-0.5 text-xs ${
+                        v.scanStatus === 'infected' ? 'text-danger-700' : 'text-safety-700'
+                      }`}
+                    >
+                      {t(`documents.detail.scan.${v.scanStatus}`)}
+                    </p>
                   ) : null}
                 </li>
               ))}

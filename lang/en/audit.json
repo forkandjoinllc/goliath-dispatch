@@ -139,7 +139,8 @@
             "changed": "Role changed"
         },
         "security": {
-            "rate_limited": "Rate limit reached"
+            "rate_limited": "Rate limit reached",
+            "malware_blocked": "File blocked by the malware scanner"
         },
         "settings": {
             "updated": "Settings updated"

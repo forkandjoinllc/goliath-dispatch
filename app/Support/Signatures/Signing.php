@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Signatures;
 
+use App\Support\Documents\Scanning;
 use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -346,8 +347,10 @@ final class Signing
             'content_type' => 'application/pdf',
             'byte_size' => $bytes,
             'sha256' => $sha256,
-            // Lo generó la propia aplicación: no hay nada que escanear.
-            'malware_scan_status' => 'not_scanned',
+            // Lo generó la propia aplicación: no viene de fuera y no hay nada
+            // que mandar a analizar. `not_scanned` dice eso, y es distinto de
+            // `unavailable`, que dice que sí se quiso mirar y no se pudo.
+            ...Scanning::propio(),
             'created_at' => $ahora,
             'updated_at' => $ahora,
         ]);

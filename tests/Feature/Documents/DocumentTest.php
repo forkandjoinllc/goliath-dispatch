@@ -101,8 +101,12 @@ it('guarda el fichero fuera de public y con nombre aleatorio', function () {
         ->and($version->original_filename)->toBe('seguro.pdf')
         ->and($version->storage_key)->not->toContain('seguro.pdf')
         ->and($version->sha256)->toHaveLength(64)
-        // Sin antivirus configurado no se afirma que está limpio.
-        ->and($version->malware_scan_status)->toBe('pending');
+        // Sin antivirus configurado no se afirma que está limpio. Y tampoco
+        // se queda en `pending`, que era prometer un análisis en camino: se
+        // analiza en la misma petición y el veredicto del adaptador simulado es
+        // «no había con qué mirar». Ver lote 69.
+        ->and($version->malware_scan_status)->toBe('unavailable')
+        ->and($version->malware_scan_at)->not->toBeNull();
 
     expect(Storage::disk('local')->exists($version->storage_key))->toBeTrue();
 });

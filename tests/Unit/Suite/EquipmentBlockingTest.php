@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Equipment\Eligibility;
+use Tests\Support\Source;
 
 /**
  * Los motivos de bloqueo de una unidad: uno por regla, una regla por motivo, y
@@ -51,17 +52,10 @@ function motivosDeEquipo(): array
 /** El código de un fichero sin sus comentarios. Tres guardianes han pasado por no hacerlo. */
 function codigoDeEquipoSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 it('cada motivo tiene su frase en los dos idiomas', function (): void {

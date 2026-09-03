@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Tests\Support\Source;
+
 /**
  * Ningún ajuste que la empresa pueda EDITAR puede quedarse sin que nadie lo lea.
  *
@@ -76,22 +78,10 @@ function ajustesEditables(): array
  */
 function codigoSinComentarios(string $ruta): string
 {
-    $fuente = (string) file_get_contents($ruta);
-
-    // `token_get_all` distingue de verdad un comentario de una cadena que
-    // contiene `//`. Una expresión regular sobre las líneas se equivocaría con
-    // la primera URL que apareciera en el código.
-    $codigo = '';
-
-    foreach (token_get_all($fuente) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 /**

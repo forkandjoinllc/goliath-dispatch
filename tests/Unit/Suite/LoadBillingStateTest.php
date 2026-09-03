@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\LoadStatus;
 use App\Support\Finance\Billable;
+use Tests\Support\Source;
 
 /**
  * «Facturada» y «Pagada» tienen que querer decir eso.
@@ -39,23 +40,19 @@ function raizFacturacionDeCarga(): string
 
 function codigoDeFacturacionSinComentarios(string $ruta): string
 {
-    $codigo = '';
-
-    foreach (token_get_all((string) file_get_contents($ruta)) as $token) {
-        if (is_array($token) && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
-            continue;
-        }
-
-        $codigo .= is_array($token) ? $token[1] : $token;
-    }
-
-    return $codigo;
+    // El cuerpo vivía copiado en quince ficheros. Ver Tests\Support\Source:
+    // no quitaba los espacios, y por eso varias agujas de esta carpeta no
+    // podían casar con nada.
+    return Source::sinComentarios($ruta);
 }
 
 /* ── Nadie puede AFIRMAR a mano que una carga está facturada ─────────────── */
 
 it('el grafo de transiciones no ofrece «facturada» ni «pagada»', function (): void {
-    $codigo = codigoDeFacturacionSinComentarios(raizFacturacionDeCarga().'/app/Support/Loads/Transitions.php');
+    // COMPACTA: estas agujas van sin espacios. Escritas contra el código con
+    // espacios no casaban nunca y esta prueba pasaba siempre, con el defecto
+    // puesto y sin él. Lo destapó un sabotaje en el lote 69.
+    $codigo = Source::compacta(raizFacturacionDeCarga().'/app/Support/Loads/Transitions.php');
 
     // La declaración completa, con permiso, tal y como estaba. Buscar solo la
     // palabra no vale: `invoiced` sigue apareciendo —en `SYSTEM`— y la prueba
@@ -89,11 +86,21 @@ it('los dos estados de dinero los escribe un solo sitio', function (): void {
             continue;
         }
 
-        $codigo = codigoDeFacturacionSinComentarios($ruta);
+        // Por SENTENCIA, no por fichero. Buscar `'status'=>'paid'` a secas
+        // señalaba a `CommissionLedger` y a `SettlementController`, que
+        // escriben el estado de una comisión y el de una liquidación: otras dos
+        // tablas que también tienen una columna llamada `status`. Lo que se
+        // vigila es quién escribe el de una CARGA, así que las dos mitades
+        // —la tabla y el valor— tienen que estar en la misma sentencia.
+        foreach (explode(';', Source::compacta($ruta)) as $sentencia) {
+            if (! str_contains($sentencia, "DB::table('loads')")) {
+                continue;
+            }
 
-        foreach (["'status'=>'invoiced'", "'status'=>'paid'", "'status'=>LoadStatus::Invoiced", "'status'=>LoadStatus::Paid"] as $aguja) {
-            if (str_contains($codigo, $aguja)) {
-                $sospechosas[] = basename($ruta).' → '.$aguja;
+            foreach (["'status'=>'invoiced'", "'status'=>'paid'"] as $aguja) {
+                if (str_contains($sentencia, $aguja)) {
+                    $sospechosas[] = basename($ruta).' → '.$aguja;
+                }
             }
         }
     }
@@ -169,7 +176,7 @@ it('nadie decide lo facturable ni lo liquidable con el literal suelto', function
     ];
 
     foreach ($ficheros as $relativa) {
-        $codigo = codigoDeFacturacionSinComentarios(raizFacturacionDeCarga().$relativa);
+        $codigo = Source::compacta(raizFacturacionDeCarga().$relativa);
 
         expect(str_contains($codigo, "'l.status','delivered'"))->toBeFalse(
             basename($relativa).' volvió a filtrar por el literal. `delivered` es solo el PRIMERO de los '

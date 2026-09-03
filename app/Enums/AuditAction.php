@@ -67,6 +67,7 @@ enum AuditAction: string
     case IntegrationUpdated = 'integration.updated';
     case TrackingConsentChanged = 'tracking.consent_changed';
     case SecurityRateLimited = 'security.rate_limited';
+    case SecurityMalwareBlocked = 'security.malware_blocked';
 
     /**
      * Trabajo comercial sobre un prospecto. Añadidos, no portados — ver la
