@@ -92,13 +92,9 @@ la pantalla de liquidar sería dinero que se le debe a alguien y ya no se ve.
 
 ## Lo que sigue abierto
 
-- **Hay dos escritores del saldo de una factura.** `PaymentLedger::resync()`
-  dice en su comentario ser «el único sitio que toca `amount_paid_cents`,
-  `balance_cents`, `status` y `paid_at` por causa de un cobro», y no lo es:
-  `InvoicePayments::aplicarALaFactura()` toca las mismas cuatro columnas por la
-  vía de la pasarela. `BillingState::sincronizarCobro()` cuelga de los dos
-  porque mientras sean dos tiene que colgar de los dos. Unificarlos es otro
-  lote.
+- ~~Hay dos escritores del saldo de una factura.~~ **Cerrado.** Lo eran, y el
+  segundo —el de la pasarela— se saltaba las protecciones del primero. Ver
+  `docs/invoice-balance.md`.
 - **Se puede facturar sin comprobante de entrega.** `Transitions` dice del
   comprobante «sin él no se factura» y `Guards::forPod()` lo llama «el papel
   que se le enseña al cliente para cobrar», pero `Billable::ESTADOS` admite

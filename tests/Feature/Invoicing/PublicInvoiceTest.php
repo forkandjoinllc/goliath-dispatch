@@ -23,7 +23,7 @@ beforeEach(function () {
 afterEach(fn () => app(TenantContext::class)->forget());
 
 /** Una factura emitida a nombre del transportista asignado. */
-function facturaDePrueba(Scenario $scenario, int $total = 250000): object
+function facturaDePrueba(Scenario $scenario, int $total = 250000, string $estado = 'sent'): object
 {
     $id = (string) Str::uuid();
 
@@ -32,7 +32,15 @@ function facturaDePrueba(Scenario $scenario, int $total = 250000): object
         'tenant_id' => $scenario->tenant->id,
         'invoice_number' => 'INV-'.substr($id, 0, 6),
         'carrier_id' => $scenario->assignedCarrier->id,
-        'status' => 'draft',
+        // `sent`, no `draft`. Una factura con enlace público ESTÁ enviada: el
+        // testigo lo emite `send()`, que es lo que la saca de borrador. El
+        // montaje de antes construía un estado que producción no alcanza —una
+        // borrador pagable— y pasaba porque el camino de la pasarela no miraba
+        // el estado. En cuanto ese camino empezó a usar el recalculador de
+        // verdad, que sí lo mira, la prueba enseñó que su factura era imposible.
+        'status' => $estado,
+        'issue_date' => $estado === 'draft' ? null : now(),
+        'sent_at' => $estado === 'draft' ? null : now(),
         'subtotal_cents' => $total,
         'total_cents' => $total,
         'balance_cents' => $total,
@@ -107,7 +115,8 @@ it('va al contacto de FACTURACIÓN, no al principal', function () {
 
 it('emitir la factura la manda de verdad y anota a quién', function () {
     contactoDeFacturacion($this->scenario, 'cuentas@transportista.test');
-    $factura = facturaDePrueba($this->scenario);
+    // La única que necesita salir de BORRADOR: emitir es justo lo que la saca.
+    $factura = facturaDePrueba($this->scenario, estado: 'draft');
 
     signIn($this->scenario, Role::Accounting);
 

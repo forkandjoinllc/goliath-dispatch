@@ -124,15 +124,28 @@ it('emitir una factura mueve las cargas', function (): void {
 });
 
 it('cobrar y reembolsar mueven las cargas, en los dos sentidos', function (): void {
-    foreach (['PaymentLedger.php', 'InvoicePayments.php'] as $fichero) {
-        $codigo = codigoDeFacturacionSinComentarios(raizFacturacionDeCarga().'/app/Support/Finance/'.$fichero);
+    // COLGABA DE DOS FICHEROS, y ese era el problema, no la solución. Había dos
+    // escritores del saldo de una factura —la oficina y la pasarela— y esto
+    // tenía que engancharse a los dos para que la carga dijera lo mismo por
+    // cualquiera de los dos caminos. Ahora hay uno: la pasarela llama a
+    // `PaymentLedger::resync()` como todo el mundo.
+    $codigo = codigoDeFacturacionSinComentarios(
+        raizFacturacionDeCarga().'/app/Support/Finance/PaymentLedger.php'
+    );
 
-        expect(str_contains($codigo, 'BillingState::sincronizarCobro('))->toBeTrue(
-            "{$fichero} dejó de poner sus cargas al día. Hay DOS sitios que mueven el saldo de una factura y "
-            .'esto tiene que colgar de los dos: si falta uno, según por dónde entre el cobro la carga dirá '
-            .'una cosa u otra.'
-        );
-    }
+    expect(str_contains($codigo, 'BillingState::sincronizarCobro('))->toBeTrue(
+        'El recalculador del saldo dejó de poner sus cargas al día. La ficha de carga diría «Cobrada» '
+        .'encima de una factura que vuelve a deber, o al revés.'
+    );
+
+    $pasarela = codigoDeFacturacionSinComentarios(
+        raizFacturacionDeCarga().'/app/Support/Finance/InvoicePayments.php'
+    );
+
+    expect(str_contains($pasarela, 'BillingState::'))->toBeFalse(
+        'La pasarela volvió a mover las cargas por su cuenta. Si mueve las cargas es que también escribe '
+        .'el saldo, y entonces vuelven a ser dos escritores.'
+    );
 });
 
 it('anular una factura devuelve las cargas', function (): void {

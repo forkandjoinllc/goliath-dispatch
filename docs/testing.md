@@ -1504,3 +1504,32 @@ grafo — y por eso una columna ilegal ni siquiera acepta la tarjeta.
 tablero, el motivo «la incorporación no está aprobada» empezó a salir en rojo en
 todas las tarjetas de seis de las siete columnas: repetía la cabecera. Un aviso
 que aparece siempre deja de leerse y arrastra consigo a los que sí importan.
+
+## El cobro que llega después de anular
+
+**Una firma que pide de más fabrica duplicados.** `PaymentLedger::resync()`
+recibía un `Actor` y del actor usaba una sola cosa: su empresa. El webhook de la
+pasarela no tiene actor, así que el método parecía inalcanzable desde ahí y
+alguien escribió un segundo escritor de las mismas cuatro columnas — uno que
+sumaba sobre la columna en vez de recalcular desde las filas y que se saltaba la
+protección que impedía dar por pagada una factura anulada. Antes de duplicar
+algo porque «no se puede llamar desde aquí», conviene mirar qué pide de verdad
+la firma.
+
+**Dos caminos que dan el mismo número lo dan hasta que se cruzan.** Sumar sobre
+la columna y recalcular desde las filas coinciden mientras solo actúe uno. Medio
+cobro por cada vía es todo lo que hace falta para que dejen de coincidir, y
+ninguna prueba de un solo camino lo enseña: hay que escribir la que usa los dos.
+
+**Una protección que solo cubre el estado deja el saldo fuera.** `statusFor()`
+impedía que una factura anulada volviera a «pagada», y el saldo se recalculaba
+igualmente: la anulada acababa con estado correcto y con saldo vivo, y la
+pantalla de vencidos volvía a contarla. Cuando una lista de estados protege una
+columna, hay que preguntarse cuáles más dependen de lo mismo — y usar LA MISMA
+lista, no una copia.
+
+**El camino automático no dejaba rastro.** El cobro anotado por la oficina
+escribía en la bitácora; el que entra por la pasarela, no. La pista de auditoría
+parecía completa y solo enseñaba la mitad del dinero. Cuando un dominio tiene un
+camino manual y otro automático, hay que comprobar el automático APARTE: el
+manual suele estar bien porque es el que alguien usó al construirlo.

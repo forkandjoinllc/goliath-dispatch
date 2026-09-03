@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support\Finance;
 
-use App\Support\Loads\BillingState;
+use App\Enums\AuditAction;
+use App\Support\Audit;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -168,41 +169,39 @@ final class InvoicePayments
                 DB::table('payment_attempts')->where('id', $intento->id)
                     ->update(['payment_id' => $paymentId, 'updated_at' => $ahora]);
 
-                self::aplicarALaFactura((string) $intento->invoice_id, (int) $intento->amount_cents, $ahora);
+                // El MISMO recalculador que usa la oficina.
+                //
+                // Aquí vivía un `aplicarALaFactura()` propio que sumaba sobre la
+                // columna en vez de recalcular desde las filas y —lo caro— se
+                // saltaba `statusFor()`. Un cobro que aterrizara después de que
+                // la oficina anulara la factura la marcaba PAGADA, y desde el
+                // lote 68 arrastraba además sus cargas a «Pagada». Justo lo que
+                // `statusFor()` existe para impedir, esquivado por el otro
+                // camino.
+                PaymentLedger::resync((string) $intento->tenant_id, (string) $intento->invoice_id);
+
+                // Y el rastro. Este camino no escribía NADA en la bitácora: un
+                // cobro entrado por la pasarela no dejaba una sola fila, así que
+                // la pista de auditoría enseñaba solo los que anota la oficina a
+                // mano. `actor` nulo a propósito — no lo anotó una persona, y
+                // poner ahí al despachador diría que sí.
+                Audit::record(
+                    actor: null,
+                    action: AuditAction::PaymentRecorded,
+                    entityType: 'payment',
+                    entityId: $paymentId,
+                    entityLabel: (string) $intento->invoice_id,
+                    after: [
+                        'amount_cents' => (int) $intento->amount_cents,
+                        'method' => (string) $intento->method,
+                        'provider_reference' => $providerReference ?? $intento->provider_reference,
+                        'source' => 'gateway',
+                    ],
+                );
 
                 return true;
             });
         });
-    }
-
-    /** Suma el cobro a la factura y la cierra si ya no debe nada. */
-    private static function aplicarALaFactura(string $invoiceId, int $centavos, CarbonImmutable $ahora): void
-    {
-        $factura = DB::table('invoices')->where('id', $invoiceId)->first();
-
-        if ($factura === null) {
-            return;
-        }
-
-        $pagado = (int) $factura->amount_paid_cents + $centavos;
-        $saldo = max(0, (int) $factura->total_cents - $pagado);
-
-        DB::table('invoices')->where('id', $invoiceId)->update([
-            'amount_paid_cents' => $pagado,
-            'balance_cents' => $saldo,
-            // Solo se marca pagada cuando NO QUEDA NADA. Un pago parcial deja la
-            // factura viva: darla por pagada con saldo pendiente es cómo se
-            // pierde dinero sin que salte ninguna alarma.
-            'status' => $saldo === 0 ? 'paid' : $factura->status,
-            'paid_at' => $saldo === 0 ? $ahora : $factura->paid_at,
-            'updated_at' => $ahora,
-        ]);
-
-        // Cobrada la factura, sus cargas quedan cobradas. La misma regla del
-        // párrafo de arriba, un nivel más abajo: con saldo pendiente no se mueve
-        // nada. Un pago parcial que marcara la carga como cobrada sería la misma
-        // pérdida silenciosa, contada en la pantalla que más se mira.
-        BillingState::sincronizarCobro((string) $factura->tenant_id, $invoiceId, $ahora);
     }
 
     /**

@@ -70,6 +70,19 @@ export default function InvoiceShow({ invoice, methods, payments, can }: Props) 
           <div className="rounded border-l-4 border-danger-500 bg-danger-50 p-3 text-sm">
             <p className="font-semibold">{t('invoices.show.voided')}</p>
             {invoice.voidReason ? <p className="mt-1">{invoice.voidReason}</p> : null}
+            {/* Dinero sobre una factura anulada.
+                Puede pasar: la oficina anula mientras un cobro va de camino y el
+                cobro aterriza después. El servidor ya no la marca pagada, pero
+                la pantalla enseñaba las tres piezas —«Anulada», «Cobrado $316»,
+                «Saldo $0»— y dejaba que el lector las juntara. Casi nadie las
+                junta. */}
+            {invoice.amountPaidCents > 0 ? (
+              <p className="mt-2 font-medium">
+                {t('invoices.show.voidedWithPayment', {
+                  amount: formatCents(invoice.amountPaidCents, locale),
+                })}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

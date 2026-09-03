@@ -126,12 +126,11 @@ final class BillingState
      * regla tiene que ser la estricta: es la misma razón por la que un pago
      * parcial no cierra una factura.
      *
-     * SE LLAMA DESDE DOS SITIOS porque hay dos que mueven el saldo de una
-     * factura: `PaymentLedger::resync()` —cuyo comentario dice ser el único, y
-     * no lo es— y `InvoicePayments`, por la vía de la pasarela. Que esos dos
-     * deberían ser uno es cierto y es otro lote; mientras sean dos, esto tiene
-     * que colgar de los dos, y puede: `mover()` no hace nada cuando la carga ya
-     * está donde toca.
+     * SE LLAMA DESDE UN SOLO SITIO: `PaymentLedger::resync()`, que es quien
+     * mueve el saldo de una factura. Colgaba de dos, porque durante un tiempo
+     * hubo dos escritores —el segundo, por la vía de la pasarela, se saltaba
+     * las protecciones del primero y podía marcar pagada una factura anulada—.
+     * Ya no: el de la pasarela llama a éste.
      *
      * @return int cuántas cargas se movieron
      */

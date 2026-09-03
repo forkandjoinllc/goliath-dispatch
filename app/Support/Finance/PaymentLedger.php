@@ -82,7 +82,7 @@ final class PaymentLedger
                 ],
             );
 
-            self::resync($actor, (string) $invoice->id);
+            self::resync((string) $actor->tenantId, (string) $invoice->id);
 
             return $id;
         });
@@ -123,7 +123,7 @@ final class PaymentLedger
                 reason: $reason,
             );
 
-            self::resync($actor, (string) $payment->invoice_id);
+            self::resync((string) $actor->tenantId, (string) $payment->invoice_id);
         });
     }
 
@@ -156,21 +156,35 @@ final class PaymentLedger
                 reason: $reason,
             );
 
-            self::resync($actor, (string) $payment->invoice_id);
+            self::resync((string) $actor->tenantId, (string) $payment->invoice_id);
         });
     }
 
     /**
      * Recalcula la factura DESDE sus cobros.
      *
-     * Es el único sitio que toca `amount_paid_cents`, `balance_cents`, `status`
-     * y `paid_at` por causa de un cobro. Que sea uno solo es lo que hace que la
+     * El único sitio que toca `amount_paid_cents`, `balance_cents`, `status` y
+     * `paid_at` por causa de un cobro. Que sea uno solo es lo que hace que la
      * columna y las filas no puedan separarse.
+     *
+     * ESO LO DECÍA ESTE COMENTARIO Y NO ERA VERDAD. `InvoicePayments` tenía su
+     * propio `aplicarALaFactura()` que escribía las mismas cuatro columnas por
+     * la vía de la pasarela, sumando sobre la columna en vez de recalcular
+     * desde las filas y —lo caro— sin pasar por `statusFor()`. Un cobro que
+     * aterrizara después de anular la factura la marcaba PAGADA, que es
+     * exactamente lo que `statusFor()` existe para impedir.
+     *
+     * RECIBE UN `tenantId`, NO UN `Actor`, y ese cambio es la mitad del
+     * arreglo. El método nunca usó del actor otra cosa que su empresa, pero
+     * pedirlo entero lo volvía inalcanzable desde el webhook de la pasarela
+     * —que no tiene actor— y esa es la razón por la que alguien escribió el
+     * segundo escritor en vez de llamar a éste. Una firma que pide de más
+     * fabrica duplicados.
      */
-    public static function resync(Actor $actor, string $invoiceId): void
+    public static function resync(string $tenantId, string $invoiceId): void
     {
         $factura = DB::table('invoices')
-            ->where('tenant_id', $actor->tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('id', $invoiceId)
             ->first(['id', 'total_cents', 'status', 'due_date']);
 
@@ -179,21 +193,29 @@ final class PaymentLedger
         }
 
         $cobrado = (int) DB::table('payments')
-            ->where('tenant_id', $actor->tenantId)
+            ->where('tenant_id', $tenantId)
             ->where('invoice_id', $invoiceId)
             ->whereNull('deleted_at')
             ->whereIn('status', self::CUENTAN)
             ->sum(DB::raw('amount_cents - refunded_amount_cents'));
 
         $total = (int) $factura->total_cents;
-        $saldo = $total - $cobrado;
-        $ahora = CarbonImmutable::now();
+        $estado = self::statusFor((string) $factura->status, $total - $cobrado, $factura->due_date, $ahora = CarbonImmutable::now());
+
+        // El SALDO de una factura que no depende del dinero tampoco se toca.
+        //
+        // Anular pone el saldo a cero: una factura anulada no debe nada, pase
+        // lo que pase después. Recalcularlo aquí le devolvería un saldo vivo a
+        // algo que se anuló, y la pantalla de vencidos volvería a contarlo.
+        // Lo que SÍ se apunta siempre es lo cobrado: el dinero llegó, y
+        // esconderlo sería la mentira contraria.
+        $saldo = in_array($estado, self::SIN_SALDO, true) ? 0 : $total - $cobrado;
 
         DB::table('invoices')->where('id', $invoiceId)->update([
             'amount_paid_cents' => $cobrado,
             'balance_cents' => $saldo,
-            'status' => self::statusFor((string) $factura->status, $saldo, $factura->due_date, $ahora),
-            'paid_at' => $saldo <= 0 && $cobrado > 0 ? $ahora : null,
+            'status' => $estado,
+            'paid_at' => $estado === 'paid' && $cobrado > 0 ? $ahora : null,
             'updated_at' => $ahora,
         ]);
 
@@ -202,7 +224,7 @@ final class PaymentLedger
         // esta línea la ficha de carga seguiría diciendo «Cobrada» encima de una
         // factura que vuelve a deber, que es la misma contradicción que este
         // método existe para no tener un nivel más arriba.
-        BillingState::sincronizarCobro((string) $actor->tenantId, $invoiceId, $ahora);
+        BillingState::sincronizarCobro($tenantId, $invoiceId, $ahora);
     }
 
     /**
@@ -213,9 +235,16 @@ final class PaymentLedger
      * cobro. Y una que estaba pagada y recibe un reembolso vuelve a deber —
      * a «vencida» si ya pasó su fecha, y si no a «enviada».
      */
+    /**
+     * Los estados en los que el dinero ya no manda.
+     *
+     * @var list<string>
+     */
+    private const SIN_SALDO = ['voided', 'disputed', 'uncollectable', 'draft'];
+
     private static function statusFor(string $actual, int $saldo, mixed $vence, CarbonImmutable $ahora): string
     {
-        if (in_array($actual, ['voided', 'disputed', 'uncollectable', 'draft'], true)) {
+        if (in_array($actual, self::SIN_SALDO, true)) {
             return $actual;
         }
 

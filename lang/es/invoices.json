@@ -54,6 +54,7 @@
         "voidHint": "Una factura que salió existe aunque estuviera mal. Se anula con motivo y se emite otra.",
         "confirmVoid": "Anular esta factura",
         "voided": "Esta factura está anulada.",
+        "voidedWithPayment": "Se recibió un cobro de {amount} sobre esta factura después de anularla. La factura no debe nada — ese dinero probablemente haya que devolvérselo al transportista.",
         "nDaysOne": "1 día"
     },
     "status": {
@@ -64,6 +65,7 @@
         "overdue": "Vencida",
         "disputed": "En disputa",
         "voided": "Anulada",
+        "voidedWithPayment": "Se recibió un cobro de {amount} sobre esta factura después de anularla. La factura no debe nada — ese dinero probablemente haya que devolvérselo al transportista.",
         "uncollectable": "Incobrable"
     },
     "flash": {
@@ -71,6 +73,7 @@
         "sent": "La factura quedó marcada como enviada.",
         "paid": "Se anotó el cobro.",
         "voided": "Se anuló la factura.",
+        "voidedWithPayment": "Se recibió un cobro de {amount} sobre esta factura después de anularla. La factura no debe nada — ese dinero probablemente haya que devolvérselo al transportista.",
         "emailed": "La factura salió por correo a {email}.",
         "notEmailed": "La factura quedó emitida, pero el correo no salió. El enlace está creado: mándelo a mano.",
         "noRecipient": "La factura quedó emitida. Este transportista no tiene correo de contacto, así que no se pudo mandar."
@@ -106,6 +109,7 @@
         "notFound": "Este enlace de factura no es válido.",
         "expired": "Este enlace de factura ha vencido. Pida uno nuevo.",
         "voided": "Esta factura fue anulada.",
+        "voidedWithPayment": "Se recibió un cobro de {amount} sobre esta factura después de anularla. La factura no debe nada — ese dinero probablemente haya que devolvérselo al transportista.",
         "poweredBy": "Factura emitida por {tenant}"
     },
     "mockPay": {

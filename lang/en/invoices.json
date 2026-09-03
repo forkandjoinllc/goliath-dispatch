@@ -54,6 +54,7 @@
         "voidHint": "An invoice that went out exists even if it was wrong. It is voided with a reason, and a new one is issued.",
         "confirmVoid": "Void this invoice",
         "voided": "This invoice was voided.",
+        "voidedWithPayment": "A payment of {amount} was received against this invoice after it was voided. The invoice owes nothing — that money is probably owed back to the carrier.",
         "nDaysOne": "1 day"
     },
     "status": {
@@ -64,6 +65,7 @@
         "overdue": "Overdue",
         "disputed": "Disputed",
         "voided": "Voided",
+        "voidedWithPayment": "A payment of {amount} was received against this invoice after it was voided. The invoice owes nothing — that money is probably owed back to the carrier.",
         "uncollectable": "Written off"
     },
     "flash": {
@@ -71,6 +73,7 @@
         "sent": "The invoice was marked as sent.",
         "paid": "The payment was recorded.",
         "voided": "The invoice was voided.",
+        "voidedWithPayment": "A payment of {amount} was received against this invoice after it was voided. The invoice owes nothing — that money is probably owed back to the carrier.",
         "emailed": "The invoice was emailed to {email}.",
         "notEmailed": "The invoice is issued, but the email did not go out. The link exists: send it by hand.",
         "noRecipient": "The invoice is issued. This carrier has no contact email, so it could not be sent."
@@ -106,6 +109,7 @@
         "notFound": "This invoice link is not valid.",
         "expired": "This invoice link has expired. Ask for a new one.",
         "voided": "This invoice was voided.",
+        "voidedWithPayment": "A payment of {amount} was received against this invoice after it was voided. The invoice owes nothing — that money is probably owed back to the carrier.",
         "poweredBy": "Invoice issued by {tenant}"
     },
     "mockPay": {
