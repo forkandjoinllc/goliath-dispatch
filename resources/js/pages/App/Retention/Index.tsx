@@ -49,7 +49,14 @@ interface Props {
     dangling: number
     graceHours: number
   }
-  lastSweep: { hasEverRun: boolean; startedAt: string | null; status: string | null } | null
+  lastSweep: {
+    hasEverRun: boolean
+    startedAt: string | null
+    status: string | null
+    /** Calculado. Ver App\Support\Platform\ScheduledRuns. */
+    state: 'neverRan' | 'failed' | 'stalled' | 'late' | 'running' | 'ok'
+    dueSince: string | null
+  } | null
   scopes: string[]
   can: { hold: boolean }
 }
@@ -220,15 +227,27 @@ export default function RetentionPage({ policy, holds, wouldPurge, runs, entitie
                 y para una empresa nueva ese es el estado normal durante dos
                 años: dos años diciéndole que su retención no funciona.
               */}
-              {lastSweep !== null && lastSweep.hasEverRun ? (
-                <p className="mt-2 text-sm text-steel-700">
-                  {t('retention.runs.ranWithNothingToDo', { date: lastSweep.startedAt ?? '' })}
-                </p>
-              ) : (
+              {/* Y el estado del barrido, no solo su fecha.
+                  Decía «corrió el 13 de agosto y no había nada que hacer»
+                  aunque llevara tres semanas sin correr: la frase tranquiliza y
+                  la fecha alarma, y quien lee se queda con la frase. Esta
+                  pantalla la ve el administrador de la EMPRESA — la de salud de
+                  la plataforma no— así que es aquí donde tiene que decirse. */}
+              {lastSweep === null || ! lastSweep.hasEverRun ? (
                 <>
                   <p className="mt-2 text-sm text-steel-600">{t('retention.runs.empty')}</p>
                   <p className="mt-0.5 text-xs text-steel-600">{t('retention.runs.emptyHint')}</p>
                 </>
+              ) : lastSweep.state === 'ok' || lastSweep.state === 'running' ? (
+                <p className="mt-2 text-sm text-steel-700">
+                  {t('retention.runs.ranWithNothingToDo', { date: lastSweep.startedAt ?? '' })}
+                </p>
+              ) : (
+                <p className="mt-2 rounded border border-warning-300 bg-warning-50 p-2 text-sm text-carbon">
+                  {t(`retention.runs.sweep.${lastSweep.state}`, {
+                    date: (lastSweep.state === 'late' ? lastSweep.dueSince : lastSweep.startedAt) ?? '—',
+                  })}
+                </p>
               )}
             </>
           ) : (

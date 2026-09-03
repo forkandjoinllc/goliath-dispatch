@@ -119,12 +119,23 @@
         "duration": "Took {seconds}s",
         "runCount": "{n} runs recorded",
         "runCountOne": "1 run recorded",
-        "runStatus": {
+        "state": {
+            "ok": "Healthy",
             "running": "Running",
-            "succeeded": "Succeeded",
-            "failed": "Failed"
+            "late": "Overdue",
+            "stalled": "Stuck",
+            "failed": "Failed",
+            "neverRan": "Never ran"
         },
-        "lastRunFailed": "The last run failed.",
+        "cadence": {
+            "daily": "daily",
+            "weekly": "weekly",
+            "monthly": "monthly",
+            "hourly": "hourly",
+            "custom": "on a custom schedule"
+        },
+        "lateSince": "It should have run again on {date}. Nothing has run since — check that the cron line is still in place on the server.",
+        "stalledSince": "A run started on {date} and never finished. The process died partway through; nothing will close it on its own.",
         "providersTitle": "Providers",
         "providersDescription": "What is bound to each interface in this installation. Read from the container when this page opens, not from a table — a table could say \"connected\" with the environment variable already gone.",
         "providerLive": "Live",

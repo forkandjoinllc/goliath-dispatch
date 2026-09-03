@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Http\Controllers\Platform\HealthController;
 use App\Models\User;
 use App\Models\UserTenantMembership;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\Providers;
 use App\Support\Platform\ScheduledRuns;
+use App\Support\Platform\ScheduledTasks;
+use App\Support\Routing\RouteProvider;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
@@ -133,13 +136,21 @@ it('el resumen incluye las tareas que NO han corrido nunca', function () {
     // Es la razón de ser de toda la pantalla: una tarea que nunca corrió es
     // justo la que hay que enseñar, y una consulta que agrupa lo que existe la
     // dejaría fuera.
-    $resumen = ScheduledRuns::summary(['notifications:sweep', 'inventada:jamas']);
+    // Cada tarea llega con su expresión de cron desde este lote: de ella sale
+    // si va con retraso, y una tarea que nunca corrió no puede ir con retraso
+    // porque no hay desde dónde contar.
+    $resumen = ScheduledRuns::summary([
+        ['command' => 'notifications:sweep', 'expression' => '0 6 * * *'],
+        ['command' => 'inventada:jamas', 'expression' => '0 6 * * *'],
+    ]);
 
     $inventada = collect($resumen)->firstWhere('task', 'inventada:jamas');
 
     expect($inventada['hasEverRun'])->toBeFalse();
     expect($inventada['status'])->toBeNull();
     expect($inventada['runCount'])->toBe(0);
+    expect($inventada['state'])->toBe('neverRan');
+    expect($inventada['dueSince'])->toBeNull();
 });
 
 it('el barrido deja rastro, y un simulacro NO', function () {
@@ -264,7 +275,7 @@ it('el inventario se lee del contenedor, no de una tabla', function () {
     expect($rutas['status'])->toBe('mock');
 
     // Se ata otro proveedor y el inventario cambia sin tocar ninguna fila.
-    app()->instance(App\Support\Routing\RouteProvider::class, new class implements App\Support\Routing\RouteProvider
+    app()->instance(RouteProvider::class, new class implements RouteProvider
     {
         public function calculate(array $stops): array
         {
@@ -363,9 +374,13 @@ it('cada tarea del planificador explica QUÉ se deja de hacer si no corre', func
     //
     // Ahora la consecuencia es por tarea, y esto obliga a que la siguiente que
     // se añada traiga la suya en los dos idiomas.
-    $reflexion = new ReflectionClass(App\Http\Controllers\Platform\HealthController::class);
-    /** @var list<string> $tareas */
-    $tareas = $reflexion->getConstant('TAREAS');
+    //
+    // LA LISTA SALE DEL PLANIFICADOR, no de una constante del controlador. Se
+    // leía `HealthController::TAREAS` por reflexión, y esa constante era una
+    // copia a mano de `routes/console.php`: un `Schedule::command()` nuevo no
+    // aparecía en la pantalla ni le faltaba nada según esta prueba. Ahora un
+    // comando programado sin su texto de consecuencia falla aquí.
+    $tareas = array_column(ScheduledTasks::all(), 'command');
 
     expect($tareas)->not->toBeEmpty();
 

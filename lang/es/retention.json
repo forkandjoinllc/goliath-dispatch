@@ -59,7 +59,12 @@
         "processed": "Hechos",
         "skipped": "Saltados",
         "at": "Cuándo",
-        "ranWithNothingToDo": "El barrido corrió el {date} y no había nada que archivar ni que purgar. Es lo normal mientras la empresa sea joven."
+        "ranWithNothingToDo": "El barrido corrió el {date} y no había nada que archivar ni que purgar. Es lo normal mientras la empresa sea joven.",
+        "sweep": {
+            "late": "El barrido de retención no corre desde el {date}. No se está archivando ni purgando nada, y la lista de abajo es una previsión de un trabajo que no está pasando.",
+            "stalled": "Un barrido de retención empezó el {date} y no terminó nunca. Nadie lo va a cerrar solo, y mientras tanto no se archiva nada.",
+            "failed": "El último barrido de retención falló el {date}. Desde entonces no se ha archivado ni purgado nada."
+        }
     },
     "flash": {
         "held": "Bloqueo aplicado.",

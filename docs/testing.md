@@ -1533,3 +1533,56 @@ escribía en la bitácora; el que entra por la pasarela, no. La pista de auditor
 parecía completa y solo enseñaba la mitad del dinero. Cuando un dominio tiene un
 camino manual y otro automático, hay que comprobar el automático APARTE: el
 manual suele estar bien porque es el que alguien usó al construirlo.
+
+## El barrido que dejó de correr
+
+**Una expresión regular que casa de más casa antes.** `cadence()` ordenaba
+cuatro `preg_match` y clasificaba `0 * * * *` como DIARIA, porque el `*` de la
+hora satisface un `\S+` igual que un número. El orden de los `match` acabó
+siendo la regla de verdad, que es justo lo que no se ve al leerlo. Reescrito por
+campos, con `$fijo()` y `$todo()` explícitos, la regla se lee.
+
+**Una regla perezosa cierra en la primera llave.** El guardián recortaba el mapa
+de tonos del TSX con `/constTONO[^=]*=\{(.*?)\}/s` y contaba cuántas veces
+aparecía `success-`. El `.*?` cerraba en la llave de la PRIMERA entrada, así que
+medía una entrada creyendo medir seis: se pintó «con retraso» en verde y la
+comprobación siguió pasando. Lo destapó el sabotaje. La versión buena comprueba
+CADA entrada por separado — una aserción que agrega puede estar agregando sobre
+un trozo.
+
+**Verde con fecha vieja parece sano.** La pantalla enseñaba la insignia del
+`status` guardado y la fecha de la última ejecución, y dejaba que el lector
+restara. «Correcta» y «14 de agosto» son las dos piezas de un problema, no un
+problema. Cuando una pantalla tiene los datos para nombrar algo, tiene que
+nombrarlo: `late` y `stalled` son estados calculados, no una fecha que hay que
+interpretar.
+
+**No saber no es una alarma.** Si la expresión de cron no se entiende, la tarea
+no sale con retraso: sale sin saber. Convertir un fallo de lectura en una alarma
+es inventarse un problema a partir de la propia ignorancia, y una pantalla que
+lo hace se deja de mirar.
+
+**Un margen de gracia no es laxitud: es lo que hace que la alarma se lea.** Sin
+la hora de perdón, el barrido diario de las 06:00 saldría «con retraso» cada
+mañana durante los dos minutos que tarda. Una alarma que salta todos los días
+sin motivo enseña a ignorar la pantalla, y entonces la de verdad tampoco se ve.
+
+**Una lista de lo que hay que vigilar, escrita a mano, no vigila lo nuevo.** La
+pantalla llevaba `TAREAS = ['notifications:sweep', 'retention:sweep']` y
+`routes/console.php` llevaba la otra. Un `Schedule::command()` nuevo corría sin
+que ninguna pantalla lo enseñara. Lo que vigila algo tiene que preguntarle a
+quien lo define — aquí, al planificador de Laravel.
+
+**Cambiar una firma exige buscar los llamadores, no la constante.** Al pasar
+`ScheduledRuns::summary()` de recibir nombres a recibir nombres con su cron,
+busqué `TAREAS` —la constante que quitaba— y no `summary(`. Había un segundo
+llamador, `RetentionController`, y 301 pruebas cayeron con un `TypeError` que
+no tenía nada que ver con el lote. El grep correcto es el del SÍMBOLO que
+cambia de forma, no el del que se borra.
+
+**El mismo defecto suele estar en dos pantallas.** La de salud de la plataforma
+enseñaba «correcta» sobre un cron muerto; la de retención decía «corrió el 13 de
+agosto y no había nada que hacer» sobre el mismo barrido parado. Y la segunda es
+la que ve un administrador de EMPRESA — la de plataforma pide
+`platform:health:read`. Al arreglar una frase tranquilizadora conviene buscar
+quién más la dice.

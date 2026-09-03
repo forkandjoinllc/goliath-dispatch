@@ -59,7 +59,12 @@
         "processed": "Done",
         "skipped": "Skipped",
         "at": "When",
-        "ranWithNothingToDo": "The sweep ran on {date} and there was nothing to archive or purge. That is normal while the company is young."
+        "ranWithNothingToDo": "The sweep ran on {date} and there was nothing to archive or purge. That is normal while the company is young.",
+        "sweep": {
+            "late": "The retention sweep has not run since {date}. Nothing is being archived or purged, and the list below is a forecast of work that is not happening.",
+            "stalled": "A retention sweep started on {date} and never finished. Nothing will close it on its own, and nothing is being archived meanwhile.",
+            "failed": "The last retention sweep failed on {date}. Nothing has been archived or purged since."
+        }
     },
     "flash": {
         "held": "Hold applied.",

@@ -8,6 +8,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Support\InertiaPage;
 use App\Support\Platform\ScheduledRuns;
+use App\Support\Platform\ScheduledTasks;
 use App\Support\Retention\Holds;
 use App\Support\Retention\Policy;
 use App\Support\Retention\Sweeper;
@@ -98,7 +99,20 @@ final class RetentionController
             // empresa nueva eso es el estado normal durante dos años, y durante
             // dos años la pantalla estaría diciéndole que su retención no
             // funciona.
-            'lastSweep' => ScheduledRuns::summary(['retention:sweep'])[0] ?? null,
+            // La tarea se busca EN EL PLANIFICADOR, no se nombra aquí.
+            //
+            // Antes se pasaba la cadena `'retention:sweep'` a pelo. Ahora hace
+            // falta también su expresión de cron —de ella sale si el barrido va
+            // con retraso—, y esa expresión la sabe `routes/console.php`.
+            // Copiarla aquí habría sido la tercera copia del mismo horario.
+            //
+            // Y esto es lo que hace que un administrador de EMPRESA pueda ver
+            // que su retención no está corriendo: la pantalla de salud de la
+            // plataforma la ve solo quien tiene `platform:health:read`.
+            'lastSweep' => ScheduledRuns::summary(array_values(array_filter(
+                ScheduledTasks::all(),
+                static fn (array $t): bool => $t['command'] === 'retention:sweep',
+            )))[0] ?? null,
             // El estado del almacén de ficheros.
             //
             // Se enseña junto a la retención y no en su propia pantalla porque

@@ -119,12 +119,23 @@
         "duration": "Duró {seconds}s",
         "runCount": "{n} ejecuciones registradas",
         "runCountOne": "1 ejecución registrada",
-        "runStatus": {
-            "running": "En ejecución",
-            "succeeded": "Correcta",
-            "failed": "Falló"
+        "state": {
+            "ok": "Correcta",
+            "running": "Corriendo",
+            "late": "Con retraso",
+            "stalled": "Colgada",
+            "failed": "Falló",
+            "neverRan": "Nunca corrió"
         },
-        "lastRunFailed": "La última ejecución falló.",
+        "cadence": {
+            "daily": "diaria",
+            "weekly": "semanal",
+            "monthly": "mensual",
+            "hourly": "cada hora",
+            "custom": "con horario propio"
+        },
+        "lateSince": "Tendría que haber vuelto a correr el {date}. No ha corrido nada desde entonces — compruebe que la línea de cron sigue puesta en el servidor.",
+        "stalledSince": "Una ejecución empezó el {date} y no terminó nunca. El proceso se murió a mitad; nadie la va a cerrar sola.",
         "providersTitle": "Proveedores",
         "providersDescription": "Qué está atado a cada interfaz en esta instalación. Se lee del contenedor al abrir la pantalla, no de una tabla — una tabla podría decir «conectado» con la variable de entorno ya quitada.",
         "providerLive": "Real",

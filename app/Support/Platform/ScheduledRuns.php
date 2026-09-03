@@ -97,13 +97,38 @@ final class ScheduledRuns
     }
 
     /**
-     * La última ejecución de cada tarea programada conocida.
+     * Cuánto se le perdona a una tarea antes de llamarla atrasada.
+     *
+     * Una hora. Un barrido diario de las 06:00 mirado a las 06:02 puede estar
+     * todavía corriendo, y llamarlo «con retraso» sería una falsa alarma cada
+     * mañana — que es como se aprende a no mirar una pantalla.
+     */
+    private const GRACIA_MINUTOS = 60;
+
+    /**
+     * Cuánto puede llevar una ejecución «corriendo» antes de darla por colgada.
+     *
+     * Seis horas. Una fila en `running` con `completed_at` nulo es un proceso
+     * que se murió a mitad: nadie la va a cerrar nunca, y la pantalla la
+     * enseñaba en azul —«corriendo»— indefinidamente.
+     */
+    private const COLGADA_HORAS = 6;
+
+    /**
+     * La última ejecución de cada tarea programada, y si va con retraso.
      *
      * Devuelve una entrada por tarea ESPERADA, no por tarea que haya corrido:
      * una que no ha corrido nunca es precisamente la que hay que enseñar, y una
      * consulta que agrupa lo que existe la dejaría fuera de la lista.
      *
-     * @param  list<string>  $esperadas
+     * EL ESTADO NO ES EL DE LA FILA. Una tarea que corrió bien el 14 de agosto
+     * y a la que se le rompió el cron seguía saliendo con la insignia verde de
+     * «correcta» y una fecha vieja al lado: la pantalla enseñaba las dos piezas
+     * del problema y dejaba que el lector las juntara. Casi nadie las junta.
+     * Por eso `state` es una cosa calculada —`neverRan`, `failed`, `stalled`,
+     * `late`, `running`, `ok`— y no el `status` guardado.
+     *
+     * @param  list<array{command: string, expression: string}>  $esperadas
      * @return list<array<string, mixed>>
      */
     public static function summary(array $esperadas): array
@@ -117,12 +142,19 @@ final class ScheduledRuns
 
         $resumen = [];
 
+        $ahora = CarbonImmutable::now();
+
         foreach ($esperadas as $tarea) {
-            $clave = self::PREFIJO.$tarea;
+            $clave = self::PREFIJO.$tarea['command'];
             $fila = $ultimas->firstWhere('job_type', $clave);
+            $tocaba = self::tocaba($tarea['expression'], $fila);
 
             $resumen[] = [
-                'task' => $tarea,
+                'task' => $tarea['command'],
+                'expression' => $tarea['expression'],
+                'cadence' => ScheduledTasks::cadence($tarea['expression']),
+                'state' => self::estado($fila, $tocaba, $ahora),
+                'dueSince' => $tocaba?->format('Y-m-d H:i'),
                 'hasEverRun' => $fila !== null,
                 'status' => $fila === null ? null : (string) $fila->status,
                 'startedAt' => $fila === null ? null : substr((string) $fila->started_at, 0, 16),
@@ -135,6 +167,59 @@ final class ScheduledRuns
         }
 
         return $resumen;
+    }
+
+    /**
+     * Cuándo tendría que haber vuelto a correr, según su propio cron.
+     *
+     * Nulo si nunca corrió —no hay desde dónde contar— o si la expresión no se
+     * entiende. El plazo sale de la expresión de CADA tarea: con un plazo fijo
+     * escrito aquí, la semanal saldría con retraso cada martes.
+     */
+    private static function tocaba(string $expression, ?object $fila): ?CarbonImmutable
+    {
+        if ($fila === null || $fila->started_at === null) {
+            return null;
+        }
+
+        $siguiente = ScheduledTasks::nextAfter(
+            $expression,
+            CarbonImmutable::parse((string) $fila->started_at)->toDateTime(),
+        );
+
+        return $siguiente === null ? null : CarbonImmutable::instance($siguiente);
+    }
+
+    /**
+     * El estado que se pinta. Calculado, no leído.
+     *
+     * El orden importa: una tarea que falló Y va con retraso es un fallo, que
+     * es lo que hay que arreglar primero. Y una colgada se mira antes que el
+     * retraso porque lo explica.
+     */
+    private static function estado(?object $fila, ?CarbonImmutable $tocaba, CarbonImmutable $ahora): string
+    {
+        if ($fila === null) {
+            return 'neverRan';
+        }
+
+        $estado = (string) $fila->status;
+
+        if ($estado === 'failed') {
+            return 'failed';
+        }
+
+        if ($estado === 'running') {
+            $desde = CarbonImmutable::parse((string) $fila->started_at);
+
+            return $desde->addHours(self::COLGADA_HORAS)->isBefore($ahora) ? 'stalled' : 'running';
+        }
+
+        if ($tocaba !== null && $tocaba->addMinutes(self::GRACIA_MINUTOS)->isBefore($ahora)) {
+            return 'late';
+        }
+
+        return 'ok';
     }
 
     private static function duracion(?object $fila): ?float

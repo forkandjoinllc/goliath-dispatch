@@ -1,8 +1,22 @@
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
+type Estado = 'neverRan' | 'failed' | 'stalled' | 'late' | 'running' | 'ok'
+
 interface Tarea {
   task: string
+  expression: string
+  cadence: string
+  /**
+   * Calculado, no leído de la fila.
+   *
+   * Antes se pintaba el `status` guardado, así que una tarea que corrió bien el
+   * 14 de agosto y a la que se le rompió el cron salía en VERDE el 3 de
+   * septiembre con la fecha vieja al lado. La pantalla enseñaba las dos piezas
+   * del problema y dejaba que el lector las juntara.
+   */
+  state: Estado
+  dueSince: string | null
   hasEverRun: boolean
   status: string | null
   startedAt: string | null
@@ -65,10 +79,10 @@ export default function PlatformHealth({
           <ul className="mt-3 flex flex-col gap-3">
             {scheduler.tasks.map((tarea) => (
               <li key={tarea.task}>
-                {tarea.hasEverRun ? (
-                  <Corrio tarea={tarea} />
-                ) : (
+                {tarea.state === 'neverRan' ? (
                   <NuncaCorrio tarea={tarea} cronLine={scheduler.cronLine} />
+                ) : (
+                  <Corrio tarea={tarea} cronLine={scheduler.cronLine} />
                 )}
               </li>
             ))}
@@ -225,26 +239,60 @@ function NuncaCorrio({ tarea, cronLine }: { tarea: Tarea; cronLine: string }) {
   )
 }
 
-function Corrio({ tarea }: { tarea: Tarea }) {
+/**
+ * El tono de cada estado. SOLO `ok` es verde.
+ *
+ * En cuanto «con retraso» o «colgada» salen en verde vuelve el problema
+ * entero: un cron muerto con aspecto de cron sano.
+ */
+const TONO: Record<Estado, { caja: string; marca: string }> = {
+  ok: { caja: 'border-steel-200', marca: 'bg-success-50 text-success-700' },
+  running: { caja: 'border-steel-200', marca: 'bg-navy-50 text-navy-700' },
+  late: { caja: 'border-warning-300 bg-warning-50', marca: 'bg-warning-100 text-carbon' },
+  stalled: { caja: 'border-warning-300 bg-warning-50', marca: 'bg-warning-100 text-carbon' },
+  failed: { caja: 'border-danger-300 bg-danger-50', marca: 'bg-danger-50 text-danger-700' },
+  neverRan: { caja: 'border-danger-300 bg-danger-50', marca: 'bg-danger-50 text-danger-700' },
+}
+
+function Corrio({ tarea, cronLine }: { tarea: Tarea; cronLine: string }) {
   const { t } = useI18n()
-  const fallo = tarea.status === 'failed'
+  const tono = TONO[tarea.state]
+  const alarmante = tarea.state === 'late' || tarea.state === 'stalled' || tarea.state === 'failed'
 
   return (
-    <div className={`rounded border p-4 ${fallo ? 'border-danger-300 bg-danger-50' : 'border-steel-200'}`}>
+    <div className={`rounded border p-4 ${tono.caja}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm text-carbon">{tarea.task}</span>
-        <span
-          className={`rounded px-2 py-0.5 text-xs font-medium ${
-            fallo
-              ? 'bg-danger-50 text-danger-700'
-              : tarea.status === 'running'
-                ? 'bg-navy-50 text-navy-700'
-                : 'bg-success-50 text-success-700'
-          }`}
-        >
-          {t(`platform.health.runStatus.${tarea.status ?? 'running'}`)}
+        <span className={`rounded px-2 py-0.5 text-xs font-medium ${tono.marca}`}>
+          {t(`platform.health.state.${tarea.state}`)}
+        </span>
+        <span className="text-xs text-steel-600">
+          {t(`platform.health.cadence.${tarea.cadence}`)}
         </span>
       </div>
+
+      {/* Lo que la pantalla no decía. «Correcta» y «14 de agosto» eran dos
+          piezas de un problema que había que juntar a mano. */}
+      {tarea.state === 'late' ? (
+        <p className="mt-2 text-sm font-medium text-carbon">
+          {t('platform.health.lateSince', { date: tarea.dueSince ?? '—' })}
+        </p>
+      ) : null}
+
+      {tarea.state === 'stalled' ? (
+        <p className="mt-2 text-sm font-medium text-carbon">
+          {t('platform.health.stalledSince', { date: tarea.startedAt ?? '—' })}
+        </p>
+      ) : null}
+
+      {alarmante ? (
+        <>
+          <p className="mt-2 text-xs text-carbon">{t('platform.health.cronLine')}</p>
+          <code className="mt-1 block overflow-x-auto rounded bg-carbon px-2 py-1.5 text-xs text-white">
+            {cronLine}
+          </code>
+        </>
+      ) : null}
 
       <p className="mt-1 text-xs text-steel-600">
         {t('platform.health.lastRun')}: {tarea.startedAt ?? '—'}

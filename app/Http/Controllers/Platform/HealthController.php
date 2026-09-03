@@ -10,6 +10,7 @@ use App\Support\InertiaPage;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\Providers;
 use App\Support\Platform\ScheduledRuns;
+use App\Support\Platform\ScheduledTasks;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,17 +43,6 @@ final class HealthController
 {
     use InertiaPage;
 
-    /**
-     * Las tareas que ESTA aplicación programa.
-     *
-     * La lista es explícita y no se deduce de `Schedule`: lo que hay que
-     * enseñar es lo que DEBERÍA haber corrido, y una lista deducida de lo que
-     * corrió dejaría fuera precisamente la tarea que nunca corrió.
-     *
-     * @var list<string>
-     */
-    private const TAREAS = ['notifications:sweep', 'retention:sweep'];
-
     public function __invoke(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
         $actor = $current->require();
@@ -62,7 +52,12 @@ final class HealthController
 
         return app(TenantContext::class)->withoutTenant(fn (): Response => Inertia::render('Platform/Health', [
             'scheduler' => [
-                'tasks' => ScheduledRuns::summary(self::TAREAS),
+                // La lista sale del PLANIFICADOR, no de una constante de aquí.
+                // Era una copia a mano de `routes/console.php`: un
+                // `Schedule::command()` nuevo corría en el servidor y no
+                // aparecía en ninguna pantalla, así que si se le rompía el
+                // cron nadie se enteraba.
+                'tasks' => ScheduledRuns::summary(ScheduledTasks::all()),
                 'cronLine' => '* * * * * cd /home/forge/goliathdispatch.com && php artisan schedule:run >> /dev/null 2>&1',
             ],
             'providers' => Providers::inventory(),
