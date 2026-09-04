@@ -9,7 +9,9 @@ use App\Http\Requests\Marketing\StoreLeadRequest;
 use App\Http\Requests\Marketing\StoreQuoteRequestRequest;
 use App\Models\Lead;
 use App\Models\QuoteRequest;
+use App\Support\Leads\Arrival;
 use App\Support\Locales;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +31,7 @@ final class LeadController
     {
         $data = $request->validated();
 
-        Lead::create([
+        $prospecto = Lead::create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'email' => $data['email'],
@@ -44,6 +46,10 @@ final class LeadController
             'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
         ]);
 
+        // La pantalla acaba de decirle a un desconocido que nos pondremos en
+        // contacto en breve. Hasta este lote no se lo contaba nadie.
+        Arrival::announce($prospecto, $this->tenantId());
+
         return back()->with('success', (string) __('marketing.forms.success.leadTitle'));
     }
 
@@ -52,7 +58,7 @@ final class LeadController
         $data = $request->validated();
         $locale = $this->locale($request);
 
-        DB::transaction(function () use ($data, $locale, $request): void {
+        $prospecto = DB::transaction(function () use ($data, $locale, $request): Lead {
             // Toda solicitud de presupuesto crea TAMBIÉN un lead. Son dos cosas
             // distintas: el presupuesto es la carga concreta, el lead es la
             // persona a la que hay que llamar. Sin el lead, una solicitud que no
@@ -97,9 +103,30 @@ final class LeadController
                 'ip_address' => $request->ip(),
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
             ]);
+
+            return $lead;
         });
 
+        // Fuera de la transacción, igual que el alta de transportista: entre
+        // perder la solicitud y perder el aviso, no hay duda de cuál se puede
+        // perder.
+        Arrival::announce($prospecto, $this->tenantId());
+
         return back()->with('success', (string) __('marketing.forms.success.quoteTitle'));
+    }
+
+    /**
+     * La empresa bajo cuyo dominio se envió el formulario, si la hay.
+     *
+     * En el sitio de la plataforma no hay ninguna, y eso NO es un caso
+     * degradado: es el caso en que comercial tiene que enrutar el contacto a
+     * una empresa. Ver App\Support\Leads\Arrival.
+     */
+    private function tenantId(): ?string
+    {
+        $contexto = app(TenantContext::class);
+
+        return $contexto->hasTenant() ? (string) $contexto->id() : null;
     }
 
     private function locale(Request $request): Locale

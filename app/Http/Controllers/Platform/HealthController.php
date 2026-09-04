@@ -63,6 +63,7 @@ final class HealthController
             'providers' => Providers::inventory(),
             'jobs' => $this->colaDeTrabajos(),
             'expirations' => $this->vencimientos(),
+            'orphanLeads' => $this->prospectosSinEmpresa(),
             'database' => $this->baseDeDatos(),
             'tenants' => DB::table('tenants')
                 ->whereNull('deleted_at')
@@ -111,6 +112,37 @@ final class HealthController
      *
      * @return array<string, mixed>
      */
+    /**
+     * Prospectos que llegaron por el sitio de la PLATAFORMA y no tienen empresa.
+     *
+     * Son los únicos a los que no se puede avisar: `notifications.tenant_id` es
+     * NOT NULL, y `CarrierSignupController` se niega —con razón— a inventarse
+     * una empresa para que quepan. Así que la campana no los alcanza y la única
+     * forma honesta de que no se pierdan es contarlos donde mira quien los tiene
+     * que enrutar, que es aquí.
+     *
+     * La página pública les prometió respuesta en un día hábil igual que a los
+     * demás. Se enseña la antigüedad del más viejo porque un contador de «3»
+     * sin fecha no distingue tres de esta mañana de tres de hace tres semanas.
+     *
+     * @return array{count: int, oldestAt: string|null}
+     */
+    private function prospectosSinEmpresa(): array
+    {
+        $fila = DB::table('leads')
+            ->whereNull('tenant_id')
+            ->whereNull('deleted_at')
+            ->where('status', 'new')
+            ->whereNull('assigned_to_user_id')
+            ->selectRaw('count(*) as total, min(created_at) as mas_viejo')
+            ->first();
+
+        return [
+            'count' => (int) ($fila->total ?? 0),
+            'oldestAt' => $fila?->mas_viejo === null ? null : substr((string) $fila->mas_viejo, 0, 16),
+        ];
+    }
+
     private function vencimientos(): array
     {
         $total = ['warning' => 0, 'expired' => 0, 'oldestFirstDetectedAt' => null];

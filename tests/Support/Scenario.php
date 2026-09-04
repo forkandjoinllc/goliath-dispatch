@@ -16,6 +16,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\UserTenantMembership;
 use App\Support\Customers\NameKey;
+use App\Support\Documents\DocumentTypes;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -251,7 +252,7 @@ final class Scenario
     {
         $carrierId ??= (string) $this->assignedCarrier->id;
 
-        foreach (\App\Support\Documents\DocumentTypes::requiredFor('carrier') as $type) {
+        foreach (DocumentTypes::requiredFor('carrier') as $type) {
             DB::table('documents')->insert([
                 'id' => (string) Str::uuid(),
                 'tenant_id' => $this->tenant->id,
@@ -269,7 +270,63 @@ final class Scenario
 
     public function user(Role $role): User
     {
+        // El super administrador de plataforma NO se monta con los demás: no
+        // pertenece a la empresa del escenario, y crearlo siempre metería en
+        // cada prueba un usuario que ve por encima del ámbito que casi todas
+        // existen para comprobar. Se construye cuando alguien lo pide.
+        //
+        // Antes esta línea moría con «Undefined array key
+        // "platform_super_admin"», que no dice nada de lo anterior.
+        if ($role === Role::PlatformSuperAdmin && ! isset($this->users[$role->value])) {
+            $this->users[$role->value] = $this->makePlatformSuperAdmin();
+        }
+
         return $this->users[$role->value];
+    }
+
+    /**
+     * El super administrador lleva DOS cosas, y hacen falta las dos — pero NO
+     * por lo que parece.
+     *
+     * Quien concede `platform:*` es el ROL de la membresía: PermissionChecker
+     * resuelve la matriz a partir de `$actor->role` y la columna
+     * `is_platform_super_admin` no aparece por ninguna parte de esa decisión.
+     * La columna hace otra cosa: `EnsureTenantActive` la mira para dejar
+     * entrar aunque la empresa esté suspendida, y `AppShell` la manda al
+     * navegador para pintar el menú de plataforma.
+     *
+     * Con solo el rol, la sesión se cae en cuanto la empresa no esté activa.
+     * Con solo la columna, se entra y no se puede ver nada: eso es exactamente
+     * lo que pasó al recorrer la pantalla de salud con un admin promovido a
+     * mano, que entró y recibió «No tiene acceso a esto».
+     */
+    private function makePlatformSuperAdmin(): User
+    {
+        return app(TenantContext::class)->runAs($this->tenant->id, function (): User {
+            $user = User::create([
+                'email' => 'super+'.Str::random(8).'@escenario.test',
+                'password' => 'contraseña-de-prueba-1',
+                'first_name' => 'Super',
+                'last_name' => 'Prueba',
+                'status' => UserStatus::Active,
+                'email_verified_at' => now(),
+            ]);
+
+            // Con update() y no en el create(): la columna no está en
+            // $fillable a propósito, para que nadie se haga super administrador
+            // pasando un campo más en un formulario.
+            DB::table('users')->where('id', $user->id)->update(['is_platform_super_admin' => 1]);
+
+            UserTenantMembership::create([
+                'tenant_id' => $this->tenant->id,
+                'user_id' => $user->id,
+                'role' => Role::PlatformSuperAdmin,
+                'status' => 'active',
+                'accepted_at' => now(),
+            ]);
+
+            return $user->refresh();
+        });
     }
 
     private function makeCarrier(string $name, string $dot, OnboardingStatus $status): Carrier

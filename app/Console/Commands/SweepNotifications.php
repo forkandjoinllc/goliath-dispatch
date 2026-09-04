@@ -7,12 +7,13 @@ namespace App\Console\Commands;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Fmcsa\Revalidation;
+use App\Support\Leads\Arrival;
 use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
 use App\Support\Tenancy\TenantPolicy;
-use App\Support\Tracking\TrackingLinks;
 use App\Support\TenantContext;
+use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -116,6 +117,7 @@ final class SweepNotifications extends Command
                 }
 
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
+                $totales['leads'] += $this->prospectosSinAtender($tenantId, $dry);
 
                 // REVALIDAR VA ANTES QUE AVISAR, y el orden no es un detalle:
                 // avisar primero llenaría la bandeja de recordatorios sobre
@@ -146,10 +148,14 @@ final class SweepNotifications extends Command
         $this->resumen = ['tenants' => count($empresas)] + $totales;
 
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
+            '%d empresas · %s: documentos %d · prospectos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
+            // Contado desde este lote y DICHO desde este lote. Un total que se
+            // suma y no se imprime es un barrido que puede dejar de pasar por
+            // ahí sin que la salida cambie.
+            $totales['leads'],
             $totales['carriers'],
             $totales['invoices'],
             $totales['trials'],
@@ -421,6 +427,90 @@ final class SweepNotifications extends Command
         return $escritos;
     }
 
+    /**
+     * Prospectos que llevan más de un DÍA HÁBIL sin que nadie los toque.
+     *
+     * ## Por qué existe este pase
+     *
+     * Porque la página pública lo prometió. El alta de transportista dice
+     * «nuestro equipo de incorporación suele responder en un día hábil» y el
+     * formulario de contacto dice «nos pondremos en contacto en breve». Avisar
+     * cuando llega —{@see Arrival}— hace que alguien se
+     * entere; esto es lo que hace que alguien se entere OTRA VEZ cuando el
+     * plazo se pasó y el contacto sigue ahí. Una promesa con plazo necesita las
+     * dos cosas: el aviso y el recordatorio.
+     *
+     * `new` Y sin asignar. Un prospecto asignado ya tiene dueño aunque siga en
+     * `new`, y perseguir a quien ya lo cogió es la clase de aviso que enseña a
+     * ignorar la campana.
+     */
+    private function prospectosSinAtender(string $tenantId, bool $dry): int
+    {
+        $limite = self::unDiaHabilAntes(CarbonImmutable::now());
+
+        $filas = DB::table('leads')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->where('status', 'new')
+            ->whereNull('assigned_to_user_id')
+            ->where('created_at', '<', $limite)
+            ->orderBy('created_at')
+            ->limit(500)
+            ->get(['id', 'first_name', 'last_name', 'email', 'company_name', 'created_at']);
+
+        $escritos = 0;
+
+        foreach ($filas as $prospecto) {
+            if ($dry) {
+                $escritos++;
+
+                continue;
+            }
+
+            $nombre = trim("{$prospecto->first_name} {$prospecto->last_name}");
+
+            // Una vez por prospecto. Con la fecha en la clave, el mismo
+            // contacto sin atender volvería a sonar cada mañana hasta que
+            // alguien lo tocara — y una campana que repite deja de mirarse.
+            $escritos += Notifier::toPermissionHolders(
+                tenantId: $tenantId,
+                permission: 'lead:read',
+                eventKey: 'lead.unattended',
+                dedupeKey: "lead.unattended:{$prospecto->id}",
+                params: [
+                    'name' => $nombre !== '' ? $nombre : (string) $prospecto->email,
+                    'date' => substr((string) $prospecto->created_at, 0, 10),
+                ],
+                actionUrl: '/leads',
+                subjectType: 'lead',
+                subjectId: (string) $prospecto->id,
+            );
+        }
+
+        return $escritos;
+    }
+
+    /**
+     * Un día hábil antes de la fecha dada.
+     *
+     * «Un día hábil» no son veinticuatro horas, y la diferencia importa
+     * precisamente el lunes: un alta que entra el viernes por la tarde no lleva
+     * un día hábil sin atender el sábado ni el domingo, y sí lo lleva el lunes.
+     * Contando horas a secas, el barrido del sábado avisaría de algo que nadie
+     * ha tenido oportunidad de mirar — y avisar de un incumplimiento que no ha
+     * ocurrido es la forma más rápida de que dejen de creerse los avisos.
+     */
+    public static function unDiaHabilAntes(CarbonImmutable $desde): CarbonImmutable
+    {
+        $anterior = $desde->subDay();
+
+        while ($anterior->isSaturday() || $anterior->isSunday()) {
+            $anterior = $anterior->subDay();
+        }
+
+        return $anterior;
+    }
+
     private function facturasVencidas(string $tenantId, bool $dry): int
     {
         $hoy = CarbonImmutable::now()->toDateString();
@@ -535,5 +625,4 @@ final class SweepNotifications extends Command
             subjectId: $tenantId,
         );
     }
-
 }

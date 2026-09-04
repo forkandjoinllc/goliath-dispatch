@@ -10,6 +10,7 @@ use App\Http\Requests\Marketing\StoreCarrierSignupRequest;
 use App\Models\Carrier;
 use App\Models\CarrierOnboarding;
 use App\Models\Lead;
+use App\Support\Leads\Arrival;
 use App\Support\Locales;
 use App\Support\Plans\Limits;
 use App\Support\TenantContext;
@@ -44,7 +45,7 @@ final class CarrierSignupController
         /** @var Locale $locale */
         $locale = $request->attributes->get('locale', Locales::default());
 
-        DB::transaction(function () use ($data, $locale, $request): void {
+        $prospecto = DB::transaction(function () use ($data, $locale, $request): Lead {
             $lead = Lead::create([
                 'first_name' => $data['contact_first_name'],
                 'last_name' => $data['contact_last_name'],
@@ -61,7 +62,7 @@ final class CarrierSignupController
             ]);
 
             if (! $this->context->hasTenant()) {
-                return; // Sitio de la plataforma: el lead ES el resultado.
+                return $lead; // Sitio de la plataforma: el lead ES el resultado.
             }
 
             // El tope de transportistas del plan, si la empresa lo tiene puesto.
@@ -78,7 +79,7 @@ final class CarrierSignupController
             // pasa solo es el alta automática, que es justo lo que el tope
             // limita.
             if (Limits::isFull((string) $this->context->id(), Limits::CARRIERS)) {
-                return;
+                return $lead;
             }
 
             $carrier = Carrier::create([
@@ -109,7 +110,16 @@ final class CarrierSignupController
             ]);
 
             $lead->forceFill(['status' => 'converted'])->save();
+
+            return $lead;
         });
+
+        // FUERA de la transacción. La pantalla le acaba de decir a un
+        // desconocido que alguien le responderá en un día hábil, y hasta este
+        // lote no había nada que se lo contara a nadie. Va después del commit
+        // porque entre perder el contacto y perder la campanita no hay duda de
+        // cuál se puede perder.
+        Arrival::announce($prospecto, $this->context->hasTenant() ? (string) $this->context->id() : null);
 
         return back()->with('success', (string) __('marketing.carrierSignup.success.title'));
     }

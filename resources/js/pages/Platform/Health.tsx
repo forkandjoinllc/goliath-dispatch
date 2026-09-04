@@ -38,6 +38,14 @@ interface Proveedor {
 
 interface Props {
   scheduler: { tasks: Tarea[]; cronLine: string }
+  /**
+   * Prospectos llegados por el sitio de la plataforma, sin empresa.
+   *
+   * Son los únicos a los que la campana no llega: `notifications.tenant_id` es
+   * NOT NULL y no hay empresa que poner. Se cuentan aquí porque la página
+   * pública les prometió respuesta en un día hábil igual que a los demás.
+   */
+  orphanLeads: { count: number; oldestAt: string | null }
   providers: Proveedor[]
   jobs: {
     queued: number
@@ -61,7 +69,7 @@ interface Props {
  * problema: quiere arreglarlo.
  */
 export default function PlatformHealth({
-  scheduler, providers, jobs, expirations, database, tenants,
+  scheduler, providers, jobs, expirations, database, tenants, orphanLeads,
 }: Props) {
   const { t } = useI18n()
 
@@ -88,6 +96,18 @@ export default function PlatformHealth({
             ))}
           </ul>
         </section>
+
+        {orphanLeads.count > 0 ? (
+          <section className="rounded border border-warning-300 bg-warning-50 p-4">
+            <p className="text-sm font-semibold text-carbon">{t('platform.health.orphanLeadsTitle')}</p>
+            <p className="mt-1 text-sm text-carbon">
+              {t('platform.health.orphanLeadsBody', {
+                count: String(orphanLeads.count),
+                date: orphanLeads.oldestAt ?? '—',
+              })}
+            </p>
+          </section>
+        ) : null}
 
         <section className="rounded border border-steel-200 bg-white p-4">
           <p className="text-sm font-semibold text-carbon">{t('platform.health.providersTitle')}</p>

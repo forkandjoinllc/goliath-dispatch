@@ -1586,3 +1586,63 @@ agosto y no había nada que hacer» sobre el mismo barrido parado. Y la segunda 
 la que ve un administrador de EMPRESA — la de plataforma pide
 `platform:health:read`. Al arreglar una frase tranquilizadora conviene buscar
 quién más la dice.
+
+## Lote «el día hábil que nadie prometía cumplir»
+
+**Un guardián por FICHERO da por bueno el fichero entero.** La comprobación
+decía «los dos controladores públicos avisan» y leía cada fichero completo. Se
+le quitó el aviso a `LeadController::storeLead` y **siguió en verde**, porque
+`storeQuote` —en el mismo fichero— todavía lo tenía. Cuando lo que se vigila es
+una obligación de cada punto de entrada, hay que recortar el CUERPO de cada
+método y mirar dentro. Tres puertas, tres comprobaciones.
+
+**`expect()->toContain()` no acepta un mensaje: acepta más agujas.** Escribí
+
+```php
+expect($codigo)->toContain('Arrival::announce(', "Falta el aviso en {$nombre}");
+```
+
+y el mensaje se convirtió en una segunda aguja que no casaba con nada. La
+comprobación fallaba siempre, y fallaba diciendo otra cosa. Cuando hace falta
+un mensaje, `test()->assertStringContainsString($aguja, $sujeto, $mensaje)`.
+
+**Una ventana de tamaño fijo acaba leyendo el método de al lado.** `substr($codigo,
+$inicio, 1600)` para mirar dentro de `prospectosSinAtender()` se comía el
+principio de `unDiaHabilAntes()`, que tiene un `->subDay()` legítimo. La
+comprobación «este método no usa subDay pelado» medía el método siguiente. El
+final se busca: la firma del método que viene, o el `return` del propio método.
+
+**Pest carga todos los ficheros de prueba en un espacio global.** `prospecto()`
+en `ArrivalTest.php` chocó con `prospecto()` en `LeadTest.php`: fatal que se
+lleva por delante la suite ENTERA, y que **solo aparece al correrla entera** —
+el fichero solo pasaba en verde. Toda función de primer nivel en un fichero de
+pruebas necesita un nombre que no vaya a repetirse.
+
+**Un total que se suma y no se imprime deja de existir sin que nada cambie.**
+Añadí `$totales['leads']` al barrido y no lo puse en la línea que imprime el
+resumen. La pasada podía dejar de correr entera y la salida del comando sería
+idéntica. Se cerró con una comprobación que lee el `sprintf` y exige que el
+total aparezca.
+
+**Un ayudante compartido que no cubre un caso muere con un error que no explica
+nada.** `Scenario::user(Role::PlatformSuperAdmin)` moría con
+`Undefined array key "platform_super_admin"`, porque `Scenario::create()` salta
+ese rol a propósito. Dos ficheros de prueba llevaban su propia copia local del
+montaje. Ahora se construye al pedirlo.
+
+**Y la copia local llevaba dentro una creencia falsa.** Escribí que
+`users.is_platform_super_admin` «es lo que mira la autorización». No lo es:
+`PermissionChecker` resuelve la matriz desde el ROL de la membresía y esa
+columna no aparece en la decisión. La columna hace otra cosa —dejar entrar con
+la empresa suspendida, y pintar el menú—. Lo destapó el recorrido con navegador:
+el usuario promovido a mano entró y recibió «No tiene acceso a esto». Un
+comentario sobre autorización que no se ha comprobado corriendo es una
+suposición con aspecto de documentación.
+
+**El recorrido con navegador encuentra lo que ninguna prueba mira.** Enviar el
+formulario público de verdad enseñó tres cosas que la suite no ve: el token de
+formulario exige tres segundos mínimos de rellenado, las dos casillas de
+consentimiento son obligatorias, y al superar el límite de seis envíos por hora
+la página **vuelve a pintar el formulario sin decir por qué**. Las dos primeras
+son guardias haciendo su trabajo. La tercera es una pantalla que se calla, y
+está anotada en `docs/lead-response.md` sin arreglar.

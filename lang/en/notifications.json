@@ -47,6 +47,14 @@
             }
         },
         "lead": {
+            "received": {
+                "title": "New lead: {name}",
+                "body": "A new lead arrived from {name} ({company})."
+            },
+            "unattended": {
+                "title": "Lead waiting since {date}: {name}",
+                "body": "{name} came in on {date} and nobody has taken it. The public page promises a reply within one business day."
+            },
             "assigned": {
                 "title": "A lead was assigned to you",
                 "body": "{name} is now yours to follow up."
@@ -81,7 +89,9 @@
             "overdue": "Overdue invoices"
         },
         "lead": {
-            "assigned": "A lead assigned to you"
+            "assigned": "A lead assigned to you",
+            "received": "New leads",
+            "unattended": "Leads nobody has taken"
         },
         "subscription": {
             "trial_ending": "Your trial is ending",

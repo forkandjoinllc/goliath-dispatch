@@ -110,6 +110,8 @@
         "documentStorage": "Almacenamiento de documentos",
         "mediaStorage": "Almacenamiento de medios de equipo",
         "totalStorage": "Almacenamiento total",
+        "orphanLeadsTitle": "Prospectos sin empresa a la que enrutarlos",
+        "orphanLeadsBody": "{count} alta(s) entraron por el sitio de la plataforma, donde no hay ninguna empresa a la que avisar. El más antiguo lleva esperando desde el {date}. Enrútelos desde la pantalla de prospectos de la empresa que corresponda.",
         "schedulerTitle": "Tareas programadas",
         "schedulerDescription": "Cuándo corrió por última vez cada tarea que la aplicación hace sola.",
         "neverRan": "NO HA CORRIDO NUNCA",

@@ -51,6 +51,8 @@ final class NotificationController
         'carrier.reverification_due',
         'invoice.overdue',
         'tracking.link_not_sent',
+        'lead.received',
+        'lead.unattended',
         'lead.assigned',
         'subscription.trial_ending',
         'subscription.trial_ended',

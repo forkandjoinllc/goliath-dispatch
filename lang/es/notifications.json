@@ -47,6 +47,14 @@
             }
         },
         "lead": {
+            "received": {
+                "title": "Nuevo prospecto: {name}",
+                "body": "Se recibió un nuevo prospecto de {name} ({company})."
+            },
+            "unattended": {
+                "title": "Prospecto esperando desde el {date}: {name}",
+                "body": "{name} entró el {date} y no lo ha cogido nadie. La página pública promete respuesta en un día hábil."
+            },
             "assigned": {
                 "title": "Le han asignado un prospecto",
                 "body": "{name} pasa a ser suyo para darle seguimiento."
@@ -81,7 +89,9 @@
             "overdue": "Facturas vencidas"
         },
         "lead": {
-            "assigned": "Un prospecto asignado a usted"
+            "assigned": "Un prospecto asignado a usted",
+            "received": "Prospectos nuevos",
+            "unattended": "Prospectos que nadie ha cogido"
         },
         "subscription": {
             "trial_ending": "Su prueba se acaba",

@@ -110,6 +110,8 @@
         "documentStorage": "Document storage",
         "mediaStorage": "Equipment media storage",
         "totalStorage": "Total storage",
+        "orphanLeadsTitle": "Leads with no company to route them to",
+        "orphanLeadsBody": "{count} signup(s) arrived on the platform site, where there is no company to notify. The oldest has been waiting since {date}. Route them from the leads screen of the company they belong to.",
         "schedulerTitle": "Scheduled tasks",
         "schedulerDescription": "When each task the application runs on its own last ran.",
         "neverRan": "HAS NEVER RUN",
