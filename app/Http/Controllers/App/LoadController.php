@@ -70,6 +70,14 @@ final class LoadController
 {
     use InertiaPage;
 
+    /**
+     * Cuánto se apartan los números de orden mientras se reordenan las paradas.
+     *
+     * Mil: una carga con mil paradas no existe, y `sequence` es `int`, así que
+     * sumar mil no se acerca a desbordar nada.
+     */
+    private const DESPLAZAMIENTO_ORDEN = 1000;
+
     private const PER_PAGE = 25;
 
     /** Lista blanca: el parámetro de orden va a SQL. */
@@ -281,7 +289,7 @@ final class LoadController
             $load->dispatcher_user_id = $actor->role === Role::Dispatcher ? $actor->userId : null;
             $load->save();
 
-            $this->syncStops($load, $data['stops']);
+            $this->syncStops($actor, $load, $data['stops']);
             $this->syncRequirements($actor, $load, $data['requirements'] ?? null);
 
             return $load;
@@ -362,7 +370,7 @@ final class LoadController
             // Las paradas son mercancía, no dinero: solo las toca quien puede
             // editar la carga. Contabilidad no las recibe ni las manda.
             if ($canFreight) {
-                $this->syncStops($model, $data['stops']);
+                $this->syncStops($actor, $model, $data['stops']);
                 $this->syncRequirements($actor, $model, $data['requirements'] ?? null);
             }
 
@@ -1018,14 +1026,82 @@ final class LoadController
             ->all();
     }
 
-    private function syncStops(Load $load, array $stops): void
+    /**
+     * Guarda las paradas que llega en el formulario.
+     *
+     * ## Los dos defectos que esto arregla
+     *
+     * **1. El id de la parada llegaba del formulario y se usaba tal cual.**
+     *
+     *     DB::table('load_stops')->where('id', $stop['id'])->update($columns);
+     *
+     * Sin `load_id` y sin `tenant_id`, y con la validación pidiendo solo
+     * `['nullable', 'string', 'size:36']`. O sea: cualquiera que pudiera editar
+     * una carga podía mandar el id de una parada de OTRA carga —de OTRA
+     * empresa— y sobrescribirle instalación, dirección, contacto, ventana
+     * horaria e instrucciones. `DB::table` no pasa por el ámbito global de
+     * Eloquent, así que ahí no había nada que lo parara. Se comprobó con dos
+     * empresas: la parada de la segunda pasó de «Laredo» a lo que mandó la
+     * primera.
+     *
+     * **2. Quitar una parada la borraba de verdad.**
+     *
+     * `load_stops` tiene `deleted_at`, `deleted_by` y `deletion_reason`,
+     * `LoadStop` usa `SoftDeletes`, y las TRECE lecturas del proyecto filtran
+     * `whereNull('deleted_at')`. El borrado blando estaba diseñado y escrito en
+     * todas partes; este método era el único que no se había enterado. Y
+     * `load_documents.stop_id` es `ON DELETE SET NULL`: un comprobante subido
+     * PARA esa parada se quedaba sin saber de qué parada era.
+     *
+     * ## El arreglo no se ha inventado
+     *
+     * Es el mismo patrón que `syncRequirements()`, cuarenta líneas más arriba
+     * en este fichero: resolver la fila DENTRO del dueño, actualizar por el id
+     * ya resuelto, y quitar lo que sobra con un UPDATE de borrado blando.
+     */
+    private function syncStops(Actor $actor, Load $load, array $stops): void
     {
-        $keep = collect($stops)->pluck('id')->filter()->all();
+        $ahora = now();
+        $vistos = [];
 
+        // ORDENADO POR LA CLAVE, y esto arregla un tercer defecto que solo se
+        // ve mirando el resultado.
+        //
+        // `$request->validate()` NO devuelve el array en el orden en que se
+        // mandó: lo va montando regla por regla, así que las paradas que traen
+        // `id` aparecen antes que las que no. Con `array_values()` a secas, una
+        // recogida NUEVA puesta la primera en el formulario se guardaba con
+        // `sequence` 3 — la última. Comprobado: el usuario manda
+        // [nueva, Laredo, Dallas] y la carga queda [Laredo, Dallas, nueva].
+        //
+        // Y `sequence` no es decorativo: es el orden de la ruta, y
+        // `StopProgress` impide anotar la llegada a una parada si otra de
+        // `sequence` menor no ha llegado todavía. Una carga con las paradas al
+        // revés bloquea el seguimiento de la de verdad.
+        ksort($stops);
+
+        // Y ANTES de tocar nada, se apartan los números de orden vivos.
+        //
+        // `UNIQUE (load_id, live_sequence)` es correcto y por eso estorba a
+        // mitad de faena: intercambiar dos paradas —la 1 pasa a 2 y la 2 a 1—
+        // choca contra sí mismo en el instante en que la primera se guarda. Se
+        // suma un desplazamiento a todas las vivas, se asignan los definitivos,
+        // y ninguna colisión llega a existir. Las que acaben borradas se quedan
+        // con el número desplazado, que da igual: al borrarse, `live_sequence`
+        // pasa a NULL y deja de ocupar sitio.
         DB::table('load_stops')
+            ->where('tenant_id', $load->tenant_id)
             ->where('load_id', $load->id)
-            ->when($keep !== [], fn ($q) => $q->whereNotIn('id', $keep))
-            ->delete();
+            ->whereNull('deleted_at')
+            ->update([
+                'sequence' => DB::raw('`sequence` + '.self::DESPLAZAMIENTO_ORDEN),
+                'updated_at' => $ahora,
+            ]);
+
+        // Las claves son las posiciones que mandó el FORMULARIO, y por eso se
+        // guardan: el mensaje de error tiene que señalar la fila que el usuario
+        // ve, no la posición dentro del array ya reordenado.
+        $posiciones = array_keys($stops);
 
         foreach (array_values($stops) as $index => $stop) {
             $columns = [
@@ -1045,23 +1121,66 @@ final class LoadController
                 'contact_name' => $stop['contact_name'] ?? null,
                 'contact_phone' => $stop['contact_phone'] ?? null,
                 'instructions' => $stop['instructions'] ?? null,
-                'updated_at' => now(),
+                'updated_at' => $ahora,
             ];
 
-            if (! empty($stop['id'])) {
-                DB::table('load_stops')->where('id', $stop['id'])->update($columns);
+            $id = empty($stop['id']) ? null : (string) $stop['id'];
+
+            $existente = $id === null ? null : DB::table('load_stops')
+                ->where('tenant_id', $load->tenant_id)
+                ->where('load_id', $load->id)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first(['id']);
+
+            // Un id que no resuelve NO se convierte en una parada nueva.
+            // Convertirlo sería tapar el intento: quien mandó un id ajeno vería
+            // «guardado» y se llevaría una parada creada, sin que constara en
+            // ningún sitio que había pedido tocar otra cosa.
+            //
+            // El mensaje es el mismo tanto si el id es inventado como si es de
+            // otra empresa, y eso es a propósito: distinguirlos confirmaría que
+            // el segundo existe.
+            if ($id !== null && $existente === null) {
+                throw ValidationException::withMessages([
+                    'stops.'.($posiciones[$index] ?? $index).'.id' => __('loads.documents.stopNotOnLoad'),
+                ]);
+            }
+
+            if ($existente !== null) {
+                DB::table('load_stops')->where('id', $existente->id)->update($columns);
+                $vistos[] = (string) $existente->id;
 
                 continue;
             }
 
+            $nuevo = (string) Str::uuid();
+
             DB::table('load_stops')->insert([
                 ...$columns,
-                'id' => (string) Str::uuid(),
+                'id' => $nuevo,
                 'tenant_id' => $load->tenant_id,
                 'load_id' => $load->id,
-                'created_at' => now(),
+                'created_at' => $ahora,
             ]);
+
+            $vistos[] = $nuevo;
         }
+
+        // Lo que ya no viene se quita en BLANDO, con quién y por qué. La fila
+        // sigue ahí, así que un comprobante que apunte a ella no se queda
+        // huérfano y el historial de la carga sigue explicándose.
+        DB::table('load_stops')
+            ->where('tenant_id', $load->tenant_id)
+            ->where('load_id', $load->id)
+            ->whereNull('deleted_at')
+            ->when($vistos !== [], fn ($q) => $q->whereNotIn('id', $vistos))
+            ->update([
+                'deleted_at' => $ahora,
+                'deleted_by' => $actor->auditUserId(),
+                'deletion_reason' => 'stop_removed_on_load_edit',
+                'updated_at' => $ahora,
+            ]);
     }
 
     /**

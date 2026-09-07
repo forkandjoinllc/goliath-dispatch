@@ -1783,3 +1783,50 @@ botón con `/^(Quitar|Detach)$/` y en español la etiqueta es «Descolgar»: el
 recorrido informó de que el ADMIN tampoco veía el botón. Un minuto más y habría
 «arreglado» algo que funcionaba. En un recorrido bilingüe, las agujas salen del
 diccionario, no de la memoria.
+
+## Lote «la parada que se borraba de verdad»
+
+**Un sabotaje puede golpear el método equivocado y parecer que funciona.** Para
+probar el guardián del «resuelve dentro del dueño», la aguja del sabotaje era
+
+    ->where('load_id', $load->id)\n                ->where('id', $id)
+
+y `.replace(..., 1)` la aplicó a `syncRequirements`, que va **antes** en el
+fichero. El md5 cambiaba, así que el arnés lo daba por bueno, y el guardián
+pasaba en verde sin haberse probado nunca. **Ver que el fichero cambia no basta:
+hay que ver que cambia lo que se cree.** Toda aguja de sabotaje lleva ahora algo
+que la ancle al sitio exacto — aquí, el nombre de la tabla.
+
+**Y el guardián que sobrevivió a ese susto también estaba mal.** Miraba el
+método ENTERO buscando `->where('load_id', $load->id)`, que también aparece en
+el UPDATE de borrado blando del final. Quitárselo a la búsqueda no lo rompía. Se
+acotó a la sentencia de búsqueda. Es la tercera vez en cuatro lotes que una
+aguja demasiado ancha da un guardián inerte: **por fichero cuando había que
+mirar por método, por método cuando había que mirar por sentencia.**
+
+**`$request->validate()` no devuelve los datos en el orden en que se mandaron.**
+Los monta regla por regla, así que en un array de objetos las entradas que
+cumplen la primera regla salen primero. `array_values()` sobre eso reordena en
+silencio. Aquí hacía que una parada nueva puesta la primera se guardara la
+última — con uso normal, sin nadie manipulando nada. **Si el orden de un array
+de entrada significa algo, hay que ordenarlo explícitamente y usar las claves
+originales para los mensajes de error.**
+
+**El esquema puede ser la razón por la que el código está mal.** El DELETE crudo
+sobre una tabla con borrado blando parecía un descuido. No lo era: el índice
+`UNIQUE (load_id, sequence)` no miraba `deleted_at`, así que borrar en blando
+dejaba el número de orden ocupado para siempre y rompía la siguiente edición.
+Con esa restricción puesta, el borrado de verdad era lo único que funcionaba.
+**Antes de llamar descuido a algo, conviene comprobar si el esquema deja hacerlo
+bien.**
+
+**Cuarta colisión de nombre global en cinco lotes** (`paradasDe`). El
+`grep -rn "^function <nombre>(" tests/` antes de escribir ya no es una
+precaución: es parte de escribir la función.
+
+**En un recorrido con navegador, el botón que hay que pulsar se mueve.** Para
+subir una parada hasta la primera posición hay que pulsar SU flecha, y esa
+flecha cambia de índice en cada pulsación. Pulsando siempre la última se pulsa
+la de otra parada, no pasa nada visible, y el recorrido informa de que la
+función no va. Dos intentos perdidos por adivinar el DOM en vez de abrir el
+componente y leerlo: **cuando un selector falla dos veces, se lee el fuente.**
