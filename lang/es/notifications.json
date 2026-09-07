@@ -89,6 +89,26 @@
                 "title": "Firma vencida sin firmar: {document}",
                 "body": "El enlace que se le mandó a {signer} venció el {date} y nunca se firmó. Ya no puede abrirlo — hay que mandar una solicitud nueva."
             }
+        },
+        "load": {
+            "rateconf": {
+                "accepted": {
+                    "title": "Tarifa aceptada en la carga {load}",
+                    "body": "{carrier} aceptó la tarifa de la carga {load}."
+                },
+                "rejected": {
+                    "title": "{carrier} rechazó la tarifa de la carga {load}",
+                    "body": "Motivo que dio: «{reason}» — la carga se queda parada hasta que se acuerde la tarifa."
+                },
+                "changes_requested": {
+                    "title": "{carrier} pide cambios en la tarifa de la carga {load}",
+                    "body": "Lo que pide: «{reason}» — hay que reemitir la confirmación o llamarle."
+                },
+                "unanswered": {
+                    "title": "Sin respuesta a la tarifa de la carga {load}",
+                    "body": "La confirmación que se le mandó a {carrier} el {date} sigue sin respuesta. Nadie ha comprometido esa tarifa y la carga está esperando."
+                }
+            }
         }
     },
     "eventNames": {
@@ -118,6 +138,14 @@
             "signed": "Documentos firmados",
             "declined": "Firmas rechazadas",
             "expired": "Enlaces de firma que vencieron sin firmar"
+        },
+        "load": {
+            "rateconf": {
+                "accepted": "Tarifas aceptadas",
+                "rejected": "Tarifas rechazadas",
+                "changes_requested": "Cambios pedidos en la tarifa",
+                "unanswered": "Confirmaciones de tarifa que nadie contestó"
+            }
         }
     },
     "flash": {

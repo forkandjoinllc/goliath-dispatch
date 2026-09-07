@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Enums\LoadStatus;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Fmcsa\Revalidation;
 use App\Support\Leads\Arrival;
+use App\Support\Loads\RateResponse;
 use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
@@ -71,6 +73,18 @@ final class SweepNotifications extends Command
      */
     private const VENCIDAS_DIAS = 30;
 
+    /**
+     * Cuánto se le da al transportista para contestar antes de avisar.
+     *
+     * Tres días: menos convierte el aviso en una prisa sobre alguien que quizá
+     * está mirando el papel, y más deja una carga parada casi una semana sin
+     * que nadie lo note.
+     */
+    private const TARIFA_DIAS = 3;
+
+    /** Y cuánto hacia atrás se mira, por lo mismo que en las firmas. */
+    private const TARIFA_VENTANA = 30;
+
     private const EN_LA_CARRETERA = [
         'dispatched', 'en_route_to_pickup', 'at_pickup', 'in_transit', 'at_delivery',
     ];
@@ -116,7 +130,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0, 'signatures' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0, 'signatures' => 0, 'rates' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -130,6 +144,7 @@ final class SweepNotifications extends Command
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
                 $totales['leads'] += $this->prospectosSinAtender($tenantId, $dry);
                 $totales['signatures'] += $this->firmasQueVencieronSinFirmar($tenantId, $dry);
+                $totales['rates'] += $this->tarifasSinContestar($tenantId, $dry);
 
                 // REVALIDAR VA ANTES QUE AVISAR, y el orden no es un detalle:
                 // avisar primero llenaría la bandeja de recordatorios sobre
@@ -160,7 +175,7 @@ final class SweepNotifications extends Command
         $this->resumen = ['tenants' => count($empresas)] + $totales;
 
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · prospectos %d · firmas %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
+            '%d empresas · %s: documentos %d · prospectos %d · firmas %d · tarifas %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
@@ -169,6 +184,7 @@ final class SweepNotifications extends Command
             // ahí sin que la salida cambie.
             $totales['leads'],
             $totales['signatures'],
+            $totales['rates'],
             $totales['carriers'],
             $totales['invoices'],
             $totales['trials'],
@@ -434,6 +450,82 @@ final class SweepNotifications extends Command
                 actionUrl: '/loads/'.$carga->id.'/tracking',
                 subjectType: 'load',
                 subjectId: (string) $carga->id,
+            );
+        }
+
+        return $escritos;
+    }
+
+    /**
+     * Confirmaciones de tarifa que llevan días sin que el transportista conteste.
+     *
+     * El papel se manda y despacho da por hecho que llegará una respuesta. Si
+     * no llega ninguna, no pasa NADA: no hay estado que cambie, ni color que se
+     * encienda, ni fila que se mueva de sitio. La carga se queda quieta con una
+     * tarifa que nadie ha comprometido, y eso solo se descubre cuando alguien
+     * abre esa carga por otro motivo.
+     *
+     * Se miran solo las cargas que todavía esperan algo: una entregada o
+     * cancelada ya no necesita que nadie acepte su tarifa, y avisar de ella
+     * sería ruido sobre asuntos cerrados.
+     */
+    private function tarifasSinContestar(string $tenantId, bool $dry): int
+    {
+        $limite = CarbonImmutable::now()->subDays(self::TARIFA_DIAS);
+
+        $filas = DB::table('documents as d')
+            ->join('loads as l', 'l.id', '=', 'd.owner_id')
+            ->where('d.tenant_id', $tenantId)
+            ->where('d.owner_type', 'load')
+            ->where('d.document_type', 'rate_confirmation')
+            ->whereNull('d.deleted_at')
+            ->whereNull('l.deleted_at')
+            ->where('d.created_at', '<', $limite)
+            // El corte hacia atrás, por lo mismo que en las firmas: sin él, el
+            // día que esto empiece a correr suelta de golpe todo lo que lleva
+            // sin contestar desde el principio, y una avalancha se archiva
+            // entera sin leerla.
+            ->where('d.created_at', '>=', $limite->subDays(self::TARIFA_VENTANA))
+            ->whereNotIn('l.status', array_merge(LoadStatus::delivered(), [LoadStatus::Cancelled->value]))
+            // Sin NINGUNA decisión sobre este papel concreto. Una decisión
+            // sobre una emisión ANTERIOR no cuenta: si despacho reemitió con
+            // otra tarifa, lo que hace falta es la respuesta al papel nuevo.
+            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('rate_confirmation_acceptances as a')
+                ->whereColumn('a.document_id', 'd.id'))
+            ->orderBy('d.created_at')
+            ->limit(500)
+            ->get(['d.id', 'd.created_at', 'l.id as load_id', 'l.load_number', 'l.carrier_id']);
+
+        $escritos = 0;
+
+        foreach ($filas as $documento) {
+            if ($dry) {
+                $escritos++;
+
+                continue;
+            }
+
+            $transportista = $documento->carrier_id === null
+                ? null
+                : DB::table('carriers')->where('id', $documento->carrier_id)->value('legal_name');
+
+            // Una vez por PAPEL, no por carga: una reemisión es un documento
+            // nuevo y merece su propio aviso si tampoco la contestan. Y con la
+            // fecha de hoy fuera de la clave, no suena cada mañana.
+            $escritos += Notifier::toPermissionHolders(
+                tenantId: $tenantId,
+                permission: RateResponse::PERMISO,
+                eventKey: RateResponse::SIN_CONTESTAR,
+                dedupeKey: RateResponse::SIN_CONTESTAR.':'.$documento->id,
+                params: [
+                    'load' => (string) $documento->load_number,
+                    'carrier' => $transportista === null ? '—' : (string) $transportista,
+                    'date' => substr((string) $documento->created_at, 0, 10),
+                ],
+                actionUrl: '/loads/'.$documento->load_id.'/rate-confirmation',
+                subjectType: 'load',
+                subjectId: (string) $documento->load_id,
             );
         }
 

@@ -89,6 +89,26 @@
                 "title": "Signature expired unsigned: {document}",
                 "body": "The link sent to {signer} expired on {date} and was never signed. They can no longer open it — send a new request."
             }
+        },
+        "load": {
+            "rateconf": {
+                "accepted": {
+                    "title": "Rate accepted on load {load}",
+                    "body": "{carrier} accepted the rate on load {load}."
+                },
+                "rejected": {
+                    "title": "{carrier} rejected the rate on load {load}",
+                    "body": "Reason given: «{reason}» — the load stands still until the rate is agreed."
+                },
+                "changes_requested": {
+                    "title": "{carrier} asked for changes to the rate on load {load}",
+                    "body": "What they asked for: «{reason}» — reissue the confirmation or call them."
+                },
+                "unanswered": {
+                    "title": "No answer to the rate on load {load}",
+                    "body": "The confirmation sent to {carrier} on {date} has had no answer. Nothing has committed that rate, and the load is waiting."
+                }
+            }
         }
     },
     "eventNames": {
@@ -118,6 +138,14 @@
             "signed": "Documents signed",
             "declined": "Signatures declined",
             "expired": "Signature links that expired unsigned"
+        },
+        "load": {
+            "rateconf": {
+                "accepted": "Rates accepted",
+                "rejected": "Rates rejected",
+                "changes_requested": "Rate changes requested",
+                "unanswered": "Rate confirmations nobody answered"
+            }
         }
     },
     "flash": {

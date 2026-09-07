@@ -57,6 +57,10 @@ final class NotificationController
         'signature.signed',
         'signature.declined',
         'signature.expired',
+        'load.rateconf.accepted',
+        'load.rateconf.rejected',
+        'load.rateconf.changes_requested',
+        'load.rateconf.unanswered',
         'subscription.trial_ending',
         'subscription.trial_ended',
     ];

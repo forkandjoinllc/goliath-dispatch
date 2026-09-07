@@ -13,6 +13,7 @@ use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\RateConfirmation;
+use App\Support\Loads\RateResponse;
 use App\Support\Storage\DocumentStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -177,6 +178,15 @@ final class RateConfirmationController
             ip: $request->ip(),
             userAgent: $request->userAgent(),
         );
+
+        // La pantalla de arriba le pidió el motivo al transportista diciéndole
+        // que sin él «despacho tiene que llamar para averiguar qué pasó».
+        // Hasta este lote, escribirlo no ahorraba ninguna llamada: la decisión
+        // se guardaba y no se lo contaba nadie a despacho.
+        //
+        // Después de anotar la decisión, no antes: lo que no se puede perder
+        // es la decisión, no el aviso.
+        RateResponse::announce($carga, $datos['decision'], $datos['reason'] ?? null);
 
         return back()->with('success', __('loads.rateConfirmation.decisions.'.$datos['decision'].'Saved'));
     }

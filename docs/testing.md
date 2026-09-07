@@ -1693,3 +1693,51 @@ firmas. El cambio era equivalente (`"\\"` a `'\\'`), pero un cambio gratuito en
 el sitio donde se calcula una huella no se entrega. Se restauraron desde el
 tarball de origen. **El repositorio no está del todo limpio para pint**, y
 conviene saberlo antes de que un `pint` amplio lo mezcle con un lote.
+
+## Lote «la tarifa que nadie contesta»
+
+**Una aguja sin ancla final es un PREFIJO, y no ve lo que se le añada detrás.**
+El guardián de la clave de deduplicación buscaba
+
+    dedupeKey:RateResponse::SIN_CONTESTAR.':'.$documento->id
+
+y el sabotaje que la convertía en `...->id.':'.now()->toDateString()` **pasó en
+verde**: la aguja seguía estando, como prefijo. La coma final es lo que obliga a
+que el argumento TERMINE ahí. Y esto no lo puede atrapar ninguna prueba de
+recorrido: dos pasadas del barrido el mismo día generan la misma clave con fecha
+y sin ella, así que se deduplicarían igual — el fallo solo aparecería al día
+siguiente, en producción, con la campana repitiendo. **Toda aguja que fije el
+final de una expresión lleva su coma o su paréntesis de cierre.**
+
+**Derivar los sucesos del enum convierte «se me olvidó» en un fallo de prueba.**
+Los cuatro avisos de este lote salen de `RateConfirmation::DECISIONES` con
+`array_map(self::sucesoDe(...), ...)`, y el guardián recorre ese mismo enum
+exigiendo, para cada valor, su entrada en `EVENTS` y su título, cuerpo y nombre
+en los dos idiomas. Una quinta decisión futura no puede colarse sin rótulo. Un
+sabotaje que convertía `sucesos()` en una lista literal lo confirma.
+
+**Un `public static` que ya existe vale más que leer el fuente.**
+`NotificationController::events()` es público y devuelve la lista de sucesos.
+Estaba leyendo ese fichero con `Source::sinComentarios()` y buscando comillas
+dentro. Llamar al método es más corto, no necesita arrancar la aplicación, y
+sigue el símbolo aunque la constante cambie de forma. Antes de escribir una
+aguja sobre el fuente conviene mirar si hay un accesor.
+
+**Tercera vez con el espacio global de Pest.** `avisosDe()` chocó con la de
+`tests/Feature/Notifications/SweepTest.php`. Ya van tres lotes seguidos. La
+comprobación cuesta un `grep -rn "^function <nombre>(" tests/` antes de escribir
+la función, y se hace ahora por costumbre.
+
+**Una fijación puede chocar con la validación y medir otra cosa.** Para probar
+que el motivo se recorta a 160 usé `str_repeat(..., 100)` = 2200 caracteres. El
+campo valida `max:2000`, así que la petición ni pasaba: no había aviso, y la
+prueba medía «no hay aviso» creyendo medir el recorte. Una fijación que quiere
+provocar UN límite tiene que quedarse dentro de todos los demás.
+
+**Dos botones con la misma etiqueta, y clicar el primero no da error.** En el
+recorrido con navegador, «Accept the rate» es primero el botón que ELIGE la
+decisión y luego el que ENVÍA el formulario que aparece. Playwright clicó el
+primero, no se mandó nada, y no hubo ningún error — la prueba habría dado por
+bueno un flujo que no ocurrió. Se atrapó registrando `page.on('response')` y
+viendo que no salía ningún POST. **En un recorrido, comprobar el efecto, no el
+clic.**
