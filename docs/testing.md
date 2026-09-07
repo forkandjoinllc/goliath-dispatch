@@ -1741,3 +1741,45 @@ primero, no se mandó nada, y no hubo ningún error — la prueba habría dado p
 bueno un flujo que no ocurrió. Se atrapó registrando `page.on('response')` y
 viendo que no salía ningún POST. **En un recorrido, comprobar el efecto, no el
 clic.**
+
+## Lote «el permiso que no manda»
+
+**Una fijación puede aprender el defecto y defenderlo.** Dos pruebas de
+`LoadDocumentTest` descolgaban un documento firmando como DESPACHADOR y pasaban
+en verde — porque la acción autorizaba contra el permiso de SUBIR en vez del de
+borrar. Al conectar `document:delete`, cayeron. No eran pruebas rotas: eran
+pruebas que habían codificado la frontera equivocada y llevaban tiempo
+protegiéndola. **Cuando un arreglo de autorización rompe una prueba existente,
+la primera pregunta es cuál de las dos tenía razón**, no cómo hacerla pasar.
+
+**El guardián encontró más que el barrido a mano.** Yo había contado doce
+permisos sin comprobar grepeando a ojo; la prueba, que recorre `Permissions::keys()`
+contra todo `app/` y `routes/`, encontró **dieciséis**. Entre los cuatro que se
+me habían escapado estaban `tenant:integration:read` y `tenant:integration:update`
+— la mitad ya hecha de una función que llevo cuatro lotes ofreciendo. Cuando la
+comprobación es enumerable, escribirla es más fiable que hacerla a mano, incluso
+para el barrido que la origina.
+
+**Una lista de excusas necesita sus propios guardianes.** `Enforcement::SIN_APLICAR`
+podría pudrirse de tres formas, y hay una prueba para cada una: nombrar un
+permiso que ya SÍ se comprueba (la excusa dejó de ser cierta y la próxima persona
+la creerá), nombrar una clave que no existe en el catálogo, o llevar un motivo
+vacío. Un registro de excepciones sin mantenimiento es peor que no tenerlo.
+
+**No borrar lo que no se usa, hasta saber si es deliberado.** Doce claves no
+gobiernan nada y se quedan, anotadas. Ya me equivoqué recomendando quitar nueve
+diccionarios «muertos» que estaban ahí a propósito: comprobé el hecho y no
+comprobé la intención. Vocabulario reservado para algo aún no construido tiene
+valor; borrarlo obliga a reinventarlo con otro nombre.
+
+**El recorrido tiene que saltarse su propia interfaz.** Comprobar que el botón
+«Descolgar» ya no se pinta demuestra la cortesía, no la seguridad. La prueba que
+importa fue mandar el DELETE a mano desde la consola del navegador con la sesión
+del transportista: 403. Si solo se comprueba lo que la pantalla ofrece, se está
+verificando el escondite y no la cerradura.
+
+**Un filtro de recorrido escrito en un idioma miente en el otro.** Buscaba el
+botón con `/^(Quitar|Detach)$/` y en español la etiqueta es «Descolgar»: el
+recorrido informó de que el ADMIN tampoco veía el botón. Un minuto más y habría
+«arreglado» algo que funcionaba. En un recorrido bilingüe, las agujas salen del
+diccionario, no de la memoria.

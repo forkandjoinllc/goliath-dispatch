@@ -87,6 +87,12 @@ final class LoadDocumentController
             'can' => [
                 'upload' => $checker->can($actor, 'load:document:upload', null, $policy)->allowed,
                 'download' => $checker->can($actor, 'document:download', null, $policy)->allowed,
+                // El botón «Quitar» no llevaba NINGUNA comprobación en el
+                // cliente. Se le pintaba a todo el que veía la pantalla, y el
+                // servidor se lo dejaba hacer. Esto no sustituye a la
+                // comprobación del servidor —que es la que manda— sino que deja
+                // de ofrecer algo que va a ser rechazado.
+                'detach' => $checker->can($actor, 'document:delete', null, $policy)->allowed,
             ],
         ]);
     }
@@ -145,7 +151,19 @@ final class LoadDocumentController
     {
         $actor = $current->require();
         $policy = $current->policy();
-        $scope = $checker->authorize($actor, 'load:document:upload', null, $policy);
+
+        // `document:delete`, NO `load:document:upload`.
+        //
+        // Autorizaba contra el permiso de SUBIR, y eso hacía la frontera real
+        // cuatro roles más ancha que la dibujada: la matriz le da
+        // `document:delete` solo al admin, y `load:document:upload` lo tienen
+        // el admin, el despachador, el transportista y el conductor. Un
+        // conductor podía quitar del expediente un documento que había subido
+        // otra persona.
+        //
+        // Quien lea RoleMatrix para decidir a quién le da qué rol tiene que
+        // poder creérsela. Ver App\Authorization\Enforcement.
+        $scope = $checker->authorize($actor, 'document:delete', null, $policy);
 
         $carga = $this->findLoad($actor, $checker, $scope, $load);
 

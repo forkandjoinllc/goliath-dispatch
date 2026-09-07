@@ -184,6 +184,15 @@ it('un tipo que no es de carga no se cuelga aquí', function () {
 /* ── Descolgar ──────────────────────────────────────────────────────────── */
 
 it('descolgar borra el enlace y deja el documento en pie', function () {
+    // Sube el DESPACHADOR y descuelga el ADMIN, y la diferencia no es de
+    // adorno: subir es `load:document:upload` (despachador, transportista,
+    // conductor y admin) y descolgar es `document:delete`, que la matriz le da
+    // solo al admin.
+    //
+    // Esta prueba descolgaba con el despachador y pasaba, porque la acción
+    // autorizaba contra el permiso de SUBIR. Es decir: la fijación había
+    // aprendido el defecto y lo defendía. Al conectar `document:delete` cayó, y
+    // eso es exactamente lo que tenía que pasar.
     signIn($this->scenario, Role::Dispatcher);
 
     $this->post("/loads/{$this->scenario->load->id}/documents", [
@@ -193,6 +202,8 @@ it('descolgar borra el enlace y deja el documento en pie', function () {
 
     $enlace = app(TenantContext::class)->withoutTenant(fn () => DB::table('load_documents')
         ->where('load_id', $this->scenario->load->id)->whereNull('deleted_at')->first());
+
+    signIn($this->scenario, Role::Admin);
 
     $this->delete("/loads/{$this->scenario->load->id}/documents/{$enlace->id}", [
         'reason' => 'colgado de la carga equivocada',
@@ -219,7 +230,11 @@ it('descolgar borra el enlace y deja el documento en pie', function () {
 });
 
 it('descolgar un enlace de otra carga no encuentra nada', function () {
-    signIn($this->scenario, Role::Dispatcher);
+    // Con el ADMIN: es el único que puede descolgar, así que es el único con el
+    // que se puede comprobar que un enlace ajeno da 404 y no un 403. Con un rol
+    // sin permiso, la denegación llegaría antes que la búsqueda y esta prueba
+    // mediría el permiso en vez del ámbito.
+    signIn($this->scenario, Role::Admin);
 
     $this->delete("/loads/{$this->scenario->load->id}/documents/".Str::uuid())
         ->assertNotFound();

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\App;
 
 use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
+use App\Authorization\PermissionChecker;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -149,9 +150,20 @@ final class NotificationController
      * fila» y aplicaría los valores por defecto — justo los que esta persona
      * acaba de apagar.
      */
-    public function savePreferences(Request $request, CurrentActor $current): RedirectResponse
+    public function savePreferences(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
     {
         $actor = $current->require();
+
+        // `notification:preference:update` existía en el catálogo para esto
+        // exactamente, y esta acción no comprobaba NADA más allá de estar
+        // autenticado.
+        //
+        // Lo tienen los cinco roles, así que esto no le quita la casilla a
+        // nadie. Lo que cambia es que ahora una denegación explícita —un
+        // override de tipo Deny, que en PermissionChecker gana sobre todo,
+        // incluido un super administrador— sirve para algo. Antes, denegarlo
+        // era escribir una fila que nadie leía.
+        $checker->authorize($actor, 'notification:preference:update', null, $current->policy());
 
         $data = $request->validate([
             'preferences' => ['required', 'array'],

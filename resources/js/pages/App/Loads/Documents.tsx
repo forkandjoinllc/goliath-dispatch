@@ -33,7 +33,7 @@ interface Props {
   types: string[]
   podBlocking: string[]
   maxKb: number
-  can: { upload: boolean; download: boolean }
+  can: { upload: boolean; download: boolean; detach: boolean }
 }
 
 /**
@@ -113,7 +113,7 @@ export default function LoadDocumentsPage({
   )
 }
 
-function Fila({ loadId, papel, can }: { loadId: string; papel: Papel; can: { download: boolean } }) {
+function Fila({ loadId, papel, can }: { loadId: string; papel: Papel; can: { download: boolean; detach: boolean } }) {
   const { t } = useI18n()
   const [descolgando, setDescolgando] = useState(false)
   const form = useForm({ reason: '' })
@@ -162,13 +162,15 @@ function Fila({ loadId, papel, can }: { loadId: string; papel: Papel; can: { dow
           </a>
         ) : null}
 
-        <button
-          type="button"
-          onClick={() => setDescolgando((v) => !v)}
-          className="text-sm font-medium text-danger-700 hover:underline"
-        >
-          {t('loads.documents.detach')}
-        </button>
+        {can.detach ? (
+          <button
+            type="button"
+            onClick={() => setDescolgando((v) => !v)}
+            className="text-sm font-medium text-danger-700 hover:underline"
+          >
+            {t('loads.documents.detach')}
+          </button>
+        ) : null}
       </div>
 
       {descolgando ? (
