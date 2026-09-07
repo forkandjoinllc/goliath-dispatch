@@ -54,6 +54,9 @@ final class NotificationController
         'lead.received',
         'lead.unattended',
         'lead.assigned',
+        'signature.signed',
+        'signature.declined',
+        'signature.expired',
         'subscription.trial_ending',
         'subscription.trial_ended',
     ];

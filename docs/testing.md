@@ -1646,3 +1646,50 @@ consentimiento son obligatorias, y al superar el límite de seis envíos por hor
 la página **vuelve a pintar el formulario sin decir por qué**. Las dos primeras
 son guardias haciendo su trabajo. La tercera es una pantalla que se calla, y
 está anotada en `docs/lead-response.md` sin arreglar.
+
+## Lote «al remitente ya le avisaron»
+
+**Una prueba puede atar la FRASE al código, no solo al código.** El defecto no
+era una función que faltara: era una pantalla que afirmaba algo falso. Así que
+el guardián principal no comprueba «existe la llamada», sino: *si el diccionario
+sigue afirmando que al remitente le avisaron, entonces `decline()` tiene que
+avisar*. Si mañana alguien quita el aviso, la prueba obliga a quitar también la
+frase — que es la otra forma correcta de arreglarlo. Un guardián que solo exige
+la llamada convierte una decisión de producto en una regla de código.
+
+**Fijar la fecha «hace N días» hace pruebas que fallan ciertos días.** Una
+prueba mía de dos lotes atrás afirmaba que una tarea semanal (`0 4 * * 0`) que
+corrió «hace 2 días» no va con retraso. Hace 2 días solo cae después del último
+domingo a las 04:00 si hoy es de miércoles a domingo: **los lunes y los martes
+fallaba**, y era la prueba la que estaba mal, no el código. Falló hoy, lunes.
+Dos días de cada siete es la peor frecuencia posible — pasa lo bastante para
+parecer sana y falla lo bastante para que se le eche la culpa a otra cosa. La
+fijación se ancla ahora a la última ocurrencia real del cron.
+
+**El límite de peticiones es compartido, y hace fallar pruebas de OTROS
+ficheros.** Las rutas públicas de firma van con `throttle:20,1`, por IP, y todas
+las pruebas salen de 127.0.0.1. Mis ocho envíos nuevos se comían el presupuesto
+que ya usaba `SignatureTest.php`, y caían al azar pruebas de `AssignmentTest` y
+`DemoSeedTest` — que no tocan firmas. Al correr esos ficheros juntos pasaba
+todo; solo aparecía en la suite entera, y no siempre. Exactamente lo que se
+etiqueta de «flaky» y se ignora. El remedio ya estaba escrito en `Pest.php`:
+variar `REMOTE_ADDR` con `withServerVariables` (no como cabecera — como cabecera
+el limitador sigue viendo 127.0.0.1).
+
+**Dos ejecuciones de la suite, no una.** La primera pasada limpia después de
+arreglar algo no prueba que la intermitencia se fuera. La segunda sí dice algo.
+
+**Una comprobación posicional puede compararse consigo misma.** Para exigir que
+el aviso vaya FUERA de la transacción escribí `strrpos($cuerpo, '));')` — que
+encuentra el paréntesis final del propio aviso, no el de la transacción. La
+prueba comparaba una posición con otra que venía después por construcción. Se
+arregló acotando la REGIÓN de la transacción (de `DB::transaction(` al `catch`)
+y exigiendo que `Outcome::` no aparezca dentro.
+
+**`pint` sobre una carpeta toca ficheros que no son tuyos.** Al pasarlo por
+`app/Support/Signatures` reformateó cuatro ficheros que este lote no tocaba,
+uno de ellos `Seal.php` — el canonicalizador del sello de integridad de las
+firmas. El cambio era equivalente (`"\\"` a `'\\'`), pero un cambio gratuito en
+el sitio donde se calcula una huella no se entrega. Se restauraron desde el
+tarball de origen. **El repositorio no está del todo limpio para pint**, y
+conviene saberlo antes de que un `pint` amplio lo mezcle con un lote.

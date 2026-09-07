@@ -75,6 +75,20 @@
                 "title": "Al cliente no le llegó el rastreo: {number}",
                 "body": "La carga {number} salió y no se le mandó al cliente el enlace de rastreo. El sitio público le promete que lo recibirá al despacharse."
             }
+        },
+        "signature": {
+            "signed": {
+                "title": "Firmado: {document}",
+                "body": "{signer} firmó {document}."
+            },
+            "declined": {
+                "title": "{signer} rechazó firmar {document}",
+                "body": "Motivo que dio: «{reason}» — la carga que depende de este documento no se mueve hasta resolverlo."
+            },
+            "expired": {
+                "title": "Firma vencida sin firmar: {document}",
+                "body": "El enlace que se le mandó a {signer} venció el {date} y nunca se firmó. Ya no puede abrirlo — hay que mandar una solicitud nueva."
+            }
         }
     },
     "eventNames": {
@@ -99,6 +113,11 @@
         },
         "tracking": {
             "link_not_sent": "Enlaces de rastreo que no salieron"
+        },
+        "signature": {
+            "signed": "Documentos firmados",
+            "declined": "Firmas rechazadas",
+            "expired": "Enlaces de firma que vencieron sin firmar"
         }
     },
     "flash": {

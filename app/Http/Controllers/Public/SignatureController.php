@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Public;
 use App\Support\InertiaPage;
 use App\Support\Signatures\Ceremony;
 use App\Support\Signatures\Mailer;
+use App\Support\Signatures\Outcome;
 use App\Support\Signatures\Signing;
 use App\Support\Signatures\SigningLinks;
 use App\Support\Signatures\TemplateBody;
@@ -198,6 +199,15 @@ final class SignatureController
             );
         }
 
+        // Y AHORA la casa. `sendSignedCopy` va al FIRMANTE — le manda su copia
+        // a él, no a quien pidió la firma. Hasta este lote, quien la pidió no
+        // se enteraba de nada: tenía que abrir la lista por su cuenta.
+        //
+        // Fuera de la transacción que selló la firma, a propósito: una firma
+        // hay que volver a pedírsela a una persona, y no se pierde por un
+        // aviso.
+        Outcome::signed($solicitud, $this->tituloDe($plantilla, (string) $solicitud->locale));
+
         return back()->with('success', __('signature.ceremony.successTitle'));
     }
 
@@ -237,7 +247,27 @@ final class SignatureController
             detail: ['reason' => $datos['reason']],
         );
 
+        // La pantalla le dice a quien acaba de rechazar que «al remitente ya le
+        // avisaron». Hasta este lote NO era verdad: nadie avisaba a nadie. Una
+        // frase que afirma lo que otra persona ya sabe tiene que ser cierta o
+        // no estar.
+        $plantilla = $this->plantilla($solicitud);
+
+        Outcome::declined(
+            $solicitud,
+            $datos['reason'],
+            $plantilla === null ? null : $this->tituloDe($plantilla, (string) $solicitud->locale),
+        );
+
         return back()->with('success', __('signature.ceremony.declinedTitle'));
+    }
+
+    /** El título de la plantilla en el idioma en que se mandó la solicitud. */
+    private function tituloDe(object $plantilla, string $locale): ?string
+    {
+        $titulo = $locale === 'es' ? $plantilla->title_es : $plantilla->title_en;
+
+        return $titulo === null ? null : (string) $titulo;
     }
 
     private function plantilla(object $solicitud): ?object

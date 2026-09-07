@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Support\Platform\ScheduledRuns;
 use App\Support\Platform\ScheduledTasks;
 use App\Support\TenantContext;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -96,10 +98,28 @@ it('una tarea diaria que corrió esta mañana está bien', function () {
 it('una tarea semanal no sale con retraso al día siguiente', function () {
     // El plazo sale del cron de CADA tarea. Con un plazo fijo, la semanal
     // saldría con retraso cada martes.
+    //
+    // OJO CON LA FIJACIÓN. Esto decía «hace 2 días», y hace 2 días solo cae
+    // después del último domingo a las 04:00 si hoy es de miércoles a domingo.
+    // Los lunes y los martes, la ejecución de hace dos días es ANTERIOR al
+    // último domingo — o sea que la semanal se saltó de verdad, `late` era la
+    // respuesta correcta, y la que estaba mal era la prueba. Fallaba dos días
+    // de cada siete y pasaba los otros cinco, que es la peor forma de estar
+    // mal: parece un fallo de otra cosa.
+    //
+    // Ahora la ejecución se ancla al ÚLTIMO domingo a las 04:00 que ya pasó,
+    // más un minuto. Eso es «corrió cuando le tocaba» cualquier día de la
+    // semana.
+    $ultimoDomingo = CarbonImmutable::now()->startOfWeek(CarbonInterface::SUNDAY)->setTime(4, 0);
+
+    if ($ultimoDomingo->isFuture()) {
+        $ultimoDomingo = $ultimoDomingo->subWeek();
+    }
+
     ejecucionDeBarrido(
         'retention:sweep', 'succeeded',
-        now()->subDays(2)->toDateTimeString(),
-        now()->subDays(2)->toDateTimeString(),
+        $ultimoDomingo->addMinute()->toDateTimeString(),
+        $ultimoDomingo->addMinutes(2)->toDateTimeString(),
     );
 
     expect(resumenDeBarrido('retention:sweep', '0 4 * * 0')['state'])->toBe('ok');

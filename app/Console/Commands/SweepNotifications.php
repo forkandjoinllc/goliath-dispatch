@@ -11,6 +11,8 @@ use App\Support\Leads\Arrival;
 use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
+use App\Support\Signatures\Outcome;
+use App\Support\Signatures\State;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use App\Support\Tracking\TrackingLinks;
@@ -60,6 +62,15 @@ final class SweepNotifications extends Command
      *
      * @var list<string>
      */
+    /**
+     * Cuánto hacia atrás mira el aviso de firma vencida.
+     *
+     * Treinta días: una solicitud que venció hace dos meses y que nadie ha
+     * vuelto a mandar no es una novedad, es una decisión. Avisar de ella el día
+     * que este barrido empiece a correr solo produciría una avalancha.
+     */
+    private const VENCIDAS_DIAS = 30;
+
     private const EN_LA_CARRETERA = [
         'dispatched', 'en_route_to_pickup', 'at_pickup', 'in_transit', 'at_delivery',
     ];
@@ -105,7 +116,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0, 'signatures' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -118,6 +129,7 @@ final class SweepNotifications extends Command
 
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
                 $totales['leads'] += $this->prospectosSinAtender($tenantId, $dry);
+                $totales['signatures'] += $this->firmasQueVencieronSinFirmar($tenantId, $dry);
 
                 // REVALIDAR VA ANTES QUE AVISAR, y el orden no es un detalle:
                 // avisar primero llenaría la bandeja de recordatorios sobre
@@ -148,7 +160,7 @@ final class SweepNotifications extends Command
         $this->resumen = ['tenants' => count($empresas)] + $totales;
 
         $this->line(sprintf(
-            '%d empresas · %s: documentos %d · prospectos %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
+            '%d empresas · %s: documentos %d · prospectos %d · firmas %d · transportistas %d · facturas %d · pruebas %d · revalidados %d · enlaces %d%s',
             count($empresas),
             $dry ? 'asuntos encontrados' : 'avisos escritos',
             $totales['documents'],
@@ -156,6 +168,7 @@ final class SweepNotifications extends Command
             // suma y no se imprime es un barrido que puede dejar de pasar por
             // ahí sin que la salida cambie.
             $totales['leads'],
+            $totales['signatures'],
             $totales['carriers'],
             $totales['invoices'],
             $totales['trials'],
@@ -421,6 +434,73 @@ final class SweepNotifications extends Command
                 actionUrl: '/loads/'.$carga->id.'/tracking',
                 subjectType: 'load',
                 subjectId: (string) $carga->id,
+            );
+        }
+
+        return $escritos;
+    }
+
+    /**
+     * Solicitudes de firma que vencieron sin que nadie las firmara.
+     *
+     * Al firmante se le cerró la puerta —`SigningLinks` la cierra por fecha— y
+     * a la casa no se lo dijo nadie. Nada escribe `expired` en las filas, así
+     * que la lista de solicitudes ni siquiera cambiaba de aspecto: seguía
+     * diciendo «Pendiente», que se lee como «estamos esperando». No se espera
+     * nada; hay que volver a mandarla.
+     *
+     * Y esto no es papeleo: mientras falte la firma, la carga no se mueve.
+     *
+     * El corte inferior no es un detalle. Sin él, el día que este barrido
+     * empiece a correr avisaría de golpe de todas las solicitudes vencidas
+     * desde el principio de los tiempos — una avalancha que se archiva entera
+     * sin leerla, que es lo mismo que no avisar.
+     */
+    private function firmasQueVencieronSinFirmar(string $tenantId, bool $dry): int
+    {
+        $ahora = CarbonImmutable::now();
+
+        $filas = DB::table('signature_requests as r')
+            ->leftJoin('signature_templates as t', 't.id', '=', 'r.template_id')
+            ->where('r.tenant_id', $tenantId)
+            ->whereNull('r.deleted_at')
+            ->whereIn('r.status', State::ABIERTOS)
+            ->whereNotNull('r.expires_at')
+            ->where('r.expires_at', '<', $ahora)
+            ->where('r.expires_at', '>=', $ahora->subDays(self::VENCIDAS_DIAS))
+            ->orderBy('r.expires_at')
+            ->limit(500)
+            ->get(['r.id', 'r.signer_email', 'r.signer_legal_name', 'r.expires_at', 'r.locale',
+                't.title_en', 't.title_es']);
+
+        $escritos = 0;
+
+        foreach ($filas as $solicitud) {
+            if ($dry) {
+                $escritos++;
+
+                continue;
+            }
+
+            $firmante = trim((string) ($solicitud->signer_legal_name ?? ''));
+            $titulo = (string) $solicitud->locale === 'es' ? $solicitud->title_es : $solicitud->title_en;
+
+            // Una vez por solicitud. Con la fecha de hoy dentro volvería a
+            // sonar cada mañana mientras siguiera vencida —que es siempre, sin
+            // nada que la cierre— y una campana que repite deja de mirarse.
+            $escritos += Notifier::toPermissionHolders(
+                tenantId: $tenantId,
+                permission: Outcome::PERMISO,
+                eventKey: 'signature.expired',
+                dedupeKey: "signature.expired:{$solicitud->id}",
+                params: [
+                    'signer' => $firmante !== '' ? $firmante : (string) $solicitud->signer_email,
+                    'document' => $titulo === null || trim((string) $titulo) === '' ? '—' : trim((string) $titulo),
+                    'date' => substr((string) $solicitud->expires_at, 0, 10),
+                ],
+                actionUrl: '/signatures/'.$solicitud->id,
+                subjectType: 'signature_request',
+                subjectId: (string) $solicitud->id,
             );
         }
 

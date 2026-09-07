@@ -75,6 +75,20 @@
                 "title": "The customer never got tracking: {number}",
                 "body": "Load {number} was dispatched and the customer was not sent the tracking link. The public site promises they receive it when the load is dispatched."
             }
+        },
+        "signature": {
+            "signed": {
+                "title": "Signed: {document}",
+                "body": "{signer} signed {document}."
+            },
+            "declined": {
+                "title": "{signer} declined to sign {document}",
+                "body": "Reason given: «{reason}» — the load this document gates cannot move until it is resolved."
+            },
+            "expired": {
+                "title": "Signature expired unsigned: {document}",
+                "body": "The link sent to {signer} expired on {date} and was never signed. They can no longer open it — send a new request."
+            }
         }
     },
     "eventNames": {
@@ -99,6 +113,11 @@
         },
         "tracking": {
             "link_not_sent": "Tracking links that did not go out"
+        },
+        "signature": {
+            "signed": "Documents signed",
+            "declined": "Signatures declined",
+            "expired": "Signature links that expired unsigned"
         }
     },
     "flash": {

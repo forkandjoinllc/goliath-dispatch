@@ -12,6 +12,7 @@ use App\Support\InertiaPage;
 use App\Support\Signatures\Ceremony;
 use App\Support\Signatures\Mailer;
 use App\Support\Signatures\SigningLinks;
+use App\Support\Signatures\State;
 use App\Support\Signatures\TemplateBody;
 use App\Support\Signatures\Templates;
 use App\Support\Signatures\Verifier;
@@ -71,7 +72,10 @@ final class SignatureController
         $filas = $this->scoped($actor, $scope)
             ->leftJoin('signature_templates as t', 't.id', '=', 'r.template_id')
             ->leftJoin('carriers as c', 'c.id', '=', 'r.carrier_id')
-            ->when($estado !== '', fn (Builder $q) => $q->where('r.status', $estado))
+            // Por el estado REAL y no por la columna: nada pone `expired` en
+            // las filas, así que `where('r.status','expired')` no encontraba
+            // nada nunca — con el filtro «Vencida» pulsable en la barra.
+            ->when($estado !== '', fn (Builder $q) => State::filtrar($q, 'r', $estado))
             ->orderByDesc('r.requested_at')
             ->limit(200)
             ->get([
@@ -597,7 +601,11 @@ final class SignatureController
 
         return [
             'id' => (string) $r->id,
-            'status' => (string) $r->status,
+            // El estado con el vencimiento ya aplicado. Antes se pintaba la
+            // columna tal cual, y una solicitud que venció ayer salía como
+            // «Pendiente» — que se lee como «estamos esperando a que firme»
+            // cuando al firmante ya se le cerró la puerta.
+            'status' => State::of($r),
             'title' => $locale === 'es' ? (string) $r->title_es : (string) $r->title_en,
             'templateKey' => (string) $r->template_key,
             'templateVersion' => (int) $r->template_version,

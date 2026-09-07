@@ -109,13 +109,12 @@ final class SigningLinks
         // nada corre a medianoche a poner `expired` en las filas, y una
         // solicitud que venció ayer tiene que dejar de abrirse hoy aunque su
         // columna `status` siga diciendo `pending`.
-        if ($fila->expires_at !== null
-            && CarbonImmutable::parse((string) $fila->expires_at)->isPast()
-            && in_array((string) $fila->status, ['pending', 'viewed'], true)) {
-            return ['state' => 'expired', 'request' => $fila];
-        }
-
-        $estado = (string) $fila->status;
+        //
+        // La regla vive en `State` y no aquí: la lista de la casa tiene que
+        // aplicar EXACTAMENTE la misma, y mientras estuvo escrita solo en este
+        // punto, la lista pintaba «Pendiente» sobre puertas que este método ya
+        // había cerrado.
+        $estado = State::of($fila);
 
         return [
             'state' => match ($estado) {
