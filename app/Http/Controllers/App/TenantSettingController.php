@@ -9,14 +9,15 @@ use App\Authorization\PermissionChecker;
 use App\Enums\AuditAction;
 use App\Enums\CommissionBasis;
 use App\Support\Audit;
-use App\Support\Finance\FeeBase;
-use App\Support\Geo\Regions;
 use App\Support\Branding\Brand;
 use App\Support\Branding\Templates;
-use App\Support\Storage\DocumentStore;
-use App\Support\TenantContext;
+use App\Support\Finance\FeeBase;
+use App\Support\Fmcsa\RevalidationState;
+use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Storage\DocumentStore;
 use App\Support\Tenancy\TenantPolicy;
+use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,6 +71,11 @@ final class TenantSettingController
         return Inertia::render('App/Settings/Index', [
             'settings' => $this->present($fila),
             'subscription' => $this->subscription((string) $actor->tenantId),
+            // El campo «volver a comprobar FMCSA cada N días» aceptaba un
+            // número y no decía si ese número gobierna algo. Sin proveedor
+            // conectado no se revalida nadie, y quien escribe el 7 se queda
+            // creyendo que sí. Ver App\Support\Fmcsa\RevalidationState.
+            'revalidation' => RevalidationState::for((string) $actor->tenantId),
             'readOnly' => [
                 'loadNextSequence' => (int) ($fila->load_number_next_sequence ?? 0),
                 'invoiceNextSequence' => (int) ($fila->invoice_number_next_sequence ?? 0),
@@ -368,5 +374,4 @@ final class TenantSettingController
             'cancelAtPeriodEnd' => (bool) $fila->cancel_at_period_end,
         ];
     }
-
 }

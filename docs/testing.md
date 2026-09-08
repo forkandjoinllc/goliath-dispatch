@@ -1830,3 +1830,41 @@ flecha cambia de índice en cada pulsación. Pulsando siempre la última se puls
 la de otra parada, no pasa nada visible, y el recorrido informa de que la
 función no va. Dos intentos perdidos por adivinar el DOM en vez de abrir el
 componente y leerlo: **cuando un selector falla dos veces, se lee el fuente.**
+
+## Lote «los siete días que promete la web»
+
+**Un guardián de hace lotes evitó que el arreglo se llevara una verdad por
+delante.** `CarrierPromisesTest` fija las frases «re-verified automatically» y
+«revalida automáticamente» con el comentario «si alguien las reescribe, esta
+prueba lo dice y hay que revisar si lo que se cumple sigue siendo lo que se
+promete». Al quitar la cifra falsa quité también «automáticamente», que **sí**
+es cierto, y la prueba lo cazó en la suite. Arreglar una mentira puede borrar
+una verdad que estaba en la misma frase: el guardián existe justamente para
+obligar a mirar cuál es cuál.
+
+**Dos guardianes sobre la misma frase, tirando en direcciones distintas, es
+correcto.** El viejo exige que diga «automáticamente»; el nuevo prohíbe que diga
+un número de días. Ninguno de los dos solo es suficiente, y juntos describen la
+promesa exacta que el sistema puede cumplir.
+
+**El texto sin cifra tiene que decir de quién depende.** Quitar «cada 7 días» y
+dejar «se revalida periódicamente» habría sido cierto y peor: quien lo lee no
+sabe a quién preguntarle cada cuánto. Hay una comprobación de que las dos frases
+nombran a la casa de despacho. Ser vago no es lo mismo que ser honesto.
+
+**Un token de color inventado se pinta como nada.** Puse `border-warning-400` y
+el guardián de tokens lo cazó: los tonos que existen son 50, 100, 300, 500, 700
+y 800. Sin esa prueba, el aviso se habría visto sin borde y nadie lo habría
+notado hasta verlo en producción.
+
+**Una prueba puede medir la caché en vez del ajuste.** `TenantPolicy` cachea por
+petición y `TenantSettingController` la invalida al guardar. Al cambiar el ajuste
+escribiendo en la tabla a pelo, mi prueba leía el valor viejo y pasaba en verde
+creyendo medir el nuevo. Cuando una prueba se salta el controlador, se salta
+también lo que el controlador hace además de escribir.
+
+**Las agujas del sabotaje caducan con el texto.** Reescribí la copia dos veces y
+las tres primeras agujas del arnés dejaron de encontrar nada — el arnés lo dijo
+(«la aguja del SABOTAJE no está») en vez de dar verde. Un arnés que distingue
+«no pude sabotear» de «saboteé y siguió pasando» es la diferencia entre
+enterarse y no.

@@ -45,7 +45,10 @@
         "dispatcherAssignHint": "Apagado por defecto. Con esto apagado, solo un administrador asigna recursos.",
         "oversizeAdmin": "Las cargas sobredimensionadas necesitan validación de un administrador",
         "oversizeAdminHint": "Con esto encendido, una carga sobredimensionada no se puede despachar hasta que un administrador valide sus medidas en la pantalla de permisos — además de que los papeles estén aprobados. El despachador puede evaluarla; validarla, no.",
-        "publicTracking": "Los enlaces públicos de rastreo están activos"
+        "publicTracking": "Los enlaces públicos de rastreo están activos",
+        "fmcsaNotConnected": "No hay proveedor de FMCSA conectado, así que no se está revalidando a nadie — este número todavía no gobierna nada. {count} transportista(s) llevan más del plazo. Hay que configurar las credenciales de FMCSA en el servidor.",
+        "fmcsaLastRun": "Última revalidación: {date}.",
+        "fmcsaNeverRun": "Hay proveedor conectado, pero todavía no se ha revalidado a nadie. Conviene comprobar que el planificador esté corriendo."
     },
     "contact": {
         "title": "Datos públicos de contacto",

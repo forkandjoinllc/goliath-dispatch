@@ -260,7 +260,7 @@
     },
     "onboardingCompliance": {
       "title": "Registro y cumplimiento de transportistas",
-      "body": "Un proceso de admisión estructurado — certificado de autoridad, certificado de seguro (COI), formulario W-9 y una notificación de cesión cuando aplica factoraje — con la autoridad de la FMCSA verificada al registrarse y revalidada automáticamente cada 7 días.",
+      "body": "Un proceso de admisión estructurado — certificado de autoridad, certificado de seguro (COI), formulario W-9 y una notificación de cesión cuando aplica factoraje — con la autoridad de la FMCSA verificada al registrarse y revalidada autom\u00e1ticamente con la periodicidad que fije la casa de despacho.",
       "bullet1": "Recopilación guiada de documentos con seguimiento de vencimientos",
       "bullet2": "Verificación continua de la autoridad de la FMCSA, no una sola vez",
       "bullet3": "Una razón por escrito y un registro de auditoría para cada excepción"
@@ -369,7 +369,7 @@
     },
     "verification": {
       "title": "Cómo funciona la verificación",
-      "body": "Su autoridad ante la FMCSA se verifica con el DOT/MC que proporcione y se revalida automáticamente cada 7 días mientras esté activo, no solo una vez al registrarse. El VIN de su equipo se coteja con su certificado de seguro antes de poder asignarlo a una carga, y cada camión y remolque necesita al menos cuatro fotos antes de activarse."
+      "body": "Su autoridad ante la FMCSA se verifica con el DOT/MC que proporcione y se revalida automáticamente mientras esté activo, no solo una vez al registrarse — la casa de despacho con la que trabaje decide cada cuánto. El VIN de su equipo se coteja con su certificado de seguro antes de poder asignarlo a una carga, y cada camión y remolque necesita al menos cuatro fotos antes de activarse."
     },
     "settlements": {
       "title": "Cómo funcionan las liquidaciones",

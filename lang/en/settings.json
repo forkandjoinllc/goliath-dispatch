@@ -45,7 +45,10 @@
         "dispatcherAssignHint": "Off by default. With it off, only an administrator assigns resources.",
         "oversizeAdmin": "Oversize loads need administrator validation",
         "oversizeAdminHint": "With this on, an oversize load cannot be dispatched until an administrator validates its dimensions on the permits screen — on top of the paperwork being approved. A dispatcher can evaluate it; validating it, no.",
-        "publicTracking": "Public tracking links are enabled"
+        "publicTracking": "Public tracking links are enabled",
+        "fmcsaNotConnected": "No FMCSA provider is connected, so nothing is being re-verified — this number is not in effect yet. {count} carrier(s) are past the interval. Connect FMCSA credentials on the server to start.",
+        "fmcsaLastRun": "Last re-verification: {date}.",
+        "fmcsaNeverRun": "A provider is connected, but nothing has been re-verified yet. Check that the scheduler is running."
     },
     "contact": {
         "title": "Public contact details",

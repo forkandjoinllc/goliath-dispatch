@@ -44,6 +44,19 @@ interface Subscription {
 interface Props {
   settings: Settings
   subscription: Subscription | null
+  /**
+   * Si la revalidación de FMCSA está pasando de verdad.
+   *
+   * El campo de al lado acepta un número de días y, sin proveedor conectado,
+   * ese número no gobierna nada. La pantalla donde se toma la decisión tiene
+   * que decir si la decisión tiene efecto.
+   */
+  revalidation: {
+    days: number
+    providerLive: boolean
+    lastVerifiedAt: string | null
+    dueCount: number
+  }
   readOnly: {
     loadNextSequence: number
     invoiceNextSequence: number
@@ -70,7 +83,7 @@ interface Props {
   can: { update: boolean }
 }
 
-export default function SettingsIndex({ settings, subscription = null, readOnly, feeBases, commissionBases, branding, templates, can }: Props) {
+export default function SettingsIndex({ settings, subscription = null, revalidation, readOnly, feeBases, commissionBases, branding, templates, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
 
@@ -191,15 +204,31 @@ export default function SettingsIndex({ settings, subscription = null, readOnly,
             min={1}
             max={365}
           />
-          <Numero
-            label={t('settings.ops.fmcsaDays')}
-            value={form.data.fmcsa_reverification_days}
-            onChange={(v) => form.setData('fmcsa_reverification_days', v)}
-            error={form.errors.fmcsa_reverification_days}
-            disabled={bloqueado}
-            min={1}
-            max={365}
-          />
+          <div className="flex flex-col gap-1">
+            <Numero
+              label={t('settings.ops.fmcsaDays')}
+              value={form.data.fmcsa_reverification_days}
+              onChange={(v) => form.setData('fmcsa_reverification_days', v)}
+              error={form.errors.fmcsa_reverification_days}
+              disabled={bloqueado}
+              min={1}
+              max={365}
+            />
+
+            {/* Las DOS cosas por separado, y no un semáforo: que haya proveedor
+                conectado no garantiza que el planificador esté corriendo. */}
+            {revalidation.providerLive ? (
+              <p className="text-xs text-steel-600">
+                {revalidation.lastVerifiedAt === null
+                  ? t('settings.ops.fmcsaNeverRun')
+                  : t('settings.ops.fmcsaLastRun', { date: revalidation.lastVerifiedAt })}
+              </p>
+            ) : (
+              <p className="rounded border-l-4 border-warning-300 bg-warning-50 px-2 py-1.5 text-xs text-carbon">
+                {t('settings.ops.fmcsaNotConnected', { count: String(revalidation.dueCount) })}
+              </p>
+            )}
+          </div>
           <Numero
             label={t('settings.ops.trackingTtl')}
             value={form.data.public_tracking_token_ttl_hours}

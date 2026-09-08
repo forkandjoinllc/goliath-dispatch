@@ -260,7 +260,7 @@
     },
     "onboardingCompliance": {
       "title": "Carrier onboarding & compliance",
-      "body": "A structured intake — Certificate of Authority, Certificate of Insurance, W-9, and a Notice of Assignment when factoring applies — with FMCSA authority checked at onboarding and re-verified automatically every 7 days.",
+      "body": "A structured intake — Certificate of Authority, Certificate of Insurance, W-9, and a Notice of Assignment when factoring applies — with FMCSA authority checked at onboarding and re-verified automatically on the recurring schedule the dispatch company sets.",
       "bullet1": "Guided document collection with expiration tracking",
       "bullet2": "FMCSA authority verification, not a one-time check",
       "bullet3": "A written reason and an audit trail for every override"
@@ -369,7 +369,7 @@
     },
     "verification": {
       "title": "How verification works",
-      "body": "Your FMCSA authority is checked against the DOT/MC you provide and re-verified automatically every 7 days for as long as you're active, not just once at signup. Your equipment's VIN is matched against your Certificate of Insurance before it can be assigned to a load, and every truck and trailer needs at least four photos before it goes active."
+      "body": "Your FMCSA authority is checked against the DOT/MC you provide and re-verified automatically for as long as you're active, not just once at signup \u2014 the dispatch company you work with sets how often. Your equipment's VIN is matched against your Certificate of Insurance before it can be assigned to a load, and every truck and trailer needs at least four photos before it goes active."
     },
     "settlements": {
       "title": "How settlements work",
