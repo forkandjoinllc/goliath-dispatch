@@ -1868,3 +1868,45 @@ las tres primeras agujas del arnés dejaron de encontrar nada — el arnés lo d
 («la aguja del SABOTAJE no está») en vez de dar verde. Un arnés que distingue
 «no pude sabotear» de «saboteé y siguió pasando» es la diferencia entre
 enterarse y no.
+
+## Lote «la hora que el cliente lee mal»
+
+**Arreglar una superficie y dejar la de al lado es peor que no tocar ninguna.**
+Al convertir la lista de paradas, la cronología de la MISMA página seguía en
+UTC: decía «llegó a las 09:04» arriba y «13:04» abajo, del mismo suceso. Antes
+era una hora mala; después eran dos que se contradicen, y quien lee no sabe cuál
+creerse. Lo vio el recorrido con navegador, no la suite — porque cada prueba
+miraba su propia superficie. Hay ahora una que exige que las dos digan lo mismo
+**en la misma respuesta**.
+
+**Un script que muere después de `replace()` y antes de `write()` no cambia
+nada, y el `php -l` siguiente pasa igual.** Mi primer intento de convertir la
+cronología reventó al añadir el import, después de haber calculado el reemplazo
+y antes de escribir el fichero. El lint pasó —el fichero estaba intacto— y el
+segundo script solo añadió el import sobre el cuerpo viejo. La prueba lo cazó,
+pero la lección es de método: **después de editar, comprobar que lo editado está
+ahí**, no que el fichero compila.
+
+**Tercera aguja demasiado ancha, y esta vez a nivel de sentencia.** El guardián
+de «la pantalla manda el huso» buscaba `'zone' => StopClock::label(` en el
+fichero. Al añadir un segundo `StopClock::label(` para la última posición, el
+sabotaje que se lo quitaba a las PARADAS pasó en verde. Ya van tres formas del
+mismo error: por fichero cuando había que mirar por método, por método cuando
+había que mirar por sentencia, y por fichero cuando el fichero ganó una segunda
+llamada legítima. La aguja se ancla al argumento que la distingue —aquí
+`$s->timezone`.
+
+**Una aguja escrita con espacios no casa tras `compacta()`.** Buscaba
+`.' '.$s['zone']` y el compactado deja `.''.$s['zone']`. Es exactamente el fallo
+que dio origen a `Tests\Support\Source`, repetido por escribir la aguja mirando
+el fichero en vez de mirando lo que la función devuelve.
+
+**Cuarta vez con `expect()->toContain($aguja, $mensaje)`.** Toma todos los
+argumentos como agujas. Ya está anotado tres veces en este fichero y volvió a
+morder: cuando hace falta mensaje, `test()->assertStringContainsString()`.
+
+**Una suite que tarda seis veces más de lo normal puede no ser culpa del
+código.** La primera pasada completa se quedó nueve minutos sin terminar y
+sospeché de mi propio `timezone_identifiers_list()`. No era: aislando por
+carpetas todo iba a su velocidad, y la siguiente pasada completa hizo 110 s.
+Había reiniciado mysql a mitad de la anterior. **Antes de optimizar, aislar.**

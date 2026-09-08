@@ -20,6 +20,8 @@ interface Stop {
   windowStart: string | null
   windowEnd: string | null
   actualArrivalAt: string | null
+  /** La abreviatura del huso del muelle: CDT, EST… Depende de la fecha. */
+  zone: string
   actualDepartureAt: string | null
   detentionMinutes: number | null
   instructions: string | null
@@ -279,11 +281,16 @@ export default function LoadShow({
                       {t(`loads.appointmentType.${s.appointmentType}`)}
                       {s.windowStart ? ` · ${dt(s.windowStart)}` : ''}
                       {s.windowEnd ? ` – ${dt(s.windowEnd)}` : ''}
+                      {/* El huso del MUELLE, no el del navegador. `dt()` formatea
+                          con Intl en la hora local de quien mira; sin la
+                          etiqueta, un despachador en otro huso no puede saber si
+                          «8:00» es la suya o la de la parada. */}
+                      {s.windowStart ? ` ${s.zone}` : ''}
                     </p>
                     {s.actualArrivalAt ? (
                       <p className="text-xs text-success-700">
-                        {t('loads.detail.arrived')}: {dt(s.actualArrivalAt)}
-                        {s.actualDepartureAt ? ` · ${t('loads.detail.departed')}: ${dt(s.actualDepartureAt)}` : ''}
+                        {t('loads.detail.arrived')}: {dt(s.actualArrivalAt)} {s.zone}
+                        {s.actualDepartureAt ? ` · ${t('loads.detail.departed')}: ${dt(s.actualDepartureAt)} ${s.zone}` : ''}
                       </p>
                     ) : null}
                     {s.detentionMinutes ? (

@@ -231,10 +231,10 @@
         "revokedBody": "This tracking link has been revoked. Ask your carrier for a new tracking link.",
         "revokedTitle": "Link no longer active",
         "statusLabel": "Status",
-        "stopArrived": "Arrived {date}",
-        "stopDeparted": "Departed {date}",
+        "stopArrived": "Arrived {date} {zone}",
+        "stopDeparted": "Departed {date} {zone}",
         "stopPending": "Not yet arrived",
-        "stopWindow": "Scheduled {start} – {end}",
+        "stopWindow": "Scheduled {start} – {end} {zone}",
         "stopsTitle": "Stops",
         "timelineTitle": "What has happened",
         "title": "Track your shipment"
@@ -306,9 +306,9 @@
         "title": "Stops",
         "pickup": "Pickup",
         "delivery": "Delivery",
-        "window": "Window {start} – {end}",
-        "arrived": "Arrived {date}",
-        "departed": "Departed {date}",
+        "window": "Window {start} – {end} {zone}",
+        "arrived": "Arrived {date} {zone}",
+        "departed": "Departed {date} {zone}",
         "pending": "Not there yet"
     },
     "timeline": {

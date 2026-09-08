@@ -8,6 +8,8 @@ interface Stop {
   windowStart: string | null
   windowEnd: string | null
   arrivedAt: string | null
+  /** La abreviatura del huso del muelle: CDT, EST… Depende de la fecha. */
+  zone: string
   departedAt: string | null
 }
 
@@ -20,7 +22,7 @@ interface Props {
     plannedDeliveryOn: string | null
   } | null
   stops: Stop[]
-  lastUpdate: { at: string; location: string | null; reportedByPerson: boolean } | null
+  lastUpdate: { at: string; zone: string; location: string | null; reportedByPerson: boolean } | null
   /**
    * Lo que ha pasado, en orden. Menos que el panel de despacho: sin
    * coordenadas y sin los sucesos del consentimiento del conductor, que son
@@ -32,6 +34,8 @@ interface Props {
     reportedByPerson: boolean
     location: string | null
     at: string
+    /** El huso en que se enseña esta hora: el de su parada, o el del origen. */
+    zone: string
   }[]
   progress: { done: number; total: number } | null
   tenantName: string | null
@@ -95,7 +99,7 @@ export default function PublicTracking({
 
       <div className="mt-5 rounded border border-steel-200 p-4">
         <p className="text-xs uppercase tracking-wide text-steel-600">
-          {t('tracking.publicPage.lastUpdated', { date: lastUpdate?.at ?? '' })}
+          {t('tracking.publicPage.lastUpdated', { date: `${lastUpdate?.at ?? ''} ${lastUpdate?.zone ?? ''}`.trim() })}
         </p>
         <p className="mt-1 text-sm text-carbon">
           {lastUpdate === null
@@ -135,17 +139,21 @@ export default function PublicTracking({
               {' · '}
               {[s.city, s.state].filter(Boolean).join(', ')}
             </p>
+            {/* Con el huso al lado: quien lee esto puede estar en otro, y sin
+                etiqueta lo lee como suyo. Las dos horas están ya en la del
+                muelle — la ventana porque siempre lo estuvo, la llegada porque
+                se convierte en el servidor. */}
             {s.windowStart ? (
               <p className="text-xs text-steel-600">
-                {t('tracking.publicPage.stopWindow', { start: s.windowStart, end: s.windowEnd ?? '' })}
+                {t('tracking.publicPage.stopWindow', { start: s.windowStart, end: s.windowEnd ?? '', zone: s.zone })}
               </p>
             ) : null}
             <p className="text-xs text-steel-700">
               {s.arrivedAt
-                ? t('tracking.publicPage.stopArrived', { date: s.arrivedAt })
+                ? t('tracking.publicPage.stopArrived', { date: s.arrivedAt, zone: s.zone })
                 : t('tracking.publicPage.stopPending')}
               {s.departedAt
-                ? ` · ${t('tracking.publicPage.stopDeparted', { date: s.departedAt })}`
+                ? ` · ${t('tracking.publicPage.stopDeparted', { date: s.departedAt, zone: s.zone })}`
                 : ''}
             </p>
           </li>
@@ -164,7 +172,7 @@ export default function PublicTracking({
                   {t(`tracking.event.${e.type}`)}
                   {e.location ? ` · ${e.location}` : ''}
                 </p>
-                <p className="text-xs text-steel-600">{e.at}</p>
+                <p className="text-xs text-steel-600">{e.at} {e.zone}</p>
               </li>
             ))}
           </ol>

@@ -189,6 +189,7 @@ final class RateConfirmation
             ->orderBy('s.sequence')
             ->get([
                 's.stop_type', 's.facility_name', 's.city', 's.state', 's.window_start', 's.window_end',
+                's.timezone',
                 'cl.name as location_name', 'cl.city as location_city', 'cl.state as location_state',
             ])
             ->map(static fn (object $s): array => [
@@ -196,8 +197,14 @@ final class RateConfirmation
                 'name' => $s->location_name ?? $s->facility_name,
                 'city' => $s->location_city ?? $s->city,
                 'state' => $s->location_state ?? $s->state,
-                'windowStart' => $s->window_start === null ? null : substr((string) $s->window_start, 0, 16),
-                'windowEnd' => $s->window_end === null ? null : substr((string) $s->window_end, 0, 16),
+                'windowStart' => StopClock::window($s->window_start),
+                'windowEnd' => StopClock::window($s->window_end),
+                // El huso del muelle, en el papel. Aquí no hay llegada que
+                // convertir —solo ventanas, que ya son hora del muelle— pero
+                // este es el documento que compromete dinero, y se le manda a un
+                // transportista que puede estar en otro huso. Una hora sin
+                // reloj en un papel firmado es la peor de todas.
+                'zone' => StopClock::label($s->timezone, $s->window_start),
             ])
             ->all();
 
@@ -268,7 +275,7 @@ final class RateConfirmation
             $lugar = implode(', ', array_filter([$s['name'], $s['city'], $s['state']]));
             $ventana = $s['windowStart'] === null
                 ? '—'
-                : $s['windowStart'].($s['windowEnd'] === null ? '' : ' – '.$s['windowEnd']);
+                : $s['windowStart'].($s['windowEnd'] === null ? '' : ' – '.$s['windowEnd']).' '.$s['zone'];
 
             $filas .= '<tr><td>'.e($s['type'] === 'pickup' ? $t['pickup'] : $t['delivery']).'</td>'
                 .'<td>'.e($lugar).'</td><td>'.e($ventana).'</td></tr>';

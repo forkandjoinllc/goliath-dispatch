@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Support\Branding\Brand;
-use App\Support\Tracking\Ingestion;
-use App\Support\Tracking\Timeline;
 use App\Support\InertiaPage;
+use App\Support\Loads\StopClock;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use App\Support\Tracking\Ingestion;
+use App\Support\Tracking\Timeline;
 use App\Support\Tracking\TrackingLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -170,7 +171,7 @@ final class TrackingController
             ->orderBy('s.sequence')
             ->get([
                 's.stop_type', 's.city', 's.state', 's.window_start', 's.window_end',
-                's.actual_arrival_at', 's.actual_departure_at',
+                's.actual_arrival_at', 's.actual_departure_at', 's.timezone',
                 'cl.city as location_city', 'cl.state as location_state',
             ])
             ->map(static fn (object $s): array => [
@@ -180,10 +181,17 @@ final class TrackingController
                 'type' => (string) $s->stop_type,
                 'city' => $s->location_city ?? $s->city,
                 'state' => $s->location_state ?? $s->state,
-                'windowStart' => $s->window_start === null ? null : substr((string) $s->window_start, 0, 16),
-                'windowEnd' => $s->window_end === null ? null : substr((string) $s->window_end, 0, 16),
-                'arrivedAt' => $s->actual_arrival_at === null ? null : substr((string) $s->actual_arrival_at, 0, 16),
-                'departedAt' => $s->actual_departure_at === null ? null : substr((string) $s->actual_departure_at, 0, 16),
+                // La ventana YA está en la hora del muelle; la llegada está en
+                // UTC. Se pintaban juntas y sin etiqueta, y eso hacía que una
+                // llegada puntual se leyera con cuatro horas de retraso. Ver
+                // App\Support\Loads\StopClock.
+                'windowStart' => StopClock::window($s->window_start),
+                'windowEnd' => StopClock::window($s->window_end),
+                'arrivedAt' => StopClock::moment($s->actual_arrival_at, $s->timezone),
+                'departedAt' => StopClock::moment($s->actual_departure_at, $s->timezone),
+                // La abreviatura depende de la fecha, no solo del huso: la
+                // misma parada es CST en enero y CDT en julio.
+                'zone' => StopClock::label($s->timezone, $s->window_start ?? $s->actual_arrival_at),
             ])
             ->all();
     }
@@ -215,14 +223,26 @@ final class TrackingController
             ->where('load_id', $loadId)
             ->whereNotNull('location_label')
             ->orderByDesc('occurred_at')
-            ->first(['occurred_at', 'location_label', 'provider']);
+            ->first(['occurred_at', 'location_label', 'provider', 'stop_id']);
 
         if ($fila === null) {
             return null;
         }
 
+        // En el huso de su parada, o en el del origen si el suceso no cuelga de
+        // ninguna. Igual que la cronología: si esta línea se quedara en UTC,
+        // diría una hora distinta de la que dice la parada justo encima.
+        $huso = DB::table('load_stops')
+            ->where('tenant_id', $tenantId)
+            ->where('load_id', $loadId)
+            ->whereNull('deleted_at')
+            ->when($fila->stop_id !== null, fn ($q) => $q->where('id', $fila->stop_id))
+            ->orderBy('sequence')
+            ->value('timezone');
+
         return [
-            'at' => substr((string) $fila->occurred_at, 0, 16),
+            'at' => StopClock::moment($fila->occurred_at, $huso),
+            'zone' => StopClock::label($huso, $fila->occurred_at),
             'location' => $fila->location_label,
             // Que el cliente sepa si se lo dijo un aparato o una persona.
             'reportedByPerson' => $fila->provider === Ingestion::MANUAL,

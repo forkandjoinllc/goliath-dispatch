@@ -13,6 +13,8 @@ interface Stop {
   windowStart: string | null
   windowEnd: string | null
   arrivedAt: string | null
+  /** La abreviatura del huso del muelle: CDT, EST… Depende de la fecha. */
+  zone: string
   departedAt: string | null
 }
 
@@ -50,6 +52,8 @@ interface TimelineEntry {
   provider: string
   location: string | null
   at: string
+  /** El huso en que se enseña esta hora: el de su parada, o el del origen. */
+  zone: string
   stopId: string | null
 }
 
@@ -173,16 +177,19 @@ function Paradas({
               {' · '}
               {[s.facility, s.city, s.state].filter(Boolean).join(', ')}
             </p>
+            {/* Con el huso al lado. Un despachador en Chicago mirando una
+                parada de Nueva Jersey necesita saber de qué reloj habla la
+                pantalla antes de decidir si va tarde. */}
             {s.windowStart ? (
               <p className="text-xs text-steel-600">
-                {t('tracking.stops.window', { start: s.windowStart, end: s.windowEnd ?? '' })}
+                {t('tracking.stops.window', { start: s.windowStart, end: s.windowEnd ?? '', zone: s.zone })}
               </p>
             ) : null}
             <p className="text-xs text-steel-700">
               {s.arrivedAt
-                ? t('tracking.stops.arrived', { date: s.arrivedAt })
+                ? t('tracking.stops.arrived', { date: s.arrivedAt, zone: s.zone })
                 : t('tracking.stops.pending')}
-              {s.departedAt ? ` · ${t('tracking.stops.departed', { date: s.departedAt })}` : ''}
+              {s.departedAt ? ` · ${t('tracking.stops.departed', { date: s.departedAt, zone: s.zone })}` : ''}
             </p>
 
             {puede ? (
@@ -298,7 +305,7 @@ function LineaDeTiempo({ entradas }: { entradas: TimelineEntry[] }) {
             <li key={e.id} className="flex flex-wrap items-baseline gap-x-2 border-l-2 border-steel-200 pl-3">
               <span className="text-sm font-medium text-carbon">{t(`tracking.event.${e.type}`)}</span>
               {e.location ? <span className="text-sm text-steel-700">{e.location}</span> : null}
-              <span className="text-xs text-steel-600">{e.at}</span>
+              <span className="text-xs text-steel-600">{e.at} {e.zone}</span>
               <span className="text-xs text-steel-500">
                 {e.reportedByPerson ? t('tracking.timeline.byPerson') : t('tracking.timeline.byProvider')}
               </span>

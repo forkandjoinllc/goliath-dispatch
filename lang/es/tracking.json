@@ -231,10 +231,10 @@
         "revokedBody": "Este enlace de rastreo ha sido revocado. Pídale a su transportista un nuevo enlace de rastreo.",
         "revokedTitle": "Enlace ya no activo",
         "statusLabel": "Estado",
-        "stopArrived": "Llegó el {date}",
-        "stopDeparted": "Salió el {date}",
+        "stopArrived": "Llegó el {date} {zone}",
+        "stopDeparted": "Salió el {date} {zone}",
         "stopPending": "Aún no ha llegado",
-        "stopWindow": "Programado {start} – {end}",
+        "stopWindow": "Programado {start} – {end} {zone}",
         "stopsTitle": "Paradas",
         "timelineTitle": "Lo que ha pasado",
         "title": "Rastree su envío"
@@ -306,9 +306,9 @@
         "title": "Paradas",
         "pickup": "Recogida",
         "delivery": "Entrega",
-        "window": "Ventana {start} – {end}",
-        "arrived": "Llegó el {date}",
-        "departed": "Salió el {date}",
+        "window": "Ventana {start} – {end} {zone}",
+        "arrived": "Llegó el {date} {zone}",
+        "departed": "Salió el {date} {zone}",
         "pending": "Todavía no ha llegado"
     },
     "timeline": {

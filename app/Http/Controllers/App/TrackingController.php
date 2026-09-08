@@ -9,23 +9,25 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Models\Load;
-use App\Support\EnumValue;
-use App\Support\InertiaPage;
-use App\Support\Loads\LoadScope;
-use App\Support\TenantContext;
 use App\Services\Tracking\PositionReport;
 use App\Services\Tracking\StopDerivedTrackingProvider;
 use App\Services\Tracking\TrackingProvider;
+use App\Support\EnumValue;
+use App\Support\InertiaPage;
+use App\Support\Loads\LoadScope;
+use App\Support\Loads\StopClock;
+use App\Support\TenantContext;
 use App\Support\Tracking\Consent;
 use App\Support\Tracking\CustomerLink;
 use App\Support\Tracking\Ingestion;
+use App\Support\Tracking\Sessions;
 use App\Support\Tracking\StopProgress;
 use App\Support\Tracking\Timeline;
-use App\Support\Tracking\Sessions;
 use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -269,7 +271,6 @@ final class TrackingController
 
         return back()->with('success', __('tracking.checkCalls.completed'));
     }
-
 
     /**
      * La llamada de control, en la línea de tiempo.
@@ -664,7 +665,6 @@ final class TrackingController
         ];
     }
 
-
     /**
      * La carga, con el mismo estrechamiento que la pantalla de cargas.
      */
@@ -690,7 +690,7 @@ final class TrackingController
      * Dos consultas para todas las cargas y no dos por carga: el tablero enseña
      * hasta doscientas y una consulta por fila sería cuatrocientas.
      *
-     * @param  \Illuminate\Support\Collection<int, Load>  $cargas
+     * @param  Collection<int, Load>  $cargas
      * @return list<array<string, mixed>>
      */
     private function withCheckCalls(Actor $actor, $cargas): array
@@ -782,6 +782,7 @@ final class TrackingController
             ->get([
                 's.id', 's.stop_type', 's.sequence', 's.facility_name', 's.city', 's.state',
                 's.window_start', 's.window_end', 's.actual_arrival_at', 's.actual_departure_at',
+                's.timezone',
                 'cl.name as location_name', 'cl.city as location_city', 'cl.state as location_state',
             ])
             ->map(static fn (object $s): array => [
@@ -791,10 +792,13 @@ final class TrackingController
                 'facility' => $s->location_name ?? $s->facility_name,
                 'city' => $s->location_city ?? $s->city,
                 'state' => $s->location_state ?? $s->state,
-                'windowStart' => $s->window_start === null ? null : substr((string) $s->window_start, 0, 16),
-                'windowEnd' => $s->window_end === null ? null : substr((string) $s->window_end, 0, 16),
-                'arrivedAt' => $s->actual_arrival_at === null ? null : substr((string) $s->actual_arrival_at, 0, 16),
-                'departedAt' => $s->actual_departure_at === null ? null : substr((string) $s->actual_departure_at, 0, 16),
+                // Igual que en la pantalla pública: la ventana es hora del
+                // muelle y la llegada está en UTC. Ver App\Support\Loads\StopClock.
+                'windowStart' => StopClock::window($s->window_start),
+                'windowEnd' => StopClock::window($s->window_end),
+                'arrivedAt' => StopClock::moment($s->actual_arrival_at, $s->timezone),
+                'departedAt' => StopClock::moment($s->actual_departure_at, $s->timezone),
+                'zone' => StopClock::label($s->timezone, $s->window_start ?? $s->actual_arrival_at),
             ])
             ->all();
     }

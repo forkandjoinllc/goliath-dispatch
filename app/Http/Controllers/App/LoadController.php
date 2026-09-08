@@ -29,6 +29,7 @@ use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\StatusLabel;
+use App\Support\Loads\StopClock;
 use App\Support\Loads\Transitions;
 use App\Support\Messaging\Narrator;
 use App\Support\Plans\Limits;
@@ -1585,10 +1586,18 @@ final class LoadController
                 'postalCode' => $s->location_postal ?? $s->postal_code,
                 'timezone' => (string) $s->timezone,
                 'appointmentType' => (string) $s->appointment_type,
+                // La ventana es hora del muelle; la llegada y la salida están
+                // en UTC. Se pintaban las cuatro crudas en la misma ficha. Ver
+                // App\Support\Loads\StopClock.
+                //
+                // `windowStart` va SIN recortar porque este payload alimenta
+                // también el formulario de edición, y ahí el valor tiene que
+                // volver tal cual salió para no cambiarlo solo con abrirlo.
                 'windowStart' => $s->window_start,
                 'windowEnd' => $s->window_end,
-                'actualArrivalAt' => $s->actual_arrival_at,
-                'actualDepartureAt' => $s->actual_departure_at,
+                'actualArrivalAt' => StopClock::moment($s->actual_arrival_at, $s->timezone),
+                'actualDepartureAt' => StopClock::moment($s->actual_departure_at, $s->timezone),
+                'zone' => StopClock::label($s->timezone, $s->window_start ?? $s->actual_arrival_at),
                 'detentionMinutes' => $s->detention_minutes === null ? null : (int) $s->detention_minutes,
                 'instructions' => $s->instructions,
                 'contactName' => $s->contact_name,
