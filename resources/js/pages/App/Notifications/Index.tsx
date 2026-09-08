@@ -98,7 +98,7 @@ export default function NotificationsIndex({ notifications, filters, events, pre
                   <p className="text-sm font-semibold text-carbon">{n.title}</p>
                   <p className="mt-0.5 text-sm text-steel-700">{n.body}</p>
                   <p className="mt-1 text-xs text-steel-600">
-                    {n.createdAt.replace('T', ' ')}
+                    {n.createdAt}
                     {' · '}
                     {t(`notifications.eventNames.${n.eventKey}`)}
                   </p>

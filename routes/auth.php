@@ -35,6 +35,7 @@ use App\Http\Controllers\App\ReportController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\SignatureController;
 use App\Http\Controllers\App\TenantSettingController;
+use App\Http\Controllers\App\TimezoneController;
 use App\Http\Controllers\App\TrackingController;
 use App\Http\Controllers\App\UserController;
 use App\Http\Controllers\Auth\InvitationController;
@@ -99,6 +100,16 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('home', DashboardController::class)->name('home');
     Route::post('switch-tenant', [DashboardController::class, 'switchTenant'])->name('tenant.switch');
     Route::post('locale', LocaleController::class)->name('locale.update');
+
+    /*
+    | El reloj de quien mira
+    |
+    | Hermano del idioma y por el mismo motivo: cambia lo que DICEN las
+    | pantallas, no lo que hace el sistema. Sin permiso —nadie decide en qué
+    | reloj lee otro— y sin ruta de lectura: el huso viaja en el armazón,
+    | porque lo necesita la barra superior de todas las páginas.
+    */
+    Route::post('timezone', TimezoneController::class)->name('timezone.update');
 
     /*
     | Transportistas

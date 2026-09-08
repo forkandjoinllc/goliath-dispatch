@@ -7,6 +7,7 @@ namespace App\Support\Onboarding;
 use App\Support\Documents\DocumentTypes;
 use App\Support\Loads\Guards;
 use App\Support\Tenancy\TenantPolicy;
+use App\Support\Time\Viewer;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -153,10 +154,12 @@ final class Readiness
         return [
             'id' => (string) $solicitud->id,
             'status' => (string) $solicitud->status,
-            'requestedAt' => substr((string) $solicitud->requested_at, 0, 16),
-            'firstViewedAt' => $solicitud->first_viewed_at === null
-                ? null
-                : substr((string) $solicitud->first_viewed_at, 0, 16),
+            // El mismo huso que SignatureController, y por eso pasa por
+            // Viewer: esta es la MISMA solicitud que se ve en la pantalla de
+            // firmas. Dos pantallas de la misma aplicación diciendo dos horas
+            // distintas del mismo hecho es peor que las dos diciendo UTC.
+            'requestedAt' => Viewer::at($solicitud->requested_at),
+            'firstViewedAt' => Viewer::at($solicitud->first_viewed_at),
         ];
     }
 }

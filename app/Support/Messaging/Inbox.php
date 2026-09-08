@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Models\Conversation;
+use App\Support\Time\Viewer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -138,7 +139,7 @@ final class Inbox
                 'body' => (string) $f->body,
                 'systemKey' => $f->system_key === null ? null : (string) $f->system_key,
                 'systemParams' => $f->system_params === null ? null : json_decode((string) $f->system_params, true),
-                'createdAt' => (string) $f->created_at,
+                'createdAt' => Viewer::at($f->created_at),
                 'senderUserId' => $f->sender_user_id === null ? null : (string) $f->sender_user_id,
             ];
         }
@@ -176,8 +177,8 @@ final class Inbox
             'body' => (string) $m->body,
             'systemKey' => $m->system_key === null ? null : (string) $m->system_key,
             'systemParams' => $m->system_params === null ? null : json_decode((string) $m->system_params, true),
-            'createdAt' => (string) $m->created_at,
-            'editedAt' => $m->edited_at === null ? null : (string) $m->edited_at,
+            'createdAt' => Viewer::at($m->created_at),
+            'editedAt' => Viewer::at($m->edited_at),
             'senderUserId' => $m->sender_user_id === null ? null : (string) $m->sender_user_id,
             'sender' => $m->sender_user_id === null
                 ? null

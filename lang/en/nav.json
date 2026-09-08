@@ -65,7 +65,9 @@
         "language": "Language",
         "signOut": "Sign out",
         "impersonating": "Impersonating {name}",
-        "endImpersonation": "End impersonation"
+        "endImpersonation": "End impersonation",
+        "timezone": "Time zone",
+        "timezoneHint": "Times on screen are shown in this zone."
     },
     "search": {
         "placeholder": "Search loads, carriers, customers, drivers, equipment…",
@@ -208,5 +210,15 @@
         "dispatcher": "Dispatcher",
         "carrier": "Carrier",
         "driver": "Driver"
+    },
+    "clock": {
+        "America/New_York": "Eastern — New York",
+        "America/Chicago": "Central — Chicago",
+        "America/Denver": "Mountain — Denver",
+        "America/Phoenix": "Mountain, no DST — Phoenix",
+        "America/Los_Angeles": "Pacific — Los Angeles",
+        "America/Anchorage": "Alaska — Anchorage",
+        "Pacific/Honolulu": "Hawaii — Honolulu",
+        "America/Puerto_Rico": "Atlantic — Puerto Rico"
     }
 }

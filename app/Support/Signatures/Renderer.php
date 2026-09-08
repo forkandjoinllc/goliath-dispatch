@@ -96,6 +96,18 @@ final class Renderer
 
         $filas = '';
 
+        // Las horas de la cronología van en UTC y la cabecera lo DICE.
+        //
+        // Es la única superficie del sistema que no se convierte al huso de
+        // quien mira, y es deliberado: un certificado de auditoría es un
+        // documento que se descarga, se archiva y se enseña a un tercero. Si
+        // la hora dependiera de quién pulsó el botón, dos copias del mismo
+        // certificado dirían cosas distintas sobre el mismo acto, y la que
+        // llegara a un tercero no coincidiría con la del expediente.
+        //
+        // Lo que estaba mal no era la hora: era que la columna se llamaba
+        // «Cuándo» a secas. Una hora sin reloj, en el documento donde más
+        // importa cuándo pasó algo.
         foreach ($eventos as $e) {
             $filas .= '<tr><td>'.e($e['at']).'</td><td>'.e($etiquetas['events'][$e['type']] ?? $e['type']).'</td>'
                 .'<td>'.e((string) ($e['actor'] ?? '—')).'</td><td>'.e((string) ($e['ip'] ?? '—')).'</td></tr>';
@@ -207,7 +219,7 @@ final class Renderer
             'requestId' => 'Solicitud',
             'signer' => 'Firmante',
             'timeline' => 'Cronología de la ceremonia',
-            'when' => 'Cuándo',
+            'when' => 'Cuándo (UTC)',
             'event' => 'Evento',
             'actor' => 'Quién',
             'ip' => 'IP',
@@ -238,7 +250,7 @@ final class Renderer
             'requestId' => 'Request',
             'signer' => 'Signer',
             'timeline' => 'Ceremony timeline',
-            'when' => 'When',
+            'when' => 'When (UTC)',
             'event' => 'Event',
             'actor' => 'Who',
             'ip' => 'IP',

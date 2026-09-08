@@ -164,6 +164,74 @@ function LocaleMenu() {
   )
 }
 
+/**
+ * En qué reloj lee esta persona la aplicación.
+ *
+ * ## Por qué la abreviatura se pinta AQUÍ y no en cada hora
+ *
+ * Dentro de una pantalla todas las horas del sistema están en el mismo huso, así
+ * que repetir «CDT» sesenta y siete veces no añade nada: lo que hacía falta era
+ * decirlo UNA vez donde no se pueda perder de vista. Las horas que NO están en
+ * este reloj —las citas de una parada, que van en la hora del muelle— llevan su
+ * propia abreviatura pegada, puesta por StopClock. Esa es la regla que el
+ * usuario puede aprender en dos segundos: con etiqueta al lado, es la hora del
+ * muelle; sin ella, la suya, la que dice esta barra.
+ *
+ * ## Por qué el botón enseña la abreviatura y no el identificador
+ *
+ * «CDT» cabe en la barra y se reconoce; «America/Chicago» ni cabe ni se lee. El
+ * identificador sale en el desplegable, que es donde se elige.
+ */
+function TimezoneMenu({ shell }: { shell: Shell }) {
+  const { t } = useI18n()
+  const { open, setOpen, container, trigger } = useMenu()
+
+  return (
+    <div ref={container} className="relative hidden sm:block">
+      <button
+        ref={trigger}
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={t('nav.userMenu.timezone')}
+        className="flex items-center gap-1.5 rounded border border-steel-200 px-2.5 py-1.5 text-sm font-medium text-carbon transition hover:bg-navy-50"
+      >
+        {shell.clock.zone}
+        <Chevron />
+      </button>
+
+      {open ? (
+        <div role="menu" className={`${MENU_PANEL} min-w-72`}>
+          <p className="px-3 pb-1 pt-1.5 text-[11px] font-bold uppercase tracking-wide text-steel-500">
+            {t('nav.userMenu.timezone')}
+          </p>
+          <p className="px-3 pb-2 text-xs text-steel-600">{t('nav.userMenu.timezoneHint')}</p>
+          {shell.clock.options.map((zone) => (
+            <button
+              key={zone}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                // Se guarda en el usuario: la elección tiene que seguirle al
+                // móvil, igual que el idioma. El servidor vuelve a validar la
+                // lista — este menú es comodidad, no autorización.
+                router.post('/timezone', { timezone: zone }, { preserveScroll: true })
+              }}
+              className={`block w-full px-3 py-2 text-left text-sm transition hover:bg-navy-50 ${
+                zone === shell.clock.timezone ? 'font-semibold text-navy-700' : 'text-carbon'
+              }`}
+            >
+              {t(`nav.clock.${zone}`)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function AccountMenu({ shell }: { shell: Shell }) {
   const { t } = useI18n()
   const { open, setOpen, container, trigger } = useMenu()
@@ -327,6 +395,7 @@ export function Topbar({
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <NotificationBell shell={shell} />
         <TenantSwitcher shell={shell} />
+        <TimezoneMenu shell={shell} />
         <LocaleMenu />
         <AccountMenu shell={shell} />
       </div>

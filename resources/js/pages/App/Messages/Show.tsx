@@ -138,7 +138,7 @@ function Burbuja({ m, me }: { m: Msg; me: string }) {
         <p className="text-sm italic text-steel-600">
           {textoDeSistema(t, m.systemKey, m.systemParams)}
         </p>
-        <p className="text-xs text-steel-500">{m.createdAt.slice(0, 16)}</p>
+        <p className="text-xs text-steel-500">{m.createdAt}</p>
       </li>
     )
   }
@@ -149,7 +149,7 @@ function Burbuja({ m, me }: { m: Msg; me: string }) {
     <li className={`border-l-2 pl-3 ${mio ? 'border-navy-600' : 'border-steel-200'}`}>
       <p className="text-xs text-steel-600">
         <span className="font-medium text-carbon">{m.sender ?? '—'}</span>
-        <span className="ml-2">{m.createdAt.slice(0, 16)}</span>
+        <span className="ml-2">{m.createdAt}</span>
         {m.editedAt !== null ? <span className="ml-2 italic">{t('messages.show.edited')}</span> : null}
       </p>
 

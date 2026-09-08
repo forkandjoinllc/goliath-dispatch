@@ -21,6 +21,8 @@ use App\Support\Oversize\Rules;
 use App\Support\Plural;
 use App\Support\Routing\RouteProvider;
 use App\Support\Routing\Routes;
+use App\Support\Time\Clock;
+use App\Support\Time\PresentsTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,6 +59,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final class PermitController
 {
     use InertiaPage;
+    use PresentsTime;
 
     /** @var list<string> */
     /**
@@ -115,8 +118,8 @@ final class PermitController
                     'isOverweight' => (bool) $l->is_overweight,
                     'permitsIssued' => (int) $mios->where('status', 'issued')->sum('total'),
                     'permitsPending' => (int) $mios->whereIn('status', ['pending', 'requested'])->sum('total'),
-                    'oversizeValidatedAt' => $this->minute($l->oversize_validated_at),
-                    'permitReadyAt' => $this->minute($l->permit_ready_approved_at),
+                    'oversizeValidatedAt' => $this->hora($l->oversize_validated_at),
+                    'permitReadyAt' => $this->hora($l->permit_ready_approved_at),
                 ];
             })->all(),
             'can' => [
@@ -153,12 +156,12 @@ final class PermitController
                 'axleConfiguration' => $carga->axle_configuration,
                 'isOversize' => (bool) $carga->is_oversize,
                 'isOverweight' => (bool) $carga->is_overweight,
-                'oversizeValidatedAt' => $this->minute($carga->oversize_validated_at),
-                'permitReadyAt' => $this->minute($carga->permit_ready_approved_at),
+                'oversizeValidatedAt' => $this->hora($carga->oversize_validated_at),
+                'permitReadyAt' => $this->hora($carga->permit_ready_approved_at),
             ],
             'route' => $ruta === null ? null : [
                 'provider' => (string) $ruta->provider,
-                'calculatedAt' => $this->minute($ruta->calculated_at),
+                'calculatedAt' => $this->hora($ruta->calculated_at),
                 'totalMiles' => $ruta->total_miles,
                 'states' => array_map(static fn (object $e): array => [
                     'state' => (string) $e->state_code,
@@ -176,8 +179,8 @@ final class PermitController
                 'warnings' => json_decode((string) $evaluacion->missing_data_warnings, true) ?: [],
                 'validationStatus' => (string) $evaluacion->human_validation_status,
                 'validationNotes' => $evaluacion->validation_notes,
-                'validatedAt' => $this->minute($evaluacion->validated_at),
-                'evaluatedAt' => $this->minute($evaluacion->evaluated_at),
+                'validatedAt' => $this->hora($evaluacion->validated_at),
+                'evaluatedAt' => $this->hora($evaluacion->evaluated_at),
             ],
             'permits' => DB::table('permits')
                 ->where('tenant_id', $actor->tenantId)
@@ -196,8 +199,8 @@ final class PermitController
                     'number' => $p->permit_number,
                     'type' => $p->permit_type,
                     'status' => (string) $p->status,
-                    'issuedAt' => $this->minute($p->issued_at),
-                    'expiresAt' => $this->minute($p->expires_at),
+                    'issuedAt' => Clock::literal($p->issued_at),
+                    'expiresAt' => Clock::literal($p->expires_at),
                     'costCents' => (int) $p->cost_cents,
                     'notes' => $p->notes,
                 ])->all(),
@@ -216,7 +219,7 @@ final class PermitController
                     'contactName' => $e->contact_name,
                     'contactPhone' => $e->contact_phone,
                     'agency' => $e->agency_name,
-                    'scheduledFor' => $this->minute($e->scheduled_for),
+                    'scheduledFor' => Clock::literal($e->scheduled_for),
                     'status' => (string) $e->status,
                     'costCents' => (int) $e->cost_cents,
                     'notes' => $e->notes,
@@ -702,10 +705,5 @@ final class PermitController
         }
 
         return $carga;
-    }
-
-    private function minute(mixed $valor): ?string
-    {
-        return $valor === null ? null : substr((string) $valor, 0, 16);
     }
 }

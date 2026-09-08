@@ -1910,3 +1910,79 @@ código.** La primera pasada completa se quedó nueve minutos sin terminar y
 sospeché de mi propio `timezone_identifiers_list()`. No era: aislando por
 carpetas todo iba a su velocidad, y la siguiente pasada completa hizo 110 s.
 Había reiniciado mysql a mitad de la anterior. **Antes de optimizar, aislar.**
+
+---
+
+## El reloj de quien mira (`docs/viewer-clock.md`)
+
+**Un árbol que ya estaba rojo no mide nada, y mi arnés de sabotajes no lo
+comprobaba.** Un script suelto para inspeccionar un fallo murió con un
+`TypeError` **antes** de restaurar `Clock.php`, dejando el sabotaje puesto. El
+`.bak` del siguiente script copió el fichero ya saboteado, así que las dos
+restauraciones posteriores restauraron la versión mala. A partir de ahí, **cada
+sabotaje de tres tandas seguidas informó «CAZADO»** solo porque el árbol ya
+fallaba: el arnés únicamente exigía «no verde después». Veintitantas
+verificaciones que no verificaban nada.
+
+El arnés ahora, y esto es el patrón que se queda:
+
+1. **Exige VERDE antes** de cada sabotaje, y si no lo está lo dice y no lo cuenta.
+2. Restaura en un `finally` y **verifica el md5** contra el de partida.
+3. Antes de la tanda, valida cada sabotaje: **aguja única** y, si es PHP,
+   **`php -l` en verde**. Cinco de mis sabotajes generados producían paréntesis
+   desbalanceados; medían un error de sintaxis, no el guardián.
+4. Imprime **qué prueba** se puso roja, no solo cuántas. Es lo que distingue
+   «cazado por lo que quería» de «cazado de rebote».
+
+Al repetir la tanda con eso puesto, **una** salió verde — y era la comprobación
+por la que existía todo el lote.
+
+**Un `(?<![a-z_])` sobre el fichero compactado descarta `return substr(`.** La
+aguja del censo excluía `mb_substr` mirando la letra anterior. Pero `compacta()`
+quita los espacios, así que `return substr(...)` se lee `returnsubstr(` y la
+letra anterior es la `n` de `return`: **un fichero nuevo que sacara la hora con
+un `return` directo pasaba el guardián sin declarar nada**. La aguja correcta es
+`(?<!_)`, que excluye `mb_`/`iconv_`/`grapheme_` y no las palabras clave. Lección
+general: **una exclusión por «carácter anterior» se escribe contra el texto que
+la función devuelve, no contra el que se ve en el editor.**
+
+**Un guardián que LEE el código no puede ver que `$this->hora()` está dentro de
+un `static fn`.** El texto es idéntico en los dos casos y el guardián pasó en
+verde; en marcha era `Error: Using $this when not in object context` y un 500 en
+la lista de avisos. Lo cazó la prueba de integración al pedir la página. De ahí
+sale una regla nueva: **cuando un lote cambia N pantallas, una de las pruebas
+tiene que PEDIR las N pantallas**. Hay ahora un `->with([...])` que recorre las
+seis y solo exige `assertOk()`; es barato y cubre toda la clase de fallo que el
+guardián de texto no alcanza.
+
+**`expect()->toHaveKey($clave, $mensaje)` toma el segundo argumento como VALOR
+esperado.** Misma familia que `toContain`, que ya va por la cuarta anotación en
+este fichero. Con mensaje: `test()->assertArrayHasKey($clave, $array, $mensaje)`.
+Empieza a haber patrón: **en Pest, el segundo argumento de un `toX()` casi nunca
+es un mensaje.** Antes de escribir uno, comprobar la firma.
+
+**`actingAs()` no pone la empresa activa.** Cuatro pruebas rojas con «Not a valid
+Inertia response» hasta acordarme de que la empresa vive en
+`sessions.active_tenant_id` y que existe `signIn()` en `tests/Pest.php`
+precisamente para eso — con el comentario que lo explica ya escrito. **Antes de
+escribir una prueba HTTP nueva, mirar cómo entra la de al lado.**
+
+**Otra prueba que había aprendido el defecto.** `OnboardingQueueTest` comparaba
+`waitingSince` contra `now()->subDays(4)->format(...)`, y `now()` sale en
+`config('app.timezone')`, que es UTC: la prueba **afirmaba** la hora sin
+convertir. Lo que quería medir era *cuál* de las marcas se elige según el estado,
+no en qué reloj se enseña. Corregida a `Clock::at(..., Clock::POR_OMISION)`. Van
+tres lotes con una prueba defendiendo el defecto que el lote arregla; el olor es
+siempre el mismo: **la prueba reconstruye el valor esperado con la misma
+operación que hace el código que vigila.**
+
+**No todo `datetime` de la base de datos es un instante en UTC, y el censo no lo
+sabe.** Tres columnas del censo —`permits.issued_at`, `permits.expires_at`,
+`escorts.scheduled_for`— las teclea una persona en un `datetime-local` y se
+guardan tal cual: convertirlas las habría **movido**. Se descubrió leyendo quién
+escribe cada columna, no contando `substr`. **Antes de convertir una hora, buscar
+el `=>` que la escribe.** Y la conversión a la inversa también importa: dos
+pantallas del sistema enseñando la MISMA fila con dos husos distintos
+(`SignatureController` convertido y `Readiness` sin convertir) es peor que las
+dos en UTC, así que el criterio para meter un fichero en el lote no fue solo
+«cuánto duele» sino «¿comparte columna con algo que ya convertí?».

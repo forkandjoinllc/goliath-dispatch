@@ -16,6 +16,7 @@ use App\Support\Signatures\State;
 use App\Support\Signatures\TemplateBody;
 use App\Support\Signatures\Templates;
 use App\Support\Signatures\Verifier;
+use App\Support\Time\PresentsTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final class SignatureController
 {
     use InertiaPage;
+    use PresentsTime;
 
     /** @var list<string> */
     private const ESTADOS = ['pending', 'viewed', 'signed', 'declined', 'expired', 'voided', 'superseded'];
@@ -188,8 +190,8 @@ final class SignatureController
             'request' => $this->rowPayload($solicitud) + [
                 'declineReason' => $solicitud->decline_reason,
                 'voidReason' => $solicitud->void_reason,
-                'voidedAt' => $this->minute($solicitud->voided_at),
-                'declinedAt' => $this->minute($solicitud->declined_at),
+                'voidedAt' => $this->hora($solicitud->voided_at),
+                'declinedAt' => $this->hora($solicitud->declined_at),
                 'contentHash' => (string) $solicitud->template_content_hash,
             ],
             'record' => $registro === null ? null : [
@@ -198,7 +200,7 @@ final class SignatureController
                 'signerEmail' => (string) $registro->signer_email,
                 'signerTitle' => $registro->signer_title,
                 'method' => (string) $registro->method,
-                'signedAt' => $this->minute($registro->signed_at),
+                'signedAt' => $this->hora($registro->signed_at),
                 'ipAddress' => (string) $registro->ip_address,
                 'userAgent' => (string) $registro->user_agent,
                 'documentSha256' => (string) $registro->document_sha256,
@@ -218,7 +220,7 @@ final class SignatureController
             'events' => $eventos->map(fn (object $e): array => [
                 'id' => (string) $e->id,
                 'type' => (string) $e->event_type,
-                'at' => $this->minute($e->occurred_at),
+                'at' => $this->hora($e->occurred_at),
                 'ip' => $e->ip_address,
                 'actor' => $e->actor_email,
             ])->all(),
@@ -259,8 +261,8 @@ final class SignatureController
                 'contentHash' => (string) $t->content_hash,
                 'requiredTokens' => json_decode((string) $t->required_tokens, true) ?: [],
                 'active' => (bool) $t->active,
-                'effectiveFrom' => $this->minute($t->effective_from),
-                'retiredAt' => $this->minute($t->retired_at),
+                'effectiveFrom' => $this->hora($t->effective_from),
+                'retiredAt' => $this->hora($t->retired_at),
             ])->all(),
             'can' => [
                 'manage' => $checker->can($actor, 'signature:template:manage', null, $policy)->allowed,
@@ -614,15 +616,10 @@ final class SignatureController
             'locale' => $locale,
             'subjectType' => (string) $r->subject_type,
             'carrierName' => $r->carrier_name,
-            'requestedAt' => $this->minute($r->requested_at),
-            'firstViewedAt' => $this->minute($r->first_viewed_at),
-            'completedAt' => $this->minute($r->completed_at),
-            'expiresAt' => $this->minute($r->expires_at),
+            'requestedAt' => $this->hora($r->requested_at),
+            'firstViewedAt' => $this->hora($r->first_viewed_at),
+            'completedAt' => $this->hora($r->completed_at),
+            'expiresAt' => $this->hora($r->expires_at),
         ];
-    }
-
-    private function minute(mixed $valor): ?string
-    {
-        return $valor === null ? null : substr((string) $valor, 0, 16);
     }
 }

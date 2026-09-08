@@ -14,6 +14,7 @@ use App\Support\Audit;
 use App\Support\Invitations\Invitations;
 use App\Support\Plans\Limits;
 use App\Support\TenantContext;
+use App\Support\Time\Clock;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -67,6 +68,19 @@ final class InviteUser
                     'first_name' => $input['first_name'],
                     'last_name' => $input['last_name'],
                     'locale' => $input['locale'],
+                    // El huso de la EMPRESA que invita, no el del esquema.
+                    //
+                    // `users.timezone` tiene America/New_York por omisión, y
+                    // mientras nadie lo leía daba igual. Ahora decide la hora
+                    // que se enseña en todas las pantallas: una casa de
+                    // despacho de Chicago que invita a diez personas las
+                    // estaría poniendo a todas una hora por delante, y cada una
+                    // tendría que darse cuenta y arreglarlo por su cuenta.
+                    //
+                    // Solo al CREAR la cuenta. A quien ya tiene cuenta no se le
+                    // toca el huso: es suyo, lo eligió, y puede estar
+                    // trabajando además para otra empresa de otro huso.
+                    'timezone' => $this->tenantTimezone($tenantId),
                     'status' => UserStatus::Invited,
                 ]));
             }
@@ -146,6 +160,26 @@ final class InviteUser
         throw ValidationException::withMessages([
             'email' => __('billing.limits.reached.users'),
         ]);
+    }
+
+    /**
+     * El huso de la empresa que invita.
+     *
+     * `withoutTenant` porque esta consulta se hace mientras se crea a alguien
+     * que todavía no pertenece a nada, y el alcance global de empresa no está
+     * puesto aún en la fila que se busca.
+     *
+     * Se valida con Clock::zona: `tenants.default_timezone` es un varchar sin
+     * CHECK y una empresa provisionada con un valor raro no puede acabar
+     * creando cuentas con un huso que no existe.
+     */
+    private function tenantTimezone(string $tenantId): string
+    {
+        $valor = $this->context->withoutTenant(fn () => DB::table('tenants')
+            ->where('id', $tenantId)
+            ->value('default_timezone'));
+
+        return Clock::zona(is_string($valor) ? $valor : null);
     }
 
     /**

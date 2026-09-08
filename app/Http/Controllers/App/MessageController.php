@@ -16,6 +16,8 @@ use App\Support\Messaging\MessageScope;
 use App\Support\Messaging\Posting;
 use App\Support\Messaging\Threads;
 use App\Support\Storage\DocumentStore;
+use App\Support\Time\PresentsTime;
+use App\Support\Time\Viewer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +46,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final class MessageController
 {
     use InertiaPage;
+    use PresentsTime;
 
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
@@ -72,9 +75,7 @@ final class MessageController
                     'kind' => (string) $c->kind,
                     'loadId' => $c->load_id === null ? null : (string) $c->load_id,
                     'loadNumber' => $c->load_id === null ? null : ($nombres[(string) $c->load_id] ?? null),
-                    'lastMessageAt' => $c->last_message_at === null
-                        ? null
-                        : substr((string) $c->last_message_at, 0, 16),
+                    'lastMessageAt' => $this->hora($c->last_message_at),
                     'unread' => $noLeidos[(string) $c->id] ?? 0,
                     'preview' => $ultimos[(string) $c->id] ?? null,
                 ])->all(),
@@ -289,7 +290,10 @@ final class MessageController
                 'userId' => (string) $p->user_id,
                 'role' => (string) $p->role,
                 'name' => trim((string) $p->first_name.' '.(string) $p->last_name) ?: (string) $p->email,
-                'lastReadAt' => $p->last_read_at === null ? null : substr((string) $p->last_read_at, 0, 16),
+                // Viewer:: y no $this->hora: el map es un `static fn` y no
+                // tiene $this. La respuesta es la misma — el trait delega en
+                // Viewer.
+                'lastReadAt' => Viewer::at($p->last_read_at),
             ])
             ->all();
     }

@@ -6,6 +6,7 @@ namespace App\Support\Signatures;
 
 use App\Support\Documents\Scanning;
 use App\Support\Storage\DocumentStore;
+use App\Support\Time\Clock;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -269,7 +270,7 @@ final class Signing
             ->get(['event_type', 'occurred_at', 'ip_address', 'actor_email'])
             ->map(static fn (object $e): array => [
                 'type' => (string) $e->event_type,
-                'at' => substr((string) $e->occurred_at, 0, 19),
+                'at' => Clock::utc($e->occurred_at),
                 'ip' => $e->ip_address,
                 'actor' => $e->actor_email,
             ])

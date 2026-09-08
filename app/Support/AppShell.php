@@ -7,6 +7,7 @@ namespace App\Support;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Http\Controllers\App\NotificationController;
+use App\Support\Time\Clock;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -55,6 +56,23 @@ final class AppShell
                 // mandos tiene que ver en todo momento que actúa como otro y que
                 // queda registrado.
                 'impersonating' => $actor->isImpersonating(),
+            ],
+            // El reloj con el que esta persona lee la aplicación.
+            //
+            // Va en el armazón por lo mismo que la campana: la barra superior
+            // se pinta en TODAS las pantallas y ahí es donde se dice en qué
+            // hora está lo que se enseña y donde se cambia. Si dependiera del
+            // controlador, la pantalla que se olvidara enseñaría horas
+            // convertidas sin decir a qué reloj — que es peor que no
+            // convertirlas.
+            //
+            // `zone` es la abreviatura de HOY (EDT en julio, EST en enero): es
+            // lo que se pinta al lado del selector, y en enero tiene que decir
+            // otra cosa.
+            'clock' => [
+                'timezone' => Clock::zona($actor->timezone),
+                'zone' => Clock::label($actor->timezone),
+                'options' => Clock::opciones(),
             ],
             'tenant' => $this->tenant($actor->tenantId),
             'memberships' => $this->memberships($actor->userId),

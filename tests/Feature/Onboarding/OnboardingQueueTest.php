@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Support\Documents\DocumentTypes;
+use App\Support\Time\Clock;
 use App\Support\Loads\Guards;
 use App\Support\Onboarding\Readiness;
 use App\Support\TenantContext;
@@ -312,7 +313,12 @@ it('dice desde cuándo espera, según su estado', function () {
             ->firstWhere('id', (string) $this->scenario->assignedCarrier->id);
 
         // La marca que corresponde a SU estado, no la fecha de alta.
-        expect($fila['waitingSince'])->toBe(now()->subDays(4)->format('Y-m-d H:i'));
+        //
+        // Por Clock::at y no por now()->format(): esta prueba comparaba contra
+        // la hora en UTC —`now()` sale en config('app.timezone'), que es UTC— y
+        // por tanto AFIRMABA el defecto que este lote arregla. Lo que quiere
+        // medir es CUÁL de las marcas se elige, no en qué reloj se enseña.
+        expect($fila['waitingSince'])->toBe(Clock::at(now()->subDays(4), Clock::POR_OMISION));
     });
 });
 

@@ -37,8 +37,20 @@ export interface ShellMembership {
   role: string
 }
 
+/**
+ * El reloj de quien mira. `zone` es la abreviatura de HOY —EDT en julio, EST en
+ * enero— y por eso la calcula el servidor y no el navegador: el del navegador
+ * puede estar en otro huso que el elegido.
+ */
+export interface ShellClock {
+  timezone: string
+  zone: string
+  options: string[]
+}
+
 export interface Shell {
   actor: ShellActor
+  clock: ShellClock
   tenant: ShellTenant | null
   memberships: ShellMembership[]
   nav: NavGroup[]

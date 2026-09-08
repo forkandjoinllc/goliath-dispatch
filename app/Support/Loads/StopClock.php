@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Loads;
 
-use Carbon\CarbonImmutable;
+use App\Support\Time\Clock;
 
 /**
  * En qué reloj está cada hora de una parada, y cómo se enseña.
@@ -67,13 +67,9 @@ final class StopClock
      */
     public static function moment(mixed $utc, ?string $timezone): ?string
     {
-        if ($utc === null) {
-            return null;
-        }
-
-        return CarbonImmutable::parse((string) $utc, 'UTC')
-            ->setTimezone(self::zona($timezone))
-            ->format('Y-m-d H:i');
+        // La maquinaria es la misma que la del reloj general; lo que cambia es
+        // DE QUIÉN sale el huso. Aquí, del muelle.
+        return Clock::at($utc, self::zona($timezone));
     }
 
     /**
@@ -84,23 +80,23 @@ final class StopClock
      */
     public static function label(?string $timezone, mixed $cuando = null): string
     {
-        $momento = $cuando === null
-            ? CarbonImmutable::now(self::zona($timezone))
-            : CarbonImmutable::parse((string) $cuando, self::zona($timezone));
-
-        return $momento->format('T');
+        return Clock::label(self::zona($timezone), $cuando);
     }
 
     /** Un huso utilizable, venga lo que venga de la fila. */
     private static function zona(?string $timezone): string
     {
+        // Ojo con el POR OMISIÓN: el de las paradas es America/Chicago, que es
+        // lo que pone el formulario al crear una, y el del reloj general es
+        // America/New_York, que es lo que pone el esquema en `users.timezone`.
+        // Son dos valores distintos a propósito y por eso esta comprobación no
+        // se delega en Clock::zona().
         if ($timezone === null || trim($timezone) === '') {
             return self::POR_OMISION;
         }
 
         // Un huso inválido en la fila no puede tumbar la pantalla de rastreo
-        // que está mirando un cliente. Se cae al de por omisión, que es el
-        // mismo que usa el formulario al crear una parada.
+        // que está mirando un cliente.
         return in_array($timezone, timezone_identifiers_list(), true)
             ? $timezone
             : self::POR_OMISION;

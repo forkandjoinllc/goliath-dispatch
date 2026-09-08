@@ -12,6 +12,7 @@ use App\Support\Platform\Providers;
 use App\Support\Platform\ScheduledRuns;
 use App\Support\Platform\ScheduledTasks;
 use App\Support\TenantContext;
+use App\Support\Time\PresentsTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -42,6 +43,7 @@ use Inertia\Response;
 final class HealthController
 {
     use InertiaPage;
+    use PresentsTime;
 
     public function __invoke(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
@@ -103,7 +105,7 @@ final class HealthController
             'running' => (int) ($porEstado['running'] ?? 0),
             'failed' => (int) ($porEstado['failed'] ?? 0),
             'deadLetter' => (int) ($porEstado['dead_letter'] ?? 0),
-            'oldestQueuedAt' => $masAntigua === null ? null : substr((string) $masAntigua, 0, 16),
+            'oldestQueuedAt' => $this->hora($masAntigua),
         ];
     }
 
@@ -139,7 +141,7 @@ final class HealthController
 
         return [
             'count' => (int) ($fila->total ?? 0),
-            'oldestAt' => $fila?->mas_viejo === null ? null : substr((string) $fila->mas_viejo, 0, 16),
+            'oldestAt' => $this->hora($fila?->mas_viejo),
         ];
     }
 

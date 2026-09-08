@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Support\InertiaPage;
+use App\Support\Time\Viewer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -94,8 +95,13 @@ final class NotificationController
                     'title' => (string) $n->title,
                     'body' => (string) $n->body,
                     'actionUrl' => $n->action_url,
-                    'readAt' => $n->read_at === null ? null : substr((string) $n->read_at, 0, 19),
-                    'createdAt' => substr((string) $n->created_at, 0, 19),
+                    // Viewer:: y no $this->hora: el map es un `static fn` y
+                    // ahí no hay $this. La respuesta es la misma —el trait
+                    // delega en Viewer— pero esto sí revienta en marcha, y un
+                    // guardián que LEE el código no lo puede ver. Lo cazó la
+                    // prueba de integración al pedir la página de verdad.
+                    'readAt' => Viewer::at($n->read_at),
+                    'createdAt' => Viewer::at($n->created_at),
                 ])->all(),
                 'meta' => [
                     'total' => $page->total(),

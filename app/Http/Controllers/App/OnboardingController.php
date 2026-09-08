@@ -11,6 +11,7 @@ use App\Enums\Scope;
 use App\Support\InertiaPage;
 use App\Support\Onboarding\Readiness;
 use App\Support\Onboarding\Transitions;
+use App\Support\Time\PresentsTime;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,7 @@ use Inertia\Response;
 final class OnboardingController
 {
     use InertiaPage;
+    use PresentsTime;
 
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
@@ -99,13 +101,13 @@ final class OnboardingController
                 'dot' => $c->dot_number,
                 'mc' => $c->mc_number,
                 'status' => (string) $c->onboarding_status,
-                'submittedAt' => $this->minute($c->submitted_at),
-                'reviewStartedAt' => $this->minute($c->review_started_at),
-                'correctionsRequestedAt' => $this->minute($c->corrections_requested_at),
+                'submittedAt' => $this->hora($c->submitted_at),
+                'reviewStartedAt' => $this->hora($c->review_started_at),
+                'correctionsRequestedAt' => $this->hora($c->corrections_requested_at),
                 'correctionNotes' => $c->correction_notes,
                 'rejectionReason' => $c->rejection_reason,
-                'approvedAt' => $this->minute($c->approved_at),
-                'suspendedAt' => $this->minute($c->suspended_at),
+                'approvedAt' => $this->hora($c->approved_at),
+                'suspendedAt' => $this->hora($c->suspended_at),
                 'suspensionReason' => $c->suspension_reason,
                 // Desde cuándo espera. Se calcula de la marca que corresponde a
                 // su estado: quien lleva la cola quiere saber cuánto lleva ESTE
@@ -119,7 +121,7 @@ final class OnboardingController
                 'signature' => $estado['signature'],
                 'fmcsaCheckedAt' => $estado['fmcsaCheckedAt'],
                 'canHaul' => $estado['blocking'] === [] && $estado['missingDocuments'] === [],
-                'lastActivityAt' => $this->minute($c->last_activity_at),
+                'lastActivityAt' => $this->hora($c->last_activity_at),
                 // A dónde puede ir ESTA tarjeta. Sale del grafo del servidor, no
                 // de una copia en la pantalla: el tablero no puede ofrecer un
                 // movimiento que la transición vaya a negar porque no sabe
@@ -247,11 +249,6 @@ final class OnboardingController
             default => $c->created_at,
         };
 
-        return $this->minute($marca ?? $c->created_at);
-    }
-
-    private function minute(mixed $valor): ?string
-    {
-        return $valor === null ? null : substr((string) $valor, 0, 16);
+        return $this->hora($marca ?? $c->created_at);
     }
 }

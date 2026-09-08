@@ -65,7 +65,9 @@
         "language": "Idioma",
         "signOut": "Cerrar sesión",
         "impersonating": "Suplantando a {name}",
-        "endImpersonation": "Finalizar suplantación"
+        "endImpersonation": "Finalizar suplantación",
+        "timezone": "Zona horaria",
+        "timezoneHint": "Las horas en pantalla se muestran en esta zona."
     },
     "search": {
         "placeholder": "Buscar cargas, transportistas, clientes, conductores, equipos…",
@@ -208,5 +210,15 @@
         "dispatcher": "Despachador",
         "carrier": "Transportista",
         "driver": "Conductor"
+    },
+    "clock": {
+        "America/New_York": "Este — Nueva York",
+        "America/Chicago": "Centro — Chicago",
+        "America/Denver": "Montaña — Denver",
+        "America/Phoenix": "Montaña, sin horario de verano — Phoenix",
+        "America/Los_Angeles": "Pacífico — Los Ángeles",
+        "America/Anchorage": "Alaska — Anchorage",
+        "Pacific/Honolulu": "Hawái — Honolulú",
+        "America/Puerto_Rico": "Atlántico — Puerto Rico"
     }
 }

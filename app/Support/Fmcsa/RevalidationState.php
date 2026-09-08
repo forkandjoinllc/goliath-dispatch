@@ -6,6 +6,7 @@ namespace App\Support\Fmcsa;
 
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Support\Tenancy\TenantPolicy;
+use App\Support\Time\Viewer;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -62,7 +63,7 @@ final class RevalidationState
         return [
             'days' => $dias,
             'providerLive' => app(FmcsaDirectory::class)->isLive(),
-            'lastVerifiedAt' => $ultima === null ? null : substr((string) $ultima, 0, 16),
+            'lastVerifiedAt' => Viewer::at($ultima),
             'dueCount' => $vencidos,
         ];
     }
