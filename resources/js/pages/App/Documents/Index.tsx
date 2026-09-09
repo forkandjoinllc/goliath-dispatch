@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { EmptyState } from '@/components/App/EmptyState'
 import { useI18n } from '@/lib/i18n'
 
 interface Doc {
@@ -66,7 +67,17 @@ export default function DocumentsIndex({ documents, owners, ownerTypes, filters,
   const { meta } = documents
   const from = meta.total === 0 ? 0 : (meta.currentPage - 1) * meta.perPage + 1
   const to = Math.min(meta.currentPage * meta.perPage, meta.total)
-  const filtered = Object.values(filters).some((v) => v !== '')
+  // Las claves, una a una, y NO Object.values(filters).
+  //
+  // `filters` lleva además lo que no es un filtro. En las otras cinco
+  // pantallas ya viaja ahí el orden —`sort` y `direction`, con valor por
+  // omisión— y con la forma genérica `filtered` sería SIEMPRE cierto: el
+  // estado vacío diría «nada coincide con estos filtros» para siempre, sin
+  // filtros puestos, y las otras tres ramas no se alcanzarían nunca. Hoy
+  // documentos no ordena; el día que ordene, esta línea es la que impide que
+  // el defecto entre solo.
+  const filtered =
+    filters.search !== '' || filters.owner !== '' || filters.status !== '' || filters.expiring !== ''
 
   const day = (value: string | null): string =>
     value
@@ -167,14 +178,7 @@ export default function DocumentsIndex({ documents, owners, ownerTypes, filters,
       </div>
 
       {documents.data.length === 0 ? (
-        <div className="mt-6 rounded border border-dashed border-steel-300 bg-white p-10 text-center">
-          <p className="font-display text-lg font-bold text-navy-700">
-            {t(filtered ? 'documents.index.noResults' : 'documents.index.empty')}
-          </p>
-          <p className="mt-1 text-sm text-steel-700">
-            {t(filtered ? 'documents.index.noResultsHint' : 'documents.index.emptyHint')}
-          </p>
-        </div>
+        <EmptyState ns="documents" filtered={filtered} scope={scope} canCreate={can.upload} />
       ) : (
         <>
           <div className="mt-6 overflow-x-auto rounded border border-steel-200 bg-white">

@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { EmptyState } from '@/components/App/EmptyState'
 import { useI18n } from '@/lib/i18n'
 import { formatCents } from '@/lib/format'
 
@@ -147,14 +148,7 @@ export default function CustomersIndex({ customers, filters, scope, can }: Props
       </div>
 
       {customers.data.length === 0 ? (
-        <div className="mt-6 rounded border border-dashed border-steel-300 bg-white p-10 text-center">
-          <p className="font-display text-lg font-bold text-navy-700">
-            {t(filtered ? 'customers.index.noResults' : 'customers.index.empty')}
-          </p>
-          <p className="mt-1 text-sm text-steel-700">
-            {t(filtered ? 'customers.index.noResultsHint' : 'customers.index.emptyHint')}
-          </p>
-        </div>
+        <EmptyState ns="customers" filtered={filtered} scope={scope} canCreate={can.create} />
       ) : (
         <>
           <div className="mt-6 overflow-x-auto rounded border border-steel-200 bg-white">

@@ -63,7 +63,16 @@
         "comingSoon": "Planned integration",
         "comingSoonHint": "This connects to an external provider that is not configured yet.",
         "supportContact": "If you think you should have access, email {email}.",
-        "supportContactGeneric": "If you need help, email {email}."
+        "supportContactGeneric": "If you need help, email {email}.",
+        "scoped": {
+            "own": "You only see your own here",
+            "ownHint": "This list is limited to you, and you do not have any yet.",
+            "assigned": "You only see your portfolio here",
+            "assignedHint": "Nothing is assigned to you yet. An administrator can widen your portfolio.",
+            "carrier": "You only see your carrier here",
+            "carrierHint": "This list is limited to your carrier, and there is nothing of yours yet."
+        },
+        "emptyNoPermission": "Your company has not added any yet, and your account cannot create them. Ask an administrator."
     },
     "labels": {
         "status": "Status",

@@ -63,7 +63,16 @@
         "comingSoon": "Integración planificada",
         "comingSoonHint": "Esto se conecta con un proveedor externo que aún no está configurado.",
         "supportContact": "Si cree que debería tener acceso, escriba a {email}.",
-        "supportContactGeneric": "Si necesita ayuda, escriba a {email}."
+        "supportContactGeneric": "Si necesita ayuda, escriba a {email}.",
+        "scoped": {
+            "own": "Aquí solo salen los suyos",
+            "ownHint": "Esta lista está acotada a usted, y todavía no tiene ninguno.",
+            "assigned": "Aquí solo sale su cartera",
+            "assignedHint": "Todavía no hay nada asignado a usted. Un administrador puede ampliar su cartera.",
+            "carrier": "Aquí solo sale su transportista",
+            "carrierHint": "Esta lista está acotada a su transportista, y todavía no hay nada suyo."
+        },
+        "emptyNoPermission": "Su empresa todavía no ha dado de alta ninguno, y su cuenta no puede crearlos. Pídaselo a un administrador."
     },
     "labels": {
         "status": "Estado",

@@ -2047,3 +2047,47 @@ pantallas que estaban bien. **Un par del registro solo entra después de leer el
 `t()` que de verdad lo usa** — si no, el guardián se convierte en una fuente de
 trabajo inventado y acaba desactivado, que es la forma en que un guardián deja
 de guardar.
+
+---
+
+## La pantalla vacía que mentía (`docs/empty-states.md`)
+
+**Los props de una pantalla llevan más que sus filtros, y eso rompe el «¿hay
+filtros puestos?».** Al escribir la prueba de integración comprobé
+`array_filter($props['filters'])` esperando que estuviera vacío en una pantalla
+recién abierta, y salieron `sort => 'legal_name'` y `direction => 'asc'`. La
+prueba falló y con ella descubrí que `Documents` calculaba
+`Object.values(filters).some(v => v !== '')`: si esa pantalla gana orden algún
+día, `filtered` queda cierto para siempre y las otras tres ramas del estado
+vacío se vuelven inalcanzables. **No fallaba todavía**, y solo apareció porque
+la prueba mira los props de verdad en vez de razonar sobre ellos. Lección:
+**una aserción sobre «está vacío» tiene que nombrar qué debería estar vacío**;
+la versión genérica pasa por buena todo lo que el servidor decida meter ahí
+mañana.
+
+**El orden de unas ramas es una decisión que hay que vigilar, no solo su
+existencia.** El componente mira filtro, luego alcance, luego permiso. Con
+alcance y permiso intercambiados el resultado es correcto en cinco de los seis
+roles y falso en uno —el despachador, que sí puede crear conductores y sí tiene
+la lista acotada—. Un sabotaje que solo quita ramas no lo caza; hay que
+comparar POSICIONES en el fichero:
+
+```php
+expect($posAlcance)->toBeLessThan($posPermiso, '…');
+```
+
+Es la primera vez en estos lotes que lo vigilado es el orden y no la presencia,
+y vale la pena tenerlo en cuenta cuando lo que se construye es una cadena de
+`if` cuyas ramas se solapan.
+
+**Un escenario de prueba sin datos hace pasar una prueba que no mide nada.** La
+prueba de «la empresa tiene documentos y el conductor no» pasaba con la empresa
+también vacía. Ahora crea el documento ANTES de mirar y afirma que existe. El
+olor: **cuando la prueba dice «A sí y B no», tiene que afirmar A además de negar
+B**, o solo está midiendo B.
+
+**El borrado suave sirve para poner una lista vacía sin romper nada.** Para
+llegar a la rama de empresa hacía falta una lista de transportistas vacía sobre
+la base de datos de demostración. Ocultarlos con `deleted_at` y una razón
+reconocible —`PRUEBA_TEMPORAL`— y restaurarlos por esa razón deja el recorrido
+repetible y la base como estaba. Verificado contando al final.
