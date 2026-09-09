@@ -13,6 +13,7 @@ use App\Enums\Scope;
 use App\Models\Customer;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Customers\NameKey;
+use App\Support\Deletion\OpenWork;
 use App\Support\Geo\Regions;
 use Illuminate\Support\Str;
 use App\Support\InertiaPage;
@@ -148,6 +149,13 @@ final class CustomerController
                 'update' => $checker->can($actor, 'customer:update', $this->context($model), $policy)->allowed,
                 'delete' => $checker->can($actor, 'customer:delete', $this->context($model), $policy)->allowed,
             ],
+            // Lo que impide borrarlo, ANTES de que alguien lo pulse.
+            //
+            // Es el patrón de Guards::blocking en las cargas: el servidor manda
+            // qué bloquea y la pantalla lo explica en vez de dejar pulsar y
+            // contestar con un error. Sin esto, el diálogo de confirmación
+            // describe un borrado que no va a ocurrir.
+            'blocking' => OpenWork::forCustomer((string) $actor->tenantId, (string) $model->id),
         ]);
     }
 
@@ -259,15 +267,17 @@ final class CustomerController
         // Un cliente con cargas vivas no se borra. No es una regla de
         // conveniencia: la carga necesita saber a quién facturar, y un cliente
         // borrado en mitad de un viaje deja una factura sin destinatario.
-        $live = DB::table('loads')
-            ->where('customer_id', $model->id)
-            ->whereNull('deleted_at')
-            ->whereNotIn('status', ['paid', 'cancelled'])
-            ->count();
+        //
+        // La consulta se fue a OpenWork. Estaba aquí en línea, era la ÚNICA
+        // copia de la regla en toda la aplicación, y al transportista —que es
+        // quien pone el camión— no se le había aplicado nunca. Con dos copias
+        // se habrían separado; con una, el guardián puede exigir que todo
+        // borrado pase por ella.
+        $abierto = OpenWork::forCustomer((string) $actor->tenantId, (string) $model->id);
 
-        if ($live > 0) {
+        if ($abierto !== []) {
             throw ValidationException::withMessages([
-                'customer' => __('customers.flash.hasLiveLoads', ['count' => $live]),
+                'customer' => OpenWork::message('customers', $abierto),
             ]);
         }
 

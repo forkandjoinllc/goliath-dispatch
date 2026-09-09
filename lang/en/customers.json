@@ -158,5 +158,12 @@
         "active": "Active",
         "inactive": "Inactive",
         "on_hold": "On hold"
+    },
+    "openWork": {
+        "cannotDelete": "This customer cannot be deleted: it has {what}. Close that first.",
+        "loadsOne": "1 open load",
+        "loads": "{count} open loads",
+        "blockedTitle": "Cannot be deleted yet",
+        "blockedHint": "It has {what}. A load needs to know who to invoice."
     }
 }

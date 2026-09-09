@@ -213,5 +213,16 @@
     "maintenance": "Maintenance",
     "after_hours": "After hours",
     "other": "Other"
+  },
+  "openWork": {
+    "cannotDelete": "This carrier cannot be deleted: it has {what}. Close that first.",
+    "loadsOne": "1 open load",
+    "loads": "{count} open loads",
+    "settlementsOne": "1 unpaid settlement",
+    "settlements": "{count} unpaid settlements",
+    "invoicesOne": "1 invoice with a balance",
+    "invoices": "{count} invoices with a balance",
+    "blockedTitle": "Cannot be deleted yet",
+    "blockedHint": "It has {what}. A carrier deleted mid-trip leaves the load not knowing who is hauling it."
   }
 }

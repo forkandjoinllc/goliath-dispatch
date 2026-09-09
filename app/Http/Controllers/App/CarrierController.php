@@ -18,6 +18,7 @@ use App\Rules\SubdivisionOfCountry;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
+use App\Support\Deletion\OpenWork;
 use App\Support\EnumValue;
 use App\Support\Fmcsa\Revalidation;
 use App\Support\Geo\Regions;
@@ -173,6 +174,13 @@ final class CarrierController
                 'runVerification' => $checker->can($actor, 'carrier:verification:run', $this->context($model), $policy)->allowed,
                 'overrideVerification' => $checker->can($actor, 'carrier:verification:override', $this->context($model), $policy)->allowed,
             ],
+            // Lo que impide borrarlo, ANTES de que alguien lo pulse.
+            //
+            // Es el patrón de Guards::blocking en las cargas: el servidor manda
+            // qué bloquea y la pantalla lo explica en vez de dejar pulsar y
+            // contestar con un error. Sin esto, el diálogo de confirmación
+            // describe un borrado que no va a ocurrir.
+            'blocking' => OpenWork::forCarrier((string) $actor->tenantId, (string) $model->id),
         ]);
     }
 
@@ -486,6 +494,25 @@ final class CarrierController
         $actor = $current->require();
         $model = $this->find($carrier);
         $checker->authorize($actor, 'carrier:delete', $this->context($model), $current->policy());
+
+        // Un transportista con trabajo abierto NO se borra.
+        //
+        // La regla ya existía —escrita entera dentro de
+        // CustomerController::destroy— y a esta ficha no se le había aplicado
+        // nunca. Y es la peor de las dos para dejarla sin regla: el cliente
+        // pone el dinero, el transportista pone el camión.
+        //
+        // Comprobado antes de arreglarlo: se borró un transportista con una
+        // carga `in_transit` sin ninguna negativa, y la ficha de esa carga pasó
+        // a enseñar «—» donde va quién la lleva mientras la pantalla de rastreo
+        // seguía nombrándolo.
+        $abierto = OpenWork::forCarrier((string) $actor->tenantId, (string) $model->id);
+
+        if ($abierto !== []) {
+            throw ValidationException::withMessages([
+                'carrier' => OpenWork::message('carriers', $abierto),
+            ]);
+        }
 
         // Borrado suave. La política de retención decide cuándo se purga de
         // verdad; hasta entonces las cargas históricas siguen pudiendo nombrar a

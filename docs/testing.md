@@ -2091,3 +2091,72 @@ llegar a la rama de empresa hacía falta una lista de transportistas vacía sobr
 la base de datos de demostración. Ocultarlos con `deleted_at` y una razón
 reconocible —`PRUEBA_TEMPORAL`— y restaurarlos por esa razón deja el recorrido
 repetible y la base como estaba. Verificado contando al final.
+
+---
+
+## El trabajo abierto que nadie comprobaba (`docs/open-work.md`)
+
+**Una constante que nadie fija es una constante que se puede ampliar sin que
+nada falle.** `CARGAS_CERRADAS = ['paid','cancelled']` estaba comprobada solo
+así: «cada uno de sus valores existe en un CHECK del esquema». El sabotaje que
+añadía `delivered` pasó en verde — los tres valores existían. Con `delivered`
+dentro se podía borrar al transportista que acababa de entregar y todavía no
+había cobrado. Dos arreglos, y hacen falta los dos:
+
+```php
+expect(OpenWork::CARGAS_CERRADAS)->toBe(['paid', 'cancelled']);   // la lista exacta
+```
+
+y una prueba de integración que **ejercite** un estado que no está en la lista
+(`delivered`, `invoiced`). Lo primero fija la decisión; lo segundo comprueba que
+la decisión hace algo. **Una lista de valores permitidos necesita las dos
+aserciones: cuál es la lista, y qué pasa con algo que no está en ella.**
+
+**Comprobar la posición de un texto no comprueba que la rama se alcance.** El
+guardián exigía que `openWork.blockedTitle` apareciera antes que `if (!armed)`.
+El sabotaje `if (false && abierto.length > 0)` dejó el texto donde estaba y la
+rama muerta: verde. La aguja pasó a fijar la **condición** exacta —`if
+(abierto.length > 0) {`— con lo que un `&&` delante ya no casa. Regla: **cuando
+lo vigilado es que algo ocurra bajo cierta condición, la aguja tiene que
+contener la condición, no lo que se pinta debajo de ella.**
+
+**Una aguja sin retrorreferencia acepta que se ignore lo que se acaba de
+contar.** Para exigir que un borrado compruebe dependencias yo buscaba
+`exists();if(`. El sabotaje `if (false)` mantiene el `exists();` y deja de mirar
+el resultado: verde. La versión que sirve ata la condición a la variable que se
+asignó:
+
+```php
+preg_match('/\$(\w+)=DB::table\([^;]+;if\(\$\1\)/', $fuente)
+```
+
+Es la tercera vez en tres lotes que un sabotaje destapa una aguja demasiado
+laxa, y las tres tenían la misma forma: **la aguja describía la vecindad del
+código en vez de la relación que importa.**
+
+**Un escenario con dos de algo distingue «cuenta bien» de «cuenta todo».** La
+prueba de que `OpenWork::forCarrier` cuenta lo de UN transportista pasaba
+trivialmente hasta que se cerró la carga del OTRO y se comprobaron los dos a la
+vez. `Scenario` da un transportista asignado y otro que no precisamente para
+esto, y aun así se me olvidó usarlo.
+
+**Volví a reformatear un diccionario, con la lección ya escrita dos lotes
+antes.** `carriers.json` usa DOS espacios y `common.json` cuatro; escribí los
+cuatro con `indent=4` y el diff salió 224 añadidas / 213 quitadas. Lo que
+faltaba no era la lección, era el PASO: la sangría se lee del propio fichero
+
+```python
+segunda = texto.split('\n')[1]
+ind = len(segunda) - len(segunda.lstrip(' '))
+```
+
+y después del write se compara contra el original de git EXIGIENDO cero líneas
+quitadas. Escribirlo en `docs/testing.md` no evitó nada; ejecutarlo, sí. Cuando
+una lección se repite, lo que falta es una comprobación, no otra frase.
+
+**Insertar filas en las pruebas encuentra columnas obligatorias que el modelo
+esconde.** `carrier_settlements` pide `period_start` y `period_end`, y
+`expenses` pedía `treatment_snapshot`, ninguna con valor por omisión. Escribir
+con `DB::table()->insert()` en vez de con el modelo es lo que hace que esas
+reglas aparezcan — y es también lo que obliga a leer el esquema antes de dar por
+buena una prueba.

@@ -73,6 +73,8 @@ interface Props {
   locations: Location[]
   contacts: Contact[]
   loads: LoadRow[] | null
+  /** Trabajo abierto que impide borrar: clase => cuántos. Ver OpenWork. */
+  blocking: Record<string, number>
   can: { update: boolean; delete: boolean }
 }
 
@@ -82,7 +84,7 @@ const STATUS_TONE: Record<string, string> = {
   on_hold: 'bg-safety-100 text-safety-800 ring-safety-500/40',
 }
 
-export default function CustomerShow({ customer, locations, contacts, loads, can }: Props) {
+export default function CustomerShow({ customer, locations, contacts, loads, can, blocking }: Props) {
   const { t, locale } = useI18n()
 
   const date = (value: string | null): string =>
@@ -116,7 +118,7 @@ export default function CustomerShow({ customer, locations, contacts, loads, can
               {t('customers.detail.edit')}
             </Link>
           ) : null}
-          {can.delete ? <DeleteButton id={customer.id} /> : null}
+          {can.delete ? <DeleteButton id={customer.id} blocking={blocking} /> : null}
         </>
       }
     >
@@ -320,9 +322,27 @@ function AddressBlock({ address }: { address: Address }) {
   )
 }
 
-function DeleteButton({ id }: { id: string }) {
+function DeleteButton({ id, blocking }: { id: string; blocking: Record<string, number> }) {
   const { t } = useI18n()
   const [armed, setArmed] = useState(false)
+
+  const abierto = Object.entries(blocking)
+
+  // Lo que bloquea, ANTES de ofrecer el botón. Ver Carriers/Show.tsx: el
+  // servidor se niega igual, pero dejar pulsar significa enseñar un diálogo de
+  // confirmación que describe un borrado que no va a ocurrir.
+  if (abierto.length > 0) {
+    const que = abierto
+      .map(([clase, n]) => t(`customers.openWork.${clase}`, { n, count: String(n) }))
+      .join(t('common.labels.listSeparator'))
+
+    return (
+      <span className="flex max-w-md flex-col gap-0.5 rounded border border-steel-300 bg-steel-50 px-3 py-2">
+        <span className="text-xs font-semibold text-carbon">{t('customers.openWork.blockedTitle')}</span>
+        <span className="text-xs text-steel-700">{t('customers.openWork.blockedHint', { what: que })}</span>
+      </span>
+    )
+  }
 
   if (!armed) {
     return (

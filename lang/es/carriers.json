@@ -213,5 +213,16 @@
     "maintenance": "Taller",
     "after_hours": "Fuera de horario",
     "other": "Otro"
+  },
+  "openWork": {
+    "cannotDelete": "No se puede borrar este transportista: tiene {what}. Ciérrelo primero.",
+    "loadsOne": "1 carga sin cerrar",
+    "loads": "{count} cargas sin cerrar",
+    "settlementsOne": "1 liquidación sin pagar",
+    "settlements": "{count} liquidaciones sin pagar",
+    "invoicesOne": "1 factura con saldo",
+    "invoices": "{count} facturas con saldo",
+    "blockedTitle": "No se puede borrar todavía",
+    "blockedHint": "Tiene {what}. Un transportista borrado en mitad de un viaje deja la carga sin saber quién la lleva."
   }
 }

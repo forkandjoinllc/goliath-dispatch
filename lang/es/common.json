@@ -111,7 +111,8 @@
         "page": "Página {page} de {total}",
         "selected": "{count} seleccionados",
         "lastFour": "terminada en {last4}",
-        "masked": "Enmascarado por privacidad"
+        "masked": "Enmascarado por privacidad",
+        "listSeparator": ", "
     },
     "confirm": {
         "title": "¿Está seguro?",

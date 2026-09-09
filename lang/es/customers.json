@@ -158,5 +158,12 @@
         "active": "Activo",
         "inactive": "Inactivo",
         "on_hold": "En espera"
+    },
+    "openWork": {
+        "cannotDelete": "No se puede borrar este cliente: tiene {what}. Ciérrelo primero.",
+        "loadsOne": "1 carga sin cerrar",
+        "loads": "{count} cargas sin cerrar",
+        "blockedTitle": "No se puede borrar todavía",
+        "blockedHint": "Tiene {what}. Una carga necesita saber a quién facturar."
     }
 }

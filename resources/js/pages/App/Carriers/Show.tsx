@@ -82,6 +82,8 @@ interface Props {
   verification: Verification | null
   documents: DocumentRow[] | null
   fleet: { trucks: Unit[]; trailers: Unit[] } | null
+  /** Trabajo abierto que impide borrar: clase => cuántos. Ver OpenWork. */
+  blocking: Record<string, number>
   can: {
     update: boolean
     updateFee: boolean
@@ -118,7 +120,7 @@ const TRANSITIONS: Record<string, { action: string; needs: keyof Props['can']; d
 
 const NEEDS_REASON = ['corrections_required', 'rejected', 'suspended']
 
-export default function CarrierShow({ carrier, onboarding, verification, documents, fleet, can }: Props) {
+export default function CarrierShow({ carrier, onboarding, verification, documents, fleet, can, blocking }: Props) {
   const { t, locale } = useI18n()
   const [pending, setPending] = useState<string | null>(null)
   const [reason, setReason] = useState('')
@@ -165,7 +167,7 @@ export default function CarrierShow({ carrier, onboarding, verification, documen
               {t('carriers.detail.edit')}
             </Link>
           ) : null}
-          {can.delete ? <DeleteButton id={carrier.id} /> : null}
+          {can.delete ? <DeleteButton id={carrier.id} blocking={blocking} /> : null}
         </>
       }
     >
@@ -541,9 +543,29 @@ function OverrideForm({ id, onClose }: { id: string; onClose: () => void }) {
   )
 }
 
-function DeleteButton({ id }: { id: string }) {
+function DeleteButton({ id, blocking }: { id: string; blocking: Record<string, number> }) {
   const { t } = useI18n()
   const [armed, setArmed] = useState(false)
+
+  const abierto = Object.entries(blocking)
+
+  // Lo que bloquea, ANTES de ofrecer el botón.
+  //
+  // El servidor se niega igual —nunca se confía en el cliente— pero dejar
+  // pulsar para contestar con un error significa enseñar un diálogo de
+  // confirmación que describe un borrado que no va a ocurrir.
+  if (abierto.length > 0) {
+    const que = abierto
+      .map(([clase, n]) => t(`carriers.openWork.${clase}`, { n, count: String(n) }))
+      .join(t('common.labels.listSeparator'))
+
+    return (
+      <span className="flex max-w-md flex-col gap-0.5 rounded border border-steel-300 bg-steel-50 px-3 py-2">
+        <span className="text-xs font-semibold text-carbon">{t('carriers.openWork.blockedTitle')}</span>
+        <span className="text-xs text-steel-700">{t('carriers.openWork.blockedHint', { what: que })}</span>
+      </span>
+    )
+  }
 
   // Dos pasos y no un `confirm()` del navegador: un diálogo modal nativo
   // bloquea la página entera y no se puede traducir.
