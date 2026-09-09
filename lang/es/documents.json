@@ -21,7 +21,12 @@
         "receipt": "recibo",
         "lumper_receipt": "recibo de estibador",
         "scale_ticket": "tique de báscula",
-        "other": "otro documento"
+        "other": "otro documento",
+        "rate_confirmation": "confirmación de tarifa",
+        "permit": "permiso de sobredimensión",
+        "route_survey": "estudio de ruta",
+        "escort_document": "documento del escolta",
+        "invoice": "factura"
     },
     "index": {
         "title": "Documentos",
@@ -53,7 +58,12 @@
         "carrier": "Transportista",
         "driver": "Conductor",
         "truck": "Camión",
-        "trailer": "Remolque"
+        "trailer": "Remolque",
+        "load": "Carga",
+        "expense": "Gasto",
+        "permit": "Permiso",
+        "route_survey": "Estudio de ruta",
+        "escort": "Escolta"
     },
     "columns": {
         "document": "Documento",

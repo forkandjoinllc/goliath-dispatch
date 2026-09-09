@@ -12,6 +12,7 @@ use App\Enums\AuditAction;
 use App\Enums\Scope;
 use App\Models\Document;
 use App\Support\Audit;
+use App\Support\Documents\DocumentOwners;
 use App\Support\Documents\DocumentScope;
 use App\Support\Documents\DocumentTypes;
 use App\Support\Documents\Scanning;
@@ -117,6 +118,15 @@ final class DocumentController
                 ],
             ],
             'owners' => $this->ownerNames($rows),
+            // Los dueños que el FILTRO puede ofrecer.
+            //
+            // Estaban escritos a mano en el componente —carrier, driver, truck,
+            // trailer— y la aplicación escribe nueve. Las dieciocho filas cuyo
+            // dueño es una carga o un gasto salían en la lista y no se podían
+            // filtrar: el desplegable no llegaba a ellas. Ahora sale del mismo
+            // catálogo que las nombra, así que un dueño nuevo aparece en los dos
+            // sitios o en ninguno.
+            'ownerTypes' => DocumentOwners::all(),
             'filters' => $filters,
             'scope' => $scope->value,
             'facets' => $this->facets($checker, $actor, $scope),
@@ -268,7 +278,25 @@ final class DocumentController
         if (! empty($data['document_id'])) {
             $existing = $this->find($data['document_id'], $checker, $actor, $policy);
         } else {
-            if (! DocumentTypes::isKnown($data['document_type'])) {
+            // La puerta es «¿puede ELEGIRLO una persona, para ESTE dueño?», no
+            // «¿existe el tipo?».
+            //
+            // Era isKnown(), y con veintidós tipos en el catálogo daba lo
+            // mismo. Al completar el catálogo a los veintisiete del esquema
+            // dejó de darlo: los cinco que escribe la aplicación se volvieron
+            // «conocidos» y esta puerta los habría dejado pasar. Un despachador
+            // podría subir un fichero declarándolo `rate_confirmation`, y
+            // RateConfirmation busca por ese tipo para decidir si el
+            // transportista aceptó la tarifa.
+            //
+            // Lo cazó tests/Feature/Documents/DocumentNamesTest.php, no el
+            // guardián de código: la regresión estaba en lo que el catálogo
+            // AHORA contesta, no en lo que el fichero dice.
+            //
+            // Comprobar además que el tipo es de ESE dueño cierra de paso algo
+            // que llevaba abierto desde el principio: con isKnown() se podía
+            // colgar un `cdl_front` de un camión.
+            if (! in_array($data['document_type'], DocumentTypes::forOwner($data['owner_type']), true)) {
                 throw ValidationException::withMessages([
                     'document_type' => __('documents.form.unknownType'),
                 ]);
@@ -606,7 +634,14 @@ final class DocumentController
                 ->orWhere('document_type', 'like', $term));
         }
 
-        if (in_array($filters['owner'], ['carrier', 'driver', 'truck', 'trailer'], true)) {
+        // Del catálogo, no de una lista escrita a mano.
+        //
+        // Era la TERCERA copia de los mismos cuatro dueños —el desplegable, el
+        // diccionario y esto— y la que peor fallaba: aunque el desplegable
+        // ofreciera «Carga», aquí se descartaba en silencio y la lista salía
+        // entera. Un filtro que no filtra y no lo dice es peor que uno que
+        // falta, porque quien lo usa cuenta las filas y se cree el número.
+        if (DocumentOwners::isKnown($filters['owner'])) {
             $query->where('owner_type', $filters['owner']);
         }
 
@@ -670,29 +705,18 @@ final class DocumentController
      */
     private function ownerNames($rows): array
     {
-        $names = [];
-
-        foreach ([['carrier', 'carriers', 'legal_name'], ['truck', 'trucks', 'unit_number'], ['trailer', 'trailers', 'unit_number']] as [$type, $table, $column]) {
-            $ids = $rows->where('owner_type', $type)->pluck('owner_id')->unique()->all();
-
-            if ($ids === []) {
-                continue;
-            }
-
-            foreach (DB::table($table)->whereIn('id', $ids)->pluck($column, 'id') as $id => $name) {
-                $names["{$type}:{$id}"] = (string) $name;
-            }
-        }
-
-        $driverIds = $rows->where('owner_type', 'driver')->pluck('owner_id')->unique()->all();
-
-        if ($driverIds !== []) {
-            foreach (DB::table('drivers')->whereIn('id', $driverIds)->get(['id', 'first_name', 'last_name']) as $d) {
-                $names["driver:{$d->id}"] = trim("{$d->first_name} {$d->last_name}");
-            }
-        }
-
-        return $names;
+        // Sabía resolver CUATRO dueños —transportista, conductor, camión y
+        // remolque— y la aplicación escribe nueve. Un recibo de gasto o el
+        // papel de un permiso salían con un guion donde va el nombre, y no por
+        // ser huérfanos: la fila estaba ahí y nadie la buscaba.
+        //
+        // La lista de dónde vive cada uno se fue a DocumentOwners, que es
+        // también quien dice cuáles existen. Tenerla aquí era la mitad del
+        // problema: un dueño nuevo se añadía en Attachment y esta pantalla no
+        // se enteraba.
+        return DocumentOwners::names(
+            $rows->map(static fn (Document $d): array => [(string) $d->owner_type, (string) $d->owner_id])->all()
+        );
     }
 
     private function expiryFlag(Document $d): ?string
@@ -764,6 +788,13 @@ final class DocumentController
                 'driver' => "/drivers/{$d->owner_id}",
                 'truck' => "/equipment/trucks/{$d->owner_id}",
                 'trailer' => "/equipment/trailers/{$d->owner_id}",
+                // La carga sí se puede enlazar: su identificador ES el dueño.
+                'load' => "/loads/{$d->owner_id}",
+                // El resto se queda sin enlace a propósito. Del papel de un
+                // permiso se sabe la fila del permiso, no la carga, y sus
+                // pantallas cuelgan de la carga: un enlace habría que
+                // adivinarlo. Sin enlace se lee que no lo hay; con uno roto,
+                // que la pantalla está mal.
                 default => null,
             },
         ];

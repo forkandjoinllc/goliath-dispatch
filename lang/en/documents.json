@@ -21,7 +21,12 @@
         "receipt": "receipt",
         "lumper_receipt": "lumper receipt",
         "scale_ticket": "scale ticket",
-        "other": "other document"
+        "other": "other document",
+        "rate_confirmation": "rate confirmation",
+        "permit": "oversize permit",
+        "route_survey": "route survey",
+        "escort_document": "escort document",
+        "invoice": "invoice"
     },
     "index": {
         "title": "Documents",
@@ -53,7 +58,12 @@
         "carrier": "Carrier",
         "driver": "Driver",
         "truck": "Truck",
-        "trailer": "Trailer"
+        "trailer": "Trailer",
+        "load": "Load",
+        "expense": "Expense",
+        "permit": "Permit",
+        "route_survey": "Route survey",
+        "escort": "Escort"
     },
     "columns": {
         "document": "Document",

@@ -22,6 +22,8 @@ interface Props {
     meta: { total: number; perPage: number; currentPage: number; lastPage: number }
   }
   owners: Record<string, string>
+  /** Del servidor, no escritos a mano: ver DocumentOwners. */
+  ownerTypes: string[]
   filters: { search: string; owner: string; status: string; expiring: string }
   scope: string
   facets: Record<string, number>
@@ -45,7 +47,7 @@ function navigate(filters: Props['filters'], patch: Partial<Props['filters']>) {
   router.get('/documents', next, { preserveState: true, preserveScroll: true, replace: true })
 }
 
-export default function DocumentsIndex({ documents, owners, filters, scope, facets, can }: Props) {
+export default function DocumentsIndex({ documents, owners, ownerTypes, filters, scope, facets, can }: Props) {
   const { t, locale } = useI18n()
   const [search, setSearch] = useState(filters.search)
   const first = useRef(true)
@@ -142,7 +144,7 @@ export default function DocumentsIndex({ documents, owners, filters, scope, face
             className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
           >
             <option value="">{t('documents.filters.all')}</option>
-            {['carrier', 'driver', 'truck', 'trailer'].map((o) => (
+            {ownerTypes.map((o) => (
               <option key={o} value={o}>
                 {t(`documents.owners.${o}`)}
               </option>

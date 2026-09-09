@@ -1986,3 +1986,64 @@ pantallas del sistema enseñando la MISMA fila con dos husos distintos
 (`SignatureController` convertido y `Readiness` sin convertir) es peor que las
 dos en UTC, así que el criterio para meter un fichero en el lote no fue solo
 «cuánto duele» sino «¿comparte columna con algo que ya convertí?».
+
+---
+
+## El tipo que no tenía nombre (`docs/document-names.md`)
+
+**Un guardián que recorre una lista escrita por quien lo escribió no comprueba
+el código, se comprueba a sí mismo.** La prueba de que el catálogo de dueños
+cubre las ranuras de `Papers` iteraba `['permit','route_survey','escort']` a
+mano. El sabotaje que AÑADÍA una cuarta ranura sin catalogar pasó en verde: la
+lista del guardián no cambiaba. La versión que sirve lee las ranuras del
+fichero. Regla: **si el guardián existe para vigilar una lista del código, la
+lista tiene que salir del código.**
+
+**Una aguja que no entiende una entrada la salta, y saltarla es no
+comprobarla.** Corregido lo anterior, la aguja leía `'tipo'=>'([a-z_]+)'`. El
+sabotaje que ponía `route_survey_v2` —con dígito— no casaba, así que el bucle
+pasaba de largo y el guardián seguía verde. Dos arreglos: la clase pasa a
+`[^']+`, y —esto es lo que se generaliza— **se cuenta cuántas entradas hay y se
+exige haber leído todas**:
+
+```php
+expect(count($ranuras))->toBe(substr_count($fuente, "=>['tabla'=>"));
+```
+
+Sin ese contador, cualquier futura entrada con una forma inesperada vuelve a
+salir gratis. Es la misma familia que el `(?<![a-z_])` del lote anterior: **una
+expresión que filtra tiene que fallar sobre lo que no entiende, no ignorarlo.**
+
+**Completar un catálogo puede ABRIR una puerta.** `DocumentController::store`
+guardaba la subida con `isKnown()`. Con veintidós tipos daba igual; al
+completarlo a veintisiete, los cinco que escribe la aplicación se volvieron
+«conocidos» y la puerta los habría dejado pasar — justo lo que el lote decía
+estar impidiendo. El guardián de código no lo vio: **el fichero seguía diciendo
+exactamente lo mismo, lo que cambió fue la respuesta del catálogo**. Lo cazó la
+prueba de integración al hacer el POST. Regla que ya va por la segunda vez en
+dos lotes: **cuando un lote amplía un conjunto del que depende una validación,
+una de las pruebas tiene que ejercitar esa validación de verdad.**
+
+**`*/` dentro de un docblock lo cierra.** Escribí `lang/*/documents.json` en un
+comentario y el fichero dejó de compilar. Obvio dicho así y perdí un ciclo.
+
+**Un reemplazo cuyo ancla incluye líneas que quiero conservar tiene que
+reproducirlas.** Usé como ancla el bloque `// Genéricos` + `'other' => …` para
+insertar detrás, y el reemplazo no las repetía: el catálogo se quedó en 26 de 27
+y solo lo vi porque conté. **Anclar antes, no encima.**
+
+**Los diccionarios JSON no comparten indentación.** `documents.json` usa cuatro
+espacios y `carriers.json` dos. Un `json.dump(indent=4)` sobre el segundo
+reformatea el fichero entero — que es lo que me pasó con `nav.json` en el lote
+anterior y por lo que ahí el commit hubo que enmendarlo. Lo que hago ahora:
+**recuperar el original de git, comparar, y exigir que el diff sean solo las
+líneas añadidas** antes de dar el fichero por bueno.
+
+**Un dominio declarado mal pide rótulos que no existen.** Al montar el registro
+de dominios declaré `tracking_sessions.provider => tracking.provider` y
+`trucks.coi_verification_status => equipment.verification`. Ninguna de las dos
+rutas es la que usa la pantalla, y el guardián exigió diez rótulos para dos
+pantallas que estaban bien. **Un par del registro solo entra después de leer el
+`t()` que de verdad lo usa** — si no, el guardián se convierte en una fuente de
+trabajo inventado y acaba desactivado, que es la forma en que un guardián deja
+de guardar.
