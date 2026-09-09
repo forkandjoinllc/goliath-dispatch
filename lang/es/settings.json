@@ -98,6 +98,7 @@
             "trackingLink": "El texto del correo del enlace de rastreo",
             "invoiceSent": "El texto del correo de la factura"
         },
-        "logoNotAnImage": "Ese fichero no es una imagen PNG, JPG o WEBP. Un logo se sirve en una página pública, así que solo se admiten formatos que no puedan traer instrucciones dentro."
+        "logoNotAnImage": "Ese fichero no es una imagen PNG, JPG o WEBP. Un logo se sirve en una página pública, así que solo se admiten formatos que no puedan traer instrucciones dentro.",
+        "unknownTokens": "Esta plantilla usa {tokens}, que este correo no sabe rellenar: saldría con las llaves puestas en el correo que lee su cliente. Las que admite son {allowed}."
     }
 }

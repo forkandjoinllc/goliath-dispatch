@@ -7,6 +7,7 @@ namespace App\Support\Branding;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -53,6 +54,56 @@ final class Templates
     ];
 
     /**
+     * Las fichas que este texto usa y este evento NO ofrece.
+     *
+     * ## El defecto
+     *
+     * Las dos plantillas editables viven juntas en la misma pantalla y NO
+     * ofrecen las mismas fichas: la de factura tiene `{invoice}` y `{amount}`,
+     * la del enlace de rastreo no. Al guardar solo se comprobaba que el texto
+     * no pasara de 4000 caracteres.
+     *
+     * `sustituir()` reemplaza únicamente las fichas que recibe, así que
+     * cualquier otra sobrevive TAL CUAL. Medido:
+     *
+     *     entra: «Hola, aquí tiene el enlace de {tenant}: {url}.
+     *             Factura {invoice} por {amount}.»
+     *     sale:  «Hola, aquí tiene el enlace de Demo Dispatch:
+     *             https://… . Factura {invoice} por {amount}.»
+     *
+     * Y eso es lo que se manda. El cliente de la casa de despacho recibe un
+     * correo con llaves dentro, firmado por ellos, y nadie avisa: ni al
+     * guardar, ni al enviar.
+     *
+     * ## Por qué se miran las DOS formas
+     *
+     * `sustituir()` admite `{ficha}` y `{{ficha}}` a propósito —el diccionario
+     * usa una llave y el esquema documenta dos—. Una comprobación que solo
+     * mirara una de las dos dejaría pasar la otra, que es justo la que alguien
+     * copia del esquema.
+     *
+     * @return list<string> los nombres, sin llaves, sin repetir
+     */
+    public static function fichasDesconocidas(string $eventKey, ?string $texto): array
+    {
+        if ($texto === null || trim($texto) === '') {
+            return [];
+        }
+
+        $admitidas = self::FICHAS[$eventKey] ?? [];
+
+        // `{{x}}` primero: si se buscara `{x}` sobre `{{x}}` casaría a medias y
+        // el nombre saldría con una llave pegada.
+        preg_match_all('/\{\{?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}?\}/', $texto, $encontradas);
+
+        $desconocidas = array_values(array_unique(array_diff($encontradas[1] ?? [], $admitidas)));
+
+        sort($desconocidas);
+
+        return $desconocidas;
+    }
+
+    /**
      * El asunto y el cuerpo de un evento, con las fichas ya sustituidas.
      *
      * @param  array<string, string>  $fichas
@@ -68,19 +119,56 @@ final class Templates
     ): array {
         $plantilla = self::find($tenantId, $eventKey, $locale);
 
-        $asunto = $plantilla?->subject;
-        $cuerpo = $plantilla?->body;
-
         return [
             'subject' => self::sustituir(
-                is_string($asunto) && trim($asunto) !== '' ? $asunto : $asuntoPorDefecto,
+                self::utilizable($eventKey, $plantilla?->subject, $asuntoPorDefecto, 'subject', $tenantId),
                 $fichas,
             ),
             'body' => self::sustituir(
-                is_string($cuerpo) && trim($cuerpo) !== '' ? $cuerpo : $cuerpoPorDefecto,
+                self::utilizable($eventKey, $plantilla?->body, $cuerpoPorDefecto, 'body', $tenantId),
                 $fichas,
             ),
         ];
+    }
+
+    /**
+     * El texto de la empresa si se puede rellenar; si no, el de siempre.
+     *
+     * Una plantilla con una ficha que este evento no ofrece NO se puede
+     * rellenar: `sustituir()` la dejaría con las llaves puestas y eso es lo que
+     * leería el cliente. Entre mandar un correo roto y mandar el texto estándar
+     * —que siempre es correcto— se manda el estándar, y queda en el registro
+     * para que se pueda arreglar.
+     *
+     * La validación de la pantalla ya impide guardar una así. Esto es para las
+     * que se guardaron ANTES, que es el único caso que la validación no puede
+     * alcanzar.
+     */
+    private static function utilizable(
+        string $eventKey,
+        ?string $propio,
+        string $porDefecto,
+        string $campo,
+        string $tenantId,
+    ): string {
+        if (! is_string($propio) || trim($propio) === '') {
+            return $porDefecto;
+        }
+
+        $desconocidas = self::fichasDesconocidas($eventKey, $propio);
+
+        if ($desconocidas === []) {
+            return $propio;
+        }
+
+        Log::warning('Plantilla de correo con fichas que ese evento no ofrece; se manda el texto de siempre', [
+            'tenant_id' => $tenantId,
+            'event_key' => $eventKey,
+            'field' => $campo,
+            'unknown_tokens' => $desconocidas,
+        ]);
+
+        return $porDefecto;
     }
 
     /**

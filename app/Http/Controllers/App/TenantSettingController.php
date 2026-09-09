@@ -287,6 +287,39 @@ final class TenantSettingController
         // en su idioma habrá que poner idioma al cliente primero —está en «lo
         // que falta» de docs/tracking-link.md— y entonces este editor crece con
         // un motivo.
+        // Las fichas, ANTES de guardar nada.
+        //
+        // Los dos eventos editables NO ofrecen las mismas: la factura tiene
+        // {invoice} y {amount}, el enlace de rastreo no. `sustituir()` solo
+        // reemplaza las que recibe, así que una ficha ajena sobrevive tal cual
+        // y sale en el correo que lee el CLIENTE de esta empresa. Aquí es donde
+        // hay alguien a quien decírselo y que pueda arreglarlo.
+        //
+        // Se recorren las dos plantillas y los dos campos antes de escribir
+        // ninguna: guardar la primera y rechazar la segunda dejaría la pantalla
+        // a medias sin decirlo.
+        $errores = [];
+
+        foreach ($data['templates'] ?? [] as $indice => $plantilla) {
+            foreach (['subject', 'body'] as $campo) {
+                $desconocidas = Templates::fichasDesconocidas(
+                    (string) $plantilla['event'],
+                    $plantilla[$campo] ?? null,
+                );
+
+                if ($desconocidas !== []) {
+                    $errores["templates.{$indice}.{$campo}"] = __('settings.brand.unknownTokens', [
+                        'tokens' => '{'.implode('}, {', $desconocidas).'}',
+                        'allowed' => '{'.implode('}, {', Templates::FICHAS[(string) $plantilla['event']] ?? []).'}',
+                    ]);
+                }
+            }
+        }
+
+        if ($errores !== []) {
+            throw ValidationException::withMessages($errores);
+        }
+
         foreach ($data['templates'] ?? [] as $plantilla) {
             Templates::save(
                 (string) $actor->tenantId,

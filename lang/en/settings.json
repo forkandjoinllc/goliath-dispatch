@@ -98,6 +98,7 @@
             "trackingLink": "The wording of the tracking link email",
             "invoiceSent": "The wording of the invoice email"
         },
-        "logoNotAnImage": "That file is not a PNG, JPG or WEBP image. A logo is served on a public page, so only formats that cannot carry instructions inside are accepted."
+        "logoNotAnImage": "That file is not a PNG, JPG or WEBP image. A logo is served on a public page, so only formats that cannot carry instructions inside are accepted.",
+        "unknownTokens": "This template uses {tokens}, which this email cannot fill: it would go out with the braces showing, in the email your customer reads. The ones it accepts are {allowed}."
     }
 }

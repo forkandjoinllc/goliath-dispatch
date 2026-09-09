@@ -567,6 +567,16 @@ function Marca({
     )
   }
 
+  /**
+   * El servidor rechaza una plantilla con `templates.0.body`, que no es una
+   * clave del formulario sino una ruta con puntos. `form.errors.body` no
+   * existe, así que sin esto el 422 llega, la pantalla no guarda nada y el
+   * usuario no ve ni una línea: el mismo texto de siempre en los campos y
+   * ninguna explicación. Aquí es donde el mensaje encuentra su hueco.
+   */
+  const errorDe = (i: number, campo: 'subject' | 'body'): string | undefined =>
+    (form.errors as unknown as Record<string, string | undefined>)[`templates.${i}.${campo}`]
+
   return (
     <form
       onSubmit={(e) => {
@@ -649,7 +659,7 @@ function Marca({
             tokens: plantilla.tokens.map((k) => `{${k}}`).join(', '),
           })}
         >
-          <Campo label={t('settings.brand.templateSubject')}>
+          <Campo label={t('settings.brand.templateSubject')} error={errorDe(i, 'subject')}>
             <input
               type="text"
               maxLength={255}
@@ -659,7 +669,7 @@ function Marca({
               className={CAMPO}
             />
           </Campo>
-          <Campo label={t('settings.brand.templateBody')}>
+          <Campo label={t('settings.brand.templateBody')} error={errorDe(i, 'body')}>
             <textarea
               rows={6}
               maxLength={4000}

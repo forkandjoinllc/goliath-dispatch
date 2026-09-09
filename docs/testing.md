@@ -2202,3 +2202,47 @@ admitía deja de servirse, no vale subirlo —la validación nueva lo rechaza—
 que escribir la clave directamente en la fila, que es exactamente como llegó
 allí. **El caso que importa de una migración de comportamiento es el dato viejo,
 y el dato viejo no entra por la puerta nueva.**
+
+## La ficha que el cliente lee entre llaves (`docs/email-templates.md`)
+
+**Un sabotaje mal etiquetado deja una aserción sin verificar y la campaña lo
+cuenta como verde.** Para probar la aserción de que la comprobación va *antes*
+de guardar escribí un sabotaje que cambiaba `'tokens' => '{'.implode(…).'}'` por
+`'tokens' => 'x'`. Salió verde, y el verde era correcto: **ese cambio no mueve
+nada de sitio**. La aserción compara posiciones de dos cadenas en el fuente; el
+único sabotaje que la mide es poner el bucle que escribe por encima del que
+comprueba. El nombre del caso decía una cosa y el `old→new` hacía otra, y
+durante una vuelta entera creí tener un hueco donde no lo había — y donde sí lo
+tenía (el mensaje del error no se afirmaba en ninguna parte) no me enteré por
+ahí. **El nombre de un sabotaje es una afirmación sobre lo que ese `old→new`
+hace: si no se puede leer el reemplazo y ver el nombre, está mal uno de los
+dos.**
+
+**Un verde en la campaña tiene dos lecturas y hay que separarlas antes de
+tocar nada.** O falta un guardián, o el sabotaje no sabotea. Confundirlas cuesta
+en las dos direcciones: escribir una prueba para un agujero inexistente, o dar
+por cubierto lo que no lo está. La pregunta que las separa es literal: *¿qué
+línea del código se comporta distinto después de este reemplazo?* Si no hay
+respuesta, el problema es el sabotaje.
+
+**El servidor puede rechazar perfectamente y la pantalla callarse.** El 422
+llegaba con la ficha nombrada, no se guardaba nada, y no se pintaba una sola
+línea: los dos `<Campo>` de plantilla eran los únicos del fichero sin `error=`.
+La causa es que Inertia nombra el error `templates.0.body`, una **ruta con
+puntos** que no es una clave del formulario — `form.errors.body` no existe —,
+así que hay que leerla como cadena. **Desde la silla del usuario, un rechazo
+invisible y un guardado son la misma pantalla.** Ninguna prueba de servidor lo
+habría visto: las ocho de feature pasaban.
+
+**Un formulario con campos indexados es un sitio donde mirar.** La regla
+general —cada campo pinta su error— la cumplían los treinta y pico `<Campo>` del
+fichero; los dos que no eran justo los que vienen de un array, porque su clave
+de error no se parece a las demás. Otra vez la forma de los tres lotes
+anteriores: la regla se cumple en todas partes menos donde la clave cambia de
+forma.
+
+**La vuelta por el navegador va ANTES de dar el lote por cerrado, no después.**
+Este hallazgo no salió de la campaña de sabotajes ni de las pruebas: salió de
+teclear la ficha ajena y mirar la pantalla. El sabotaje comprueba que lo escrito
+está bien atado; abrir la pantalla comprueba que lo escrito es lo que hacía
+falta.
