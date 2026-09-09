@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Support\Branding\Brand;
+use App\Support\Branding\LogoImage;
 use App\Support\Storage\DocumentStore;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,10 +37,25 @@ final class BrandLogoController
         abort_if(str_contains($clave, '..'), 404);
         abort_unless($store->exists($clave), 404);
 
-        // Se cachea una hora. Un logo cambia como mucho una vez al año, y la
-        // página pública la abre gente que recarga: sin esto, cada recarga es
-        // otra lectura de disco por una imagen que no ha cambiado.
-        return Storage::disk('local')
-            ->response($clave, null, ['Cache-Control' => 'public, max-age=3600']);
+        // Los BYTES, no lo que diga el nombre ni lo que adivine el servidor.
+        //
+        // Esta ruta servía con `Storage::response()`, que deduce el tipo del
+        // fichero y manda `Content-Disposition: inline`. Con un SVG guardado
+        // —lo que la validación admitía— eso es un DOCUMENTO que se ejecuta en
+        // el origen de la aplicación, y este origen es uno solo para todas las
+        // empresas.
+        //
+        // Se comprueba al SALIR y no solo al entrar porque en disco puede haber
+        // logos de antes de este cambio. Así quedan cubiertos sin migración y
+        // sin borrarle a nadie su fichero: simplemente dejan de servirse.
+        $bytes = (string) Storage::disk('local')->get($clave);
+        $mime = LogoImage::mime($bytes);
+
+        // Mismo 404 que cuando no hay logo. Distinguir «no hay» de «hay uno que
+        // no se puede servir» no le sirve a quien mira una página de rastreo, y
+        // sí a quien esté probando qué acepta esta ruta.
+        abort_if($mime === null, 404);
+
+        return response($bytes, 200, LogoImage::headers($mime));
     }
 }

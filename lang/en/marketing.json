@@ -152,15 +152,15 @@
     }
   },
   "notifications": {
-    "lead.received": {
+    "leadReceived": {
       "title": "New website inquiry from {name}",
       "body": "{name} ({company}) submitted the contact form on the marketing site. Follow up from the Leads queue."
     },
-    "quote_request.received": {
+    "quoteRequestReceived": {
       "title": "New quote request from {name}",
       "body": "{name} requested a quote for a shipment from {origin} to {destination}."
     },
-    "carrier_signup.received": {
+    "carrierSignupReceived": {
       "title": "New carrier signup: {name}",
       "body": "{name} (DOT {dot}) submitted a carrier signup application on the marketing site."
     }
@@ -369,7 +369,7 @@
     },
     "verification": {
       "title": "How verification works",
-      "body": "Your FMCSA authority is checked against the DOT/MC you provide and re-verified automatically for as long as you're active, not just once at signup \u2014 the dispatch company you work with sets how often. Your equipment's VIN is matched against your Certificate of Insurance before it can be assigned to a load, and every truck and trailer needs at least four photos before it goes active."
+      "body": "Your FMCSA authority is checked against the DOT/MC you provide and re-verified automatically for as long as you're active, not just once at signup — the dispatch company you work with sets how often. Your equipment's VIN is matched against your Certificate of Insurance before it can be assigned to a load, and every truck and trailer needs at least four photos before it goes active."
     },
     "settlements": {
       "title": "How settlements work",

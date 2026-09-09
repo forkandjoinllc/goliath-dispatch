@@ -10,6 +10,7 @@ use App\Enums\AuditAction;
 use App\Enums\CommissionBasis;
 use App\Support\Audit;
 use App\Support\Branding\Brand;
+use App\Support\Branding\LogoImage;
 use App\Support\Branding\Templates;
 use App\Support\Finance\FeeBase;
 use App\Support\Fmcsa\RevalidationState;
@@ -23,6 +24,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -237,7 +239,20 @@ final class TenantSettingController
             'primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'accent_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'email_footer' => ['nullable', 'string', 'max:500'],
-            'logo' => ['nullable', 'file', 'max:2048', 'mimetypes:image/png,image/jpeg,image/webp,image/svg+xml'],
+            // SVG fuera, y es la decisión de este lote.
+            //
+            // Un SVG no es una imagen, es un DOCUMENTO: admite <script>, CSS y
+            // foreignObject. Y este logo se sirve en una ruta pública, sin
+            // sesión, con Content-Disposition: inline, desde el mismo origen que
+            // toda la aplicación — que es uno solo para todas las empresas.
+            // Comprobado: se subía un SVG con un <script> dentro y volvía byte
+            // a byte. Un logo no necesita poder ejecutar nada.
+            //
+            // Dos comprobaciones y no una: `mimetypes:` mira el contenido con
+            // finfo, y `LogoImage` exige además que se analice como imagen de
+            // mapa de bits. La segunda es la que decide, porque es la misma que
+            // corre al servir.
+            'logo' => ['nullable', 'file', 'max:2048', 'mimetypes:'.implode(',', LogoImage::TIPOS)],
             'templates' => ['nullable', 'array'],
             'templates.*.event' => ['required', 'string', Rule::in(Templates::EDITABLES)],
             'templates.*.subject' => ['nullable', 'string', 'max:255'],
@@ -252,6 +267,15 @@ final class TenantSettingController
         );
 
         if ($request->hasFile('logo')) {
+            // La MISMA comprobación que corre al servir, aplicada al entrar.
+            // Si las dos no coinciden, se puede guardar algo que después la
+            // ruta pública se niega a devolver, y quien lo subió no se entera.
+            if (! LogoImage::valid((string) file_get_contents($request->file('logo')->getRealPath()))) {
+                throw ValidationException::withMessages([
+                    'logo' => __('settings.brand.logoNotAnImage'),
+                ]);
+            }
+
             Brand::saveLogo($store, (string) $actor->tenantId, $request->file('logo'));
         }
 

@@ -82,7 +82,7 @@
         "title": "La cara de su empresa",
         "note": "Esto es lo que ve el cliente al que le mandan el enlace de rastreo: en la página que abre y al pie del correo que la lleva. No cambia nada dentro de la aplicación — su equipo la sigue viendo igual.",
         "logo": "Logo",
-        "logoHint": "PNG, JPG, WEBP o SVG, hasta 2 MB. Se ve en la página pública de rastreo.",
+        "logoHint": "PNG, JPG o WEBP, hasta 2 MB. Se ve en la página pública de rastreo.",
         "primaryColor": "Color principal",
         "accentColor": "Color de acento",
         "colorHint": "En formato #RRGGBB.",
@@ -95,8 +95,9 @@
         "templateSubject": "Asunto",
         "templateBody": "Cuerpo",
         "templates": {
-            "tracking.link": "El texto del correo del enlace de rastreo",
-            "invoice.sent": "El texto del correo de la factura"
-        }
+            "trackingLink": "El texto del correo del enlace de rastreo",
+            "invoiceSent": "El texto del correo de la factura"
+        },
+        "logoNotAnImage": "Ese fichero no es una imagen PNG, JPG o WEBP. Un logo se sirve en una página pública, así que solo se admiten formatos que no puedan traer instrucciones dentro."
     }
 }

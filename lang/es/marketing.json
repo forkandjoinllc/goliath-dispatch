@@ -152,15 +152,15 @@
     }
   },
   "notifications": {
-    "lead.received": {
+    "leadReceived": {
       "title": "Nueva consulta del sitio web de {name}",
       "body": "{name} ({company}) envió el formulario de contacto del sitio web. Dele seguimiento desde la bandeja de Leads."
     },
-    "quote_request.received": {
+    "quoteRequestReceived": {
       "title": "Nueva solicitud de cotización de {name}",
       "body": "{name} solicitó una cotización para un envío de {origin} a {destination}."
     },
-    "carrier_signup.received": {
+    "carrierSignupReceived": {
       "title": "Nuevo registro de transportista: {name}",
       "body": "{name} (DOT {dot}) envió una solicitud de registro de transportista desde el sitio web."
     }
@@ -260,7 +260,7 @@
     },
     "onboardingCompliance": {
       "title": "Registro y cumplimiento de transportistas",
-      "body": "Un proceso de admisión estructurado — certificado de autoridad, certificado de seguro (COI), formulario W-9 y una notificación de cesión cuando aplica factoraje — con la autoridad de la FMCSA verificada al registrarse y revalidada autom\u00e1ticamente con la periodicidad que fije la casa de despacho.",
+      "body": "Un proceso de admisión estructurado — certificado de autoridad, certificado de seguro (COI), formulario W-9 y una notificación de cesión cuando aplica factoraje — con la autoridad de la FMCSA verificada al registrarse y revalidada automáticamente con la periodicidad que fije la casa de despacho.",
       "bullet1": "Recopilación guiada de documentos con seguimiento de vencimientos",
       "bullet2": "Verificación continua de la autoridad de la FMCSA, no una sola vez",
       "bullet3": "Una razón por escrito y un registro de auditoría para cada excepción"

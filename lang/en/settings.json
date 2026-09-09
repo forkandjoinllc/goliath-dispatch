@@ -82,7 +82,7 @@
         "title": "Your company’s face",
         "note": "This is what the customer sees when you send them a tracking link: on the page they open, and at the foot of the email that carries it. Nothing inside the app changes — your team still sees it as it is.",
         "logo": "Logo",
-        "logoHint": "PNG, JPG, WEBP or SVG, up to 2 MB. Shown on the public tracking page.",
+        "logoHint": "PNG, JPG or WEBP, up to 2 MB. Shown on the public tracking page.",
         "primaryColor": "Primary colour",
         "accentColor": "Accent colour",
         "colorHint": "In #RRGGBB format.",
@@ -95,8 +95,9 @@
         "templateSubject": "Subject",
         "templateBody": "Body",
         "templates": {
-            "tracking.link": "The wording of the tracking link email",
-            "invoice.sent": "The wording of the invoice email"
-        }
+            "trackingLink": "The wording of the tracking link email",
+            "invoiceSent": "The wording of the invoice email"
+        },
+        "logoNotAnImage": "That file is not a PNG, JPG or WEBP image. A logo is served on a public page, so only formats that cannot carry instructions inside are accepted."
     }
 }

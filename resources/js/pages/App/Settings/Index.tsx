@@ -83,6 +83,22 @@ interface Props {
   can: { update: boolean }
 }
 
+/**
+ * `tracking.link` → `trackingLink`, que es la clave del diccionario.
+ *
+ * El evento lleva un PUNTO, y `t()` parte las claves por puntos: buscar
+ * `settings.brand.templates.tracking.link` es bajar por
+ * `settings → brand → templates → tracking`, que no existe. La clave se
+ * devolvía tal cual y esta pantalla enseñaba
+ * «SETTINGS.BRAND.TEMPLATES.TRACKING.LINK» en mayúsculas, con la traducción
+ * escrita en los dos idiomas y sin usarse nunca.
+ *
+ * Misma forma que el `camel()` de nav.status, ampliada al punto.
+ */
+function claveDeEvento(evento: string): string {
+  return evento.replace(/[._]([a-z])/g, (_, c: string) => c.toUpperCase())
+}
+
 export default function SettingsIndex({ settings, subscription = null, revalidation, readOnly, feeBases, commissionBases, branding, templates, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
@@ -628,7 +644,7 @@ function Marca({
       {templates.map((plantilla, i) => (
         <Seccion
           key={plantilla.event}
-          titulo={t(`settings.brand.templates.${plantilla.event}`)}
+          titulo={t(`settings.brand.templates.${claveDeEvento(plantilla.event)}`)}
           nota={t('settings.brand.templateNote', {
             tokens: plantilla.tokens.map((k) => `{${k}}`).join(', '),
           })}

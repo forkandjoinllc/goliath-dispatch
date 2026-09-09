@@ -2160,3 +2160,45 @@ esconde.** `carrier_settlements` pide `period_start` y `period_end`, y
 con `DB::table()->insert()` en vez de con el modelo es lo que hace que esas
 reglas aparezcan — y es también lo que obliga a leer el esquema antes de dar por
 buena una prueba.
+
+---
+
+## El logo que podía traer un script (`docs/logo-safety.md`)
+
+**`pkill -f "artisan serve"` casa con el propio shell que lo ejecuta.** La
+cadena aparece en la línea de órdenes del `bash -c` que la contiene, así que el
+proceso se mata a sí mismo a mitad de la orden: el servidor no se reinició, los
+ficheros de prueba no llegaron a crearse y la salida fue un código 144 sin
+explicación. Para reiniciar algo en este contenedor, arrancar la copia nueva y
+dejar morir la vieja, o filtrar por PID — nunca por una cadena que uno mismo
+está escribiendo.
+
+**Un error de validación de Inertia no siempre está en el texto visible.**
+Buscando «rechazado / aceptado» en `document.body.innerText` no encontré nada y
+di por hecho que el fichero se había aceptado. Estaba rechazado: el mensaje vive
+en `props.errors` del `data-page`, y el texto de la pantalla lo pinta un
+componente que mi expresión no cubría. Leer los props es lo fiable:
+
+```js
+JSON.parse(document.getElementById('app').dataset.page).props.errors
+```
+
+**Volcar la pantalla entera encuentra cosas que no se buscaban.** Al ampliar esa
+misma comprobación a todo el texto visible aparecieron dos claves crudas
+—`SETTINGS.BRAND.TEMPLATES.TRACKING.LINK`— que ningún barrido anterior había
+visto, porque su familia de clave dinámica no sale de un dominio cerrado del
+esquema y el guardián de nombres no la cubría. **El volcado completo de una
+pantalla es barato y encuentra lo que las agujas dirigidas no.**
+
+**Una clave de diccionario no puede contener el separador.** `t()` parte por
+puntos: `templates: { "tracking.link": … }` no se puede encontrar nunca, porque
+la búsqueda baja por `templates → tracking`. Estaba traducida en los dos idiomas
+y no se había enseñado jamás. La comprobación es de una línea y cubre los
+veintitantos diccionarios: ninguna clave, a ninguna profundidad, lleva un punto.
+
+**Una prueba que planta el estado «de antes» tiene que saltarse el
+controlador.** Para comprobar que un logo SVG guardado cuando la validación lo
+admitía deja de servirse, no vale subirlo —la validación nueva lo rechaza—: hay
+que escribir la clave directamente en la fila, que es exactamente como llegó
+allí. **El caso que importa de una migración de comportamiento es el dato viejo,
+y el dato viejo no entra por la puerta nueva.**
