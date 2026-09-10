@@ -2382,3 +2382,46 @@ descuido: eran tres situaciones que no había en las pruebas —un cheque sin
 compensar, una factura ya saldada, la fecha en dos sitios—. La campaña no
 comprueba el código: comprueba el **catálogo de casos** que uno se ha molestado
 en construir.
+
+## El plazo de aviso que dos pantallas ignoraban (`docs/expiry-window.md`)
+
+**Un defecto ya encontrado, arreglado y documentado puede seguir vivo en dos
+sitios más.** El docblock de `DocumentController::warnDays()` describía este
+mismo fallo con precisión, nombraba los cuatro sitios que tenían que contestar
+lo mismo, y explicaba por qué. Se aplicó en un controlador y ahí se quedó.
+**Cuando un docblock explica un defecto de clase —«esto era una constante y
+tenía que salir del ajuste»—, la pregunta siguiente no es si está arreglado
+aquí, sino dónde más vive esa constante.** Un `grep` de treinta segundos habría
+encontrado los otros dos el mismo día.
+
+**La prueba se escribe para las pantallas que se arreglan, y el sabotaje
+pregunta por la que se refactoriza.** De los dos verdes de la campaña, uno era
+Documentos: la única de las tres que ya funcionaba, y por tanto la única que
+este lote podía romper sin que nadie lo notara. No la había probado porque «esa
+ya estaba bien». **La pantalla que más necesita una prueba en un lote de
+unificación es la que ya funcionaba.**
+
+**Una insignia en una fila es una pantalla más.** El otro verde dejaba el filtro
+y el contador correctos y la etiqueta de la fila con su propia regla. Yo había
+probado los dos primeros porque son los que devuelven números; la insignia es lo
+que el despachador mira de verdad al pasar la lista. **Filtro, contador y
+etiqueta son tres promesas distintas aunque salgan del mismo número.**
+
+**Una aguja de sabotaje con menos sangría casa también dentro de la de más
+sangría.** `"        $limit = ..."` (8 espacios) está contenido literalmente en
+`"            $limit = ..."` (12), así que `count()` dio 2 y la validación
+abortó la campaña entera antes de empezar. Es un buen fallo: abortó en vez de
+sabotear el sitio equivocado. **Un ancla se ensancha con la línea de al lado, no
+con espacios.**
+
+**`?? 'ausente'` otra vez, y van dos lotes.** Vuelvo a escribir
+`expect($x['clave'] ?? 'ausente')->toBeNull()` para comprobar «la clave está y
+vale null», y vuelve a ser imposible de pasar. Para eso son dos aserciones:
+`assertArrayHasKey` y luego `toBeNull`. Lo dejo escrito por segunda vez porque
+al parecer hace falta.
+
+**Un ayudante estático que lee la empresa activa no funciona fuera de una
+petición.** `ExpiryWindow::days()` resuelve por `TenantContext`, y llamarlo
+suelto en una prueba devolvió 30 —el valor por defecto de la política— en vez de
+los 20 que acababa de fijar. No era un fallo del cálculo: era que no había
+empresa. Las llamadas directas van dentro de `runAs($tenantId, …)`.

@@ -12,6 +12,7 @@ use App\Enums\AuditAction;
 use App\Enums\Scope;
 use App\Models\Document;
 use App\Support\Audit;
+use App\Support\Compliance\ExpiryWindow;
 use App\Support\Documents\DocumentOwners;
 use App\Support\Documents\DocumentScope;
 use App\Support\Documents\DocumentTypes;
@@ -19,8 +20,6 @@ use App\Support\Documents\Scanning;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Storage\DocumentStore;
-use App\Support\Tenancy\TenantPolicy;
-use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -59,21 +58,6 @@ final class DocumentController
     use InertiaPage;
 
     private const PER_PAGE = 25;
-
-    /**
-     * Con cuántos días de antelación se avisa de una caducidad.
-     *
-     * Sale de `tenant_settings.document_expiration_warning_days`. Era una
-     * constante de 45 días que ignoraba esa columna — y la columna trae 30 por
-     * defecto, así que la aplicación avisaba con quince días más de los que la
-     * empresa había pedido. Los CUATRO sitios que lo usaban (el aviso al subir,
-     * el filtro de «caducan pronto», su contador y la etiqueta de la ficha)
-     * tienen que contestar lo mismo, o la lista y el contador se contradicen.
-     */
-    private function warnDays(): int
-    {
-        return TenantPolicy::for(app(TenantContext::class)->id())->documentWarningDays;
-    }
 
     /** 25 MB. Un escaneo de un certificado no llega; un vídeo sí, y no va aquí. */
     private const MAX_KB = 25600;
@@ -350,7 +334,7 @@ final class DocumentController
             $document->review_status = 'pending';
             $document->expires_soon_at = $document->expiration_date === null
                 ? null
-                : CarbonImmutable::parse($document->expiration_date)->subDays($this->warnDays());
+                : CarbonImmutable::parse($document->expiration_date)->subDays(ExpiryWindow::days());
             $document->save();
 
             $next = 1 + (int) DB::table('document_versions')
@@ -651,7 +635,7 @@ final class DocumentController
 
         if ($filters['expiring'] === '1') {
             $query->whereNotNull('expiration_date')
-                ->where('expiration_date', '<=', CarbonImmutable::now()->addDays($this->warnDays()));
+                ->where('expiration_date', '<=', ExpiryWindow::limit());
         }
     }
 
@@ -673,7 +657,7 @@ final class DocumentController
             'expired' => (int) ($counts['expired'] ?? 0),
             'expiring' => $this->scoped($checker, $actor, $scope)
                 ->whereNotNull('expiration_date')
-                ->where('expiration_date', '<=', CarbonImmutable::now()->addDays($this->warnDays()))
+                ->where('expiration_date', '<=', ExpiryWindow::limit())
                 ->count(),
         ];
     }
@@ -725,14 +709,7 @@ final class DocumentController
             return null;
         }
 
-        $days = CarbonImmutable::now()->startOfDay()
-            ->diffInDays(CarbonImmutable::parse($d->expiration_date)->startOfDay(), false);
-
-        return match (true) {
-            $days < 0 => 'expired',
-            $days <= $this->warnDays() => 'soon',
-            default => null,
-        };
+        return ExpiryWindow::flag($d->expiration_date);
     }
 
     /**

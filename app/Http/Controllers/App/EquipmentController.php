@@ -12,6 +12,7 @@ use App\Enums\Scope;
 use App\Models\Trailer;
 use App\Models\Truck;
 use App\Rules\SubdivisionOfCountry;
+use App\Support\Compliance\ExpiryWindow;
 use App\Support\EnumValue;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
@@ -57,9 +58,6 @@ final class EquipmentController
     use InertiaPage;
 
     private const PER_PAGE = 25;
-
-    /** A cuántos días vista se avisa de una inspección o una matrícula. */
-    private const WARN_DAYS = 45;
 
     private const SORTABLE = [
         'unit_number' => 'unit_number',
@@ -607,7 +605,7 @@ final class EquipmentController
         }
 
         if ($filters['expiring'] === '1') {
-            $limit = CarbonImmutable::now()->addDays(self::WARN_DAYS);
+            $limit = ExpiryWindow::limit();
 
             $query->where(function (Builder $q) use ($limit): void {
                 $q->where('next_inspection_due_at', '<=', $limit)
@@ -625,7 +623,7 @@ final class EquipmentController
             ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')->pluck('total', 'status')->all();
 
-        $limit = CarbonImmutable::now()->addDays(self::WARN_DAYS);
+        $limit = ExpiryWindow::limit();
 
         return [
             'all' => array_sum($counts),
@@ -730,14 +728,7 @@ final class EquipmentController
                 return null;
             }
 
-            $days = CarbonImmutable::now()->startOfDay()
-                ->diffInDays(CarbonImmutable::parse($date)->startOfDay(), false);
-
-            return match (true) {
-                $days < 0 => 'expired',
-                $days <= self::WARN_DAYS => 'soon',
-                default => null,
-            };
+            return ExpiryWindow::flag($date);
         };
 
         return [

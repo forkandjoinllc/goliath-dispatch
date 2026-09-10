@@ -14,13 +14,13 @@ use App\Enums\WorkAuthorization;
 use App\Models\Driver;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
+use App\Support\Compliance\ExpiryWindow;
 use App\Support\Drivers\Cdl;
 use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Security\SensitiveNumber;
 use App\Support\Tracking\Consent;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,9 +59,6 @@ final class DriverController
     use InertiaPage;
 
     private const PER_PAGE = 25;
-
-    /** A cuántos días vista se avisa de un vencimiento. */
-    private const WARN_DAYS = 45;
 
     private const SORTABLE = [
         'last_name' => 'last_name',
@@ -423,7 +420,7 @@ final class DriverController
         }
 
         if ($filters['expiring'] === '1') {
-            $limit = CarbonImmutable::now()->addDays(self::WARN_DAYS);
+            $limit = ExpiryWindow::limit();
 
             $query->where(function (Builder $q) use ($limit): void {
                 $q->where('license_expires_at', '<=', $limit)
@@ -441,7 +438,7 @@ final class DriverController
             ->select('status', DB::raw('count(*) as total'))
             ->groupBy('status')->pluck('total', 'status')->all();
 
-        $limit = CarbonImmutable::now()->addDays(self::WARN_DAYS);
+        $limit = ExpiryWindow::limit();
 
         return [
             'all' => array_sum($counts),
@@ -496,13 +493,7 @@ final class DriverController
                 return null;
             }
 
-            $days = CarbonImmutable::now()->startOfDay()->diffInDays(CarbonImmutable::parse($date)->startOfDay(), false);
-
-            return match (true) {
-                $days < 0 => 'expired',
-                $days <= self::WARN_DAYS => 'soon',
-                default => null,
-            };
+            return ExpiryWindow::flag($date);
         };
 
         return [
