@@ -178,6 +178,7 @@ it('produce exactamente las columnas de financial_snapshots', function () {
         'carrier_dispatch_fee_bps',
         'dispatcher_commission_bps',
         'dispatcher_commission_basis',
+        'dispatch_fee_base',
         'approved_excluded_expenses_cents',
         'approved_reimbursable_expenses_cents',
         'tenant_absorbed_expenses_cents',

@@ -2293,3 +2293,52 @@ con saber lo que uno quiso cambiar.**
 el campo venía vacío, y falló: `null ?? 'ausente'` es `'ausente'`, o sea que la
 prueba no podía pasar nunca. Para «la clave está y vale null» son dos
 aserciones: `assertArrayHasKey` y luego `toBeNull`.
+
+## La base de la tarifa que sí reescribía (`docs/fee-base-frozen.md`)
+
+**Un hallazgo de segunda mano se mide antes de creérselo — y también antes de
+descartarlo.** Este defecto me llegó como informe de un barrido: «la base se lee
+viva». La primera medición dijo que NO, que la carga conservaba lo suyo. Estuve
+a punto de darlo por falso. Lo que pasaba es que `TenantPolicy::for()` tiene
+**caché estática por proceso**: dentro de una misma prueba, la segunda petición
+reutilizaba la política de la primera, cosa que en producción —un proceso por
+petición— no ocurre. Con `TenantPolicy::forget()` en medio, el defecto apareció
+entero. **Una caché estática convierte una medida en un espejismo, en las dos
+direcciones: puede esconder un fallo y puede inventarlo.**
+
+**Y ni siquiera entonces se movía el dinero.** La segunda medición mostró la
+base cambiando de nombre con todas las cifras idénticas, porque las dos bases
+solo se separan cuando hay gastos **excluidos**. Hizo falta plantar un gasto
+excluido para que el fallo enseñara lo que costaba: $100 menos al transportista.
+**Un cambio que no mueve la cifra en el caso simple no es un cambio inocuo: es
+un cambio cuyo caso hay que construir.**
+
+**Un guardián que comprueba que algo se MENCIONA no comprueba que funcione.**
+Escribí `assertStringContainsString('FeeBase::CarrierGross=>', $fuente)` y un
+sabotaje que cambiaba `FeeBase::CarrierGross => $carrierGrossRate` por
+`=> $commissionableBase` salió VERDE: el caso seguía mencionado, y las dos bases
+pasaban a dar la misma cifra — o sea, congelar la base dejaba de servir de nada
+sin que nada se pusiera rojo. La prueba que faltaba es de comportamiento y con
+números exactos: $300 sobre la base comisionable, $400 sobre el bruto. **Cuando
+la aserción es sobre el fuente, hay que preguntarse qué reemplazo la deja en pie
+sin hacer lo que promete.**
+
+**Editar el fichero de una migración ya aplicada no sabotea nada.** El otro
+verde de la campaña cambiaba el `CHECK` en el fichero de la migración; la prueba
+lee `information_schema`, que refleja lo que se aplicó, no lo que pone el
+fichero. El sabotaje de verdad era **añadir un caso a la enumeración** y ver si
+algo se quejaba — que además es el riesgo real: un valor nuevo sin `CHECK` y sin
+cálculo. Cazado por dos pruebas a la vez. **Un sabotaje sobre un fichero que el
+sistema ya no vuelve a leer es siempre inerte.**
+
+**Una lista de columnas clavada en una prueba es un guardián que funciona, y
+avisa a quien añade una.** `CalculatorTest` fija las columnas exactas de
+`financial_snapshots` «por si el esquema gana una y esta lista no». Gané una y
+la prueba se puso roja en la vuelta completa. No era un fallo: era el guardián
+haciendo su trabajo sobre mí.
+
+**Una función de otro fichero de pruebas no existe hasta que ese fichero se
+carga.** `loadPayload()` vive en `LoadFormTest.php`; llamarla desde un fichero
+nuevo da «Call to undefined function» al ejecutarlo solo, y funciona cuando se
+ejecuta la suite entera. Es una prueba que pasa o falla según con quién la
+ejecuten. Cada fichero se lleva la suya.

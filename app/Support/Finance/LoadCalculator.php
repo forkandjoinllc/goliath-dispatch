@@ -40,7 +40,7 @@ final class LoadCalculator
             commissionBasis: $load->dispatcher_commission_basis instanceof CommissionBasis
                 ? $load->dispatcher_commission_basis
                 : CommissionBasis::from((string) $load->dispatcher_commission_basis),
-            feeBase: $this->feeBase($load->tenant_id),
+            feeBase: $this->feeBase($load),
             excludedExpenses: $expenses['excluded_from_commission'] ?? 0,
             reimbursableExpenses: $expenses['reimbursable_to_carrier'] ?? 0,
             tenantAbsorbedExpenses: $expenses['tenant_absorbed'] ?? 0,
@@ -49,16 +49,32 @@ final class LoadCalculator
     }
 
     /**
-     * La base de la tarifa es lo ÚNICO que se lee de los ajustes vivos y no de
-     * la carga, y merece justificarse: no es un precio pactado sino la
-     * interpretación del contrato marco de la empresa. Si cambiara, cambia para
-     * todo lo que se calcule a partir de entonces — las liquidaciones ya
-     * cerradas conservan su cifra en `financial_snapshots`, que es de solo
-     * añadir.
+     * La base sale de la CARGA, como las otras tres entradas de dinero.
+     *
+     * Era la única que se leía de los ajustes vivos, y la justificación que
+     * tenía escrita —«no es un precio pactado sino la interpretación del
+     * contrato marco»— no sobrevive a la medida: sobre una carga que ya
+     * existía, cambiar el ajuste movió la tarifa de despacho de $300 a $400 y
+     * lo que cobra el transportista de $3.700 a $3.600. Un porcentaje pactado
+     * sobre otra cantidad es otro precio, se llame como se llame.
+     *
+     * El respaldo a los ajustes cubre la fila que todavía no tiene su copia: en
+     * un despliegue, entre `migrate` y el código nuevo no hay hueco, pero sí lo
+     * hay para una fila creada por un camino que se olvidara de sellarla, y
+     * caer al valor de siempre es preferible a reventar el cálculo de dinero.
+     * Hay un guardián que comprueba que el camino de alta la sella.
      */
-    private function feeBase(string $tenantId): FeeBase
+    private function feeBase(Load $load): FeeBase
     {
-        return TenantPolicy::for($tenantId)->dispatchFeeBase;
+        $propia = $load->dispatch_fee_base ?? null;
+
+        if ($propia instanceof FeeBase) {
+            return $propia;
+        }
+
+        return is_string($propia) && $propia !== ''
+            ? FeeBase::from($propia)
+            : TenantPolicy::for($load->tenant_id)->dispatchFeeBase;
     }
 
     /**

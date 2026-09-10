@@ -63,6 +63,10 @@ final readonly class LoadFinancials
             'carrier_dispatch_fee_bps' => $this->dispatchFeeBps,
             'dispatcher_commission_bps' => $this->commissionBps,
             'dispatcher_commission_basis' => $this->commissionBasis->value,
+            // Sin esto, una liquidación cerrada guardaba los puntos básicos y
+            // la base de la COMISIÓN, pero no con qué base se había cobrado la
+            // TARIFA: la instantánea no podía explicar su propia cifra.
+            'dispatch_fee_base' => $this->feeBase->value,
             'approved_excluded_expenses_cents' => $this->excludedExpenses,
             'approved_reimbursable_expenses_cents' => $this->reimbursableExpenses,
             'tenant_absorbed_expenses_cents' => $this->tenantAbsorbedExpenses,

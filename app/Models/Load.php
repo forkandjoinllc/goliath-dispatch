@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\CommissionBasis;
 use App\Enums\LoadStatus;
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Finance\FeeBase;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -49,6 +50,7 @@ final class Load extends BaseModel
         'carrier_dispatch_fee_bps',
         'dispatcher_commission_bps',
         'dispatcher_commission_basis',
+        'dispatch_fee_base',
         'miles',
         'deadhead_miles',
         'special_instructions',
@@ -91,6 +93,7 @@ final class Load extends BaseModel
             'carrier_dispatch_fee_bps' => 'integer',
             'dispatcher_commission_bps' => 'integer',
             'dispatcher_commission_basis' => CommissionBasis::class,
+            'dispatch_fee_base' => FeeBase::class,
             'miles' => 'integer',
             'deadhead_miles' => 'integer',
             'planned_pickup_at' => 'immutable_datetime',

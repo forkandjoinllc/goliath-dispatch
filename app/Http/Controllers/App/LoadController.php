@@ -870,6 +870,15 @@ final class LoadController
             'customer_charge_cents' => $data['customer_charge_cents'] ?? 0,
         ] : [];
 
+        // La base de la tarifa se sella SIEMPRE, tenga o no permiso de dinero
+        // quien da de alta la carga. No es una cifra que se teclee: es la
+        // política que estaba en vigor el día que se acordó, y la carga tiene
+        // que llevársela aunque el dinero se rellene mañana. Dentro del `if`
+        // una carga creada por quien no ve dinero se quedaría con el valor por
+        // omisión de la columna en vez de con el de su empresa.
+        $columns['dispatch_fee_base'] = TenantPolicy::for(app(TenantContext::class)->id())
+            ->dispatchFeeBase->value;
+
         if ($canMoney) {
             $columns['carrier_gross_rate_cents'] = $data['carrier_gross_rate_cents'] ?? 0;
             // Los valores por defecto salen de la POLÍTICA DE LA EMPRESA, no de
