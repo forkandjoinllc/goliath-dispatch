@@ -52,12 +52,22 @@ final class ReportController
 
         $porTransportista = $informe->byCarrier();
 
+        // Una sola vez: reconstruir los saldos a una fecha lee las filas de
+        // cobros, y llamarlo desde `summary()` y otra vez al pintar lo hacía
+        // dos veces.
+        $cartera = $informe->aging();
+
         return Inertia::render('App/Reports/Index', [
             'period' => ['from' => $desde->toDateString(), 'to' => $hasta->toDateString()],
-            'summary' => $this->summary($porTransportista, $informe),
+            'summary' => $this->summary($porTransportista, $cartera),
             'byCarrier' => $porTransportista,
             'byCustomer' => $informe->byCustomer(),
-            'aging' => $informe->aging(),
+            'aging' => $cartera,
+            // A qué fecha está hecha la foto de la cartera. La pantalla la
+            // dice: un tramo de antigüedad sin fecha obliga a suponerla, y la
+            // suposición natural —hoy— es falsa en cuanto se pide un mes
+            // cerrado.
+            'agingAsOf' => $informe->agingAsOf()->toDateString(),
             'expensesByTreatment' => $informe->expensesByTreatment(),
             'commissionsByDispatcher' => $informe->commissionsByDispatcher(),
             'loadsByStatus' => $informe->loadsByStatus(),
@@ -177,10 +187,11 @@ final class ReportController
      * @param  list<array<string, mixed>>  $porTransportista
      * @return array<string, int>
      */
-    private function summary(array $porTransportista, PeriodReport $informe): array
+    /**
+     * @param  array<string, array{amountCents: int, count: int}>  $aging
+     */
+    private function summary(array $porTransportista, array $aging): array
     {
-        $aging = $informe->aging();
-
         return [
             'feeCents' => (int) array_sum(array_column($porTransportista, 'feeCents')),
             'marginCents' => (int) array_sum(array_column($porTransportista, 'marginCents')),

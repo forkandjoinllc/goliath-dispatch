@@ -32,6 +32,16 @@ use Illuminate\Support\Facades\DB;
  */
 final class PeriodReport
 {
+    /**
+     * Estados en los que un cobro NUNCA llegó a ser dinero en casa.
+     *
+     * `PaymentLedger` lista los que SÍ cuentan hoy (`succeeded`,
+     * `partially_refunded`). Aquí hace falta el complemento y no esa lista: un
+     * cobro hoy en `refunded` sí fue dinero en su día, y para una foto de enero
+     * cuenta. Los de aquí no lo fueron nunca.
+     */
+    private const NUNCA_FUE_DINERO = ['pending', 'failed', 'cancelled'];
+
     public function __construct(
         private readonly Actor $actor,
         private readonly Scope $scope,
@@ -107,7 +117,62 @@ final class PeriodReport
     }
 
     /**
-     * Antigüedad del cobro: cuánto se debe y desde cuándo.
+     * A qué fecha está hecha la foto de la cartera.
+     *
+     * El final del periodo, o hoy si el periodo llega al futuro: una cartera no
+     * puede decir lo que se deberá el mes que viene.
+     */
+    public function agingAsOf(): CarbonImmutable
+    {
+        $hoy = CarbonImmutable::now()->endOfDay();
+
+        return $this->to->lessThan($hoy) ? $this->to : $hoy;
+    }
+
+    /**
+     * Antigüedad del cobro A LA FECHA DEL PERIODO: cuánto se debía y desde
+     * cuándo.
+     *
+     * ## Lo que hacía antes
+     *
+     * Leía `invoices.balance_cents` de TODAS las facturas abiertas de la
+     * historia, sin mirar el periodo, y las repartía por tramos contra el día
+     * de hoy. El rótulo de la pantalla, encima mismo, dice: «Un periodo cerrado
+     * dice siempre lo mismo».
+     *
+     * Medido: el informe de enero decía 0 de pendiente de cobro; se emitió una
+     * factura con fecha de septiembre y el informe de ENERO pasó a decir
+     * 250.000. Quien cerraba un mes y volvía a abrirlo en octubre leía otra
+     * cifra, sin nada en pantalla que lo explicara.
+     *
+     * ## De dónde sale el saldo de una fecha pasada
+     *
+     * `balance_cents` es el saldo de HOY, así que no sirve. Se reconstruye del
+     * mismo sitio del que ya sale el de hoy: de las filas de `payments`. Es la
+     * regla de la casa de `PaymentLedger` —«la columna es una CACHÉ de la suma,
+     * no la verdad; la verdad son las filas»— llevada un paso más:
+     *
+     *     saldo(D) = total
+     *              − cobros recibidos hasta D
+     *              + reembolsos devueltos hasta D
+     *
+     * Los dos momentos son columnas con fecha, `received_at` y `refunded_at`,
+     * así que un cobro que entró en enero y se devolvió en marzo estaba en casa
+     * en enero y no en marzo, que es lo cierto.
+     *
+     * ## Lo que esta reconstrucción NO puede saber, y conviene decirlo
+     *
+     * Los cambios de ESTADO de un cobro no llevan fecha. Un cheque anotado como
+     * `pending` en enero y compensado en febrero se cuenta aquí como dinero en
+     * casa desde su `received_at`, o sea desde enero. Se excluyen los que hoy
+     * siguen sin ser dinero —`pending`, `failed`, `cancelled`— porque nunca lo
+     * fueron; el resto se datan por sus columnas. Es la mejor aproximación con
+     * lo que hay guardado, y decirlo aquí es preferible a fingir que es exacta.
+     *
+     * De la factura sí hay fechas: no se cuenta la que aún no se había emitido
+     * (`issue_date` posterior a D) ni la que ya estaba anulada, en disputa o
+     * dada por incobrable a esa fecha —las tres llevan su columna con fecha—.
+     * Una anulada DESPUÉS de D sí cuenta: a esa fecha se debía.
      *
      * Los tramos son los de siempre en cobros —corriente, 1-30, 31-60, 61-90 y
      * más de 90— porque es el reparto que entiende cualquiera que haya cuadrado
@@ -117,12 +182,18 @@ final class PeriodReport
      */
     public function aging(): array
     {
-        $hoy = CarbonImmutable::now()->startOfDay();
+        $fecha = $this->agingAsOf();
+        $corte = $fecha->toDateTimeString();
 
         $filas = $this->invoices()
-            ->where('i.balance_cents', '>', 0)
-            ->whereNotIn('i.status', ['draft', 'voided'])
-            ->get(['i.id', 'i.balance_cents', 'i.due_date']);
+            ->where('i.status', '!=', 'draft')
+            ->whereDate('i.issue_date', '<=', $fecha->toDateString())
+            ->where(fn (Builder $q) => $q->whereNull('i.voided_at')->orWhere('i.voided_at', '>', $corte))
+            ->where(fn (Builder $q) => $q->whereNull('i.disputed_at')->orWhere('i.disputed_at', '>', $corte))
+            ->where(fn (Builder $q) => $q->whereNull('i.uncollectable_at')->orWhere('i.uncollectable_at', '>', $corte))
+            ->get(['i.id', 'i.total_cents', 'i.due_date']);
+
+        $cobrado = $this->paidAsOf($filas->pluck('id')->all(), $corte);
 
         $tramos = [
             'current' => ['amountCents' => 0, 'count' => 0],
@@ -133,11 +204,17 @@ final class PeriodReport
         ];
 
         foreach ($filas as $f) {
+            $saldo = (int) $f->total_cents - ($cobrado[(string) $f->id] ?? 0);
+
+            if ($saldo <= 0) {
+                continue;
+            }
+
             // Sin fecha de vencimiento se cuenta como corriente: no se puede
             // decir que algo esté vencido si nunca se dijo cuándo vencía.
             $dias = $f->due_date === null
                 ? 0
-                : (int) CarbonImmutable::parse((string) $f->due_date)->startOfDay()->diffInDays($hoy, false);
+                : (int) CarbonImmutable::parse((string) $f->due_date)->startOfDay()->diffInDays($fecha->startOfDay(), false);
 
             $clave = match (true) {
                 $dias <= 0 => 'current',
@@ -147,11 +224,42 @@ final class PeriodReport
                 default => 'd90plus',
             };
 
-            $tramos[$clave]['amountCents'] += (int) $f->balance_cents;
+            $tramos[$clave]['amountCents'] += $saldo;
             $tramos[$clave]['count']++;
         }
 
         return $tramos;
+    }
+
+    /**
+     * Lo cobrado de cada factura A UNA FECHA, de las filas de `payments`.
+     *
+     * Una consulta para todas las facturas y no una por factura: un informe con
+     * cuatrocientas facturas abiertas haría cuatrocientas consultas.
+     *
+     * @param  list<string>  $invoiceIds
+     * @return array<string, int>
+     */
+    private function paidAsOf(array $invoiceIds, string $corte): array
+    {
+        if ($invoiceIds === []) {
+            return [];
+        }
+
+        return DB::table('payments')
+            ->where('tenant_id', $this->actor->tenantId)
+            ->whereIn('invoice_id', $invoiceIds)
+            ->whereNull('deleted_at')
+            ->whereNotIn('status', self::NUNCA_FUE_DINERO)
+            ->where('received_at', '<=', $corte)
+            ->selectRaw(
+                'invoice_id, sum(amount_cents - case when refunded_at is not null and refunded_at <= ? then refunded_amount_cents else 0 end) as cobrado',
+                [$corte],
+            )
+            ->groupBy('invoice_id')
+            ->pluck('cobrado', 'invoice_id')
+            ->map(fn ($v): int => (int) $v)
+            ->all();
     }
 
     /**

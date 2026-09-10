@@ -16,14 +16,15 @@
   },
   "aging": {
     "title": "Receivables ageing",
-    "note": "Open invoices by how long they have been due. Balances come from the payments recorded against each invoice.",
+    "note": "Invoices still open on the period date, by how long they had been due. Balances are rebuilt from the payments recorded against each invoice: money received in January and refunded in March was in hand in January.",
     "current": "Not due yet",
     "d1_30": "1–30 days",
     "d31_60": "31–60 days",
     "d61_90": "61–90 days",
     "d90plus": "Over 90 days",
     "invoices": "{n} invoices",
-    "invoicesOne": "1 invoice"
+    "invoicesOne": "1 invoice",
+    "asOf": "As of {date}"
   },
   "carriers": {
     "title": "By carrier",

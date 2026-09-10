@@ -16,14 +16,15 @@
   },
   "aging": {
     "title": "Antigüedad del cobro",
-    "note": "Facturas abiertas según cuánto llevan vencidas. El saldo sale de los cobros anotados en cada factura.",
+    "note": "Facturas abiertas a la fecha del periodo, según cuánto llevaban vencidas. El saldo se reconstruye de los cobros anotados en cada factura: un cobro que entró en enero y se devolvió en marzo estaba en casa en enero.",
     "current": "Todavía sin vencer",
     "d1_30": "1–30 días",
     "d31_60": "31–60 días",
     "d61_90": "61–90 días",
     "d90plus": "Más de 90 días",
     "invoices": "{n} facturas",
-    "invoicesOne": "1 factura"
+    "invoicesOne": "1 factura",
+    "asOf": "A fecha de {date}"
   },
   "carriers": {
     "title": "Por transportista",

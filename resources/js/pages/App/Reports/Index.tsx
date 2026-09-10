@@ -36,6 +36,7 @@ interface Props {
   byCarrier: CarrierRow[]
   byCustomer: CustomerRow[]
   aging: Record<string, { amountCents: number; count: number }>
+  agingAsOf: string
   expensesByTreatment: Record<string, number>
   commissionsByDispatcher: CommissionRow[]
   loadsByStatus: Record<string, number>
@@ -46,10 +47,17 @@ interface Props {
 const TRAMOS = ['current', 'd1_30', 'd31_60', 'd61_90', 'd90plus']
 
 export default function ReportsIndex({
-  period, summary, byCarrier, byCustomer, aging,
+  period, summary, byCarrier, byCustomer, aging, agingAsOf,
   expensesByTreatment, commissionsByDispatcher, loadsByStatus, can,
 }: Props) {
   const { t, locale } = useI18n()
+
+  // Una fecha suelta en ISO no la lee nadie de un vistazo, y en un informe que
+  // se enseña a un cliente menos.
+  const fecha = (iso: string): string =>
+    new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium', timeZone: 'UTC' })
+      .format(new Date(`${iso}T00:00:00Z`))
+
 
   const cambiar = (patch: Partial<Props['period']>) =>
     router.get('/reports', { ...period, ...patch }, { preserveState: true, replace: true })
@@ -87,10 +95,20 @@ export default function ReportsIndex({
           <Tile label={t('reports.summary.fee')} value={formatCents(summary.feeCents, locale)} />
           <Tile label={t('reports.summary.margin')} value={formatCents(summary.marginCents, locale)} />
           <Tile label={t('reports.summary.loads')} value={String(summary.loads)} />
-          <Tile label={t('reports.summary.outstanding')} value={formatCents(summary.outstandingCents, locale)} />
+          <Tile
+            label={t('reports.summary.outstanding')}
+            value={formatCents(summary.outstandingCents, locale)}
+            nota={t('reports.aging.asOf', { date: fecha(agingAsOf) })}
+          />
         </div>
 
-        <Seccion titulo={t('reports.aging.title')} nota={t('reports.aging.note')}>
+        {/* La fecha de la foto va en el título. Un tramo de antigüedad sin
+            fecha obliga a suponerla, y la suposición natural —hoy— es falsa en
+            cuanto alguien pide un mes cerrado. */}
+        <Seccion
+          titulo={`${t('reports.aging.title')} · ${t('reports.aging.asOf', { date: fecha(agingAsOf) })}`}
+          nota={t('reports.aging.note')}
+        >
           <div className="grid gap-3 sm:grid-cols-5">
             {TRAMOS.map((k) => (
               <div key={k} className="rounded border border-steel-200 p-3">
@@ -270,11 +288,12 @@ function Lista({ items, empty }: { items: string[][]; empty: string }) {
   )
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+function Tile({ label, value, nota }: { label: string; value: string; nota?: string }) {
   return (
     <div className="rounded border border-steel-200 bg-white p-4">
       <p className="text-xs uppercase tracking-wide text-steel-600">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-carbon">{value}</p>
+      {nota ? <p className="mt-1 text-xs text-steel-600">{nota}</p> : null}
     </div>
   )
 }

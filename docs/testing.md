@@ -2342,3 +2342,43 @@ carga.** `loadPayload()` vive en `LoadFormTest.php`; llamarla desde un fichero
 nuevo da «Call to undefined function» al ejecutarlo solo, y funciona cuando se
 ejecuta la suite entera. Es una prueba que pasa o falla según con quién la
 ejecuten. Cada fichero se lleva la suya.
+
+## El periodo cerrado que cambiaba cada día (`docs/aging-as-of.md`)
+
+**0 de 14 no son catorce agujeros: es el arnés apuntando a otro sitio.** La
+campaña salió entera en verde. Catorce guardianes ausentes a la vez es
+imposible, y esa imposibilidad es el dato. Había construido el arnés nuevo con
+un `sed` sobre el ANTERIOR, con un patrón sacado del de en medio, así que la
+sustitución no casó con nada y `TESTS` seguía apuntando a las pruebas del lote
+pasado —que pasan hagas lo que hagas en `PeriodReport`—. **Un resultado
+uniforme en una campaña de sabotajes es una avería del arnés hasta que se
+demuestre lo contrario; lo primero que hay que mirar es qué pruebas está
+ejecutando de verdad.** Copiar un arnés de un lote a otro con `sed` sin
+comprobar la línea resultante es la forma barata de perder una vuelta entera.
+
+**Todas las pruebas en verde a la primera es una señal, no un premio.** Las diez
+de feature pasaron sin un solo ajuste. Eso puede querer decir que el arreglo
+está bien o que las pruebas no pueden fallar, y las dos se parecen mucho desde
+fuera. Lo que las separa es la campaña de sabotajes, y por eso va después y no
+antes de dar nada por hecho.
+
+**Un guardián que busca una cadena «en alguna parte del fichero» se conforma con
+que sobreviva UNA de sus apariciones.** Puse la fecha en dos sitios de la
+pantalla —el contador y el título de la sección— y comprobé
+`assertStringContainsString("t('reports.aging.asOf'", $fuente)`. Quitarla del
+título salió verde: seguía estando en el contador. Con dos sitios, la aserción
+es `substr_count(...)->toBe(2)` más una comprobación del sitio concreto.
+
+**Una aserción sobre el importe no cubre el contador que va al lado.** El
+sabotaje que quitaba el corte `if ($saldo <= 0) continue;` salió verde porque yo
+comprobaba `pendiente === 0` y una factura saldada suma cero… pero incrementa el
+contador de su tramo. La cartera habría dicho «$0 en 1 factura», que manda a
+buscar una factura que no debe nada. **Donde la pantalla enseña importe Y
+número, la prueba tiene que mirar los dos.**
+
+**El caso que un sabotaje destapa suele ser el que la prueba nunca construyó.**
+De los tres verdes de la segunda vuelta, ninguno era un guardián mal escrito por
+descuido: eran tres situaciones que no había en las pruebas —un cheque sin
+compensar, una factura ya saldada, la fecha en dos sitios—. La campaña no
+comprueba el código: comprueba el **catálogo de casos** que uno se ha molestado
+en construir.
