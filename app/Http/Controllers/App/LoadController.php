@@ -33,6 +33,7 @@ use App\Support\Loads\StopClock;
 use App\Support\Loads\Transitions;
 use App\Support\Messaging\Narrator;
 use App\Support\Plans\Limits;
+use App\Support\Privacy\Internal;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use App\Support\Tracking\CustomerLink;
@@ -199,7 +200,7 @@ final class LoadController
         }
 
         return Inertia::render('App/Loads/Show', [
-            'load' => $this->detail($model),
+            'load' => $this->detail($model, $actor),
             'stops' => $this->stops($model),
             'requirements' => $this->requirements($model),
             'assignments' => $this->assignments($model),
@@ -219,6 +220,9 @@ final class LoadController
             'carrierLocked' => $model->carrier_locked_at !== null,
             'can' => [
                 'update' => $checker->can($actor, 'load:update', $context, $policy)->allowed,
+                // No es un permiso que se pueda conceder: es de qué lado de la
+                // mesa está quien mira.
+                'readInternalNotes' => Internal::esEquipo($actor),
                 'updateFinancials' => $checker->can($actor, 'load:financials:update', $context, $policy)->allowed,
                 'assignCarrier' => $checker->can($actor, 'load:assign_carrier', $context, $policy)->allowed,
                 'assignResources' => $checker->can($actor, 'load:assign_resources', $context, $policy)->allowed,
@@ -327,7 +331,7 @@ final class LoadController
 
         return Inertia::render('App/Loads/Form', [
             'load' => [
-                ...$this->detail($model),
+                ...$this->detail($model, $actor),
                 // Los importes solo viajan si se pueden editar. Mandarlos para
                 // enseñarlos desactivados los pondría al alcance de quien abra
                 // las herramientas del navegador, y el permiso de LECTURA del
@@ -1501,7 +1505,7 @@ final class LoadController
     /**
      * @return array<string, mixed>
      */
-    private function detail(Load $l): array
+    private function detail(Load $l, Actor $actor): array
     {
         $customer = DB::table('customers')->where('id', $l->customer_id)->first(['id', 'company_name']);
         $carrier = $l->carrier_id === null ? null : DB::table('carriers')
@@ -1542,7 +1546,12 @@ final class LoadController
             'actualDeliveryAt' => $l->actual_delivery_at?->toIso8601String(),
             'podReceivedAt' => $l->pod_received_at?->toIso8601String(),
             'specialInstructions' => $l->special_instructions,
-            'internalNotes' => $l->internal_notes,
+            // «Solo para su equipo. Nunca se le muestran al transportista ni
+            // al cliente», dice el formulario. Salían: el transportista abría
+            // su propia carga y venían dentro, y si la carga no tenía
+            // instrucciones para el conductor la pantalla las pintaba en su
+            // hueco. Igual que `financials`: no se manda, no se esconde.
+            'internalNotes' => Internal::soloEquipo($actor, $l->internal_notes),
             'cancellationReason' => $l->cancellation_reason,
         ];
     }

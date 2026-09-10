@@ -2246,3 +2246,50 @@ Este hallazgo no salió de la campaña de sabotajes ni de las pruebas: salió de
 teclear la ficha ajena y mirar la pantalla. El sabotaje comprueba que lo escrito
 está bien atado; abrir la pantalla comprueba que lo escrito es lo que hacía
 falta.
+
+## Las notas internas que el transportista leía (`docs/internal-notes.md`)
+
+**Un fichero de pruebas nuevo que escribe y no declara `DatabaseTransactions`
+envenena la suite entera, y el fallo sale en otro sitio.** Aquí la convención es
+**por fichero**, no global: cada fichero de Feature pone su propio
+`uses(DatabaseTransactions::class)`. El mío no lo tenía, así que los datos de
+`Scenario::create()` se confirmaban en la base de pruebas en cada vuelta. El
+síntoma fue `CustomerAccessTest` fallando con «7 is identical to 1», y luego 223,
+y luego 235 — un fichero que yo no había tocado, contando de más. El docblock de
+`TestCase` ya describe esta familia de fallo con precisión («las pruebas
+siguientes empiezan a contar de más y fallan por sitios que no tienen nada que
+ver»); lo que faltaba era leerlo antes. **Cuando una prueba ajena empieza a
+contar de más, el sospechoso es el fichero nuevo, no el que falla.**
+
+**Dos suites a la vez sobre la misma base no es «el doble de rápido», es basura
+en las dos.** Lancé la segunda vuelta mientras la primera seguía corriendo —
+`ps` mostraba tres procesos— y el resultado fue seis fallos que no existían. Una
+vuelta tarda ~130 s y no se puede solapar: la base de pruebas es una sola.
+
+**`nohup ... & sleep 150` en una misma orden muere entera con el tiempo de
+espera.** El corte a los dos minutos manda SIGTERM al grupo de procesos y se
+lleva por delante el proceso de fondo, que deja un fichero de registro vacío y
+ninguna pista. Lanzar con `setsid nohup … & disown` en **su propia** llamada, y
+consultar en otra.
+
+**El truco de `[a]rtisan` no protege si en la misma orden se lanza eso mismo.**
+`ps | grep "[a]rtisan test"` casó con mi propio shell, porque su línea de órdenes
+llevaba también el `nohup php artisan test` que estaba lanzando. Es la misma
+lección del `pkill -f "artisan serve"` una capa más abajo: **un filtro por cadena
+casa con la orden que lo contiene, y los corchetes solo esquivan la copia
+literal, no la otra mención.**
+
+**Pint arregla de más, y lo de más no es de este lote.** Correr `pint` sobre un
+controlador que arrastra deuda de formato mete en el diff seis líneas de
+importaciones y nombres cualificados que no tienen que ver con el hallazgo. La
+comprobación que lo cazó fue sacar el fichero original con `git show HEAD:…` en
+el Mac y hacer `git diff --no-index` contra mi versión **antes de entregar**.
+Revertir a mano lo ajeno cuesta un minuto; explicarlo en un commit sobre una fuga
+de confidencialidad, mucho más. **Antes de entregar, el diff se mira: no basta
+con saber lo que uno quiso cambiar.**
+
+**`?? 'ausente'` no distingue «falta la clave» de «vale null».** Escribí
+`expect($props['carrier']['notes'] ?? 'ausente')->toBeNull()` para comprobar que
+el campo venía vacío, y falló: `null ?? 'ausente'` es `'ausente'`, o sea que la
+prueba no podía pasar nunca. Para «la clave está y vale null» son dos
+aserciones: `assertArrayHasKey` y luego `toBeNull`.

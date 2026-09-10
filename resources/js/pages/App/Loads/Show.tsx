@@ -372,11 +372,27 @@ export default function LoadShow({
             )}
           </Card>
 
+          {/*
+            * Dos textos distintos, dos tarjetas. Antes esto era
+            * `specialInstructions ?? internalNotes`, así que una carga sin
+            * instrucciones para el conductor enseñaba las notas internas en su
+            * hueco, bajo un rótulo que dice «Notas» a secas: ni el
+            * transportista sabía que estaba leyendo algo que no era para él,
+            * ni el despachador que lo que escribía aparecía ahí.
+            */}
           <Card title={t('loads.detail.notes')}>
             <p className="whitespace-pre-wrap text-sm text-carbon">
-              {load.specialInstructions ?? load.internalNotes ?? t('loads.detail.noNotes')}
+              {load.specialInstructions ?? t('loads.detail.noNotes')}
             </p>
           </Card>
+
+          {can.readInternalNotes ? (
+            <Card title={t('loads.detail.internalNotes')}>
+              <p className="whitespace-pre-wrap text-sm text-carbon">
+                {load.internalNotes ?? t('loads.detail.noNotes')}
+              </p>
+            </Card>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-6">

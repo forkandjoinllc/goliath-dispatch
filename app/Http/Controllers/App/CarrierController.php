@@ -25,6 +25,7 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Locales;
 use App\Support\Plans\Limits;
+use App\Support\Privacy\Internal;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -151,7 +152,7 @@ final class CarrierController
         $this->usesDictionary($request, ['carriers', 'nav']);
 
         return Inertia::render('App/Carriers/Show', [
-            'carrier' => $this->detail($model),
+            'carrier' => $this->detail($model, $actor),
             'onboarding' => $checker->can($actor, 'carrier:onboarding:read', $this->context($model), $policy)->allowed
                 ? $this->onboarding($model)
                 : null,
@@ -166,6 +167,9 @@ final class CarrierController
                 : null,
             'can' => [
                 'update' => $checker->can($actor, 'carrier:update', $this->context($model), $policy)->allowed,
+                // No es un permiso que se pueda conceder: es de qué lado de la
+                // mesa está quien mira.
+                'readInternalNotes' => Internal::esEquipo($actor),
                 'updateFee' => $checker->can($actor, 'carrier:fee:update', $this->context($model), $policy)->allowed,
                 'delete' => $checker->can($actor, 'carrier:delete', $this->context($model), $policy)->allowed,
                 'submitOnboarding' => $checker->can($actor, 'carrier:onboarding:submit', $this->context($model), $policy)->allowed,
@@ -418,7 +422,7 @@ final class CarrierController
         $this->usesDictionary($request, ['carriers', 'nav', 'validation']);
 
         return Inertia::render('App/Carriers/Form', [
-            'carrier' => $this->detail($model),
+            'carrier' => $this->detail($model, $actor),
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', $this->context($model), $current->policy())->allowed,
             'factoringCompanies' => $this->factoringOptions($actor),
             'factoringCompanyId' => $this->currentFactoring($actor, (string) $model->id),
@@ -632,7 +636,7 @@ final class CarrierController
     /**
      * @return array<string, mixed>
      */
-    private function detail(Carrier $c): array
+    private function detail(Carrier $c, Actor $actor): array
     {
         return [
             ...$this->row($c),
@@ -656,7 +660,11 @@ final class CarrierController
             'contacts' => $this->contacts($c),
             'website' => $c->website,
             'usesFactoring' => (bool) $c->uses_factoring,
-            'notes' => $c->notes,
+            // La etiqueta del campo dice «No se le muestran al transportista»,
+            // y hasta ahora se le mostraban: entraba a su propia ficha y venían
+            // dentro. Se calcula aquí y no se esconde en React, por lo mismo que
+            // el bloque de dinero de la carga.
+            'notes' => Internal::soloEquipo($actor, $c->notes),
             'approvedAt' => $c->approved_at?->toIso8601String(),
             'suspendedAt' => $c->suspended_at?->toIso8601String(),
             'suspensionReason' => $c->suspension_reason,

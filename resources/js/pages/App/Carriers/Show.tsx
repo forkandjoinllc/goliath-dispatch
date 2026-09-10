@@ -93,6 +93,7 @@ interface Props {
     approveOnboarding: boolean
     runVerification: boolean
     overrideVerification: boolean
+    readInternalNotes: boolean
   }
 }
 
@@ -271,11 +272,19 @@ export default function CarrierShow({ carrier, onboarding, verification, documen
             </Card>
           ) : null}
 
-          <Card title={t('carriers.detail.notes')}>
-            <p className="whitespace-pre-wrap text-sm text-carbon">
-              {carrier.notes ?? t('carriers.detail.noNotes')}
-            </p>
-          </Card>
+          {/*
+            * La tarjeta entera es del equipo. Al transportista no se le
+            * enseña «Sin notas registradas»: eso le contaría que existe un
+            * sitio donde se escriben notas sobre él, y de paso le mentiría
+            * cuando sí las hay.
+            */}
+          {can.readInternalNotes ? (
+            <Card title={t('carriers.detail.notes')}>
+              <p className="whitespace-pre-wrap text-sm text-carbon">
+                {carrier.notes ?? t('carriers.detail.noNotes')}
+              </p>
+            </Card>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-6">
