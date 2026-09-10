@@ -97,12 +97,10 @@
       "reinstate": "Reactivar"
     },
     "checklistItems": {
-      "authority": "Autoridad operativa",
-      "insurance": "Certificado de seguro",
-      "agreement": "Contrato de transportista firmado",
-      "fmcsa": "Verificación FMCSA",
-      "w9": "Formulario fiscal"
-    }
+      "fmcsa": "Verificación FMCSA"
+    },
+    "checklistNote": "Calculada ahora mismo, no guardada.",
+    "checklistWarningOnly": "(aviso, no bloquea)"
   },
   "verification": {
     "title": "Verificación FMCSA",

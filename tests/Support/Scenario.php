@@ -350,7 +350,6 @@ final class Scenario
             'carrier_id' => $carrier->id,
             'status' => $status->value,
             'required_document_types' => json_encode([]),
-            'checklist' => json_encode([]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

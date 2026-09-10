@@ -99,6 +99,66 @@ final class Readiness
     }
 
     /**
+     * La lista de comprobación, calculada HOY.
+     *
+     * ## Por qué existe este método
+     *
+     * `carrier_onboardings` tiene una columna `checklist` de tipo JSON que la
+     * ficha del transportista pintaba con vistos verdes. Nadie la escribe: en
+     * el alta se guarda `[]` y solo el sembrador de demostración le pone
+     * valores. Así que en producción la tarjeta no salía nunca, y con los datos
+     * de demostración salía un visto verde congelado el día que se sembró.
+     *
+     * El docblock de esta misma clase ya decía por qué eso no vale: «una lista
+     * guardada dice “listo” el día que se guardó y sigue diciéndolo el día que
+     * caduca el certificado de seguro».
+     *
+     * ## De dónde salen las filas
+     *
+     * De `requiredDocuments`, o sea de `DocumentTypes::requiredFor('carrier')`,
+     * no de una lista escrita a mano aquí. Si mañana el esquema exige un
+     * documento más, la lista lo enseña sin tocar este fichero — y si se
+     * escribiera a mano, esta comprobación diría «listo» mientras `Guards`
+     * bloquea el despacho, que es la contradicción que esta clase existe para
+     * no tener.
+     *
+     * El W-9 no sale: no está en `requiredFor`, así que no bloquea nada, y un
+     * visto verde al lado sugería que sí. Que deba exigirse es una decisión de
+     * negocio y le toca a quien lleva la casa, igual que endurecer FMCSA.
+     *
+     * ## La fila de FMCSA es un aviso, no un bloqueo
+     *
+     * Va marcada como tal. Hoy no impide despachar —lo dice el docblock de
+     * arriba— y pintarla igual que las demás haría creer lo contrario.
+     *
+     * @return list<array{key: string, done: bool, blocking: bool}>
+     */
+    public static function checklist(string $tenantId, string $carrierId): array
+    {
+        $estado = self::forCarrier($tenantId, $carrierId);
+
+        $lista = [];
+
+        foreach ($estado['requiredDocuments'] as $tipo) {
+            $lista[] = [
+                'key' => $tipo,
+                'done' => in_array($tipo, $estado['approvedDocuments'], true),
+                'blocking' => true,
+            ];
+        }
+
+        $lista[] = [
+            'key' => 'fmcsa',
+            'done' => $estado['fmcsaCheckedAt'] !== null
+                && ! in_array('fmcsaNeverChecked', $estado['warnings'], true)
+                && ! in_array('fmcsaStale', $estado['warnings'], true),
+            'blocking' => false,
+        ];
+
+        return $lista;
+    }
+
+    /**
      * @return array{0: list<string>, 1: string|null, 2: int|null}
      */
     private static function fmcsa(string $tenantId, string $carrierId): array

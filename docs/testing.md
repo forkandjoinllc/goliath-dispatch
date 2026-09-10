@@ -2425,3 +2425,43 @@ petición.** `ExpiryWindow::days()` resuelve por `TenantContext`, y llamarlo
 suelto en una prueba devolvió 30 —el valor por defecto de la política— en vez de
 los 20 que acababa de fijar. No era un fallo del cálculo: era que no había
 empresa. Las llamadas directas van dentro de `runAs($tenantId, …)`.
+
+## El visto verde que se guardó el día que se guardó (`docs/live-checklist.md`)
+
+**Un fichero de depuración de cinco líneas también envenena la base de
+pruebas.** Escribí un `DbgTest.php` para volcar los props de una pantalla, lo
+borré a los dos minutos, y no le puse `uses(DatabaseTransactions::class)`.
+Dejó una empresa, un cliente y dos transportistas confirmados, y el fallo salió
+—dos lotes después de aprender esta misma lección— en `CustomerAccessTest`
+contando 2 donde esperaba 1. **La regla no es «los ficheros de prueba llevan el
+trait»: es que cualquier código que llame a `Scenario::create()` lo lleva,
+aunque vaya a vivir dos minutos.**
+
+**Un sabotaje que añade una clave repetida a un array de PHP no sabotea nada.**
+Para probar que la fila de FMCSA no puede pasar por bloqueante, inserté
+`'blocking' => true,` ANTES del `'blocking' => false` que ya estaba. En PHP gana
+la última, así que el array salía idéntico. Salió verde y por un momento pareció
+un guardián ausente. El de verdad cambia el valor que ya existe. **Antes de
+creerse un verde, hay que poder decir qué línea del programa se comporta
+distinto — y con un array literal, «he añadido una clave» no es respuesta.**
+
+**Cortar un método por su nombre y quedarse con el resto del fichero mete
+dentro los métodos de abajo.** Un guardián que comprobaba que `checklist()` no
+lleva tipos de documento escritos a mano se disparó con un `'carrier_agreement'`
+que vive en `firmaDelAcuerdo()`, tres métodos más abajo. Lo escribí como
+`substr($fuente, strpos($fuente, 'function checklist('))`, que llega hasta el
+final del fichero. **Un corte por firma necesita las dos fronteras**, y el
+ayudante que las pone se reutiliza.
+
+**Quitar una columna pone rojas las pruebas que la vigilaban, y eso es una
+buena noticia.** `OnboardingQueueTest::no guarda ninguna lista de comprobación`
+comprobaba que la columna se quedara vacía. Al quitarla, se rompió. La
+tentación es borrar la prueba; lo correcto es **repuntarla a lo que ahora hay
+que sujetar** —que la columna no vuelva a existir—, porque la intención que la
+hizo nacer sigue viva aunque su mecanismo haya cambiado.
+
+**Los props de Inertia no siempre están donde uno cree.** Busqué la lista en
+`props.carrier.onboarding` y era `props.onboarding`, una prop de primer nivel.
+Tres pruebas fallaron con «la tarjeta no llega a la pantalla», que suena a
+defecto del servidor y era una ruta mía equivocada. Volcar las claves del props
+una vez cuesta treinta segundos y ahorra ese desvío.

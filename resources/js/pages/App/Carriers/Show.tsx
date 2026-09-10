@@ -44,7 +44,7 @@ interface Onboarding {
   correctionNotes: string | null
   rejectionReason: string | null
   requiredDocumentTypes: string[]
-  checklist: Record<string, boolean>
+  checklist: { key: string; done: boolean; blocking: boolean }[]
 }
 
 interface Verification {
@@ -322,13 +322,19 @@ export default function CarrierShow({ carrier, onboarding, verification, documen
                   </p>
                 ) : null}
 
-                {Object.keys(onboarding.checklist).length > 0 ? (
+                {onboarding.checklist.length > 0 ? (
                   <div className="w-full">
                     <h3 className="text-xs font-bold uppercase tracking-wide text-steel-600">
                       {t('carriers.onboarding.checklist')}
                     </h3>
+                    {/* A qué fecha. Antes esto salía de una columna congelada:
+                        un visto verde que decía «listo» el día que se guardó y
+                        seguía diciéndolo el día que caducaba el seguro. */}
+                    <p className="mt-0.5 text-xs text-steel-600">
+                      {t('carriers.onboarding.checklistNote')}
+                    </p>
                     <ul className="mt-2 flex flex-col gap-1.5">
-                      {Object.entries(onboarding.checklist).map(([key, done]) => (
+                      {onboarding.checklist.map(({ key, done, blocking }) => (
                         <li key={key} className="flex items-center gap-2 text-sm">
                           <span
                             aria-hidden="true"
@@ -339,8 +345,17 @@ export default function CarrierShow({ carrier, onboarding, verification, documen
                             ✓
                           </span>
                           <span className={done ? 'text-carbon' : 'text-steel-600'}>
-                            {t(`carriers.onboarding.checklistItems.${key}`)}
+                            {key === 'fmcsa'
+                              ? t('carriers.onboarding.checklistItems.fmcsa')
+                              : t(`documents.types.${key}`)}
                           </span>
+                          {/* Lo que no bloquea el despacho se dice, o un hueco
+                              sin visto se lee como «no puede llevar carga». */}
+                          {! blocking ? (
+                            <span className="text-xs text-steel-600">
+                              {t('carriers.onboarding.checklistWarningOnly')}
+                            </span>
+                          ) : null}
                           {/* El estado también en texto: la marca verde sola no
                               la lee un lector de pantalla. */}
                           <span className="sr-only">

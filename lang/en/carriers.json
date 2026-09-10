@@ -97,12 +97,10 @@
       "reinstate": "Reinstate"
     },
     "checklistItems": {
-      "authority": "Operating authority",
-      "insurance": "Certificate of insurance",
-      "agreement": "Signed carrier agreement",
-      "fmcsa": "FMCSA verification",
-      "w9": "Tax form"
-    }
+      "fmcsa": "FMCSA verification"
+    },
+    "checklistNote": "Worked out just now, not stored.",
+    "checklistWarningOnly": "(warning, not a block)"
   },
   "verification": {
     "title": "FMCSA verification",

@@ -24,6 +24,7 @@ use App\Support\Fmcsa\Revalidation;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Locales;
+use App\Support\Onboarding\Readiness;
 use App\Support\Plans\Limits;
 use App\Support\Privacy\Internal;
 use Illuminate\Database\Eloquent\Builder;
@@ -149,7 +150,10 @@ final class CarrierController
         // enseñaría, pero el enlace escrito a mano sí.
         $checker->authorize($actor, 'carrier:read', $this->context($model), $policy);
 
-        $this->usesDictionary($request, ['carriers', 'nav']);
+        // `documents` porque la lista de comprobación rotula cada fila con
+        // `documents.types.<tipo>`: el mismo nombre que ese papel tiene en la
+        // pantalla de Documentos, en vez de una copia aparte que se despiste.
+        $this->usesDictionary($request, ['carriers', 'documents', 'nav']);
 
         return Inertia::render('App/Carriers/Show', [
             'carrier' => $this->detail($model, $actor),
@@ -389,7 +393,6 @@ final class CarrierController
             'carrier_id' => $carrier->id,
             'status' => OnboardingStatus::Draft->value,
             'required_document_types' => json_encode(['certificate_of_authority', 'certificate_of_insurance', 'carrier_agreement']),
-            'checklist' => json_encode([]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -696,7 +699,12 @@ final class CarrierController
             'correctionNotes' => $row->correction_notes,
             'rejectionReason' => $row->rejection_reason,
             'requiredDocumentTypes' => json_decode((string) $row->required_document_types, true) ?: [],
-            'checklist' => json_decode((string) $row->checklist, true) ?: [],
+            // La lista de comprobación se CALCULA, no se lee de la columna
+            // `checklist`. Esa columna nadie la escribe —en el alta se guarda
+            // `[]` y solo el sembrador de demostración le pone valores—, así
+            // que en producción la tarjeta no salía y con datos de demostración
+            // salía un visto verde congelado el día que se sembró.
+            'checklist' => Readiness::checklist((string) $row->tenant_id, (string) $row->carrier_id),
         ];
     }
 

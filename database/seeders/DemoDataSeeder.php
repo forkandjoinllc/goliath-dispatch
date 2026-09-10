@@ -417,16 +417,16 @@ class DemoDataSeeder extends Seeder
         $now = Carbon::now();
 
         $plan = [
-            'atlas' => [OnboardingStatus::Approved, ['authority' => true, 'insurance' => true, 'agreement' => true, 'fmcsa' => true, 'w9' => true]],
-            'cordillera' => [OnboardingStatus::Approved, ['authority' => true, 'insurance' => true, 'agreement' => true, 'fmcsa' => true, 'w9' => true]],
-            'northline' => [OnboardingStatus::UnderReview, ['authority' => true, 'insurance' => true, 'agreement' => false, 'fmcsa' => false, 'w9' => true]],
-            'sierra' => [OnboardingStatus::CorrectionsRequired, ['authority' => true, 'insurance' => false, 'agreement' => false, 'fmcsa' => false, 'w9' => true]],
-            'bluewater' => [OnboardingStatus::Suspended, ['authority' => true, 'insurance' => false, 'agreement' => true, 'fmcsa' => true, 'w9' => true]],
-            'granito' => [OnboardingStatus::Draft, ['authority' => false, 'insurance' => false, 'agreement' => false, 'fmcsa' => false, 'w9' => false]],
-            'redcedar' => [OnboardingStatus::Submitted, ['authority' => true, 'insurance' => true, 'agreement' => false, 'fmcsa' => false, 'w9' => true]],
+            'atlas' => [OnboardingStatus::Approved],
+            'cordillera' => [OnboardingStatus::Approved],
+            'northline' => [OnboardingStatus::UnderReview],
+            'sierra' => [OnboardingStatus::CorrectionsRequired],
+            'bluewater' => [OnboardingStatus::Suspended],
+            'granito' => [OnboardingStatus::Draft],
+            'redcedar' => [OnboardingStatus::Submitted],
         ];
 
-        foreach ($plan as $key => [$status, $checklist]) {
+        foreach ($plan as $key => [$status]) {
             $carrierId = $carriers[$key];
             $submitted = $status === OnboardingStatus::Draft ? null : $now->copy()->subDays(random_int(20, 240));
             $decided = in_array($status, [OnboardingStatus::Approved, OnboardingStatus::Suspended], true)
@@ -446,7 +446,6 @@ class DemoDataSeeder extends Seeder
                     ? 'El nombre legal del certificado de seguro no coincide con el registrado en FMCSA. Envíe un certificado corregido.'
                     : null,
                 'required_document_types' => json_encode($required),
-                'checklist' => json_encode($checklist),
             ]);
         }
     }

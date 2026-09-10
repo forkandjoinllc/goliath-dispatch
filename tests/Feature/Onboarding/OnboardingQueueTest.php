@@ -10,6 +10,7 @@ use App\Support\Onboarding\Readiness;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\Scenario;
@@ -169,9 +170,15 @@ it('distingue «nunca comprobado» de «comprobado hace mucho»', function () {
 });
 
 it('no guarda ninguna lista de comprobación', function () {
-    // `carrier_onboardings.checklist` existe y este servicio NO la escribe:
-    // una lista guardada dice «listo» el día que se guardó y sigue diciéndolo
-    // el día que caduca el seguro.
+    // Antes esta prueba comprobaba que la columna `carrier_onboardings.checklist`
+    // se quedaba vacía, porque este servicio no la escribía. La columna ya no
+    // está: la leía la ficha del transportista y pintaba con ella vistos verdes
+    // congelados el día en que se sembró la demostración.
+    //
+    // La prueba se queda, apuntando a lo que ahora hay que sujetar: que no
+    // vuelva a existir un sitio donde guardar esa lista. Una lista guardada
+    // dice «listo» el día que se guardó y sigue diciéndolo el día que caduca el
+    // seguro.
     estadoDeIncorporacion($this->scenario, 'approved');
 
     Readiness::forCarrier(
@@ -179,11 +186,7 @@ it('no guarda ninguna lista de comprobación', function () {
         (string) $this->scenario->assignedCarrier->id,
     );
 
-    $checklist = DB::table('carrier_onboardings')
-        ->where('carrier_id', $this->scenario->assignedCarrier->id)
-        ->value('checklist');
-
-    expect($checklist === null || $checklist === '[]')->toBeTrue();
+    expect(Schema::hasColumn('carrier_onboardings', 'checklist'))->toBeFalse();
 });
 
 /* ── La cola ────────────────────────────────────────────────────────────── */
