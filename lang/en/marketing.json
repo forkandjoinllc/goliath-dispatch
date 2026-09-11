@@ -210,7 +210,7 @@
       },
       "step3": {
         "title": "Load dispatched",
-        "body": "Compliance gates run automatically at every status change. A load with an expired carrier document, or an oversize permit that has not been approved, cannot dispatch."
+        "body": "Compliance gates run automatically at every status change. A load with an expired carrier document, or an unapproved permit or unconfirmed escort, cannot dispatch."
       },
       "step4": {
         "title": "Tracked",
@@ -291,7 +291,7 @@
       "body": "Route-specific requirements evaluated against your load's dimensions and weight and each state's baseline rules — with a clear line between what the system tells you and what only a permit can authorize.",
       "bullet1": "Oversize evaluation before dispatch, on loads flagged as oversize",
       "bullet2": "Permit and escort status tracked next to the load",
-      "bullet3": "A load flagged as oversize cannot dispatch while a permit is still unapproved"
+      "bullet3": "A load flagged as oversize cannot dispatch with an unapproved permit or an unconfirmed escort"
     }
   },
   "heavyHaul": {

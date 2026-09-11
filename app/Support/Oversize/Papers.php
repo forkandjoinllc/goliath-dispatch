@@ -60,6 +60,21 @@ final class Papers
     /** El permiso no hace falta, así que su papel tampoco. */
     public const NO_REQUERIDO = 'not_required';
 
+    /**
+     * Estados de escolta que cuentan como resueltos.
+     *
+     * `confirmed` y `completed` son escoltas que están; `cancelled` y
+     * `not_required` son escoltas que no hacen falta. Lo que queda —`pending`—
+     * es una escolta que alguien apuntó y nadie ha cerrado, y esa es justo la
+     * que no puede salir a la carretera sin que nadie lo note.
+     *
+     * @var list<string>
+     */
+    public const ESCOLTA_RESUELTA = ['confirmed', 'completed', 'cancelled', self::NO_REQUERIDO];
+
+    /** Escoltas que están de verdad y por tanto necesitan su papel. */
+    public const ESCOLTA_EN_PIE = ['confirmed', 'completed'];
+
     public static function conoce(string $ranura): bool
     {
         return array_key_exists($ranura, self::RANURAS);
@@ -204,6 +219,48 @@ final class Papers
                 && $permiso->expires_at !== null
                 && CarbonImmutable::parse((string) $permiso->expires_at)->isBefore($entregaPlanificada)) {
                 $faltas[] = ['reason' => 'permitExpiresBeforeDelivery', 'state' => $estado];
+            }
+        }
+
+        /*
+         * Y las escoltas, que hasta este lote no las miraba NADIE.
+         *
+         * La página pública decía «una carga no puede despacharse con un
+         * permiso o escolta pendiente». Lo del permiso era verdad; lo de la
+         * escolta no: `escorts.status` no lo leía ningún guardián, así que una
+         * escolta en `pending` no impedía nada. Hubo que quitar la frase de la
+         * página de ventas; esto la devuelve.
+         *
+         * Se miran las mismas dos cosas que en un permiso, y por los mismos
+         * motivos: que no quede ninguna sin cerrar, y que la que se da por
+         * hecha tenga su papel. Una escolta confirmada sin documento es una
+         * casilla marcada que el conductor no lleva encima.
+         *
+         * Lo que NO se hace: exigir que exista una escolta. Si la evaluación
+         * dijo que no hace falta, no hay fila, y bloquear por ausencia pararía
+         * toda carga sobredimensionada que solo necesita permiso. Que la
+         * evaluación pueda EXIGIR una fila es otra cosa y otro lote: hoy es
+         * orientación, y así lo dice su propio descargo de responsabilidad.
+         */
+        $escoltas = DB::table('escorts')
+            ->where('tenant_id', $tenantId)
+            ->where('load_id', $loadId)
+            ->whereNull('deleted_at')
+            ->orderBy('state_code')
+            ->get(['state_code', 'status', 'document_id']);
+
+        foreach ($escoltas as $escolta) {
+            $estado = (string) $escolta->state_code;
+
+            if (! in_array((string) $escolta->status, self::ESCOLTA_RESUELTA, true)) {
+                $faltas[] = ['reason' => 'escortPending', 'state' => $estado];
+
+                continue;
+            }
+
+            if (in_array((string) $escolta->status, self::ESCOLTA_EN_PIE, true)
+                && $escolta->document_id === null) {
+                $faltas[] = ['reason' => 'escortWithoutDocument', 'state' => $estado];
             }
         }
 

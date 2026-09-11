@@ -565,12 +565,8 @@ final class PermitController
         // Añadir un permiso pendiente REABRE la compuerta. Si no lo hiciera,
         // una carga aprobada el lunes seguiría aprobada el martes con un permiso
         // nuevo sin tramitar dentro.
-        if (in_array($datos['status'], ['pending', 'requested', 'expired', 'rejected'], true)) {
-            DB::table('loads')->where('id', $carga->id)->update([
-                'permit_ready_approved_by_user_id' => null,
-                'permit_ready_approved_at' => null,
-                'updated_at' => CarbonImmutable::now(),
-            ]);
+        if ($datos['status'] !== Papers::EMITIDO && $datos['status'] !== Papers::NO_REQUERIDO) {
+            $this->reabrirCompuerta((string) $carga->id);
         }
 
         return back()->with('success', __('oversize.permits.created'));
@@ -612,7 +608,35 @@ final class PermitController
             throw new NotFoundHttpException;
         }
 
+        // Devolver un permiso a pendiente reabre la compuerta, igual que crearlo
+        // pendiente. Sin esto, una carga aprobada el lunes seguía despachable el
+        // martes con el permiso reabierto.
+        if ($datos['status'] !== Papers::EMITIDO && $datos['status'] !== Papers::NO_REQUERIDO) {
+            $this->reabrirCompuerta((string) $carga->id);
+        }
+
         return back()->with('success', __('oversize.permits.updated'));
+    }
+
+    /**
+     * Reabre la compuerta de «permisos listos».
+     *
+     * `storePermit` ya lo hacía al crear un permiso pendiente, y su comentario
+     * dice por qué: «si no lo hiciera, una carga aprobada el lunes seguiría
+     * aprobada el martes con un permiso nuevo sin tramitar dentro».
+     *
+     * El mismo argumento vale para CAMBIAR uno existente de vuelta a pendiente,
+     * y ahí no se aplicaba: una carga aprobada el lunes seguía despachable el
+     * martes con el permiso reabierto. Vale igual para las escoltas, que hasta
+     * este lote no tocaban esta puerta en absoluto.
+     */
+    private function reabrirCompuerta(string $loadId): void
+    {
+        DB::table('loads')->where('id', $loadId)->update([
+            'permit_ready_approved_by_user_id' => null,
+            'permit_ready_approved_at' => null,
+            'updated_at' => CarbonImmutable::now(),
+        ]);
     }
 
     public function storeEscort(Request $request, string $load, CurrentActor $current, PermissionChecker $checker): RedirectResponse
@@ -656,6 +680,11 @@ final class PermitController
             'updated_at' => CarbonImmutable::now(),
         ]);
 
+        // Una escolta sin cerrar también sostiene la compuerta, desde este lote.
+        if (! in_array($datos['status'], Papers::ESCOLTA_RESUELTA, true)) {
+            $this->reabrirCompuerta((string) $carga->id);
+        }
+
         return back()->with('success', __('oversize.escorts.created'));
     }
 
@@ -689,6 +718,10 @@ final class PermitController
 
         if ($afectadas === 0) {
             throw new NotFoundHttpException;
+        }
+
+        if (! in_array($datos['status'], Papers::ESCOLTA_RESUELTA, true)) {
+            $this->reabrirCompuerta((string) $carga->id);
         }
 
         return back()->with('success', __('oversize.escorts.updated'));

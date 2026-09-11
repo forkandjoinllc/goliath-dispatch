@@ -170,7 +170,9 @@
         "permitExpiresBeforeDelivery": "The {state} permit expires before the planned delivery. Renew it or correct the date before marking the paperwork complete.",
         "permitWithoutDocument": "The {state} permit is marked issued and has no document attached. The driver cannot leave without the paper: attach it before marking the paperwork complete.",
         "success": "Load approved as permit-ready.",
-        "title": "Permit-ready approval"
+        "title": "Permit-ready approval",
+        "escortPending": "The {state} escort is still pending. An oversize load does not leave with an unconfirmed escort.",
+        "escortWithoutDocument": "The {state} escort is confirmed and has no document attached. The box says it is there; the driver is not carrying it."
     },
     "restrictions": {
         "night": "Night travel is prohibited.",

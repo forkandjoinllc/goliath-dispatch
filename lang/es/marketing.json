@@ -210,7 +210,7 @@
       },
       "step3": {
         "title": "Se despacha la carga",
-        "body": "Los controles de cumplimiento se ejecutan automáticamente en cada cambio de estado. Una carga con un documento del transportista vencido, o con un permiso de sobredimensión sin aprobar, no puede despacharse."
+        "body": "Los controles de cumplimiento se ejecutan automáticamente en cada cambio de estado. Una carga con un documento del transportista vencido, o con un permiso sin aprobar o una escolta sin confirmar, no puede despacharse."
       },
       "step4": {
         "title": "Se rastrea",
@@ -291,7 +291,7 @@
       "body": "Requisitos específicos de la ruta evaluados según las dimensiones y el peso de su carga y las reglas base de cada estado — con una línea clara entre lo que el sistema le indica y lo que solo un permiso puede autorizar.",
       "bullet1": "Evaluación de carga sobredimensionada antes del despacho, cuando la carga viene marcada como tal",
       "bullet2": "Estado de permisos y escoltas registrado junto a la carga",
-      "bullet3": "Una carga marcada como sobredimensionada no puede despacharse mientras le falte un permiso por aprobar"
+      "bullet3": "Una carga marcada como sobredimensionada no puede despacharse con un permiso por aprobar ni con una escolta sin confirmar"
     }
   },
   "heavyHaul": {

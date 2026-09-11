@@ -170,7 +170,9 @@
         "permitExpiresBeforeDelivery": "El permiso de {state} vence antes de la entrega planificada. Renuévelo o corrija la fecha antes de dar los papeles por completos.",
         "permitWithoutDocument": "El permiso de {state} está marcado como emitido y no tiene el documento adjunto. El conductor no puede salir sin el papel: adjúntelo antes de dar los papeles por completos.",
         "success": "Carga aprobada con permisos listos.",
-        "title": "Aprobación de permisos listos"
+        "title": "Aprobación de permisos listos",
+        "escortPending": "La escolta de {state} sigue pendiente. Una carga sobredimensionada no sale con una escolta sin confirmar.",
+        "escortWithoutDocument": "La escolta de {state} está confirmada y no tiene el documento adjunto. La casilla dice que está; el conductor no lo lleva."
     },
     "restrictions": {
         "night": "Se prohíbe el viaje nocturno.",

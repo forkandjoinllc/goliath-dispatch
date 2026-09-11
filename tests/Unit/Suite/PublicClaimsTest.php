@@ -205,12 +205,18 @@ it('la promesa de la escolta ya no se hace', function (): void {
     // Era una de las dos falsas, y la más seria: `escorts.status` no lo lee
     // ningún guardián, así que una escolta en `pending` no impide despachar.
     // Mientras eso siga así, la página no puede decir lo contrario.
-    $guardias = Source::compacta(raizPaginaPublica().'/app/Support/Loads/Guards.php');
+    // La puerta vive en `Papers::faltan()`, que es lo que `readiness` consulta
+    // antes de sellar `permit_ready_approved_at` — la marca que `Guards` exige
+    // para despachar una carga sobredimensionada. Cuando se escribió esta
+    // prueba se miraba `Guards` directamente, y la puerta se construyó un nivel
+    // más abajo: el sitio correcto es donde se decide, no donde se obedece.
+    $puerta = Source::compacta(raizPaginaPublica().'/app/Support/Oversize/Papers.php');
 
-    if (str_contains($guardias, 'escort')) {
-        // Alguien construyó la puerta: entonces la página puede prometerla otra
-        // vez, y esta prueba tiene que cambiar a conciencia.
-        expect(true)->toBeTrue();
+    if (str_contains($puerta, "DB::table('escorts')")) {
+        // La puerta existe: la página puede prometerla, y lo que hay que
+        // sujetar ahora es que la puerta siga mirando las dos cosas.
+        test()->assertStringContainsString("'reason'=>'escortPending'", $puerta);
+        test()->assertStringContainsString("'reason'=>'escortWithoutDocument'", $puerta);
 
         return;
     }

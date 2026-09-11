@@ -2572,3 +2572,34 @@ cuando lo normal son 140.
 propio `bash -c` contiene el `php artisan serve` que va a lanzar, así que el
 filtro casa consigo mismo. Que esté escrito no basta; **el PID se saca en una
 llamada y se mata en otra.**
+
+## La escolta que no impedía nada (`docs/escort-gate.md`)
+
+**Un guardián que impide prometer algo hay que apuntarlo a donde se DECIDE, no
+a donde se obedece.** El lote anterior dejó una prueba que prohibía la frase de
+la escolta mientras `Guards.php` no nombrara escoltas. Construí la puerta en
+`Papers::faltan()` —que es lo que se consulta antes de sellar la marca que
+`Guards` exige— y la prueba siguió roja con razón: miraba el fichero
+equivocado. **La capa que obedece una decisión no es la que la toma, y un
+guardián sobre la primera no sabe nada de la segunda.**
+
+**Cuando la misma línea se repite cuatro veces, la cuarta es la que falta.**
+Reabrir la compuerta era un `update` de tres columnas copiado en `storePermit`
+y en ninguno de los otros tres caminos. Se extrajo a un ayudante y el guardián
+cuenta las cuatro llamadas **y** exige que solo el ayudante escriba la columna.
+Contar las llamadas sin lo segundo dejaría pasar una quinta copia escrita a
+mano.
+
+**Dos listas de estados donde parecía haber una.** Una escolta cancelada está
+resuelta y no necesita papel; una confirmada está resuelta y sí lo necesita. Con
+una sola lista, o se le pide documento a lo cancelado o se deja pasar lo
+confirmado sin él — y los dos sabotajes correspondientes lo cazan. La prueba
+además fija que «en pie» sea subconjunto de «resuelta», que es la relación que
+hace que las dos listas no puedan contradecirse.
+
+**Un recorrido por el navegador puede estar chocando con una puerta anterior.**
+Pulsé «Aprobar permisos listos» esperando el aviso de la escolta y no salía
+ninguno; la compuerta se quedaba cerrada, así que parecía correcto. Lo que
+fallaba era el control de ANTES —la evaluación sin validar—, y mi mensaje nunca
+llegaba a ejecutarse. **Comprobar que algo se bloquea no es comprobar que se
+bloquea por el motivo que uno cree**: hay que leer el motivo, no solo el efecto.
