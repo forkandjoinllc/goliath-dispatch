@@ -123,21 +123,37 @@ it('ningún texto lleva escrito un plazo que se calcula', function (): void {
 });
 
 it('el aviso de caducidad recibe el número de la empresa', function (): void {
+    // `expirationHint` era UNA clave y ahora son TRES. El lote del vencimiento
+    // la partió porque prometía lo mismo a los diecisiete tipos del desplegable
+    // y solo se cumplía en tres — ver `docs/expiry-promise.md`. Esta prueba
+    // sigue exigiendo lo suyo, que es que el plazo llegue del ajuste de la
+    // empresa y no vaya escrito, y ahora se lo exige a las tres.
+    $avisos = ['expirationHintPick', 'expirationHintBlocks', 'expirationHintWarns'];
+
     foreach (['es', 'en'] as $idioma) {
         $d = json_decode((string) file_get_contents(raizTextos()."/lang/{$idioma}/documents.json"), true);
 
-        test()->assertStringContainsString(
-            '{days}',
-            (string) ($d['form']['expirationHint'] ?? ''),
-            "El aviso de caducidad en {$idioma} tiene que recibir el plazo, no llevarlo escrito.",
-        );
+        foreach ($avisos as $clave) {
+            test()->assertStringContainsString(
+                '{days}',
+                (string) ($d['form'][$clave] ?? ''),
+                "El aviso de caducidad «{$clave}» en {$idioma} tiene que recibir el plazo, no llevarlo escrito.",
+            );
+        }
+
+        // Y la clave partida no puede volver: es la que prometía bloqueo para
+        // todos los tipos.
+        test()->assertArrayNotHasKey('expirationHint', $d['form']);
     }
 
     $controlador = Source::compacta(raizTextos().'/app/Http/Controllers/App/DocumentController.php');
     test()->assertStringContainsString("'warnDays'=>ExpiryWindow::days()", $controlador);
 
     $pantalla = Source::sinComentarios(raizTextos().'/resources/js/pages/App/Documents/Form.tsx');
-    test()->assertStringContainsString("t('documents.form.expirationHint', { days: String(warnDays) })", $pantalla);
+
+    foreach ($avisos as $clave) {
+        test()->assertStringContainsString("t('documents.form.{$clave}', { days: String(warnDays) })", $pantalla);
+    }
 });
 
 it('la lista de excepciones no se traga el defecto que la hizo nacer', function (): void {

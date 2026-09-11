@@ -70,12 +70,19 @@ it('y cambia cuando la empresa lo cambia', function (): void {
 it('el texto no lleva ningún número escrito', function (): void {
     // La otra mitad: el formulario puede recibir el plazo correcto y el texto
     // seguir diciendo otro. Se comprueba el texto tal y como sale traducido.
+    // `expirationHint` se partió en TRES con el lote del vencimiento: una para
+    // cada cosa que puede pasar al vencer, porque la única prometía bloqueo a
+    // los diecisiete tipos del desplegable y solo se cumplía en tres. Las tres
+    // tienen que seguir llevando el plazo de la empresa.
     foreach (['es' => 'Se le avisará 20 días antes', 'en' => 'You will be warned 20 days before'] as $idioma => $esperado) {
         app()->setLocale($idioma);
 
-        test()->assertStringContainsString(
-            $esperado,
-            (string) __('documents.form.expirationHint', ['days' => 20]),
-        );
+        foreach (['expirationHintPick', 'expirationHintBlocks', 'expirationHintWarns'] as $clave) {
+            test()->assertStringContainsString(
+                $esperado,
+                (string) __("documents.form.{$clave}", ['days' => 20]),
+                "«{$clave}» en {$idioma} no lleva el plazo de la empresa.",
+            );
+        }
     }
 });

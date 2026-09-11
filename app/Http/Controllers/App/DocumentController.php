@@ -16,6 +16,7 @@ use App\Support\Compliance\ExpiryWindow;
 use App\Support\Documents\DocumentOwners;
 use App\Support\Documents\DocumentScope;
 use App\Support\Documents\DocumentTypes;
+use App\Support\Documents\ExpiryEffect;
 use App\Support\Documents\Scanning;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
@@ -179,6 +180,15 @@ final class DocumentController
                 'truck' => DocumentTypes::requiredFor('truck'),
                 'trailer' => DocumentTypes::requiredFor('trailer'),
             ],
+            // Qué pasa DE VERDAD cuando vence cada tipo. El aviso de debajo de
+            // la casilla de fecha prometía bloqueo para los diecisiete tipos
+            // que este desplegable ofrece, y la puerta solo mira los tres
+            // obligatorios del transportista. Ver `ExpiryEffect`.
+            //
+            // Va el mapa entero y no el del tipo elegido: el desplegable cambia
+            // en el navegador, y una recarga parcial por cada cambio sería un
+            // viaje al servidor para leer una palabra ya calculada.
+            'expiryEffects' => ExpiryEffect::map(),
             // Los tipos que ESE dueño ya tiene. Llega por recarga parcial en
             // cuanto se elige el dueño: mandar el mapa de todos los dueños de
             // la empresa sería kilos de JSON para usar una fila.
@@ -735,6 +745,11 @@ final class DocumentController
             'issueDate' => $this->day($d->issue_date),
             'expirationDate' => $this->day($d->expiration_date),
             'expiryFlag' => $this->expiryFlag($d),
+            // Vencer no significa lo mismo en todos: tres tipos cierran la
+            // puerta de despacho y el resto solo se avisan. La ficha lo dice
+            // en vez de dejar que el lector lo suponga por la estrella del
+            // formulario, que significa otra cosa.
+            'expiryEffect' => ExpiryEffect::of(EnumValue::of($d->document_type, 'other')),
         ];
     }
 

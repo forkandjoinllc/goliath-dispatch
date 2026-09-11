@@ -26,6 +26,7 @@ interface Props {
     issueDate: string | null
     expirationDate: string | null
     expiryFlag: string | null
+    expiryEffect: 'blocks' | 'warns'
     description: string | null
     createdAt: string | null
   }
@@ -114,6 +115,21 @@ export default function DocumentShow({ document, owner, versions, reviews, can }
               : 'documents.detail.expiringSoon',
           )}{' '}
           — {day(document.expirationDate)}
+        </p>
+      ) : null}
+
+      {/* Qué significa vencer, para ESTE documento.
+          Tres tipos cierran la puerta de despacho y veinticuatro solo se
+          avisan, y hasta este lote la ficha no lo decía en ninguna parte: la
+          estrella del formulario marca «obligatorio», que es otra cosa, y el
+          aviso de la pantalla anterior prometía bloqueo para todos. */}
+      {document.expirationDate !== null ? (
+        <p className="mt-3 text-xs text-steel-600">
+          {document.expiryEffect === 'blocks'
+            ? t('documents.detail.expiryBlocks')
+            : owner.type === 'driver'
+              ? t('documents.detail.expiryWarnsDriver')
+              : t('documents.detail.expiryWarns')}
         </p>
       ) : null}
 

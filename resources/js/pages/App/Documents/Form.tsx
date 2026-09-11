@@ -14,12 +14,13 @@ interface Props {
   owners: Record<OwnerType, { id: string; name: string }[]>
   typesByOwner: Record<OwnerType, string[]>
   requiredTypes: Record<OwnerType, string[]>
+  expiryEffects: Record<string, 'blocks' | 'warns'>
   warnDays: number
   /** Los tipos que el dueño elegido YA tiene. Llega por recarga parcial. */
   usedTypes?: UsedType[]
 }
 
-export default function DocumentForm({ owners, typesByOwner, requiredTypes, warnDays, usedTypes = [] }: Props) {
+export default function DocumentForm({ owners, typesByOwner, requiredTypes, expiryEffects, warnDays, usedTypes = [] }: Props) {
   const { t } = useI18n()
   const [ownerType, setOwnerType] = useState<OwnerType>('carrier')
 
@@ -224,8 +225,20 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes, warn
                 onChange={(e) => form.setData('expiration_date', e.target.value)}
                 className="mt-1 w-full rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
               />
+              {/* El aviso NO es el mismo para todos los tipos, y antes lo era.
+                  Decía «se le avisará N días antes, y la puerta de despacho
+                  bloquea en cuanto vence» para los diecisiete tipos de este
+                  desplegable, y la puerta solo mira los tres obligatorios del
+                  transportista. La primera mitad era verdad siempre; la
+                  segunda, en tres de diecisiete — y una media promesa es peor
+                  que una falsa, porque la mitad que se cumple hace creíble la
+                  otra y quien la lee deja de vigilar la fecha a mano. */}
               <p className="mt-1 text-xs text-steel-600">
-                {t('documents.form.expirationHint', { days: String(warnDays) })}
+                {form.data.document_type === ''
+                  ? t('documents.form.expirationHintPick', { days: String(warnDays) })
+                  : expiryEffects[form.data.document_type] === 'blocks'
+                    ? t('documents.form.expirationHintBlocks', { days: String(warnDays) })
+                    : t('documents.form.expirationHintWarns', { days: String(warnDays) })}
               </p>
             </div>
           </div>

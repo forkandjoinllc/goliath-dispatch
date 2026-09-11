@@ -2649,3 +2649,44 @@ tercera vez. El PID se saca en una llamada y se mata en otra, siempre.
 ficheros de prueba solo aparece en la suite completa. Renombrada a
 `cuerpoDeDisputa()`. Es la segunda vez en dos lotes: conviene que los ayudantes
 de un guardián lleven el nombre del lote pegado desde el principio.
+
+## La promesa a medias del vencimiento (`docs/expiry-promise.md`)
+
+**Una lista paralela es una segunda opinión sobre el comportamiento, y las
+segundas opiniones divergen.** La forma cómoda de arreglar esto era declarar
+tipo por tipo qué pasa al vencer. El día que alguien hiciera que la puerta
+mirase los camiones, esa lista seguiría diciendo lo de siempre y la pantalla
+volvería a mentir —esta vez al revés—. El efecto se CALCULA de las mismas
+funciones que consulta la puerta, y lo único declarado a mano es qué dueños
+consulta; un guardián lo ata a las llamadas reales con una expresión regular
+sobre `Guards.php`. **Cuando algo tenga que declararse a mano, que sea lo más
+pequeño posible y que una prueba lo ate a la realidad.**
+
+**Dos guardianes anteriores se pusieron rojos y la salida fácil era borrarles la
+aserción.** Vigilaban una clave de diccionario que este lote partió en tres.
+Repuntarlos a las tres —y añadirles que la clave partida no vuelva— es lo que
+mantiene vivo el defecto que ellos nacieron para cerrar. **Un guardián que se
+pone rojo porque el código cambió de forma está funcionando; relajarlo es
+gastarse el trabajo del lote que lo escribió.**
+
+**El fallo uniforme era el entorno otra vez.** Ocho pruebas nuevas, ocho errores
+idénticos de «Connection refused»: MySQL no estaba arrancado tras un reinicio
+del contenedor. Un resultado uniforme nunca es un diagnóstico sobre el código.
+
+**Fijar una clave de suceso hace que la prueba mida el calendario.** La primera
+versión de la prueba de la barredora contaba avisos con
+`event_key = 'document.expiring'` sobre un documento vencido AYER — y esa
+barredora emite `document.expired` cuando la fecha ya pasó. Daba cero. Se cuenta
+por el id del documento dentro de `dedupe_key`, que no depende de qué lado de
+hoy caiga la fecha.
+
+**Comprobar que algo se bloquea no es comprobar DÓNDE.** La prueba del
+certificado de seguro vencido esperaba la carga en «asignada» y se quedaba en
+«disponible»: `carrierCompliance()` se consulta en las dos puertas y la de
+asignar es la primera que se cruza. Es la segunda vez en tres lotes que una
+prueba acierta el efecto y falla el sitio.
+
+**Un nombre parecido no es un nombre distinto.** `raizPromesa()` convivía con
+`raizPromesas()` de `CarrierPromisesTest`, a una letra de distancia. No colisiona
+hoy y colisionará el día que alguien las lea deprisa. Renombrada a
+`raizVencimiento()`: los ayudantes de un guardián llevan el nombre del lote.
