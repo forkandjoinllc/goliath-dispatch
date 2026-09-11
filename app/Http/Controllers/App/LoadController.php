@@ -28,6 +28,7 @@ use App\Support\Loads\DriverFacts;
 use App\Support\Loads\Guards;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
+use App\Support\Loads\ScheduleConflict;
 use App\Support\Loads\StatusLabel;
 use App\Support\Loads\StopClock;
 use App\Support\Loads\Transitions;
@@ -653,6 +654,9 @@ final class LoadController
         $units = function (string $table) use ($load, $tenantId): array {
             $singular = $table === 'trucks' ? 'truck' : 'trailer';
 
+            // Los solapes de agenda, de una consulta para toda la lista.
+            $solapes = ScheduleConflict::byResource($tenantId, (string) $load->id, $singular);
+
             return DB::table($table)
                 ->where('tenant_id', $load->tenant_id)
                 ->where('carrier_id', $load->carrier_id)
@@ -676,6 +680,10 @@ final class LoadController
                         'ok' => $motivos === [],
                         'problem' => null,
                         'blockingKeys' => $motivos,
+                        // Un solape NO toca `ok`: avisa, no bloquea. Un
+                        // documento vencido es una puerta; una agenda apretada
+                        // es una decisión de quien despacha.
+                        'conflicts' => $solapes[(string) $r->id] ?? [],
                     ];
                 })
                 ->all();
@@ -689,6 +697,9 @@ final class LoadController
             fn (array $r): array => ['type' => $r['type'], 'value' => $r['value'], 'source' => $r['source']],
             $requisitos,
         );
+
+        // Los solapes de agenda de todos los conductores, de una consulta.
+        $solapesDeConductor = ScheduleConflict::byResource($tenantId, (string) $load->id, 'driver');
 
         $drivers = DB::table('drivers as d')
             ->join('driver_carrier_relationships as r', 'r.driver_id', '=', 'd.id')
@@ -705,7 +716,7 @@ final class LoadController
                 'd.twic_card', 'd.twic_expires_at', 'd.work_authorization',
                 'd.record_clean_years', 'd.record_checked_at',
             ])
-            ->map(function ($d) use ($today, $requisitosParaComparar): array {
+            ->map(function ($d) use ($today, $requisitosParaComparar, $solapesDeConductor): array {
                 $problem = match (true) {
                     $d->status === 'inactive' => 'driverInactive',
                     $d->license_expires_at !== null && $d->license_expires_at < $today => 'licenseExpired',
@@ -733,6 +744,9 @@ final class LoadController
                         ...DriverEligibility::summarize($veredicto),
                         'items' => $veredicto,
                     ],
+                    // Mismo criterio que los requisitos de arriba: se enseña
+                    // aparte y no descarta a nadie.
+                    'conflicts' => $solapesDeConductor[(string) $d->id] ?? [],
                 ];
             })
             ->all();

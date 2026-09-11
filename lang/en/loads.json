@@ -53,7 +53,11 @@
         "noneAvailable": "Nothing available for this carrier.",
         "compliant": "In order",
         "notCompliant": "Not in order",
-        "unitBlocked": "{unit} cannot go on this load. {reasons}"
+        "unitBlocked": "{unit} cannot go on this load. {reasons}",
+        "scheduleConflict": "Already on {n} loads that overlap this window: {loads}. This does not stop the assignment; it is your call.",
+        "scheduleConflictShort": "overlaps {n}",
+        "scheduleConflictOne": "Already on load {loads}, which overlaps this window. This does not stop the assignment; it is your call.",
+        "scheduleConflictShortOne": "overlaps another"
     },
     "blocking": {
         "noPickup": "It has no pickup stop.",

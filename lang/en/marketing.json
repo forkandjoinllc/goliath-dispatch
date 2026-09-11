@@ -253,7 +253,7 @@
     },
     "dispatch": {
       "title": "Dispatch",
-      "body": "Build, assign and track loads from a single board. Assignment is compliance-checked automatically — a truck, trailer or driver with an expired document, or a scheduling conflict, cannot be assigned to a load.",
+      "body": "Create, assign and track loads from a single board. Assignment is checked automatically against compliance: a truck, trailer or driver with an expired document cannot be assigned to a load. And if that resource is already on another load whose window overlaps this one, you are told before assigning, with the other load number.",
       "bullet1": "Load board with real-time status from dispatched to delivered",
       "bullet2": "Automatic compliance gates before any resource assignment",
       "bullet3": "Dispatcher commission tracked without touching the carrier's settlement"

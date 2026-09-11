@@ -253,7 +253,7 @@
     },
     "dispatch": {
       "title": "Despacho",
-      "body": "Cree, asigne y rastree cargas desde un solo tablero. La asignación se verifica automáticamente contra el cumplimiento normativo — un camión, remolque o conductor con un documento vencido, o un conflicto de horario, no puede asignarse a una carga.",
+      "body": "Cree, asigne y rastree cargas desde un solo tablero. La asignación se verifica automáticamente contra el cumplimiento normativo: un camión, remolque o conductor con un documento vencido no puede asignarse a una carga. Y si ese recurso ya está en otra carga cuya ventana se pisa con esta, se avisa antes de asignar, con el número de la otra carga.",
       "bullet1": "Tablero de cargas con estado en tiempo real, desde despachada hasta entregada",
       "bullet2": "Controles de cumplimiento automáticos antes de cualquier asignación de recursos",
       "bullet3": "Comisión del despachador registrada sin afectar la liquidación del transportista"

@@ -2495,3 +2495,42 @@ vandalismo del fichero, no.**
 sigan existiendo —una excepción que nombra una clave borrada tapa a la siguiente
 que se llame igual— y que no crezca: pasado cierto tamaño ha dejado de ser una
 lista de excepciones y es la regla nueva.
+
+## El doble turno que nadie comprobaba (`docs/schedule-conflict.md`)
+
+**Un sabotaje que cambia el rótulo no sabotea el comportamiento.** Para probar
+que un solape no puede convertirse en bloqueo, primero cambié cómo se pinta la
+opción del desplegable. Salió verde, y con razón: el bloqueo no vive en el
+rótulo, vive en el `disabled` del botón. El sabotaje de verdad toca esa
+condición — y ahí sí faltaba guardián. **Antes de escribir el reemplazo hay que
+localizar dónde vive de verdad la conducta: el sitio donde se LEE el dato, no el
+sitio donde se enseña.**
+
+**La condición de un botón se fija entera, como la de un `if`.** Es la misma
+lección del estado vacío de hace unos lotes, ahora en la otra punta: el botón se
+apaga por `ok` y por nada más, así que el guardián pega la cadena completa
+`disabled={choice === '' || (chosen !== undefined && !chosen.ok)}`. Cualquier
+condición añadida la rompe.
+
+**Una aserción por conteo es un guardián flojo y molesto.** Escribí «el texto
+`conflicts` no aparece más de seis veces en la pantalla» como red de seguridad.
+Falló por contar diez —comentarios aparte— y no habría dicho nada útil ni
+cuando pasara. La quité: la condición fijada ya es la protección, y un número
+arbitrario solo añade una prueba que alguien tendrá que ajustar sin entender por
+qué. **Si al escribir el mensaje de fallo no se puede decir qué está mal, la
+aserción sobra.**
+
+**El escenario de pruebas monta lo mínimo, y lo mínimo no incluye las
+relaciones.** `Scenario::crew()` crea el conductor pero no su fila en
+`driver_carrier_relationships`, que es de donde se llena el desplegable de
+asignación. La prueba fallaba con «el conductor no sale en el desplegable», que
+suena a defecto del código y era el fixture. **Cuando una prueba de pantalla no
+encuentra lo que acaba de crear, el primer sospechoso es lo que el escenario NO
+crea.**
+
+**Las claves con `{n}` necesitan su hermana `…One`, y hay un guardián que lo
+cobra.** Escribí «Ya está en {n} carga(s)» con la forma perezosa del paréntesis
+y la vuelta completa se puso roja: `PluralTest` exige forma singular o motivo
+declarado. El front-end elige la hermana solo cuando `n` es 1. El texto queda
+mejor —«Ya está en la carga GD-24003»— y la prueba me lo cobró antes que un
+usuario.

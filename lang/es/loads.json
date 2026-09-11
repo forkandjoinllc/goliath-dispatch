@@ -53,7 +53,11 @@
         "noneAvailable": "No hay nada disponible para este transportista.",
         "compliant": "En regla",
         "notCompliant": "No está en regla",
-        "unitBlocked": "{unit} no puede ir a esta carga. {reasons}"
+        "unitBlocked": "{unit} no puede ir a esta carga. {reasons}",
+        "scheduleConflict": "Ya está en {n} cargas que se pisan con esta ventana: {loads}. No se impide asignarlo; decide usted.",
+        "scheduleConflictShort": "se pisa con {n}",
+        "scheduleConflictOne": "Ya está en la carga {loads}, que se pisa con esta ventana. No se impide asignarlo; decide usted.",
+        "scheduleConflictShortOne": "se pisa con otra"
     },
     "blocking": {
         "noPickup": "No tiene parada de recogida.",

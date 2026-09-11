@@ -40,6 +40,22 @@ interface Option {
   medicalCardExpiresAt?: string | null
   /** Solo en conductores, y solo si la carga tiene requisitos. */
   eligibility?: Eligibility | null
+  /**
+   * Otras cargas vivas que ya ocupan a este recurso en esta ventana.
+   *
+   * NO toca `ok`. Un documento vencido es una puerta —la ley dice que ese
+   * camión no sale—; un solape es agenda, y la agenda la lleva quien despacha:
+   * una recogida a las 8 y otra a las 18 en la misma ciudad se pisan por
+   * ventana y pueden ser perfectamente posibles.
+   */
+  conflicts?: Conflict[]
+}
+
+interface Conflict {
+  loadId: string
+  loadNumber: string
+  from: string
+  to: string
 }
 
 interface Requirement {
@@ -232,7 +248,7 @@ function ResourcePicker({
                 {/* El motivo va en la propia opción: quien abre el desplegable
                     ve de una vez quién está en regla y quién no. */}
                 {o.ok
-                  ? `${o.label}${verdictTag(o.eligibility, t)}`
+                  ? `${o.label}${verdictTag(o.eligibility, t)}${solapeTag(o.conflicts, t)}`
                   : `${o.label} — ${motivo(o, t)}`}
               </option>
             ))}
@@ -241,6 +257,17 @@ function ResourcePicker({
           {chosen && !chosen.ok ? (
             <p role="alert" className="rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
               {motivo(chosen, t)}
+            </p>
+          ) : null}
+
+          {/* Mismo criterio que los requisitos: se dice y no se impide. Con el
+              número de la otra carga, para que la decisión se tome sabiendo. */}
+          {chosen?.conflicts && chosen.conflicts.length > 0 ? (
+            <p role="alert" className="rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
+              {t('loads.assign.scheduleConflict', {
+                n: String(chosen.conflicts.length),
+                loads: chosen.conflicts.map((c) => c.loadNumber).join(', '),
+              })}
             </p>
           ) : null}
 
@@ -358,6 +385,21 @@ function EligibilityReport({
  * completa de lo que le falta (`equipment.blocking.*`). Antes la unidad solo
  * podía traer «fuera de servicio», porque era lo único que se comprobaba.
  */
+/**
+ * La marca de solape en la propia opción del desplegable.
+ *
+ * Corta, porque va dentro de un `<option>` junto al nombre: el detalle con los
+ * números de carga sale debajo al elegirla.
+ */
+function solapeTag(
+  conflicts: Conflict[] | undefined,
+  t: (k: string, p?: Record<string, string | number>) => string,
+): string {
+  if (conflicts === undefined || conflicts.length === 0) return ''
+
+  return ` — ${t('loads.assign.scheduleConflictShort', { n: String(conflicts.length) })}`
+}
+
 function motivo(o: Option, t: (k: string, p?: Record<string, string | number>) => string): string {
   if (o.blockingKeys !== undefined && o.blockingKeys.length > 0) {
     return o.blockingKeys.map((k) => t(`equipment.blocking.${k}`)).join(' ')
