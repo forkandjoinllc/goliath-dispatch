@@ -2465,3 +2465,33 @@ hizo nacer sigue viva aunque su mecanismo haya cambiado.
 Tres pruebas fallaron con «la tarjeta no llega a la pantalla», que suena a
 defecto del servidor y era una ruta mía equivocada. Volcar las claves del props
 una vez cuesta treinta segundos y ahorra ese desvío.
+
+## «Se le avisará 45 días antes» (`docs/durations-in-copy.md`)
+
+**Unificar un número en el código no lo unifica en el texto, y el guardián que
+escribí no miraba ahí.** El lote anterior llevó el plazo de aviso a un solo
+sitio y dejó `«45 días»` escrito en el diccionario, en los dos idiomas. Mi
+guardián comprobaba que la clave del ajuste existiera; comprobar que existe una
+etiqueta no es comprobar que el texto diga la verdad. **Cuando un lote unifica
+una fuente de verdad, el barrido siguiente es el diccionario: un número en la
+copia es una copia del cálculo.**
+
+**Un sabotaje del propio fichero de pruebas siempre sale verde, y eso no es un
+hueco.** Dos de los nueve desactivaban la condición del guardián o le hacían
+mirar un solo idioma. Ninguna prueba caza que alguien desarme esa misma prueba.
+La tentación es construir una prueba que vigile a la prueba, y de ahí no se
+sale. Se retiran del catálogo y se dice por qué. **La campaña mide el código,
+no la lealtad del fichero que lo mide.**
+
+**El tercero de esa familia sí valía, y conviene saber distinguirlos.** Meter la
+clave recién arreglada en la lista de excepciones del guardián NO es tocar el
+mecanismo de la prueba: es el movimiento natural del que se encuentra la prueba
+roja y quiere seguir. Eso se caza con una lista de **prohibidas** —claves que no
+pueden declararse fijas nunca, con su motivo—. **La diferencia es si el sabotaje
+imita algo que alguien haría de buena fe: si sí, hay que cazarlo; si es
+vandalismo del fichero, no.**
+
+**Una lista de excepciones necesita dos comprobaciones propias.** Que sus claves
+sigan existiendo —una excepción que nombra una clave borrada tapa a la siguiente
+que se llame igual— y que no crezca: pasado cierto tamaño ha dejado de ser una
+lista de excepciones y es la regla nueva.

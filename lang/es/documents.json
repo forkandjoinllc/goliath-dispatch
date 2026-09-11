@@ -133,7 +133,7 @@
         "titleHint": "Por defecto, el nombre del archivo.",
         "issueDate": "Fecha de emisión",
         "expirationDate": "Fecha de vencimiento",
-        "expirationHint": "Se le avisará 45 días antes, y la puerta de despacho bloquea en cuanto vence.",
+        "expirationHint": "Se le avisará {days} días antes, y la puerta de despacho bloquea en cuanto vence.",
         "unknownType": "Ese tipo de documento no existe.",
         "ownerNotAllowed": "No puede subir documentos para ese dueño.",
         "ownerNotFound": "Ese dueño no existe en esta empresa.",

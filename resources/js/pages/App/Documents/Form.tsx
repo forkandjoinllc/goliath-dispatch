@@ -14,11 +14,12 @@ interface Props {
   owners: Record<OwnerType, { id: string; name: string }[]>
   typesByOwner: Record<OwnerType, string[]>
   requiredTypes: Record<OwnerType, string[]>
+  warnDays: number
   /** Los tipos que el dueño elegido YA tiene. Llega por recarga parcial. */
   usedTypes?: UsedType[]
 }
 
-export default function DocumentForm({ owners, typesByOwner, requiredTypes, usedTypes = [] }: Props) {
+export default function DocumentForm({ owners, typesByOwner, requiredTypes, warnDays, usedTypes = [] }: Props) {
   const { t } = useI18n()
   const [ownerType, setOwnerType] = useState<OwnerType>('carrier')
 
@@ -223,7 +224,9 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes, used
                 onChange={(e) => form.setData('expiration_date', e.target.value)}
                 className="mt-1 w-full rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
               />
-              <p className="mt-1 text-xs text-steel-600">{t('documents.form.expirationHint')}</p>
+              <p className="mt-1 text-xs text-steel-600">
+                {t('documents.form.expirationHint', { days: String(warnDays) })}
+              </p>
             </div>
           </div>
         </fieldset>

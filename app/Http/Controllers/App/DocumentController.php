@@ -167,6 +167,12 @@ final class DocumentController
                 'truck' => DocumentTypes::forOwner('truck'),
                 'trailer' => DocumentTypes::forOwner('trailer'),
             ],
+            // El plazo de aviso, para que el texto del campo de caducidad diga
+            // el número de ESTA empresa. Lo llevaba escrito —«Se le avisará 45
+            // días antes»— cuando el aviso sale de `ExpiryWindow`, o sea de los
+            // ajustes, con 30 por defecto: quien planeaba la renovación contaba
+            // con quince días que el producto no le daba.
+            'warnDays' => ExpiryWindow::days(),
             'requiredTypes' => [
                 'carrier' => DocumentTypes::requiredFor('carrier'),
                 'driver' => DocumentTypes::requiredFor('driver'),

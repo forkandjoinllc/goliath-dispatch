@@ -133,7 +133,7 @@
         "titleHint": "Defaults to the file name.",
         "issueDate": "Issue date",
         "expirationDate": "Expiration date",
-        "expirationHint": "You will be warned 45 days before, and the load gate blocks once it lapses.",
+        "expirationHint": "You will be warned {days} days before, and the load gate blocks once it lapses.",
         "unknownType": "That document type does not exist.",
         "ownerNotAllowed": "You cannot upload documents for that owner.",
         "ownerNotFound": "That owner does not exist in this company.",
