@@ -2534,3 +2534,41 @@ y la vuelta completa se puso roja: `PluralTest` exige forma singular o motivo
 declarado. El front-end elige la hermana solo cuando `n` es 1. El texto queda
 mejor —«Ya está en la carga GD-24003»— y la prueba me lo cobró antes que un
 usuario.
+
+## Las promesas de la página pública (`docs/public-claims.md`)
+
+**Un detector escrito en un idioma solo protege ese idioma.** Mi barrido de
+afirmaciones buscaba «se verifica», «no puede», «automáticamente»… todo en
+castellano. Un sabotaje que devolvía la promesa de la escolta **solo en la
+página inglesa** salió verde: la frase no disparaba ninguna palabra clave, así
+que ni siquiera entraba en la lista de promesas. En un producto bilingüe, la
+página que lee el comprador puede ser la que el guardián no mira. **Las dos
+lenguas, o ninguna.**
+
+**Toda lista de categorías tiene una categoría-refugio.** El registro admite
+«texto legal» y «lo hace una persona» para lo que no tiene código detrás — y
+declarar ahí una promesa funcional la hace pasar sin más. Es la misma puerta
+trasera que la lista de excepciones del lote de las duraciones, y se cierra
+igual: una lista de las que NO pueden declararse blandas, nombradas a
+conciencia.
+
+**Dos ficheros de prueba no pueden declarar la misma función global.**
+`raizPromesas()` ya existía en `CarrierPromisesTest`, y el choque revienta la
+suite entera con «Cannot redeclare function» — pero **no aparece al ejecutar el
+fichero nuevo solo**, que es justo como uno lo prueba mientras lo escribe. El
+error no dice «colisión»: dice que el fichero nuevo no puede declarar la
+función. Es el reverso de la lección del lote anterior sobre funciones
+prestadas: no basta con no usar las de otros, hay que no chocar con ellas.
+
+**Una vuelta que falla en las centenas es una avería del entorno.** 594 de 1754
+con treinta y un fallos repartidos por toda la suite: MySQL se había caído a
+mitad. Es la misma regla que el 0/14 de la campaña de sabotajes — cuando el
+resultado es demasiado uniforme o demasiado masivo, el primer sospechoso es el
+entorno y no el código. Mirar el reloj de la ejecución ayuda: 27 segundos
+cuando lo normal son 140.
+
+**`ps | grep "[a]rtisan serve"` volvió a matarme el shell.** Lo escribí en
+`docs/testing.md` hace dos lotes y lo repetí igual: la línea de órdenes del
+propio `bash -c` contiene el `php artisan serve` que va a lanzar, así que el
+filtro casa consigo mismo. Que esté escrito no basta; **el PID se saca en una
+llamada y se mata en otra.**

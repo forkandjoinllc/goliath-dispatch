@@ -182,7 +182,7 @@
       },
       "item2": {
         "title": "Controles de cumplimiento que sí bloquean un mal despacho",
-        "body": "La autoridad de la FMCSA, la coincidencia entre el conocimiento de embarque de seguro (COI) y el VIN, las credenciales del conductor y las fotos del equipo se verifican automáticamente antes de asignar una carga — no se detectan después."
+        "body": "Las credenciales del conductor, las fotos del equipo y los documentos obligatorios del transportista se comprueban automáticamente antes de asignar una carga — no se detectan después. El cotejo del COI con el VIN lo confirma una persona, y queda anotado con su nombre y la fecha."
       },
       "item3": {
         "title": "Finanzas que no se reescriben",
@@ -195,7 +195,7 @@
     },
     "oversizeBand": {
       "title": "Carga pesada y sobredimensionada, sin adivinar",
-      "body": "Los requisitos de permisos y escoltas se evalúan según las dimensiones, el peso y la ruta de su carga antes de despacharla, usando las reglas base de cada estado. Es una orientación operativa para que su equipo planifique — no un sustituto del permiso en sí.",
+      "body": "Cuando su equipo marca una carga como sobredimensionada, los requisitos de permisos y escoltas se evalúan según sus dimensiones, su peso y los estados de sus paradas, partiendo de una regla base federal que cada casa de despacho ajusta por estado. Es una orientación operativa para planificar — no un sustituto del permiso en sí.",
       "cta": "Vea cómo funciona la evaluación de carga sobredimensionada"
     },
     "howItWorks": {
@@ -206,11 +206,11 @@
       },
       "step2": {
         "title": "Se verifica el equipo",
-        "body": "El VIN se coteja con el COI, se exigen al menos cuatro fotos, y el registro e inspección deben estar vigentes antes de cualquier asignación."
+        "body": "Se exigen al menos cuatro fotos del equipo, y alguien confirma que el VIN de la unidad coincide con el del certificado de seguro. El registro y la inspección, cuando tienen fecha, deben estar vigentes antes de cualquier asignación."
       },
       "step3": {
         "title": "Se despacha la carga",
-        "body": "Los controles de cumplimiento se ejecutan automáticamente. Una carga con un documento vencido o una escolta sin confirmar no puede moverse."
+        "body": "Los controles de cumplimiento se ejecutan automáticamente en cada cambio de estado. Una carga con un documento del transportista vencido, o con un permiso de sobredimensión sin aprobar, no puede despacharse."
       },
       "step4": {
         "title": "Se rastrea",
@@ -260,17 +260,17 @@
     },
     "onboardingCompliance": {
       "title": "Registro y cumplimiento de transportistas",
-      "body": "Un proceso de admisión estructurado — certificado de autoridad, certificado de seguro (COI), formulario W-9 y una notificación de cesión cuando aplica factoraje — con la autoridad de la FMCSA verificada al registrarse y revalidada automáticamente con la periodicidad que fije la casa de despacho.",
+      "body": "Un proceso de admisión estructurado: certificado de autoridad, certificado de seguro (COI) y acuerdo de transportista firmado son obligatorios; el formulario W-9 y la notificación de cesión se guardan cuando aplican. Si la casa de despacho tiene configurado el acceso a la FMCSA, la autoridad se comprueba al registrarse y se revalida con la periodicidad que ella fije.",
       "bullet1": "Recopilación guiada de documentos con seguimiento de vencimientos",
       "bullet2": "Verificación continua de la autoridad de la FMCSA, no una sola vez",
-      "bullet3": "Una razón por escrito y un registro de auditoría para cada excepción"
+      "bullet3": "Una razón por escrito y un registro de auditoría para rechazar, suspender, pedir correcciones o saltarse la verificación de FMCSA"
     },
     "documentManagement": {
       "title": "Gestión documental",
-      "body": "Cada certificado de seguro, registro, licencia y certificado médico tiene una fecha de vencimiento que el sistema vigila. Un aviso con 30 días de anticipación es mejor que una carga detenida en una báscula.",
+      "body": "Un certificado de seguro, un registro, una licencia o un certificado médico puede llevar fecha de vencimiento, y el sistema vigila las que la tienen. El aviso sale con la antelación que fije cada casa de despacho, 30 días por omisión: mejor que una carga detenida en una báscula.",
       "bullet1": "Documentos centralizados de transportistas, equipo y conductores",
       "bullet2": "Ventana de aviso de vencimiento configurable",
-      "bullet3": "Enlaces de descarga con marca de agua y de corta duración, no carpetas compartidas abiertas"
+      "bullet3": "Enlaces de descarga firmados y de corta duración, no carpetas compartidas abiertas"
     },
     "invoicingSettlements": {
       "title": "Facturación y liquidaciones",
@@ -289,9 +289,9 @@
     "permitsEscorts": {
       "title": "Permisos y escoltas",
       "body": "Requisitos específicos de la ruta evaluados según las dimensiones y el peso de su carga y las reglas base de cada estado — con una línea clara entre lo que el sistema le indica y lo que solo un permiso puede autorizar.",
-      "bullet1": "Evaluación de carga sobredimensionada antes del despacho, no después",
+      "bullet1": "Evaluación de carga sobredimensionada antes del despacho, cuando la carga viene marcada como tal",
       "bullet2": "Estado de permisos y escoltas registrado junto a la carga",
-      "bullet3": "Una carga no puede despacharse con un permiso o escolta pendiente"
+      "bullet3": "Una carga marcada como sobredimensionada no puede despacharse mientras le falte un permiso por aprobar"
     }
   },
   "heavyHaul": {
@@ -352,7 +352,7 @@
       "title": "Qué pide el registro",
       "certificateOfAuthority": {
         "title": "Certificado de autoridad",
-        "body": "Se coteja con sus números de DOT y MC ante la FMCSA antes de activarlo."
+        "body": "Lo revisa una persona de la casa de despacho. Aparte, si esa empresa tiene configurado el acceso a la FMCSA, su autoridad se comprueba con los números de DOT y MC que usted dé."
       },
       "coi": {
         "title": "Certificado de seguro (COI)",
@@ -388,7 +388,7 @@
     },
     "quoting": {
       "title": "Cómo funciona la cotización",
-      "body": "Envíenos la mercancía, las dimensiones, el peso, el origen y el destino, y una fecha de disponibilidad. Si algo de la carga sugiere que es sobredimensionada, indíquelo — evaluaremos las necesidades de permisos y escoltas antes de cotizarla."
+      "body": "Envíenos la mercancía, las dimensiones, el peso, el origen y el destino, y una fecha de disponibilidad. Si algo de la carga sugiere que es sobredimensionada, indíquelo — lo tendremos en cuenta al cotizarla, y evaluaremos los permisos y las escoltas en el sistema en cuanto la carga exista."
     },
     "tracking": {
       "title": "Cómo funciona el rastreo",
@@ -422,7 +422,7 @@
       },
       "auditableFinancials": {
         "title": "Finanzas auditables",
-        "body": "Cada liquidación se calcula en centavos enteros y queda como un comprobante permanente. Si una cifra cambia, usted puede ver exactamente cuándo, por qué y en cuánto."
+        "body": "Cada liquidación se calcula en centavos enteros y queda como un comprobante permanente que no se puede modificar ni borrar. Un cambio de tarifa del trimestre que viene no reescribe el cálculo del mes pasado."
       }
     }
   },
@@ -504,7 +504,7 @@
       },
       "retention": {
         "title": "Conservación de datos",
-        "body": "Los registros operativos — cargas, documentos, historial de rastreo y comunicaciones relacionadas — se mantienen en el sistema activo durante 24 meses, luego se trasladan a un archivo protegido y se eliminan de forma permanente a más tardar 5 años después de archivarse, salvo que aplique una retención legal (legal hold). Los registros financieros, las facturas, los acuerdos firmados y los certificados de firma se conservan por un mínimo de 7 años, conforme a los requisitos fiscales y de auditoría, y nunca se eliminan antes de ese plazo, sin importar el estado de la cuenta. Una retención legal suspende cualquier eliminación programada para los registros que cubra."
+        "body": "Los registros operativos — cargas, documentos, historial de rastreo y comunicaciones relacionadas — se mantienen en el sistema activo durante el plazo que fije cada casa de despacho, 24 meses por omisión, y después quedan archivados: siguen guardados, marcados como archivados y fuera del uso diario. La eliminación permanente posterior es una opción que cada instalación activa por separado; cuando está activa, ocurre a más tardar 5 años después de archivarse. Los registros financieros, las facturas, los acuerdos firmados y los certificados de firma se conservan por un mínimo de 7 años, conforme a los requisitos fiscales y de auditoría, y hay registros —los de firma y el historial de estados de una carga— que no se eliminan nunca. Una retención legal (legal hold) suspende cualquier eliminación programada para los registros que cubra."
       },
       "subprocessors": {
         "title": "Subencargados",

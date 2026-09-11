@@ -182,7 +182,7 @@
       },
       "item2": {
         "title": "Compliance gates that actually block a bad dispatch",
-        "body": "FMCSA authority, COI-to-VIN matches, driver credentials and equipment photos are checked automatically before a load can be assigned — not caught after the fact."
+        "body": "Driver credentials, equipment photos and the carrier’s required documents are checked automatically before a load can be assigned — not caught after the fact. The COI-to-VIN match is confirmed by a person, and recorded with their name and the date."
       },
       "item3": {
         "title": "Financials that don't get rewritten",
@@ -195,7 +195,7 @@
     },
     "oversizeBand": {
       "title": "Heavy-haul and oversize, without the guesswork",
-      "body": "Permit and escort requirements are evaluated against your load's dimensions, weight and route before it's dispatched, using each state's baseline rules. It's operational guidance your team can plan around — not a substitute for the permit itself.",
+      "body": "When your team flags a load as oversize, permit and escort requirements are evaluated against its dimensions, weight and the states of its stops, starting from a federal baseline rule each dispatch company tunes per state. It is operational guidance to plan around — not a substitute for the permit itself.",
       "cta": "See how oversize evaluation works"
     },
     "howItWorks": {
@@ -206,11 +206,11 @@
       },
       "step2": {
         "title": "Equipment verified",
-        "body": "VIN matched to the COI, four photos minimum, registration and inspection current before any assignment."
+        "body": "At least four equipment photos are required, and a person confirms the unit’s VIN matches the one on the certificate of insurance. Registration and inspection, where a date is on file, must be current before any assignment."
       },
       "step3": {
         "title": "Load dispatched",
-        "body": "Compliance gates run automatically. A load with an expired document or an unconfirmed escort cannot move."
+        "body": "Compliance gates run automatically at every status change. A load with an expired carrier document, or an oversize permit that has not been approved, cannot dispatch."
       },
       "step4": {
         "title": "Tracked",
@@ -260,17 +260,17 @@
     },
     "onboardingCompliance": {
       "title": "Carrier onboarding & compliance",
-      "body": "A structured intake — Certificate of Authority, Certificate of Insurance, W-9, and a Notice of Assignment when factoring applies — with FMCSA authority checked at onboarding and re-verified automatically on the recurring schedule the dispatch company sets.",
+      "body": "A structured intake: certificate of authority, certificate of insurance and a signed carrier agreement are required; the W-9 and notice of assignment are stored when they apply. If the dispatch company has FMCSA access configured, authority is checked at signup and re-verified on the schedule it sets.",
       "bullet1": "Guided document collection with expiration tracking",
       "bullet2": "FMCSA authority verification, not a one-time check",
-      "bullet3": "A written reason and an audit trail for every override"
+      "bullet3": "A written reason and an audit trail to reject, suspend, request corrections or override the FMCSA check"
     },
     "documentManagement": {
       "title": "Document management",
-      "body": "Every Certificate of Insurance, registration, license and medical card lives with an expiration date the system watches. A 30-day warning beats a load getting stopped at a scale house.",
+      "body": "A certificate of insurance, registration, licence or medical card can carry an expiry date, and the system watches the ones that do. The warning goes out with the lead time each dispatch company sets, 30 days by default: better than a load stopped at a scale house.",
       "bullet1": "Centralized documents for carriers, equipment and drivers",
       "bullet2": "Configurable expiration warning window",
-      "bullet3": "Watermarked, short-lived download links, not open file shares"
+      "bullet3": "Signed, short-lived download links, not open file shares"
     },
     "invoicingSettlements": {
       "title": "Invoicing & settlements",
@@ -289,9 +289,9 @@
     "permitsEscorts": {
       "title": "Permits & escorts",
       "body": "Route-specific requirements evaluated against your load's dimensions and weight and each state's baseline rules — with a clear line between what the system tells you and what only a permit can authorize.",
-      "bullet1": "Oversize evaluation before dispatch, not after",
+      "bullet1": "Oversize evaluation before dispatch, on loads flagged as oversize",
       "bullet2": "Permit and escort status tracked next to the load",
-      "bullet3": "A load cannot dispatch with an unmet permit or escort gate"
+      "bullet3": "A load flagged as oversize cannot dispatch while a permit is still unapproved"
     }
   },
   "heavyHaul": {
@@ -352,7 +352,7 @@
       "title": "What onboarding asks for",
       "certificateOfAuthority": {
         "title": "Certificate of Authority",
-        "body": "Matched against your DOT and MC numbers with FMCSA before you're activated."
+        "body": "A person at the dispatch company reviews it. Separately, if that company has FMCSA access configured, your authority is checked against the DOT and MC numbers you provide."
       },
       "coi": {
         "title": "Certificate of Insurance",
@@ -388,7 +388,7 @@
     },
     "quoting": {
       "title": "How quoting works",
-      "body": "Send us the commodity, dimensions, weight, origin and destination, and a ready date. If anything about the load suggests it's oversize, tell us — we'll evaluate permit and escort needs before we price it."
+      "body": "Send us the commodity, dimensions, weight, origin and destination, and a ready date. If anything about the load suggests it is oversize, tell us — we will take that into account when pricing it, and evaluate permits and escorts in the system as soon as the load exists."
     },
     "tracking": {
       "title": "How tracking works",
@@ -422,7 +422,7 @@
       },
       "auditableFinancials": {
         "title": "Auditable financials",
-        "body": "Every settlement is integer cents and a permanent snapshot. If a number changes, you can see exactly when, why, and by how much."
+        "body": "Every settlement is worked out in whole cents and kept as a permanent snapshot that cannot be edited or deleted. A rate change next quarter does not rewrite last month’s figures."
       }
     }
   },
@@ -504,7 +504,7 @@
       },
       "retention": {
         "title": "Data retention",
-        "body": "Operational records — loads, documents, tracking history and related communications — are kept in the active system for 24 months, then moved to a protected archive and permanently purged no later than 5 years after archival, unless a legal hold applies. Financial records, invoices, signed agreements and signature certificates are retained for a minimum of 7 years, consistent with tax and audit requirements, and are never purged earlier than that regardless of account status. A legal hold suspends any scheduled deletion for the records it covers."
+        "body": "Operational records — loads, documents, tracking history and related communications — are kept in the active system for the period each dispatch company sets, 24 months by default, and are then archived: still stored, marked as archived, and out of day-to-day use. Permanent deletion afterwards is an option each installation turns on separately; where it is on, it happens no later than 5 years after archival. Financial records, invoices, signed agreements and signature certificates are retained for a minimum of 7 years, consistent with tax and audit requirements, and some records — signature records and a load’s status history — are never deleted. A legal hold suspends any scheduled deletion for the records it covers."
       },
       "subprocessors": {
         "title": "Subprocessors",
