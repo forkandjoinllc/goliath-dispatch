@@ -37,6 +37,15 @@ final class PaymentLedger
     /** Estados en los que el dinero está de verdad en casa. */
     private const CUENTAN = ['succeeded', 'partially_refunded'];
 
+    /** La disputa se resolvió a nuestro favor: el dinero se queda. */
+    public const DISPUTA_GANADA = 'won';
+
+    /** La disputa se perdió: el banco retiró el dinero. */
+    public const DISPUTA_PERDIDA = 'lost';
+
+    /** Los dos únicos desenlaces que puede tener una disputa. */
+    public const DESENLACES = [self::DISPUTA_GANADA, self::DISPUTA_PERDIDA];
+
     /**
      * Anota un cobro y recalcula la factura.
      *
@@ -161,6 +170,52 @@ final class PaymentLedger
     }
 
     /**
+     * Cierra una disputa, en cualquiera de sus dos desenlaces.
+     *
+     * SIN ESTO NO SE PUEDE ABRIR NINGUNA. Una disputa que no sabe terminar
+     * deja la factura en «en disputa» para siempre: fuera de la reclamación
+     * nocturna, fuera de la cartera y sin forma de volver a cobrarla. Abrir
+     * una puerta sin construirle la salida es peor que no abrirla.
+     *
+     * GANADA: el banco nos dio la razón, el dinero se queda. El cobro vuelve a
+     * `succeeded` y cuenta otra vez.
+     *
+     * PERDIDA: el banco se lo llevó. El cobro queda `failed` —no `refunded`,
+     * que diría que lo devolvimos nosotros, ni borrado, que diría que nunca
+     * llegó—. Su `disputed_at` y su motivo NO se tocan: el historial tiene que
+     * poder decir que ese dinero entró, se disputó y acabó así.
+     *
+     * En los dos casos la factura la recalcula `resync()`, que es quien sabe
+     * si queda alguna otra disputa viva. Este método no decide el estado de la
+     * factura, y esa es la razón de que no pueda desincronizarse de él.
+     */
+    public static function resolveDispute(Actor $actor, object $payment, string $desenlace, string $reason): void
+    {
+        DB::transaction(function () use ($actor, $payment, $desenlace, $reason): void {
+            $ahora = CarbonImmutable::now();
+            $estado = $desenlace === self::DISPUTA_GANADA ? 'succeeded' : 'failed';
+
+            DB::table('payments')->where('id', $payment->id)->update([
+                'status' => $estado,
+                'updated_at' => $ahora,
+            ]);
+
+            Audit::record(
+                $actor,
+                AuditAction::FinancialChanged,
+                entityType: 'payment',
+                entityId: (string) $payment->id,
+                entityLabel: (string) $payment->id,
+                before: ['status' => 'disputed'],
+                after: ['status' => $estado, 'outcome' => $desenlace],
+                reason: $reason,
+            );
+
+            self::resync((string) $actor->tenantId, (string) $payment->invoice_id);
+        });
+    }
+
+    /**
      * Recalcula la factura DESDE sus cobros.
      *
      * El único sitio que toca `amount_paid_cents`, `balance_cents`, `status` y
@@ -199,8 +254,17 @@ final class PaymentLedger
             ->whereIn('status', self::CUENTAN)
             ->sum(DB::raw('amount_cents - refunded_amount_cents'));
 
+        $ahora = CarbonImmutable::now();
+
+        // La disputa de la FACTURA se deduce de sus cobros; no se recuerda por
+        // su cuenta. Mientras quede un cobro en disputa la factura lo está, y
+        // en cuanto no queda ninguno deja de estarlo sin que nadie tenga que
+        // acordarse de apagarla. Guardar el estado por separado era justo la
+        // forma de que las dos verdades se separaran.
+        $disputa = self::disputaViva($tenantId, $invoiceId);
+
         $total = (int) $factura->total_cents;
-        $estado = self::statusFor((string) $factura->status, $total - $cobrado, $factura->due_date, $ahora = CarbonImmutable::now());
+        $estado = self::statusFor((string) $factura->status, $total - $cobrado, $factura->due_date, $disputa !== null, $ahora);
 
         // El SALDO de una factura que no depende del dinero tampoco se toca.
         //
@@ -216,6 +280,14 @@ final class PaymentLedger
             'balance_cents' => $saldo,
             'status' => $estado,
             'paid_at' => $estado === 'paid' && $cobrado > 0 ? $ahora : null,
+            // Las dos direcciones por el mismo sitio: se ponen cuando hay
+            // disputa y se quitan cuando ya no la hay. `PeriodReport::aging()`
+            // lleva desde el primer día excluyendo las facturas con
+            // `disputed_at`, y hasta hoy esa cláusula no podía dispararse
+            // porque la columna no la escribía nadie: la cartera contaba como
+            // deuda corriente un dinero que el banco estaba reclamando.
+            'disputed_at' => $disputa?->disputed_at,
+            'dispute_reason' => $disputa?->dispute_reason,
             'updated_at' => $ahora,
         ]);
 
@@ -238,14 +310,47 @@ final class PaymentLedger
     /**
      * Los estados en los que el dinero ya no manda.
      *
+     * `disputed` ESTABA en esta lista y ha salido, y las dos mitades del
+     * cambio importan.
+     *
+     * Estaba porque alguien previó —con razón— que una factura en disputa no
+     * debía volver a «pagada» porque entrara otro cobro. Pero nadie escribía
+     * nunca `invoices.status = 'disputed'`: disputar un cobro solo tocaba la
+     * fila de `payments`. La guarda estaba puesta y el estado que la dispara
+     * no podía existir, así que la factura seguía en «enviada» o «vencida»,
+     * la barredora nocturna la reclamaba como a un moroso corriente, y un
+     * cobro posterior la pasaba a «pagada» con la disputa viva encima — el
+     * error exacto contra el que esta lista se escribió.
+     *
+     * Sale porque ahora la disputa se DEDUCE de los cobros en cada recálculo,
+     * y un estado deducido no puede además ser pegajoso: si se quedara aquí,
+     * la factura seguiría en disputa para siempre después de resolverse.
+     *
      * @var list<string>
      */
-    private const SIN_SALDO = ['voided', 'disputed', 'uncollectable', 'draft'];
+    private const SIN_SALDO = ['voided', 'uncollectable', 'draft'];
 
-    private static function statusFor(string $actual, int $saldo, mixed $vence, CarbonImmutable $ahora): string
+    /**
+     * Estados que NO sobreviven a que la factura vuelva a deber.
+     *
+     * `paid` ya estaba: un reembolso la devuelve a «enviada». `disputed` se le
+     * une por lo mismo — resuelta la disputa, la factura es lo que su saldo
+     * diga, no lo que fue.
+     *
+     * @var list<string>
+     */
+    private const VUELVEN_A_ENVIADA = ['paid', 'disputed'];
+
+    private static function statusFor(string $actual, int $saldo, mixed $vence, bool $enDisputa, CarbonImmutable $ahora): string
     {
+        // Anulada, incobrable o borrador mandan sobre la disputa: una factura
+        // anulada no debe nada, la esté reclamando el banco o no.
         if (in_array($actual, self::SIN_SALDO, true)) {
             return $actual;
+        }
+
+        if ($enDisputa) {
+            return 'disputed';
         }
 
         if ($saldo <= 0) {
@@ -254,6 +359,24 @@ final class PaymentLedger
 
         $vencida = $vence !== null && CarbonImmutable::parse((string) $vence)->endOfDay()->isBefore($ahora);
 
-        return $vencida ? 'overdue' : ($actual === 'paid' ? 'sent' : $actual);
+        return $vencida ? 'overdue' : (in_array($actual, self::VUELVEN_A_ENVIADA, true) ? 'sent' : $actual);
+    }
+
+    /**
+     * El cobro en disputa más reciente de una factura, si queda alguno.
+     *
+     * El más reciente y no «alguno»: su motivo y su fecha son los que la
+     * pantalla enseña, y enseñar los de una disputa anterior ya resuelta sería
+     * contar mal lo que está pasando ahora.
+     */
+    private static function disputaViva(string $tenantId, string $invoiceId): ?object
+    {
+        return DB::table('payments')
+            ->where('tenant_id', $tenantId)
+            ->where('invoice_id', $invoiceId)
+            ->whereNull('deleted_at')
+            ->where('status', 'disputed')
+            ->orderByDesc('disputed_at')
+            ->first(['disputed_at', 'dispute_reason']);
     }
 }

@@ -51,6 +51,8 @@
         "savePayment": "Guardar el cobro",
         "void": "Anular",
         "voidReason": "Por qué se anula",
+        "disputed": "Esta factura está en disputa",
+        "disputedHint": "El dinero llegó y el banco lo está reclamando. No se persigue al cliente por ella y no cuenta en la cartera por antigüedad hasta que la disputa se cierre.",
         "voidHint": "Una factura que salió existe aunque estuviera mal. Se anula con motivo y se emite otra.",
         "confirmVoid": "Anular esta factura",
         "voided": "Esta factura está anulada.",

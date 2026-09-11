@@ -590,6 +590,7 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
     Route::post('payments/{payment}/dispute', [PaymentController::class, 'dispute'])->name('payments.dispute');
+    Route::post('payments/{payment}/dispute/resolve', [PaymentController::class, 'resolveDispute'])->name('payments.dispute.resolve');
 
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/upload', [DocumentController::class, 'create'])->name('documents.create');

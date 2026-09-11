@@ -2603,3 +2603,49 @@ ninguno; la compuerta se quedaba cerrada, así que parecía correcto. Lo que
 fallaba era el control de ANTES —la evaluación sin validar—, y mi mensaje nunca
 llegaba a ejecutarse. **Comprobar que algo se bloquea no es comprobar que se
 bloquea por el motivo que uno cree**: hay que leer el motivo, no solo el efecto.
+
+## La disputa que la cartera seguía contando (`docs/invoice-dispute.md`)
+
+**Dos mecanismos que se tapan el uno al otro dan el número bueno por
+accidente.** El sabotaje que quitaba de la cartera la cláusula
+`whereNull('i.disputed_at')` dejó la prueba de funcionalidad EN VERDE. No era
+que la prueba estuviera mal escrita: la cifra salía igual por otro camino,
+porque `paidAsOf()` contaba el cobro en disputa como dinero recibido y la
+factura entraba en los tramos con saldo cero en vez de quedarse fuera. Mismo
+resultado, causa contraria. **Una prueba que sigue verde con el sabotaje puesto
+está diciendo que mide otra cosa**, y aquí lo que destapó no fue un fallo de la
+prueba sino un segundo defecto en la misma consulta. Se arreglaron los dos y
+ahora cada uno tiene su sabotaje.
+
+**Una guarda escrita para un estado que nadie puede producir no guarda nada.**
+`SIN_SALDO` incluía `'disputed'` justo para que un cobro posterior no pasara a
+«pagada» una factura en litigio. Nadie escribía nunca ese estado, así que la
+línea llevaba desde el primer día sin poder ejecutarse. **Antes de fiarse de
+una lista de estados defensiva, hay que buscar quién ESCRIBE cada uno**: los
+que no tienen escritor son comentarios con sintaxis de código.
+
+**Un estado deducido no puede además ser pegajoso.** Al pasar la disputa a
+deducirse de los cobros hubo que sacarla de la lista de estados que el dinero
+no mueve; si se hubiera quedado, la factura seguiría «en disputa» para siempre
+después de resolverse. Y en la última línea de `statusFor()` había que sumarla a
+las que vuelven a «enviada»: sin eso, el estado sobrevivía por la puerta de
+atrás. **Dos sitios, un solo cambio conceptual** — y dos sabotajes, porque cada
+uno se rompe solo.
+
+**La salida se construye en el mismo lote que la puerta.** Propagar la disputa a
+la factura sin una forma de cerrarla habría dejado cada factura disputada fuera
+de la reclamación y de la cartera **para siempre**, y sin manera de volver a
+cobrarla. Abrir una puerta sin su salida es peor que no abrirla.
+
+**El botón de salir no podía ir donde van los demás.** La barra de acciones de
+un cobro solo se pinta si el cobro NO está cerrado, y «en disputa» cuenta como
+cerrado. El guardián fija la condición exacta (`canRefund && enDisputa`) porque
+moverlo a la barra de siempre lo haría desaparecer sin romper nada más.
+
+**`pkill -f "artisan serve"` volvió a matar mi propio shell** (salida 144), por
+tercera vez. El PID se saca en una llamada y se mata en otra, siempre.
+
+**`cuerpoDe()` ya existía en `LiveChecklistTest`.** La colisión de nombres entre
+ficheros de prueba solo aparece en la suite completa. Renombrada a
+`cuerpoDeDisputa()`. Es la segunda vez en dos lotes: conviene que los ayudantes
+de un guardián lleven el nombre del lote pegado desde el principio.

@@ -19,6 +19,13 @@
     "dispute": "Marcar en disputa",
     "disputeWarning": "Un cobro en disputa deja de contar como dinero en casa: la factura vuelve a deber lo que ese cobro cubría.",
     "confirmDispute": "Confirmar la disputa",
+    "resolveDispute": "Cerrar la disputa",
+    "outcome": "Desenlace",
+    "outcomeWon": "Ganada — el dinero se queda",
+    "outcomeLost": "Perdida — el banco lo retiró",
+    "outcomeWonHint": "El cobro vuelve a contar y la factura descuenta ese dinero otra vez.",
+    "outcomeLostHint": "El cobro queda como fallido. La factura sigue debiendo ese dinero y vuelve a la reclamación.",
+    "confirmResolve": "Cerrar la disputa",
     "reason": "Motivo"
   },
   "fields": {
@@ -53,10 +60,12 @@
   "errors": {
     "refundTooBig": "Eso es más de lo que queda en este cobro.",
     "notRefundable": "Este cobro no está en un estado en el que se pueda devolver dinero.",
-    "alreadyDisputed": "Este cobro ya está marcado en disputa."
+    "alreadyDisputed": "Este cobro ya está marcado en disputa.",
+    "notDisputed": "Este cobro no está en disputa, así que no hay nada que cerrar."
   },
   "flash": {
     "refunded": "Reembolso anotado. El saldo de la factura se ha recalculado desde sus cobros.",
-    "disputed": "Cobro marcado en disputa. Deja de contar como dinero en casa."
+    "disputed": "Cobro marcado en disputa. Deja de contar como dinero en casa.",
+    "disputeResolved": "Disputa cerrada. La factura se ha recalculado desde sus cobros."
   }
 }

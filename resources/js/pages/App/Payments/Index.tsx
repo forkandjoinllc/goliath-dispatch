@@ -108,13 +108,15 @@ export default function PaymentsIndex({ payments, filters, statuses, methods, to
 
 function PaymentCard({ payment: p, canRefund }: { payment: Row; canRefund: boolean }) {
   const { t, locale } = useI18n()
-  const [abierto, setAbierto] = useState<'refund' | 'dispute' | null>(null)
+  const [abierto, setAbierto] = useState<'refund' | 'dispute' | 'resolve' | null>(null)
 
   const devolucion = useForm({ amount_cents: '', reason: '' })
   const disputa = useForm({ reason: '' })
+  const cierre = useForm({ outcome: 'won', reason: '' })
 
   const disponible = p.amountCents - p.refundedCents
   const cerrado = p.status === 'refunded' || p.status === 'disputed' || p.status === 'cancelled'
+  const enDisputa = p.status === 'disputed'
 
   return (
     <div className="rounded border border-steel-200 bg-white p-4">
@@ -167,6 +169,22 @@ function PaymentCard({ payment: p, canRefund }: { payment: Row; canRefund: boole
             className="rounded border border-danger-300 px-3 py-1.5 text-xs font-medium text-danger-700 transition hover:bg-danger-50"
           >
             {t('payments.index.dispute')}
+          </button>
+        </div>
+      ) : null}
+
+      {/* Una disputa que no sabe terminar deja la factura fuera de la
+          reclamación y de la cartera PARA SIEMPRE. El botón de salida va aquí
+          y no en la barra de arriba porque un cobro en disputa cuenta como
+          «cerrado», y esa barra no se pinta para los cerrados. */}
+      {canRefund && enDisputa ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-steel-100 pt-3">
+          <button
+            type="button"
+            onClick={() => setAbierto(abierto === 'resolve' ? null : 'resolve')}
+            className="rounded border border-steel-300 px-3 py-1.5 text-xs font-medium text-navy-700 transition hover:bg-navy-50"
+          >
+            {t('payments.index.resolveDispute')}
           </button>
         </div>
       ) : null}
@@ -257,6 +275,62 @@ function PaymentCard({ payment: p, canRefund }: { payment: Row; canRefund: boole
           </div>
           {disputa.errors.reason ? (
             <p role="alert" className="text-sm text-danger-700">{disputa.errors.reason}</p>
+          ) : null}
+        </form>
+      ) : null}
+
+      {abierto === 'resolve' ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            cierre.post(`/payments/${p.id}/dispute/resolve`, {
+              preserveScroll: true,
+              onSuccess: () => { cierre.reset(); setAbierto(null) },
+            })
+          }}
+          className="mt-3 flex flex-col gap-2"
+        >
+          {/* Los dos desenlaces no se parecen en nada para el dinero, y por eso
+              se eligen a mano en vez de deducirse: ganada devuelve el cobro a
+              contar, perdida lo deja como fallido y la factura sigue debiendo.
+              Adivinar cuál fue a partir del saldo sería inventarse el final. */}
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-steel-700">{t('payments.index.outcome')}</span>
+            <select
+              value={cierre.data.outcome}
+              onChange={(e) => cierre.setData('outcome', e.target.value)}
+              className={CAMPO}
+            >
+              <option value="won">{t('payments.index.outcomeWon')}</option>
+              <option value="lost">{t('payments.index.outcomeLost')}</option>
+            </select>
+          </label>
+          <p className="text-xs text-steel-600">
+            {cierre.data.outcome === 'won'
+              ? t('payments.index.outcomeWonHint')
+              : t('payments.index.outcomeLostHint')}
+          </p>
+          <textarea
+            rows={2}
+            value={cierre.data.reason}
+            onChange={(e) => cierre.setData('reason', e.target.value)}
+            placeholder={t('payments.index.reason')}
+            className="rounded border border-steel-300 px-3 py-2 text-sm outline-none focus:border-navy-500"
+          />
+          <div>
+            <button
+              type="submit"
+              disabled={cierre.processing}
+              className="rounded bg-navy-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-navy-800 disabled:opacity-50"
+            >
+              {t('payments.index.confirmResolve')}
+            </button>
+          </div>
+          {cierre.errors.reason ? (
+            <p role="alert" className="text-sm text-danger-700">{cierre.errors.reason}</p>
+          ) : null}
+          {cierre.errors.outcome ? (
+            <p role="alert" className="text-sm text-danger-700">{cierre.errors.outcome}</p>
           ) : null}
         </form>
       ) : null}

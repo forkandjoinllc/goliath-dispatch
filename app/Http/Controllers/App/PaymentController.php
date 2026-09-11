@@ -189,6 +189,41 @@ final class PaymentController
         return back()->with('success', __('payments.flash.disputed'));
     }
 
+    /**
+     * Cerrar una disputa.
+     *
+     * La salida de la puerta que abre `dispute()`. Mientras el cobro siga en
+     * disputa, su factura también lo está: fuera de la reclamación nocturna y
+     * fuera de la cartera por antigüedad. Sin esta acción eso no se deshace
+     * nunca.
+     */
+    public function resolveDispute(Request $request, string $payment, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'invoice:read', null, $policy);
+        $model = $this->find($checker, $actor, $scope, $payment);
+
+        // El mismo permiso que abrirla: quien puede decir que el dinero está
+        // en el aire es quien puede decir que ha dejado de estarlo.
+        $checker->authorize($actor, 'payment:refund', null, $policy);
+
+        $data = $request->validate([
+            'outcome' => ['required', 'string', Rule::in(PaymentLedger::DESENLACES)],
+            'reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+
+        if ($model->status->value !== 'disputed') {
+            throw ValidationException::withMessages([
+                'reason' => __('payments.errors.notDisputed'),
+            ]);
+        }
+
+        PaymentLedger::resolveDispute($actor, $model, $data['outcome'], $data['reason']);
+
+        return back()->with('success', __('payments.flash.disputeResolved'));
+    }
+
     // ------------------------------------------------------------------ ayudas
 
     /**

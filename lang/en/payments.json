@@ -19,6 +19,13 @@
     "dispute": "Mark disputed",
     "disputeWarning": "A disputed payment stops counting as money in hand: the invoice goes back to owing what this payment covered.",
     "confirmDispute": "Confirm dispute",
+    "resolveDispute": "Close the dispute",
+    "outcome": "Outcome",
+    "outcomeWon": "Won — the money stays",
+    "outcomeLost": "Lost — the bank took it back",
+    "outcomeWonHint": "The payment counts again and the invoice credits that money back.",
+    "outcomeLostHint": "The payment is left as failed. The invoice still owes that money and goes back into collection.",
+    "confirmResolve": "Close the dispute",
     "reason": "Reason"
   },
   "fields": {
@@ -53,10 +60,12 @@
   "errors": {
     "refundTooBig": "That is more than this payment still holds.",
     "notRefundable": "This payment is not in a state where money can be returned.",
-    "alreadyDisputed": "This payment is already marked as disputed."
+    "alreadyDisputed": "This payment is already marked as disputed.",
+    "notDisputed": "This payment is not disputed, so there is nothing to close."
   },
   "flash": {
     "refunded": "Refund recorded. The invoice balance has been recalculated from its payments.",
-    "disputed": "Payment marked as disputed. It no longer counts as money in hand."
+    "disputed": "Payment marked as disputed. It no longer counts as money in hand.",
+    "disputeResolved": "Dispute closed. The invoice has been recalculated from its payments."
   }
 }

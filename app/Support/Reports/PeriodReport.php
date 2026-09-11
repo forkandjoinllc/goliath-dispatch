@@ -39,8 +39,20 @@ final class PeriodReport
      * `partially_refunded`). Aquí hace falta el complemento y no esa lista: un
      * cobro hoy en `refunded` sí fue dinero en su día, y para una foto de enero
      * cuenta. Los de aquí no lo fueron nunca.
+     *
+     * `disputed` SE AÑADIÓ CON EL LOTE DE LA DISPUTA, y lo destapó un sabotaje.
+     * Sin él, un cobro en disputa contaba aquí como dinero recibido, así que la
+     * factura entraba en la cartera con saldo CERO. El efecto se parecía al
+     * correcto —no inflaba ningún tramo— y la causa era la contraria: no es que
+     * la factura estuviera excluida por estar en litigio, es que el informe
+     * daba por cobrado un dinero que el banco estaba retirando.
+     *
+     * La prueba que medía la exclusión no distinguía las dos cosas: seguía en
+     * verde con la cláusula `disputed_at` quitada, porque la cifra salía igual
+     * por el otro camino. Dos mecanismos que se tapan el uno al otro dan un
+     * número correcto por accidente, y el accidente se acaba.
      */
-    private const NUNCA_FUE_DINERO = ['pending', 'failed', 'cancelled'];
+    private const NUNCA_FUE_DINERO = ['pending', 'failed', 'cancelled', 'disputed'];
 
     public function __construct(
         private readonly Actor $actor,

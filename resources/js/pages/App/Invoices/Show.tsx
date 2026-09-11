@@ -33,6 +33,8 @@ interface Props {
     voidedAt: string | null
     notes: string | null
     voidReason: string | null
+    disputedAt: string | null
+    disputeReason: string | null
     lines: Line[]
   }
   methods: string[]
@@ -44,6 +46,7 @@ interface Props {
     status: string
     reference: string | null
     receivedOn: string | null
+    disputeReason: string | null
   }[]
   can: { send: boolean; pay: boolean; changeStatus: boolean }
 }
@@ -51,6 +54,7 @@ interface Props {
 export default function InvoiceShow({ invoice, methods, payments, can }: Props) {
   const { t, locale } = useI18n()
   const anulada = invoice.status === 'voided'
+  const enDisputa = invoice.status === 'disputed'
 
   return (
     <AppLayout
@@ -83,6 +87,19 @@ export default function InvoiceShow({ invoice, methods, payments, can }: Props) 
                 })}
               </p>
             ) : null}
+          </div>
+        ) : null}
+
+        {/* Una factura en disputa se parece mucho a una vencida —debe dinero y
+            la fecha ya pasó— y no es lo mismo en nada de lo que importa: el
+            dinero llegó, quien lo retiró fue el banco, y perseguir al cliente
+            por ella es pedirle que pague dos veces. Por eso lo dice arriba y
+            con su motivo, no con una etiqueta de estado que hay que reconocer. */}
+        {enDisputa ? (
+          <div className="rounded border-l-4 border-warning-500 bg-warning-50 p-3 text-sm">
+            <p className="font-semibold">{t('invoices.show.disputed')}</p>
+            {invoice.disputeReason ? <p className="mt-1">{invoice.disputeReason}</p> : null}
+            <p className="mt-2 text-xs text-steel-700">{t('invoices.show.disputedHint')}</p>
           </div>
         ) : null}
 

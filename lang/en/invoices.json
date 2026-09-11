@@ -51,6 +51,8 @@
         "savePayment": "Save payment",
         "void": "Void",
         "voidReason": "Why it is being voided",
+        "disputed": "This invoice is disputed",
+        "disputedHint": "The money arrived and the bank is clawing it back. The customer is not chased for it and it does not count in the aging report until the dispute is closed.",
         "voidHint": "An invoice that went out exists even if it was wrong. It is voided with a reason, and a new one is issued.",
         "confirmVoid": "Void this invoice",
         "voided": "This invoice was voided.",

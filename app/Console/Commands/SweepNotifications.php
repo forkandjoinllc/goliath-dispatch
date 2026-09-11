@@ -683,6 +683,17 @@ final class SweepNotifications extends Command
         return $anterior;
     }
 
+    /**
+     * Facturas que la reclamación nocturna NO persigue.
+     *
+     * Borrador (todavía no se ha mandado), anulada y pagada (no se debe nada)
+     * e incobrable (se dio por perdida a propósito). Y en disputa: se debe,
+     * pero el pleito es con el banco.
+     *
+     * @var list<string>
+     */
+    private const FUERA_DE_RECLAMACION = ['draft', 'voided', 'paid', 'uncollectable', 'disputed'];
+
     private function facturasVencidas(string $tenantId, bool $dry): int
     {
         $hoy = CarbonImmutable::now()->toDateString();
@@ -693,7 +704,11 @@ final class SweepNotifications extends Command
             ->where('balance_cents', '>', 0)
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<', $hoy)
-            ->whereNotIn('status', ['draft', 'voided', 'paid', 'uncollectable'])
+            // `disputed` entra en esta lista con el lote de la disputa. Una
+            // factura cuyo cobro está reclamando el banco no es un moroso al
+            // que perseguir cada noche: el dinero llegó, y quien lo retiró no
+            // es el cliente. Reclamársela sería pedirle que pague dos veces.
+            ->whereNotIn('status', self::FUERA_DE_RECLAMACION)
             ->orderBy('due_date')
             ->limit(500)
             ->get(['id', 'invoice_number', 'due_date', 'status']);

@@ -211,6 +211,11 @@ final class InvoiceController
                 'carrierName' => $this->carrierNames($actor, [(string) $model->id])[(string) $model->carrier_id] ?? null,
                 'notes' => $model->notes,
                 'voidReason' => $model->void_reason,
+                // La disputa, con su motivo. Sin ella la ficha enseñaba «En
+                // disputa» a secas y quien la abría tenía que ir a buscar a qué
+                // cobro y por qué.
+                'disputedAt' => $model->disputed_at?->toIso8601String(),
+                'disputeReason' => $model->dispute_reason,
                 'lines' => $this->lines($model),
             ],
             'methods' => PaymentMethod::values(),
@@ -476,7 +481,7 @@ final class InvoiceController
             ->where('invoice_id', $invoiceId)
             ->whereNull('deleted_at')
             ->orderByDesc('received_at')
-            ->get(['id', 'amount_cents', 'refunded_amount_cents', 'method', 'status', 'reference', 'received_at'])
+            ->get(['id', 'amount_cents', 'refunded_amount_cents', 'method', 'status', 'reference', 'received_at', 'dispute_reason'])
             ->map(static fn ($p): array => [
                 'id' => (string) $p->id,
                 'amountCents' => (int) $p->amount_cents,
@@ -485,6 +490,7 @@ final class InvoiceController
                 'status' => (string) $p->status,
                 'reference' => $p->reference,
                 'receivedOn' => $p->received_at === null ? null : substr((string) $p->received_at, 0, 10),
+                'disputeReason' => $p->dispute_reason,
             ])
             ->all();
     }
