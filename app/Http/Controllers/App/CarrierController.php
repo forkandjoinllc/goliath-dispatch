@@ -84,6 +84,15 @@ final class CarrierController
             'search' => trim((string) $request->query('search', '')),
             'onboarding' => (string) $request->query('onboarding', ''),
             'fmcsa' => (string) $request->query('fmcsa', ''),
+            // «A quién toca revalidar» NO es un estado de FMCSA y por eso es un
+            // filtro aparte: `fmcsa` mira el RESULTADO de la última comprobación
+            // y esto mira su ANTIGÜEDAD. Un transportista verificado hace dos
+            // años sale «verificado» en aquel y es justo el que este busca. La
+            // tarjeta del panel hacía esta pregunta y enlazaba a la lista
+            // entera, porque la lista no sabía contestarla.
+            'revalidation' => $request->query('revalidation') === Revalidation::FILTRO
+                ? Revalidation::FILTRO
+                : '',
             'sort' => (string) $request->query('sort', 'legal_name'),
             'direction' => $request->query('direction') === 'desc' ? 'desc' : 'asc',
         ];
@@ -94,7 +103,7 @@ final class CarrierController
             ['carrier' => 'id'],
         );
 
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $actor);
 
         $sort = self::SORTABLE[$filters['sort']] ?? 'legal_name';
 
@@ -539,7 +548,7 @@ final class CarrierController
      * @param  Builder<Carrier>  $query
      * @param  array{search: string, onboarding: string, fmcsa: string}  $filters
      */
-    private function applyFilters(Builder $query, array $filters): void
+    private function applyFilters(Builder $query, array $filters, Actor $actor): void
     {
         if ($filters['search'] !== '') {
             $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
@@ -559,6 +568,12 @@ final class CarrierController
 
         if (VerificationStatus::tryFrom($filters['fmcsa']) !== null) {
             $query->where('fmcsa_status', $filters['fmcsa']);
+        }
+
+        if ($filters['revalidation'] === Revalidation::FILTRO) {
+            // La MISMA consulta que cuenta la tarjeta del panel y que recorre
+            // el barrido nocturno, no una tercera copia.
+            Revalidation::apply($query->getQuery(), (string) $actor->tenantId, 'carriers');
         }
     }
 

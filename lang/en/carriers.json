@@ -21,6 +21,8 @@
   "filters": {
     "onboarding": "Onboarding",
     "fmcsa": "FMCSA",
+    "revalidation": "Revalidation",
+    "revalidationDue": "Due for revalidation",
     "all": "All",
     "clear": "Clear filters",
     "sortBy": "Sort by"

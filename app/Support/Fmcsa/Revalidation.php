@@ -11,6 +11,7 @@ use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -67,19 +68,51 @@ final class Revalidation
      */
     public static function due(string $tenantId, int $limite = 500)
     {
-        $corte = CarbonImmutable::now()->subDays(TenantPolicy::for($tenantId)->fmcsaReverificationDays);
-
-        return DB::table('carriers as c')
-            ->where('c.tenant_id', $tenantId)
-            ->whereNull('c.deleted_at')
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('fmcsa_verifications as v')
-                ->whereColumn('v.carrier_id', 'c.id')
-                ->where('v.tenant_id', $tenantId)
-                ->where('v.checked_at', '>=', $corte))
+        return self::apply(
+            DB::table('carriers as c')
+                ->where('c.tenant_id', $tenantId)
+                ->whereNull('c.deleted_at'),
+            $tenantId,
+            'c',
+        )
             ->orderBy('c.legal_name')
             ->limit($limite)
             ->get(['c.id', 'c.tenant_id', 'c.legal_name', 'c.dot_number', 'c.mc_number']);
+    }
+
+    /** El valor con el que la lista de transportistas pide esta pregunta. */
+    public const FILTRO = 'due';
+
+    /**
+     * La pregunta «¿a quién toca revalidar?», pegada a una consulta que ya
+     * existe.
+     *
+     * ESTABA ESCRITA TRES VECES —aquí, en la tarjeta del panel, y en ninguna
+     * parte de la lista de transportistas, que es donde hacía falta—. La
+     * tarjeta contaba con su copia y enlazaba a `/carriers` a secas, porque esa
+     * pantalla no sabía expresar la pregunta: su filtro de FMCSA mira el
+     * ESTADO —verificado, sin empezar, no encontrado— y esto mira la ANTIGÜEDAD
+     * de la última comprobación. Un transportista verificado hace dos años sale
+     * «verificado» en aquel filtro y es justo el que esta consulta cuenta.
+     *
+     * Ahora las tres pasan por aquí, así que el barrido nocturno, el número del
+     * panel y las filas de la lista no pueden discrepar. Ver
+     * `docs/panel-cards.md`.
+     *
+     * `$alias` es cómo se llama `carriers` en la consulta de fuera: `c` aquí,
+     * `carriers` en la lista. Explícito porque si no coincide MySQL no avisa.
+     *
+     * Desde Eloquent se llama con `$query->getQuery()`.
+     */
+    public static function apply(Builder $query, string $tenantId, string $alias): Builder
+    {
+        $corte = CarbonImmutable::now()->subDays(TenantPolicy::for($tenantId)->fmcsaReverificationDays);
+
+        return $query->whereNotExists(fn (Builder $q) => $q->select(DB::raw(1))
+            ->from('fmcsa_verifications as v')
+            ->whereColumn('v.carrier_id', $alias.'.id')
+            ->where('v.tenant_id', $tenantId)
+            ->where('v.checked_at', '>=', $corte));
     }
 
     /**

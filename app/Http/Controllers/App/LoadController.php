@@ -20,6 +20,7 @@ use App\Support\Audit;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
+use App\Support\Finance\Billable;
 use App\Support\Finance\LoadCalculator;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
@@ -107,12 +108,17 @@ final class LoadController
             'status' => (string) $request->query('status', ''),
             'customer' => (string) $request->query('customer', ''),
             'carrier' => (string) $request->query('carrier', ''),
+            // La cola de «trabajo hecho y sin cobrar». La tarjeta del panel la
+            // contaba y llevaba a la pantalla de ALTA de factura, que enseña
+            // transportistas y no las cargas contadas: el número decía doce y
+            // la pantalla tres filas. Ver `docs/panel-cards.md`.
+            'uninvoiced' => $request->query('uninvoiced') === '1' ? '1' : '',
             'sort' => (string) $request->query('sort', 'planned_pickup_at'),
             'direction' => $request->query('direction') === 'asc' ? 'asc' : 'desc',
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
-        $this->applyFilters($query, $filters);
+        $this->applyFilters($query, $filters, $actor);
 
         $sort = self::SORTABLE[$filters['sort']] ?? 'planned_pickup_at';
 
@@ -1352,7 +1358,7 @@ final class LoadController
      * @param  Builder<Load>  $query
      * @param  array<string, string>  $filters
      */
-    private function applyFilters(Builder $query, array $filters): void
+    private function applyFilters(Builder $query, array $filters, Actor $actor): void
     {
         if ($filters['search'] !== '') {
             $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
@@ -1371,6 +1377,13 @@ final class LoadController
 
         if ($filters['customer'] !== '') {
             $query->where('customer_id', $filters['customer']);
+        }
+
+        if ($filters['uninvoiced'] === '1') {
+            // La MISMA regla que cuenta la tarjeta, no una copia: `Billable` se
+            // extrajo justo porque dos sitios que dan números distintos sobre
+            // lo mismo son peores que no enseñar el dato.
+            Billable::apply($query->getQuery(), (string) $actor->tenantId, 'loads');
         }
 
         if ($filters['carrier'] !== '') {

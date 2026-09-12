@@ -296,6 +296,36 @@ final class LeadController
     }
 
     /**
+     * La cola de trabajo de un equipo comercial: sin dueño Y todavía vivo.
+     *
+     * LAS DOS MITADES, y la segunda faltaba aquí. La tarjeta del panel
+     * «Prospectos sin responsable» siempre contó las dos —un prospecto
+     * convertido o perdido no es trabajo pendiente aunque nadie figure como su
+     * responsable—, y el filtro de esta pantalla solo miraba el dueño. La
+     * tarjeta decía cuatro, se pulsaba, y la lista enseñaba nueve sin decir por
+     * qué.
+     *
+     * Es pública y estática porque la llama también `Dashboard\Panel`: el panel
+     * y la lista tienen que estrechar con la MISMA consulta, no con dos que se
+     * parezcan. Ver `docs/panel-cards.md`.
+     *
+     * @param  Builder<Lead>|Builder  $query
+     */
+    public static function applyUnassigned(mixed $query): mixed
+    {
+        return $query
+            ->whereNull('assigned_to_user_id')
+            ->whereNotIn('status', self::CERRADOS);
+    }
+
+    /**
+     * Estados en los que un prospecto ya no es trabajo pendiente.
+     *
+     * @var list<string>
+     */
+    public const CERRADOS = ['converted', 'lost'];
+
+    /**
      * @return array{status: string, source: string, assigned: string, q: string, from: ?string, to: ?string}
      */
     private function filters(Request $request): array
@@ -330,7 +360,7 @@ final class LeadController
         }
 
         if ($filters['assigned'] === 'unassigned') {
-            $query->whereNull('assigned_to_user_id');
+            self::applyUnassigned($query);
         } elseif ($filters['assigned'] !== '') {
             $query->where('assigned_to_user_id', $filters['assigned']);
         }

@@ -69,10 +69,35 @@ final class Billable
      */
     public static function query(string $tenantId): Builder
     {
-        return DB::table('loads as l')
-            ->where('l.tenant_id', $tenantId)
-            ->whereNull('l.deleted_at')
-            ->whereIn('l.status', self::ESTADOS)
-            ->whereNotExists(fn (Builder $q) => self::invoicedExists($q, $tenantId, 'l.id'));
+        return self::apply(
+            DB::table('loads as l')
+                ->where('l.tenant_id', $tenantId)
+                ->whereNull('l.deleted_at'),
+            $tenantId,
+            'l',
+        );
+    }
+
+    /**
+     * La MITAD de la regla que se puede pegar a una consulta que ya existe.
+     *
+     * `query()` construye la suya desde cero, y la lista de cargas ya trae la
+     * suya —con su alcance, sus filtros y su orden— cuando llega aquí. Las dos
+     * tienen que estrechar igual, así que las dos pasan por este método en vez
+     * de repetir las dos líneas.
+     *
+     * Desde Eloquent se llama con `$query->getQuery()`: las condiciones caen en
+     * el constructor de debajo, que es el mismo que acaba ejecutándose.
+     *
+     * `$alias` es cómo se llama la tabla `loads` en la consulta de fuera —`l`
+     * en la de aquí, `loads` en la lista—. Se pide explícito porque el día que
+     * no coincida, MySQL no avisa: resuelve la columna contra la tabla que
+     * encuentre y devuelve filas de más.
+     */
+    public static function apply(Builder $query, string $tenantId, string $alias): Builder
+    {
+        return $query
+            ->whereIn($alias.'.status', self::ESTADOS)
+            ->whereNotExists(fn (Builder $q) => self::invoicedExists($q, $tenantId, $alias.'.id'));
     }
 }

@@ -2690,3 +2690,51 @@ prueba acierta el efecto y falla el sitio.
 `raizPromesas()` de `CarrierPromisesTest`, a una letra de distancia. No colisiona
 hoy y colisionará el día que alguien las lea deprisa. Renombrada a
 `raizVencimiento()`: los ayudantes de un guardián llevan el nombre del lote.
+
+## Las tarjetas que no llevaban a su número (`docs/panel-cards.md`)
+
+**Una regla escrita en una cabecera no es una regla: es una intención.**
+`Dashboard\Panel` lleva desde su primer lote diciendo, con énfasis suyo, que
+cada tarjeta «apunta a la pantalla YA FILTRADA», y tres de sus once no lo
+cumplían. Nadie lo notó porque los once destinos vivían dentro de los once
+constructores: comprobarlo obligaba a leer once métodos. Se juntaron en una
+constante, y entonces una prueba pudo recorrerlos. **Lo que hace comprobable una
+regla suele ser mover los datos a un sitio, no escribir la prueba.**
+
+**Medir con datos que NO distinguen es no medir.** La prueba recorre cada
+tarjeta y compara su número con las filas de su destino; con los datos de un
+escenario limpio, varias tarjetas dan cero y cero, y dos consultas distintas
+coinciden por casualidad. Hay que plantar, de cada cosa, una que cuente y una
+que **casi**: el prospecto perdido sin dueño, el transportista verificado hace
+mucho, la carga entregada **ya facturada**. La «casi» es la que destapa el
+defecto.
+
+**Una prueba anterior fijaba el defecto.** `LeadTest` esperaba encontrar un
+prospecto perdido en el filtro «sin asignar», porque así se comportaba. Al
+arreglarlo se puso roja con razón. Corregirla con el motivo escrito al lado es
+parte del lote; darle la vuelta a la aserción en silencio habría dejado el
+siguiente lector sin saber cuál de las dos semánticas es la buena.
+
+**`compacta()` quita los espacios TAMBIÉN dentro de los literales.** La aguja
+`from('fmcsa_verifications as v')` se buscaba, después de compactar, como
+`from('fmcsa_verificationsasv')` — y no casaba con nada. Falló ruidosamente
+(`0 !== 1`) porque la aserción era un `substr_count(...)->toBe(1)` y no un
+`toContain`, que habría pasado en silencio por el lado del `not`. **Una aguja
+con espacios dentro de comillas va con `sinComentarios()`**, y conviene
+escribirla como cuenta y no como presencia.
+
+**`toContain` con un segundo argumento busca otra aguja, no imprime un
+mensaje.** Para que el fallo diga de QUÉ tarjeta habla hay que bajar a
+`assertStringContainsString($aguja, $pajar, $mensaje)`.
+
+**Colisión de nombres de ayudante, por tercer lote seguido.** `prospecto()` ya
+existía en `LeadTest`, y solo la suite completa lo dice. Los cinco ayudantes del
+fichero nuevo llevan ahora el nombre del lote pegado (`filasDelDestino`,
+`prospectoDelDestino`…). Es la tercera vez: el prefijo no es una precaución, es
+la regla.
+
+**Pint vuelve a reescribir líneas ajenas.** `CarrierController`, `Revalidation`
+y `LeadTest` cargan deuda previa de `ordered_imports` y
+`fully_qualified_strict_types`. La forma barata de no pelearse con eso: traer
+`git show HEAD:<fichero>` y volver a aplicar SOLO las líneas del lote encima,
+en vez de dejar que pint arregle de paso lo que no toca.

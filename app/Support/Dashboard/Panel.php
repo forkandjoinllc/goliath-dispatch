@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Http\Controllers\App\InvoiceController;
+use App\Http\Controllers\App\LeadController;
 use App\Models\CarrierSettlement;
 use App\Models\Document;
 use App\Models\Expense;
@@ -15,6 +16,7 @@ use App\Models\Invoice;
 use App\Models\Load;
 use App\Support\Documents\DocumentScope;
 use App\Support\Finance\Billable;
+use App\Support\Fmcsa\Revalidation;
 use App\Support\Loads\LoadScope;
 use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
@@ -35,7 +37,10 @@ use Illuminate\Support\Facades\DB;
  *  - **Cada tarjeta es una pregunta que alguien se hace, y al pulsarla lleva a
  *    la lista que la contesta.** Un número sobre el que no se puede actuar es
  *    decoración. Por eso ninguna tarjeta existe sin su `href`, y ese `href`
- *    apunta a la pantalla YA FILTRADA.
+ *    apunta a la pantalla YA FILTRADA. Los destinos viven juntos en
+ *    `DESTINOS`, y una prueba de la suite pide cada uno y compara su total con
+ *    la cuenta de la tarjeta — durante once lotes esta regla fue una intención
+ *    escrita aquí y tres tarjetas no la cumplían.
  *  - **Se cuenta con el mismo estrechamiento que usa esa pantalla.** No hay
  *    consultas nuevas inventadas aquí: se reutilizan `LoadScope`,
  *    `DocumentScope`, `ScopeFilter` y `Billable`. Si el panel contara por su
@@ -52,6 +57,50 @@ use Illuminate\Support\Facades\DB;
 final class Panel
 {
     /**
+     * A dónde lleva cada tarjeta, en un solo sitio.
+     *
+     * ## Por qué es una constante y no un literal dentro de cada constructor
+     *
+     * Porque la primera regla de arriba —«al pulsarla lleva a la lista que la
+     * contesta», y el subtítulo se lo promete al usuario: «Todo lo de abajo es
+     * un recuento real. Púlselo y va a la lista de donde salió»— no se cumplía
+     * en tres de las once, y con los destinos repartidos por once métodos no
+     * había forma de comprobarlo de una vez.
+     *
+     * Lo que estaba mal, y cómo lo estaba cada uno:
+     *
+     *  - `leadsUnassigned` contaba los que no tienen dueño Y siguen vivos, y
+     *    enlazaba a un filtro que solo miraba el dueño. La tarjeta decía cuatro
+     *    y la lista enseñaba nueve.
+     *  - `carriersFmcsaStale` enlazaba a `/carriers` a secas: la lista no tenía
+     *    ningún filtro capaz de expresar «comprobación vieja», porque el suyo
+     *    mira el ESTADO y no la ANTIGÜEDAD.
+     *  - `loadsUninvoiced` contaba CARGAS y enlazaba a la pantalla de alta de
+     *    factura, que enseña TRANSPORTISTAS. El número y las filas ni siquiera
+     *    hablaban de lo mismo.
+     *
+     * Ahora los tres destinos existen y filtran. Y una prueba de la suite
+     * recorre esta lista entera, pide cada destino y compara su total con la
+     * cuenta de la tarjeta: la regla dejó de ser una intención escrita en un
+     * comentario. Ver `docs/panel-cards.md`.
+     *
+     * @var array<string, string>
+     */
+    public const DESTINOS = [
+        'loadsAvailable' => '/loads?status=available',
+        'loadsInTransit' => '/loads?status=in_transit',
+        'loadsDelivered' => '/loads?status=delivered',
+        'loadsUninvoiced' => '/loads?uninvoiced=1',
+        'documentsExpiring' => '/documents?expiring=1',
+        'carriersFmcsaStale' => '/carriers?revalidation=due',
+        'invoicesOverdue' => '/invoices?overdue=1',
+        'expensesPending' => '/expenses?status=submitted',
+        'settlementsDraft' => '/settlements?status=draft',
+        'commissionsAccrued' => '/commissions?status=accrued',
+        'leadsUnassigned' => '/leads?assigned=unassigned',
+    ];
+
+    /**
      * @param  array<string, mixed>|null  $policy
      * @return list<array{key: string, group: string, count: int, href: string, tone: string}>
      */
@@ -63,7 +112,11 @@ final class Panel
             $tarjeta = $constructor($actor, $checker, $policy);
 
             if ($tarjeta !== null) {
-                $tarjetas[] = [...$tarjeta, 'key' => $clave];
+                // El destino lo pone ESTA lista, no el constructor. Con cada
+                // uno poniendo el suyo, comprobar que los once llevan a su
+                // propio número obligaba a leer once métodos, y tres no lo
+                // llevaban.
+                $tarjetas[] = [...$tarjeta, 'key' => $clave, 'href' => self::DESTINOS[$clave]];
             }
         }
 
@@ -71,14 +124,14 @@ final class Panel
     }
 
     /**
-     * @return array<string, callable(Actor, PermissionChecker, ?array<string, mixed>): (array{group: string, count: int, href: string, tone: string}|null)>
+     * @return array<string, callable(Actor, PermissionChecker, ?array<string, mixed>): (array{group: string, count: int, tone: string}|null)>
      */
     private static function builders(): array
     {
         return [
-            'loadsAvailable' => self::loads('available', '/loads?status=available', 'warn'),
-            'loadsInTransit' => self::loads('in_transit', '/loads?status=in_transit', 'neutral'),
-            'loadsDelivered' => self::loads('delivered', '/loads?status=delivered', 'neutral'),
+            'loadsAvailable' => self::loads('available', 'warn'),
+            'loadsInTransit' => self::loads('in_transit', 'neutral'),
+            'loadsDelivered' => self::loads('delivered', 'neutral'),
             'loadsUninvoiced' => self::uninvoiced(...),
             'documentsExpiring' => self::documentsExpiring(...),
             'carriersFmcsaStale' => self::carriersFmcsaStale(...),
@@ -99,11 +152,11 @@ final class Panel
      * de los transportistas que lleva. Es el mismo `LoadScope` que usa la
      * pantalla de cargas, así que el número y la lista no pueden discrepar.
      *
-     * @return callable(Actor, PermissionChecker, ?array<string, mixed>): (array{group: string, count: int, href: string, tone: string}|null)
+     * @return callable(Actor, PermissionChecker, ?array<string, mixed>): (array{group: string, count: int, tone: string}|null)
      */
-    private static function loads(string $estado, string $href, string $tono): callable
+    private static function loads(string $estado, string $tono): callable
     {
-        return static function (Actor $actor, PermissionChecker $checker, ?array $policy) use ($estado, $href, $tono): ?array {
+        return static function (Actor $actor, PermissionChecker $checker, ?array $policy) use ($estado, $tono): ?array {
             $decision = $checker->can($actor, 'load:read', null, $policy);
 
             if (! $decision->allowed || $decision->scope === null) {
@@ -120,7 +173,6 @@ final class Panel
             return [
                 'group' => 'operations',
                 'count' => $total,
-                'href' => $href,
                 'tone' => $total > 0 ? $tono : 'neutral',
             ];
         };
@@ -139,7 +191,7 @@ final class Panel
      * número le diría «hay dinero sin cobrar» y el enlace le daría un 403.
      *
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function uninvoiced(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -156,7 +208,6 @@ final class Panel
         return [
             'group' => 'finance',
             'count' => $total,
-            'href' => '/invoices/create',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }
@@ -172,7 +223,7 @@ final class Panel
      * los dos no contaran igual, pulsar la tarjeta enseñaría otra cifra.
      *
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function documentsExpiring(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -192,7 +243,6 @@ final class Panel
         return [
             'group' => 'compliance',
             'count' => $total,
-            'href' => '/documents?expiring=1',
             'tone' => $total > 0 ? 'danger' : 'neutral',
         ];
     }
@@ -206,7 +256,7 @@ final class Panel
      * dejarlos fuera del número los dejaría fuera de la vista.
      *
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function carriersFmcsaStale(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -216,22 +266,20 @@ final class Panel
             return null;
         }
 
-        $limite = CarbonImmutable::now()->subDays(TenantPolicy::for($actor->tenantId)->fmcsaReverificationDays);
-
-        $total = DB::table('carriers as c')
-            ->where('c.tenant_id', $actor->tenantId)
-            ->whereNull('c.deleted_at')
-            ->whereNotExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('fmcsa_verifications as v')
-                ->whereColumn('v.carrier_id', 'c.id')
-                ->where('v.tenant_id', $actor->tenantId)
-                ->where('v.checked_at', '>=', $limite))
-            ->count();
+        // La MISMA consulta que el filtro `revalidation=due` de la lista de
+        // transportistas y que el barrido nocturno. Estaba escrita aquí por
+        // tercera vez, y la lista —la única que hacía falta— no la tenía.
+        $total = Revalidation::apply(
+            DB::table('carriers as c')
+                ->where('c.tenant_id', $actor->tenantId)
+                ->whereNull('c.deleted_at'),
+            (string) $actor->tenantId,
+            'c',
+        )->count();
 
         return [
             'group' => 'compliance',
             'count' => $total,
-            'href' => '/carriers',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }
@@ -240,7 +288,7 @@ final class Panel
 
     /**
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function invoicesOverdue(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -263,14 +311,13 @@ final class Panel
         return [
             'group' => 'finance',
             'count' => $total,
-            'href' => '/invoices?overdue=1',
             'tone' => $total > 0 ? 'danger' : 'neutral',
         ];
     }
 
     /**
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function expensesPending(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -288,14 +335,13 @@ final class Panel
         return [
             'group' => 'finance',
             'count' => $total,
-            'href' => '/expenses?status=submitted',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }
 
     /**
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function settlementsDraft(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -313,7 +359,6 @@ final class Panel
         return [
             'group' => 'finance',
             'count' => $total,
-            'href' => '/settlements?status=draft',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }
@@ -326,7 +371,7 @@ final class Panel
      * que es justo lo que quiere saber al entrar.
      *
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function commissionsAccrued(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -350,7 +395,6 @@ final class Panel
         return [
             'group' => 'finance',
             'count' => $total,
-            'href' => '/commissions?status=accrued',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }
@@ -359,7 +403,7 @@ final class Panel
 
     /**
      * @param  array<string, mixed>|null  $policy
-     * @return array{group: string, count: int, href: string, tone: string}|null
+     * @return array{group: string, count: int, tone: string}|null
      */
     private static function leadsUnassigned(Actor $actor, PermissionChecker $checker, ?array $policy): ?array
     {
@@ -367,17 +411,18 @@ final class Panel
             return null;
         }
 
-        $total = DB::table('leads')
-            ->where('tenant_id', $actor->tenantId)
-            ->whereNull('deleted_at')
-            ->whereNull('assigned_to_user_id')
-            ->whereNotIn('status', ['converted', 'lost'])
-            ->count();
+        // El MISMO predicado que el filtro `assigned=unassigned` de la lista.
+        // Las dos mitades —sin dueño y todavía vivo— vivían aquí, y allí solo
+        // la primera: la tarjeta decía cuatro y la lista enseñaba nueve.
+        $total = LeadController::applyUnassigned(
+            DB::table('leads')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at'),
+        )->count();
 
         return [
             'group' => 'commercial',
             'count' => $total,
-            'href' => '/leads?assigned=unassigned',
             'tone' => $total > 0 ? 'warn' : 'neutral',
         ];
     }

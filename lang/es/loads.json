@@ -214,7 +214,8 @@
         "customer": "Cliente",
         "carrier": "Transportista",
         "all": "Todos",
-        "clear": "Limpiar filtros"
+        "clear": "Limpiar filtros",
+        "uninvoiced": "Solo cargas entregadas y todavía sin facturar"
     },
     "flash": {
         "created": "Carga {number} creada.",

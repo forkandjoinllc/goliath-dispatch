@@ -31,6 +31,7 @@ interface Props {
     status: string
     customer: string
     carrier: string
+    uninvoiced: string
     sort: string
     direction: string
   }
@@ -91,7 +92,8 @@ export default function LoadsIndex({
   const from = meta.total === 0 ? 0 : (meta.currentPage - 1) * meta.perPage + 1
   const to = Math.min(meta.currentPage * meta.perPage, meta.total)
   const filtered =
-    filters.search !== '' || filters.status !== '' || filters.customer !== '' || filters.carrier !== ''
+    filters.search !== '' || filters.status !== '' || filters.customer !== '' ||
+    filters.carrier !== '' || filters.uninvoiced !== ''
 
   const day = (value: string | null): string =>
     value
@@ -189,6 +191,16 @@ export default function LoadsIndex({
               ...options.carriers.map((c) => ({ value: c.id, label: c.name })),
             ]}
           />
+        ) : null}
+
+        {/* Este filtro no tiene control propio: se llega a él desde la tarjeta
+            «Entregadas y sin facturar» del panel. Sin decirlo, quien aterriza
+            aquí ve una lista corta y no sabe que está recortada — que es la
+            otra forma de que un número y una lista se contradigan. */}
+        {filters.uninvoiced === '1' ? (
+          <span className="rounded border border-navy-300 bg-navy-50 px-3 py-2 text-sm text-navy-800">
+            {t('loads.filters.uninvoiced')}
+          </span>
         ) : null}
 
         {filtered ? (

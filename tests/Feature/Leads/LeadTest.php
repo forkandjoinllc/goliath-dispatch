@@ -231,7 +231,15 @@ it('filtra por estado, origen y sin asignar', function () {
 
     expect($empresas('/leads?status=lost'))->toContain('PERDIDA SA')->not->toContain('PRESUPUESTO SA');
     expect($empresas('/leads?source=quote_form'))->toContain('PRESUPUESTO SA')->not->toContain('PERDIDA SA');
-    expect($empresas('/leads?assigned=unassigned'))->toContain('PERDIDA SA')->not->toContain('ASIGNADA SA');
+
+    // `unassigned` es una COLA DE TRABAJO, no «sin dueño» a secas, y esta
+    // prueba fijaba lo segundo: esperaba PERDIDA SA —perdida y sin dueño— en
+    // la lista. La tarjeta del panel siempre contó las dos mitades, y por eso
+    // decía cuatro donde la lista enseñaba nueve. Ver `docs/panel-cards.md`.
+    expect($empresas('/leads?assigned=unassigned'))
+        ->toContain('PRESUPUESTO SA')
+        ->not->toContain('ASIGNADA SA')
+        ->not->toContain('PERDIDA SA');
 });
 
 it('busca por nombre, correo, empresa y DOT', function () {

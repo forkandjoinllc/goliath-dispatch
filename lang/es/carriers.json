@@ -21,6 +21,8 @@
   "filters": {
     "onboarding": "Incorporación",
     "fmcsa": "FMCSA",
+    "revalidation": "Revalidación",
+    "revalidationDue": "Toca revalidar",
     "all": "Todos",
     "clear": "Limpiar filtros",
     "sortBy": "Ordenar por"

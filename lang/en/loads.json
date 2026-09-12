@@ -214,7 +214,8 @@
         "customer": "Customer",
         "carrier": "Carrier",
         "all": "All",
-        "clear": "Clear filters"
+        "clear": "Clear filters",
+        "uninvoiced": "Delivered loads that are not invoiced yet"
     },
     "flash": {
         "created": "Load {number} created.",

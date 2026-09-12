@@ -28,7 +28,7 @@ interface Props {
     data: CarrierRow[]
     meta: { total: number; perPage: number; currentPage: number; lastPage: number }
   }
-  filters: { search: string; onboarding: string; fmcsa: string; sort: string; direction: string }
+  filters: { search: string; onboarding: string; fmcsa: string; revalidation: string; sort: string; direction: string }
   facets: Record<string, number>
   scope: string
   can: { create: boolean; readOnboarding: boolean }
@@ -92,7 +92,7 @@ export default function CarriersIndex({ carriers, filters, facets, scope, can }:
   const { meta } = carriers
   const from = meta.total === 0 ? 0 : (meta.currentPage - 1) * meta.perPage + 1
   const to = Math.min(meta.currentPage * meta.perPage, meta.total)
-  const filtered = filters.search !== '' || filters.onboarding !== '' || filters.fmcsa !== ''
+  const filtered = filters.search !== '' || filters.onboarding !== '' || filters.fmcsa !== '' || filters.revalidation !== ''
 
   return (
     <AppLayout
@@ -150,6 +150,19 @@ export default function CarriersIndex({ carriers, filters, facets, scope, can }:
             label: t(`nav.status.verification.${camel(v)}`),
           }))}
           onChange={(value) => navigate(filters, { fmcsa: value })}
+        />
+
+        {/* «Por revalidar» NO es un estado de FMCSA, y por eso es su propio
+            filtro y no una opción más del de al lado. Aquel mira el RESULTADO
+            de la última comprobación; este, su ANTIGÜEDAD. Un transportista
+            verificado hace dos años sale «verificado» allí y es justo el que
+            aquí se busca. La tarjeta del panel hacía esta pregunta y no tenía
+            dónde llevarla. */}
+        <Filter
+          label={t('carriers.filters.revalidation')}
+          value={filters.revalidation}
+          options={[{ value: 'due', label: t('carriers.filters.revalidationDue') }]}
+          onChange={(value) => navigate(filters, { revalidation: value })}
         />
 
         {filtered ? (
