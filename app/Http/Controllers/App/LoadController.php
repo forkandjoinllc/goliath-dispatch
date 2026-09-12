@@ -24,6 +24,7 @@ use App\Support\Finance\Billable;
 use App\Support\Finance\LoadCalculator;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Lists\FacetCounts;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
 use App\Support\Loads\Guards;
@@ -146,7 +147,11 @@ final class LoadController
             // Los recuentos por estado se cuentan DENTRO del ámbito. Un
             // despachador que viera «disponibles: 40» sabría cuántas cargas hay
             // en la empresa aunque solo pueda abrir seis.
-            'facets' => $this->facets($checker, $actor, $scope),
+            //
+            // Y con los DEMÁS filtros puestos. Sin ellos, con un cliente
+            // elegido, la lista enseñaba tres filas y encima ponía «Todas
+            // (11)». Ver `docs/facet-counts.md`.
+            'facets' => $this->facets($checker, $actor, $scope, $filters),
             'options' => $this->filterOptions($checker, $actor, $scope),
             'showMoney' => $showMoney,
             'can' => [
@@ -1394,21 +1399,22 @@ final class LoadController
     /**
      * @return array<string, int>
      */
-    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope): array
+    /**
+     * @param  array<string, string>  $filters
+     * @return array<string, int>
+     */
+    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope, array $filters): array
     {
-        $counts = $this->scoped($checker, $actor, $scope)
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->all();
-
-        $out = ['all' => array_sum($counts)];
-
-        foreach (LoadStatus::cases() as $case) {
-            $out[$case->value] = (int) ($counts[$case->value] ?? 0);
-        }
-
-        return $out;
+        return FacetCounts::fila(
+            fn (array $f): Builder => tap(
+                $this->scoped($checker, $actor, $scope),
+                fn (Builder $q) => $this->applyFilters($q, $f, $actor),
+            ),
+            $filters,
+            ['status'],
+            'status',
+            array_map(static fn (LoadStatus $c): string => $c->value, LoadStatus::cases()),
+        );
     }
 
     /**

@@ -19,6 +19,7 @@ use App\Support\Drivers\Cdl;
 use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Lists\FacetCounts;
 use App\Support\Security\SensitiveNumber;
 use App\Support\Tracking\Consent;
 use Illuminate\Database\Eloquent\Builder;
@@ -121,7 +122,7 @@ final class DriverController
             ],
             'filters' => $filters,
             'scope' => $scope->value,
-            'facets' => $this->facets($checker, $actor, $scope),
+            'facets' => $this->facets($checker, $actor, $scope, $filters),
             'can' => [
                 'create' => $checker->can($actor, 'driver:create', null, $policy)->allowed,
             ],
@@ -432,26 +433,23 @@ final class DriverController
     /**
      * @return array<string, int>
      */
-    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope): array
+    /**
+     * @param  array<string, string>  $filters
+     * @return array<string, int>
+     */
+    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope, array $filters): array
     {
-        $counts = $this->scoped($checker, $actor, $scope)
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')->pluck('total', 'status')->all();
-
-        $limit = ExpiryWindow::limit();
-
-        return [
-            'all' => array_sum($counts),
-            'available' => (int) ($counts['available'] ?? 0),
-            'on_load' => (int) ($counts['on_load'] ?? 0),
-            'off_duty' => (int) ($counts['off_duty'] ?? 0),
-            'inactive' => (int) ($counts['inactive'] ?? 0),
-            'expiring' => $this->scoped($checker, $actor, $scope)
-                ->where(function (Builder $q) use ($limit): void {
-                    $q->where('license_expires_at', '<=', $limit)
-                        ->orWhere('medical_card_expires_at', '<=', $limit);
-                })->count(),
-        ];
+        return FacetCounts::fila(
+            fn (array $f): Builder => tap(
+                $this->scoped($checker, $actor, $scope),
+                fn (Builder $q) => $this->applyFilters($q, $f),
+            ),
+            $filters,
+            ['status', 'expiring'],
+            'status',
+            ['available', 'on_load', 'off_duty', 'inactive'],
+            ['expiring' => ['expiring' => '1']],
+        );
     }
 
     private function find(string $id): Driver

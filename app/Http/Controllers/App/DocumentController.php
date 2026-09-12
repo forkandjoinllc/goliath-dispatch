@@ -20,6 +20,7 @@ use App\Support\Documents\ExpiryEffect;
 use App\Support\Documents\Scanning;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
+use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -114,7 +115,7 @@ final class DocumentController
             'ownerTypes' => DocumentOwners::all(),
             'filters' => $filters,
             'scope' => $scope->value,
-            'facets' => $this->facets($checker, $actor, $scope),
+            'facets' => $this->facets($checker, $actor, $scope, $filters),
             'can' => [
                 'upload' => $checker->can($actor, 'document:upload', null, $policy)->allowed,
                 'review' => $checker->can($actor, 'document:review', null, $policy)->allowed,
@@ -658,24 +659,26 @@ final class DocumentController
     /**
      * @return array<string, int>
      */
-    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope): array
+    /**
+     * @param  array<string, string>  $filters
+     * @return array<string, int>
+     */
+    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope, array $filters): array
     {
-        $counts = $this->scoped($checker, $actor, $scope)
-            ->select('review_status', DB::raw('count(*) as total'))
-            ->groupBy('review_status')->pluck('total', 'review_status')->all();
-
-        return [
-            'all' => array_sum($counts),
-            'pending' => (int) ($counts['pending'] ?? 0),
-            'in_review' => (int) ($counts['in_review'] ?? 0),
-            'approved' => (int) ($counts['approved'] ?? 0),
-            'rejected' => (int) ($counts['rejected'] ?? 0),
-            'expired' => (int) ($counts['expired'] ?? 0),
-            'expiring' => $this->scoped($checker, $actor, $scope)
-                ->whereNotNull('expiration_date')
-                ->where('expiration_date', '<=', ExpiryWindow::limit())
-                ->count(),
-        ];
+        // La fila controla DOS claves y no una: pulsar un estado apaga «vencen
+        // pronto» y al revés. Contarlas como si fueran independientes daría
+        // «Aprobados» contado sobre los que vencen pronto.
+        return FacetCounts::fila(
+            fn (array $f): Builder => tap(
+                $this->scoped($checker, $actor, $scope),
+                fn (Builder $q) => $this->applyFilters($q, $f),
+            ),
+            $filters,
+            ['status', 'expiring'],
+            'review_status',
+            ['pending', 'in_review', 'approved', 'rejected', 'expired'],
+            ['expiring' => ['expiring' => '1']],
+        );
     }
 
     private function ownerExists(Actor $actor, string $type, string $id): bool

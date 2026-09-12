@@ -19,6 +19,7 @@ use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Equipment\Verification;
 use App\Support\Geo\Regions;
+use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
@@ -109,7 +110,7 @@ final class EquipmentController
             ],
             'filters' => $filters,
             'scope' => $scope->value,
-            'facets' => $this->facets($checker, $actor, $scope, $type),
+            'facets' => $this->facets($checker, $actor, $scope, $type, $filters),
             'can' => [
                 'create' => $checker->can($actor, 'equipment:create', null, $policy)->allowed,
             ],
@@ -617,26 +618,23 @@ final class EquipmentController
     /**
      * @return array<string, int>
      */
-    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope, string $type): array
+    /**
+     * @param  array<string, string>  $filters
+     * @return array<string, int>
+     */
+    private function facets(PermissionChecker $checker, Actor $actor, Scope $scope, string $type, array $filters): array
     {
-        $counts = $this->scoped($checker, $actor, $scope, $type)
-            ->select('status', DB::raw('count(*) as total'))
-            ->groupBy('status')->pluck('total', 'status')->all();
-
-        $limit = ExpiryWindow::limit();
-
-        return [
-            'all' => array_sum($counts),
-            'pending_verification' => (int) ($counts['pending_verification'] ?? 0),
-            'active' => (int) ($counts['active'] ?? 0),
-            'out_of_service' => (int) ($counts['out_of_service'] ?? 0),
-            'archived' => (int) ($counts['archived'] ?? 0),
-            'expiring' => $this->scoped($checker, $actor, $scope, $type)
-                ->where(function (Builder $q) use ($limit): void {
-                    $q->where('next_inspection_due_at', '<=', $limit)
-                        ->orWhere('registration_expires_at', '<=', $limit);
-                })->count(),
-        ];
+        return FacetCounts::fila(
+            fn (array $f): Builder => tap(
+                $this->scoped($checker, $actor, $scope, $type),
+                fn (Builder $q) => $this->applyFilters($q, $f),
+            ),
+            $filters,
+            ['status', 'expiring'],
+            'status',
+            ['pending_verification', 'active', 'out_of_service', 'archived'],
+            ['expiring' => ['expiring' => '1']],
+        );
     }
 
     private function find(string $type, string $id): Model

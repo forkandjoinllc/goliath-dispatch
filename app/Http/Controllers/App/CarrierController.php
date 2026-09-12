@@ -23,6 +23,7 @@ use App\Support\EnumValue;
 use App\Support\Fmcsa\Revalidation;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Lists\FacetCounts;
 use App\Support\Locales;
 use App\Support\Onboarding\Readiness;
 use App\Support\Plans\Limits;
@@ -129,7 +130,7 @@ final class CarrierController
                 ],
             ],
             'filters' => $filters,
-            'facets' => $this->facets($checker, $actor, $scope),
+            'facets' => $this->facets($checker, $actor, $scope, $filters),
             // El ámbito viaja a la pantalla para poder DECIRLO, no para decidir
             // nada: un despachador tiene derecho a saber que está viendo su
             // cartera y no la empresa entera.
@@ -586,21 +587,22 @@ final class CarrierController
      *
      * @return array<string, int>
      */
-    private function facets(PermissionChecker $checker, \App\Authorization\Actor $actor, \App\Enums\Scope $scope): array
+    /**
+     * @param  array<string, string>  $filters
+     * @return array<string, int>
+     */
+    private function facets(PermissionChecker $checker, \App\Authorization\Actor $actor, \App\Enums\Scope $scope, array $filters): array
     {
-        $rows = $checker->scopeFilter($actor, $scope)
-            ->apply(Carrier::query(), ['carrier' => 'id'])
-            ->select('onboarding_status', DB::raw('count(*) as total'))
-            ->groupBy('onboarding_status')
-            ->pluck('total', 'onboarding_status');
-
-        $out = [];
-
-        foreach (OnboardingStatus::cases() as $case) {
-            $out[$case->value] = (int) ($rows[$case->value] ?? 0);
-        }
-
-        return $out;
+        return FacetCounts::fila(
+            fn (array $f): \Illuminate\Database\Eloquent\Builder => tap(
+                $checker->scopeFilter($actor, $scope)->apply(Carrier::query(), ['carrier' => 'id']),
+                fn (\Illuminate\Database\Eloquent\Builder $q) => $this->applyFilters($q, $f, $actor),
+            ),
+            $filters,
+            ['onboarding'],
+            'onboarding_status',
+            array_map(static fn (OnboardingStatus $c): string => $c->value, OnboardingStatus::cases()),
+        );
     }
 
     /**

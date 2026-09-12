@@ -2738,3 +2738,42 @@ y `LeadTest` cargan deuda previa de `ordered_imports` y
 `fully_qualified_strict_types`. La forma barata de no pelearse con eso: traer
 `git show HEAD:<fichero>` y volver a aplicar SOLO las líneas del lote encima,
 en vez de dejar que pint arregle de paso lo que no toca.
+
+## Los atajos que contaban otra cosa (`docs/facet-counts.md`)
+
+**Medir con datos que no distinguen es no medir — y lo repetí en el lote
+siguiente al que lo aprendió.** Tres de los quince sabotajes escaparon a la
+primera: los de conductores, equipo y transportistas. Sus pruebas buscaban por
+un valor sacado de la ÚNICA fila del escenario, así que el filtro no dejaba
+fuera a nadie y contar con él o sin él daba lo mismo. La prueba pasaba con el
+defecto puesto. Se arregló plantando filas que la búsqueda NO encuentra.
+**Antes de escribir la aserción hay que preguntarse qué fila tiene que quedar
+fuera; si no hay ninguna, el filtro no está midiendo nada.**
+
+**Cinco copias del mismo error no son mala suerte.** Las cinco pantallas
+escribían su propio `facets()` y las cinco contaban sin los demás filtros.
+Cuando cinco sitios cometen el mismo error, el error no está en los cinco: está
+en que la regla no vive en ninguno. El arreglo no fue corregir cinco métodos
+sino que no hubiera cinco.
+
+**La mitad que se olvida se mete DENTRO del ayudante.** Se podía haber hecho un
+`FacetCounts` que recibiera la consulta «ya preparada» y dejara el vaciado de la
+fila en manos de quien llama. Con cinco llamantes, basta que uno lo haga
+distinto para que vuelva el defecto sin que nada se ponga rojo. Recibe el mapa
+entero y vacía él. Hay una guarda que además fija que vacía ANTES de contar.
+
+**`toContain` con un segundo argumento busca otra aguja.** Segunda vez en dos
+lotes. Para que el fallo diga de qué pantalla habla: `assertStringContainsString($aguja, $pajar, $mensaje)`.
+
+**Una aguja demasiado corta pasa el sabotaje por casualidad.** `'$filters)'`
+casa en cualquier parte de un controlador grande. La primera versión de la
+guarda «cada pantalla le pasa sus filtros» se apoyaba en eso; se reforzó con la
+forma completa de la llamada (`$this->facets($checker,$actor,$scope,`) antes de
+fiarse de ella.
+
+**Pint otra vez: colocar un `use` nuevo en su sitio alfabético es trabajo del
+lote.** Metí cinco importaciones «donde cayeran» y pint marcó `ordered_imports`
+en los cinco ficheros — mezclado con la deuda previa de dos de ellos, que es
+justo lo que hace difícil separar lo propio de lo ajeno. Colocarlas bien deja el
+diagnóstico limpio: lo que siga fallando es de antes, y se comprueba contra
+`git show HEAD:`.
