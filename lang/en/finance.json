@@ -13,7 +13,6 @@
     "systemCategoryTreatmentLocked": "\"{code}\" is a system category — its commission treatment cannot be changed.",
     "expenseNotFound": "That expense could not be found.",
     "expenseAlreadyRejected": "This expense was already rejected.",
-    "cannotRejectApprovedExpense": "An approved expense cannot be rejected directly. Contact an administrator to reverse it.",
     "loadNotFound": "That load could not be found.",
     "snapshotVersionConflict": "Another update to this load's financials happened at the same moment. Please try again.",
     "invoiceNotFound": "That invoice could not be found.",

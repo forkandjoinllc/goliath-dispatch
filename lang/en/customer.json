@@ -64,7 +64,6 @@
     "primary": "Primary",
     "setPrimary": "Make primary",
     "delete": "Remove contact",
-    "deleteConfirm": "Remove this contact? This can be undone by an administrator.",
     "fields": {
       "firstName": "First name",
       "lastName": "Last name",

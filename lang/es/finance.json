@@ -13,7 +13,6 @@
     "systemCategoryTreatmentLocked": "\"{code}\" es una categoría del sistema — su tratamiento de comisión no se puede cambiar.",
     "expenseNotFound": "No se encontró ese gasto.",
     "expenseAlreadyRejected": "Este gasto ya fue rechazado.",
-    "cannotRejectApprovedExpense": "Un gasto aprobado no se puede rechazar directamente. Comuníquese con un administrador para revertirlo.",
     "loadNotFound": "No se encontró esa carga.",
     "snapshotVersionConflict": "Otra actualización de las finanzas de esta carga ocurrió al mismo tiempo. Intente de nuevo.",
     "invoiceNotFound": "No se encontró esa factura.",

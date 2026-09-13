@@ -2812,3 +2812,54 @@ de una, o el sabotaje entra por la que no se mira.
 peor que el código.** «Los totales se calculan sobre TODO el filtro» era cierto
 para uno de tres. Al arreglarlo, la frase se queda y debajo se escribe que no
 era verdad: la siguiente persona necesita saber que esa línea llegó a mentir.
+
+---
+
+## Lote «la finalidad del gasto» (`docs/expense-finality.md`)
+
+**La copia muerta miente igual que la viva, y a quien engaña es al siguiente que
+la lea.** La frase «comuníquese con un administrador para revertirlo» vivía en
+`finance.json` sin un solo lector: el controlador lanzaba otra. Me engañó a mí
+—la cité como titular sin comprobar quién pedía la clave—, y podría engañar a
+cualquiera que la encuentre buscando por qué la aplicación dice lo que dice. Por
+eso el guardián recorre **todas las hojas de los dos idiomas**, no solo las que
+alguien pinta. Antes de traer una cadena como prueba de nada: `grep` de la clave
+en `app/` y `resources/`.
+
+**Un guardián recién escrito es un barrido.** El de este lote encontró una
+segunda promesa falsa en su primera ejecución —`customer.contacts.deleteConfirm`,
+«un administrador puede deshacer esta acción», sin ruta de restauración en toda
+la aplicación—. Cuando un guardián nuevo se pone rojo en un fichero que no tocas,
+lo normal no es que la regla esté mal: es que acabas de medir algo que nadie
+medía.
+
+**La excepción va declarada fuera de la expresión regular, nunca dentro.** La
+primera versión del guardián de copia llevaba un «salvo que la frase diga *no
+puede*» metido en el propio patrón. Eso es una puerta que se abre sola:
+cualquier texto con una negación cerca pasaba sin que nadie lo mirara. Ahora hay
+una constante `FINALIDAD_NIEGAN` con clave y motivo, y otro guardián que falla
+si una excepción declarada deja de existir.
+
+**Escribir la copia antes que la ruta produce copia muerta.** Añadí
+`errors.noReturn` para una transición que ninguna ruta pide. Iba a nacer muerta
+en el lote sobre texto muerto. La regla que queda en su lugar es un guardián:
+`ninguna ruta pide una transición que la tabla no tiene`, que se pone rojo el día
+que alguien añada la ruta —y entonces, y solo entonces, hará falta la frase.
+
+**`toHaveKey($clave, $mensaje)` compara el segundo argumento con el VALOR.** Es
+la misma trampa que `toContain($aguja, $mensaje)`, tercera vez en la misma
+familia. Cuando quieras un mensaje de fallo, `assertArrayHasKey($clave, $array,
+$mensaje)` de PHPUnit.
+
+**Una tabla se lee en dos direcciones y las dos se confunden.** «No sale de
+aquí» (`esFinal`, mira los valores) y «no se vuelve aquí» (`sinRetorno`, mira las
+claves) son preguntas distintas. Escribí la clase confundiéndolas dos veces en
+cinco minutos; la salvó pasarla por `tinker` antes de conectarla a nada. Una
+tabla nueva se ejecuta contra todos sus estados y se lee la salida ANTES de que
+la use una pantalla.
+
+**El sabotaje que no compila no es un sabotaje.** Dos de los trece de este lote
+llegaron con `\$` de más —Python no interpreta esa secuencia— y el arnés los
+marcó como «sintaxis rota», no como guardián que escapa. Sin esa comprobación
+habrían contado como verde falso. El arnés valida `php -l` y `json_decode` antes
+de creerse un resultado.

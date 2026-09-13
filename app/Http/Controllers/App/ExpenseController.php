@@ -14,6 +14,7 @@ use App\Models\Expense;
 use App\Models\Load;
 use App\Support\Audit;
 use App\Support\Documents\ExpenseFile;
+use App\Support\Finance\ExpenseTransitions;
 use App\Support\InertiaPage;
 use App\Support\Storage\DocumentStore;
 use App\Support\Loads\LoadScope;
@@ -374,6 +375,44 @@ final class ExpenseController
         ));
     }
 
+    /**
+     * Por qué no se puede hacer eso, dicho desde la tabla.
+     *
+     * Dos frases para las dos situaciones que ocurren, y ninguna manda a nadie
+     * a pedirle a otro lo que ese otro tampoco puede:
+     *
+     *  - si del estado actual no sale nada, se dice que ahí se acabó;
+     *  - y si sale algo pero no eso, se nombra lo que sí queda.
+     */
+    private function porQueNo(string $actual, string $nuevo): string
+    {
+        // NO hay rama para «volver a presentado», y no por descuido: ninguna
+        // ruta pide esa transición —`approve`, `reject` y `reimburse` son las
+        // tres que hay— así que un texto para ella sería copia que nadie lee.
+        // Copia muerta es justo lo que hizo falso a este flujo: la frase del
+        // administrador que revierte vivía en `finance.json` sin lector.
+        //
+        // Quien avisa de que decidir es definitivo es la pantalla, ANTES del
+        // clic: `expenses.index.decisionIsFinal`. Y si algún día alguien añade
+        // una ruta de vuelta, el guardián de `ExpenseFinalityTest` se pone en
+        // rojo por no estar declarada.
+        $salidas = ExpenseTransitions::salidasDe($actual);
+
+        if ($salidas === []) {
+            return __('expenses.errors.noWayOut', [
+                'status' => __("expenses.status.{$actual}"),
+            ]);
+        }
+
+        return __('expenses.errors.onlyThese', [
+            'status' => __("expenses.status.{$actual}"),
+            'options' => implode(', ', array_map(
+                static fn (string $s): string => __("expenses.status.{$s}"),
+                $salidas,
+            )),
+        ]);
+    }
+
     private function decide(
         string $id,
         CurrentActor $current,
@@ -390,18 +429,16 @@ final class ExpenseController
 
         // `$model->status` viene CASTEADO al enum ExpenseStatus, así que
         // compararlo con la cadena 'submitted' es siempre falso y todas las
-        // decisiones se rechazaban con «badTransition». Se compara por ->value.
+        // decisiones se rechazaban. Se compara por ->value.
         $actual = $model->status->value;
 
-        $permitido = match ($nuevo) {
-            'approved', 'rejected' => $actual === 'submitted',
-            'reimbursed' => $actual === 'approved',
-            default => false,
-        };
-
-        if (! $permitido) {
+        if (! ExpenseTransitions::permitida($actual, $nuevo)) {
+            // El mensaje SALE DE LA TABLA en vez de escribirse aparte, que es
+            // como se llegó a prometer una reversión que no existe: decía
+            // «comuníquese con un administrador para revertirlo» y no hay
+            // administrador que pueda. Ver `docs/expense-finality.md`.
             throw ValidationException::withMessages([
-                'status' => __('expenses.errors.badTransition'),
+                'status' => $this->porQueNo($actual, $nuevo),
             ]);
         }
 

@@ -1,6 +1,7 @@
 {
     "errors": {
-        "badTransition": "That expense is no longer in a state where this can be done. Reload the page.",
+        "noWayOut": "A {status} expense does not move anywhere else. That is the end of its path.",
+        "onlyThese": "A {status} expense can only become: {options}.",
         "categoryNotFound": "That category does not exist or is no longer active.",
         "loadNotFound": "That load does not exist or is not yours.",
         "receiptRequired": "This expense cannot be approved without a receipt: its category required one when it was submitted. Attach it, or reject the expense if there is none."
@@ -43,6 +44,7 @@
         "empty": "No expenses match.",
         "frozenWarning": "This load is already invoiced or settled. Those figures are frozen, so approving this will not change them — you would need a credit or an adjustment.",
         "approve": "Approve",
+        "decisionIsFinal": "Deciding cannot be undone: an approved or rejected expense never goes back to pending, and an approved one enters the commission base.",
         "reject": "Reject",
         "reimburse": "Mark reimbursed",
         "rejectReason": "Why is it rejected? The person who submitted it will read this.",

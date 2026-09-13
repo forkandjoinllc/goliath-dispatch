@@ -1,6 +1,7 @@
 {
     "errors": {
-        "badTransition": "Ese gasto ya no está en un estado donde esto se pueda hacer. Recargue la página.",
+        "noWayOut": "Un gasto {status} ya no se mueve a ningún sitio. Ahí se acabó su recorrido.",
+        "onlyThese": "Un gasto {status} solo puede pasar a: {options}.",
         "categoryNotFound": "Esa categoría no existe o ya no está activa.",
         "loadNotFound": "Esa carga no existe o no es suya.",
         "receiptRequired": "Este gasto no se puede aprobar sin recibo: su categoría lo exigía cuando se presentó. Adjúntelo, o rechácelo si no lo hay."
@@ -43,6 +44,7 @@
         "empty": "Ningún gasto coincide.",
         "frozenWarning": "Esta carga ya está facturada o liquidada. Esas cifras están congeladas, así que aprobar esto no las cambia — haría falta una nota de crédito o un ajuste.",
         "approve": "Aprobar",
+        "decisionIsFinal": "Decidir no se deshace: un gasto aprobado o rechazado no vuelve a estar pendiente, y el aprobado entra en la base de comisión.",
         "reject": "Rechazar",
         "reimburse": "Marcar reembolsado",
         "rejectReason": "¿Por qué se rechaza? Lo va a leer quien lo presentó.",

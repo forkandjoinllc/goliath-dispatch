@@ -170,6 +170,17 @@ function ExpenseCard({
         </p>
       ) : null}
 
+      {/* El aviso va ANTES del clic, que es cuando sirve.
+          Decidir sobre un gasto no se deshace: no hay acción, permiso ni rol
+          que devuelva un aprobado o un rechazado a «presentado». Y un aprobado
+          entra en la base de comisión. Hasta este lote eso no se decía en
+          ninguna parte, y lo único que se veía al intentar deshacerlo era
+          «recargue la página» — que sugiere una vista vieja cuando lo que pasa
+          es que la decisión es permanente. Ver `docs/expense-finality.md`. */}
+      {canApprove && e.status === 'submitted' ? (
+        <p className="mt-3 text-xs text-steel-600">{t('expenses.index.decisionIsFinal')}</p>
+      ) : null}
+
       {canApprove ? (
         <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-steel-100 pt-3">
           {e.status === 'submitted' ? (

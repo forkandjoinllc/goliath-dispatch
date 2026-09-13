@@ -64,7 +64,6 @@
     "primary": "Principal",
     "setPrimary": "Marcar como principal",
     "delete": "Eliminar contacto",
-    "deleteConfirm": "¿Eliminar este contacto? Un administrador puede deshacer esta acción.",
     "fields": {
       "firstName": "Nombre",
       "lastName": "Apellido",
