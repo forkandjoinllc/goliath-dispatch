@@ -68,22 +68,7 @@ final class PaymentController
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
-
-        if ($filters['status'] !== '') {
-            $query->where('payments.status', $filters['status']);
-        }
-
-        if ($filters['method'] !== '') {
-            $query->where('payments.method', $filters['method']);
-        }
-
-        if ($filters['invoice'] !== '') {
-            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['invoice']).'%';
-            $query->whereExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('invoices')
-                ->whereColumn('invoices.id', 'payments.invoice_id')
-                ->where('invoices.invoice_number', 'like', $term));
-        }
+        $this->applyFilters($query, $filters);
 
         $page = $query
             ->orderByDesc('payments.received_at')
@@ -113,7 +98,12 @@ final class PaymentController
             'filters' => $filters,
             'statuses' => self::STATUSES,
             'methods' => PaymentMethod::values(),
-            'totals' => $this->totals($this->scoped($checker, $actor, $scope)),
+            // La MISMA consulta que la lista, filtros incluidos. Antes se
+            // sumaba sobre el ámbito pelado: filtrar por «en disputa» dejaba la
+            // lista vacía y encima seguía poniendo «En casa 1.721,74 $».
+            'totals' => $this->totals(
+                tap($this->scoped($checker, $actor, $scope), fn (Builder $q) => $this->applyFilters($q, $filters)),
+            ),
             'can' => [
                 'refund' => $checker->can($actor, 'payment:refund', null, $policy)->allowed,
             ],
@@ -322,6 +312,41 @@ final class PaymentController
      * @param  Builder<Payment>  $query
      * @return array<string, int>
      */
+    /**
+     * Los filtros de esta pantalla, en UN sitio.
+     *
+     * Vivían en línea dentro de `index()`, y esa es la razón de que la fila de
+     * totales de arriba no los aplicara: la suma se construía desde `scoped()`
+     * por su cuenta y no tenía forma de reutilizarlos. Medido en la
+     * demostración, filtrar por «en disputa» dejaba la lista vacía y
+     * encima seguía poniendo «En casa 1.721,74 $».
+     *
+     * Una cifra de dinero encima de una lista que no la contiene es la peor
+     * versión de este defecto: un recuento desconcierta, una suma se apunta.
+     * Ver `docs/list-totals.md`.
+     *
+     * @param  Builder<Payment>  $query
+     * @param  array<string, string>  $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
+    {
+        if ($filters['status'] !== '') {
+            $query->where('payments.status', $filters['status']);
+        }
+
+        if ($filters['method'] !== '') {
+            $query->where('payments.method', $filters['method']);
+        }
+
+        if ($filters['invoice'] !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['invoice']).'%';
+            $query->whereExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('invoices')
+                ->whereColumn('invoices.id', 'payments.invoice_id')
+                ->where('invoices.invoice_number', 'like', $term));
+        }
+    }
+
     private function totals(Builder $query): array
     {
         $filas = $query

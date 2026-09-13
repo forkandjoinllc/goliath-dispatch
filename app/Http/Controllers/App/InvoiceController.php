@@ -72,19 +72,7 @@ final class InvoiceController
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
-
-        if ($filters['search'] !== '') {
-            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
-            $query->where(fn (Builder $q) => $q->where('invoices.invoice_number', 'like', $term));
-        }
-
-        if ($filters['status'] !== '') {
-            $query->where('invoices.status', $filters['status']);
-        }
-
-        if ($filters['overdue'] === '1') {
-            self::applyOverdue($query);
-        }
+        $this->applyFilters($query, $filters);
 
         $page = $query
             ->orderByDesc('invoices.created_at')
@@ -113,7 +101,14 @@ final class InvoiceController
             'statuses' => self::STATUSES,
             // Los totales se calculan sobre TODO el filtro, no sobre la página.
             // Una suma que cambia al pasar de página no es una suma.
-            'totals' => $this->totals($this->scoped($checker, $actor, $scope), $filters),
+            //
+            // Y «TODO el filtro» no era verdad: `totals()` llevaba su propia
+            // copia del filtro de ESTADO y no sabía nada de la búsqueda ni de
+            // «solo vencidas». Buscar una factura concreta dejaba una fila en
+            // la lista y la suma de las tres encima.
+            'totals' => $this->totals(
+                tap($this->scoped($checker, $actor, $scope), fn (Builder $q) => $this->applyFilters($q, $filters)),
+            ),
             'can' => [
                 'create' => $checker->can($actor, 'invoice:create', null, $policy)->allowed,
             ],
@@ -546,12 +541,41 @@ final class InvoiceController
      * @param  array<string, string>  $filters
      * @return array<string, int>
      */
-    private function totals(Builder $query, array $filters): array
+    /**
+     * Los filtros de esta pantalla, en UN sitio.
+     *
+     * Vivían en línea dentro de `index()`, y `totals()` se había quedado con
+     * una COPIA de uno solo de ellos —el de estado— mientras ignoraba la búsqueda y «solo vencidas».
+     * Medido en la demostración, buscar una factura concreta dejaba UNA fila en
+     * la lista y la suma de las TRES encima.
+     *
+     * Media suma filtrada es peor que ninguna: la parte que sí responde al
+     * filtro hace creer que la otra también. Ver `docs/list-totals.md`.
+     *
+     * @param  Builder<Invoice>  $query
+     * @param  array<string, string>  $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
     {
+        if ($filters['search'] !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
+            $query->where(fn (Builder $q) => $q->where('invoices.invoice_number', 'like', $term));
+        }
+
         if ($filters['status'] !== '') {
             $query->where('invoices.status', $filters['status']);
         }
 
+        if ($filters['overdue'] === '1') {
+            self::applyOverdue($query);
+        }
+    }
+
+    /**
+     * @param  Builder<Invoice>  $query
+     */
+    private function totals(Builder $query): array
+    {
         $fila = $query
             ->selectRaw('coalesce(sum(total_cents), 0) as total, coalesce(sum(balance_cents), 0) as saldo')
             ->reorder()

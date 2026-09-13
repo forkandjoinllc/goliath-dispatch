@@ -2777,3 +2777,38 @@ en los cinco ficheros — mezclado con la deuda previa de dos de ellos, que es
 justo lo que hace difícil separar lo propio de lo ajeno. Colocarlas bien deja el
 diagnóstico limpio: lo que siga fallando es de antes, y se comprueba contra
 `git show HEAD:`.
+
+## Las sumas que no eran de su lista (`docs/list-totals.md`)
+
+**Cuando un defecto se repite en cuatro sitios, la pregunta no es quién se
+olvidó sino qué hacía imposible acordarse.** Los filtros de las cuatro
+pantallas vivían EN LÍNEA dentro de `index()`, así que la fila de totales no
+tenía nada que reutilizar. Las dos que lo intentaron acabaron con una COPIA de
+uno solo de los filtros dentro de `totals()` — media suma filtrada, que es peor
+que ninguna. El arreglo es extraer, no recordar.
+
+**Quitarle el parámetro al método es parte del arreglo.** `totals()` dejó de
+recibir `$filters`: mientras los reciba puede aplicar solo algunos, que es
+exactamente lo que pasaba. Una guarda falla si alguno vuelve a aceptarlos.
+**Cuando una función puede hacer mal una cosa, a veces lo que sobra es el
+argumento que se lo permite.**
+
+**Una prueba que vuelve a consultar no mide.** Estas suman las filas que la
+pantalla DEVUELVE y las comparan con el total de arriba. Si la prueba
+reconstruyera la consulta podría equivocarse igual que el controlador, coincidir
+con él, y pasar con el defecto puesto.
+
+**Sumar lo visible caduca con la paginación.** El ayudante comprueba que el
+total de filas cabe en una página y falla con un mensaje que lo explica: si
+algún día una prueba crece, dejaría de medir el filtro sin avisar. **Una prueba
+que puede dejar de medir en silencio tiene que decirlo ella.**
+
+**Una prueba de frontera cubre la pantalla que nombra, no la familia.** El
+sabotaje que quitaba el ámbito en COBROS se escapó porque la prueba de ámbito
+solo miraba FACTURAS. Cuatro pantallas hermanas necesitan la comprobación en más
+de una, o el sabotaje entra por la que no se mira.
+
+**El comentario que afirma lo contrario de lo que hace el código es deuda
+peor que el código.** «Los totales se calculan sobre TODO el filtro» era cierto
+para uno de tres. Al arreglarlo, la frase se queda y debajo se escribe que no
+era verdad: la siguiente persona necesita saber que esa línea llegó a mentir.

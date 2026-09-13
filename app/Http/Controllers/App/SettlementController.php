@@ -62,15 +62,7 @@ final class SettlementController
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
-
-        if ($filters['search'] !== '') {
-            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
-            $query->where('carrier_settlements.settlement_number', 'like', $term);
-        }
-
-        if ($filters['status'] !== '') {
-            $query->where('carrier_settlements.status', $filters['status']);
-        }
+        $this->applyFilters($query, $filters);
 
         $page = $query
             ->orderByDesc('carrier_settlements.created_at')
@@ -96,7 +88,13 @@ final class SettlementController
             ],
             'filters' => $filters,
             'statuses' => self::STATUSES,
-            'totals' => $this->totals($this->scoped($checker, $actor, $scope), $filters),
+            // La MISMA consulta que la lista. `totals()` llevaba su propia copia
+            // del filtro de estado y no sabía nada de la búsqueda: buscar un
+            // número que no existe dejaba la lista vacía y encima seguía
+            // poniendo «Neto a transportistas 14.874,00 $».
+            'totals' => $this->totals(
+                tap($this->scoped($checker, $actor, $scope), fn (Builder $q) => $this->applyFilters($q, $filters)),
+            ),
             'can' => [
                 'manage' => $checker->can($actor, 'settlement:manage', null, $policy)->allowed,
             ],
@@ -404,12 +402,38 @@ final class SettlementController
      * @param  array<string, string>  $filters
      * @return array<string, int>
      */
-    private function totals(Builder $query, array $filters): array
+    /**
+     * Los filtros de esta pantalla, en UN sitio.
+     *
+     * Vivían en línea dentro de `index()`, y `totals()` se había quedado con
+     * una COPIA de uno solo de ellos —el de estado— mientras ignoraba la
+     * búsqueda. Medido en la demostración, buscar un número que no existe
+     * dejaba la lista vacía y encima seguía poniendo «Neto a transportistas
+     * 14.874,00 $».
+     *
+     * Media suma filtrada es peor que ninguna: la parte que sí responde al
+     * filtro hace creer que la otra también. Ver `docs/list-totals.md`.
+     *
+     * @param  Builder<CarrierSettlement>  $query
+     * @param  array<string, string>  $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
     {
+        if ($filters['search'] !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['search']).'%';
+            $query->where('carrier_settlements.settlement_number', 'like', $term);
+        }
+
         if ($filters['status'] !== '') {
             $query->where('carrier_settlements.status', $filters['status']);
         }
+    }
 
+    /**
+     * @param  Builder<CarrierSettlement>  $query
+     */
+    private function totals(Builder $query): array
+    {
         $fila = $query
             ->selectRaw('coalesce(sum(net_amount_cents), 0) as neto, coalesce(sum(dispatch_fees_cents), 0) as tarifas')
             ->reorder()

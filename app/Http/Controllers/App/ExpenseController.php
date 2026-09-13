@@ -88,18 +88,7 @@ final class ExpenseController
         ];
 
         $query = $this->scoped($checker, $actor, $scope);
-
-        if ($filters['status'] !== '') {
-            $query->where('expenses.status', $filters['status']);
-        }
-
-        if ($filters['load'] !== '') {
-            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['load']).'%';
-            $query->whereExists(fn ($q) => $q->select(DB::raw(1))
-                ->from('loads')
-                ->whereColumn('loads.id', 'expenses.load_id')
-                ->where('loads.load_number', 'like', $term));
-        }
+        $this->applyFilters($query, $filters);
 
         $page = $query
             ->orderByDesc('expenses.created_at')
@@ -128,7 +117,12 @@ final class ExpenseController
             'statuses' => self::STATUSES,
             // Lo que de verdad importa de un listado de gastos: cuánto hay
             // esperando a que alguien lo mire, y cuánto ya cuenta en el dinero.
-            'totals' => $this->totals($this->scoped($checker, $actor, $scope)),
+            // La MISMA consulta que la lista, filtros incluidos. Antes se
+            // sumaba sobre el ámbito pelado: filtrar por «esperando revisión»
+            // dejaba la lista vacía y encima seguía poniendo 7.909,00 $.
+            'totals' => $this->totals(
+                tap($this->scoped($checker, $actor, $scope), fn (Builder $q) => $this->applyFilters($q, $filters)),
+            ),
             'can' => [
                 'submit' => $checker->can($actor, 'expense:submit', null, $policy)->allowed,
                 'approve' => $checker->can($actor, 'expense:approve', null, $policy)->allowed,
@@ -588,6 +582,37 @@ final class ExpenseController
      * @param  Builder<Expense>  $query
      * @return array<string, int>
      */
+    /**
+     * Los filtros de esta pantalla, en UN sitio.
+     *
+     * Vivían en línea dentro de `index()`, y esa es la razón de que la fila de
+     * totales de arriba no los aplicara: la suma se construía desde
+     * `scoped()` por su cuenta y no tenía forma de reutilizarlos. Medido en la
+     * demostración, filtrar por «esperando revisión» dejaba la lista
+     * vacía y encima seguía poniendo «Ya cuenta en el cálculo 7.909,00 $».
+     *
+     * Una cifra de dinero encima de una lista que no la contiene es la peor
+     * versión de este defecto: un recuento desconcierta, una suma se apunta.
+     * Ver `docs/list-totals.md`.
+     *
+     * @param  Builder<Expense>  $query
+     * @param  array<string, string>  $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
+    {
+        if ($filters['status'] !== '') {
+            $query->where('expenses.status', $filters['status']);
+        }
+
+        if ($filters['load'] !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\%', '\_'], $filters['load']).'%';
+            $query->whereExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('loads')
+                ->whereColumn('loads.id', 'expenses.load_id')
+                ->where('loads.load_number', 'like', $term));
+        }
+    }
+
     private function totals(Builder $query): array
     {
         $filas = $query
