@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Notifications\Events;
 use Tests\Support\Source;
 
 /**
@@ -213,12 +214,13 @@ it('el aviso de firma vencida tiene un corte hacia atrás', function (): void {
 /* ── Los tres sucesos, con rótulo y con casilla ──────────────────────────── */
 
 it('los tres sucesos están en el catálogo de preferencias', function (): void {
-    // Un suceso que se manda y no está en EVENTS no tiene casilla: se manda y
-    // no se puede apagar.
-    $codigo = Source::sinComentarios(raizFirmas().'/app/Http/Controllers/App/NotificationController.php');
-
+    // Un suceso que se manda y no está en el catálogo no tiene casilla: se
+    // manda y no se puede apagar. Se mira el REGISTRO y no la fuente del
+    // controlador, que es donde vivía la lista antes de que se mudara a
+    // `Events::CATALOGO`.
     foreach (['signature.signed', 'signature.declined', 'signature.expired'] as $suceso) {
-        expect($codigo)->toContain("'{$suceso}'");
+        expect(Events::CATALOGO)->toHaveKey($suceso);
+        expect(Events::publico($suceso))->toBe(Events::OFICINA);
     }
 });
 

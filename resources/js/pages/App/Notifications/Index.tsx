@@ -155,6 +155,20 @@ function Preferencias({ events, preferences }: { events: string[]; preferences: 
       form.data.preferences.map((p, j) => (i === j ? { ...p, [campo]: valor } : p)),
     )
 
+  // Sin ningún suceso que pueda llegarle, una tabla vacía con dos columnas de
+  // casillas se lee como un fallo de carga. Y la lista NO puede ser la misma
+  // para todos: a un transportista o a un conductor no le llega ninguno de los
+  // avisos de la oficina, así que antes veía diecisiete interruptores que no
+  // encendían nada. Ver `App\Support\Notifications\Events`.
+  if (events.length === 0) {
+    return (
+      <div className="rounded border border-steel-200 bg-white p-4">
+        <p className="text-sm font-semibold text-carbon">{t('notifications.preferences.title')}</p>
+        <p className="mt-2 text-sm text-steel-700">{t('notifications.preferences.nothingForYou')}</p>
+      </div>
+    )
+  }
+
   return (
     <form
       onSubmit={(e) => {

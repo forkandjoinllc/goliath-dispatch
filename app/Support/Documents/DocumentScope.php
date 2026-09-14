@@ -165,4 +165,52 @@ final class DocumentScope
             default => false,
         };
     }
+
+    /**
+     * De qué transportista es este documento, si es de alguno.
+     *
+     * Es `forCarriers()` LEÍDO AL REVÉS: allí se pregunta «qué documentos son
+     * de estos transportistas» y aquí «de qué transportista es este
+     * documento». Las cuatro reglas tienen que ser las mismas cuatro —el
+     * transportista mismo, sus conductores por la tabla puente, y sus camiones
+     * y remolques por su `carrier_id`—, y hay un guardián que compara las dos
+     * direcciones porque una tabla que se lee en dos sentidos se desincroniza
+     * sin que nadie lo note.
+     *
+     * Devuelve null cuando el documento no cuelga de ningún transportista: una
+     * carga, por ejemplo. Eso NO es un error — es que no hay a quién avisar.
+     */
+    public static function carrierOf(Document $documento): ?string
+    {
+        $tipo = (string) $documento->owner_type;
+        $id = (string) $documento->owner_id;
+
+        if ($id === '') {
+            return null;
+        }
+
+        if ($tipo === 'carrier') {
+            return $id;
+        }
+
+        if ($tipo === 'driver') {
+            $valor = DB::table('driver_carrier_relationships')
+                ->where('driver_id', $id)
+                ->whereNull('deleted_at')
+                ->value('carrier_id');
+
+            return $valor === null ? null : (string) $valor;
+        }
+
+        if ($tipo === 'truck' || $tipo === 'trailer') {
+            $valor = DB::table($tipo === 'truck' ? 'trucks' : 'trailers')
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->value('carrier_id');
+
+            return $valor === null ? null : (string) $valor;
+        }
+
+        return null;
+    }
 }

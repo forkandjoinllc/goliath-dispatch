@@ -21,7 +21,8 @@
         "inApp": "En la aplicación",
         "email": "Correo",
         "saved": "Guardado.",
-        "save": "Guardar"
+        "save": "Guardar",
+        "nothingForYou": "Por ahora no hay ningún aviso configurable para su cuenta. Los avisos de esta pantalla son los de la oficina de despacho; si le corresponde alguno, aparecerá aquí."
     },
     "events": {
         "carrier": {
@@ -38,6 +39,10 @@
             "expired": {
                 "title": "Documento caducado: {title}",
                 "body": "«{title}» caducó el {date}. Hasta que se suba y se apruebe una versión vigente, cuenta como no presentado."
+            },
+            "rejected": {
+                "title": "Le rechazaron un documento: {title}",
+                "body": "«{title}» no se aceptó. El motivo: {reason}. Suba una versión corregida."
             }
         },
         "invoice": {
@@ -109,6 +114,12 @@
                     "body": "La confirmación que se le mandó a {carrier} el {date} sigue sin respuesta. Nadie ha comprometido esa tarifa y la carga está esperando."
                 }
             }
+        },
+        "onboarding": {
+            "corrections_required": {
+                "title": "Su incorporación necesita correcciones",
+                "body": "Antes de continuar hay que corregir esto: {notes}"
+            }
         }
     },
     "eventNames": {
@@ -117,7 +128,8 @@
         },
         "document": {
             "expiring": "Documentos que caducan",
-            "expired": "Documentos ya caducados"
+            "expired": "Documentos ya caducados",
+            "rejected": "Documentos que le rechazan"
         },
         "invoice": {
             "overdue": "Facturas vencidas"
@@ -146,6 +158,9 @@
                 "changes_requested": "Cambios pedidos en la tarifa",
                 "unanswered": "Confirmaciones de tarifa que nadie contestó"
             }
+        },
+        "onboarding": {
+            "corrections_required": "Correcciones en su incorporación"
         }
     },
     "flash": {

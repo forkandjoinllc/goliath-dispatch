@@ -141,13 +141,23 @@ it('guardar preferencias de aviso comprueba el permiso', function () {
     // Lo que cambia es que ahora una denegación explícita sirve para algo.
     signIn($this->scenario, Role::Dispatcher);
 
+    // `subscription.trial_ending` y NO `invoice.overdue`.
+    //
+    // La prueba guardaba la preferencia de un aviso que a un despachador NO
+    // PUEDE LLEGARLE: `Notifier` manda por permiso con alcance de empresa o
+    // más, y el despachador tiene `invoice:read` con alcance asignado. Pasaba
+    // porque la pantalla ofrecía los diecinueve a todo el mundo y la validación
+    // los aceptaba todos; ahora las dos se estrechan a lo que puede llegarle.
+    //
+    // Lo que esto destapa —y no arregla este lote— es que un despachador solo
+    // puede recibir DOS de los diecinueve. Ver `docs/carrier-notices.md`.
     $this->post('/notification-preferences', [
         'preferences' => [
-            ['event_key' => 'invoice.overdue', 'in_app' => true, 'email' => false],
+            ['event_key' => 'subscription.trial_ending', 'in_app' => true, 'email' => false],
         ],
     ])->assertRedirect();
 
-    expect(DB::table('notification_preferences')->where('event_key', 'invoice.overdue')->count())->toBe(1);
+    expect(DB::table('notification_preferences')->where('event_key', 'subscription.trial_ending')->count())->toBe(1);
 });
 
 it('una denegación explícita de las preferencias ahora sirve para algo', function () {

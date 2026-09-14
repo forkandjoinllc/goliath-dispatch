@@ -21,7 +21,8 @@
         "inApp": "In the app",
         "email": "Email",
         "saved": "Saved.",
-        "save": "Save"
+        "save": "Save",
+        "nothingForYou": "There are no notifications to configure for your account yet. The notices on this screen are the dispatch office ones; if any apply to you, they will appear here."
     },
     "events": {
         "carrier": {
@@ -38,6 +39,10 @@
             "expired": {
                 "title": "Document expired: {title}",
                 "body": "“{title}” expired on {date}. Until a current version is uploaded and approved, it counts as missing."
+            },
+            "rejected": {
+                "title": "A document of yours was rejected: {title}",
+                "body": "\"{title}\" was not accepted. The reason: {reason}. Please upload a corrected version."
             }
         },
         "invoice": {
@@ -109,6 +114,12 @@
                     "body": "The confirmation sent to {carrier} on {date} has had no answer. Nothing has committed that rate, and the load is waiting."
                 }
             }
+        },
+        "onboarding": {
+            "corrections_required": {
+                "title": "Your onboarding needs corrections",
+                "body": "Before it can continue, this needs fixing: {notes}"
+            }
         }
     },
     "eventNames": {
@@ -117,7 +128,8 @@
         },
         "document": {
             "expiring": "Documents expiring",
-            "expired": "Documents already expired"
+            "expired": "Documents already expired",
+            "rejected": "Documents rejected back to you"
         },
         "invoice": {
             "overdue": "Overdue invoices"
@@ -146,6 +158,9 @@
                 "changes_requested": "Rate changes requested",
                 "unanswered": "Rate confirmations nobody answered"
             }
+        },
+        "onboarding": {
+            "corrections_required": "Corrections on your onboarding"
         }
     },
     "flash": {

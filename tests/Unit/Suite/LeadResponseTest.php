@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Notifications\Events;
 use Tests\Support\Source;
 
 /**
@@ -217,12 +218,19 @@ it('el barrido usa el día hábil y no un subDay pelado', function (): void {
 /* ── Los dos sucesos tienen rótulo en los dos idiomas ────────────────────── */
 
 it('los dos sucesos nuevos están en el catálogo de la pantalla de avisos', function (): void {
-    // Un suceso que se escribe y no está en EVENTS no tiene casilla de
+    // Un suceso que se escribe y no está en el catálogo no tiene casilla de
     // preferencia: se manda y no se puede apagar.
-    $codigo = Source::sinComentarios(raizProspectos().'/app/Http/Controllers/App/NotificationController.php');
+    //
+    // Se mira el REGISTRO y no la fuente del controlador. La lista vivía
+    // escrita a mano ahí dentro —la misma para todos los roles, incluidos los
+    // que no pueden recibir nada— y se mudó a `Events::CATALOGO`, que es quien
+    // decide además a quién se le enseña cada interruptor.
+    expect(Events::CATALOGO)->toHaveKey('lead.received');
+    expect(Events::CATALOGO)->toHaveKey('lead.unattended');
 
-    expect($codigo)->toContain("'lead.received'")
-        ->and($codigo)->toContain("'lead.unattended'");
+    // Y le llegan a la oficina: son prospectos, no cosas de un transportista.
+    expect(Events::publico('lead.received'))->toBe(Events::OFICINA);
+    expect(Events::publico('lead.unattended'))->toBe(Events::OFICINA);
 });
 
 it('los dos sucesos tienen título, cuerpo y nombre en inglés y en español', function (): void {

@@ -14,6 +14,8 @@ use App\Models\Carrier;
 use App\Services\Fmcsa\FmcsaVerifier;
 use App\Support\Audit;
 use App\Support\Fmcsa\Revalidation;
+use App\Support\Notifications\Events;
+use App\Support\Notifications\Notifier;
 use App\Support\Onboarding\Transitions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -165,6 +167,27 @@ final class CarrierOnboardingController
                 reason: $reason === '' ? null : $reason,
             );
         });
+
+        // Pedir correcciones es hablarle al transportista: se le exige un
+        // motivo por escrito y hasta aquí ese texto se quedaba en la ficha,
+        // esperando a que él pasara por allí. Se avisa FUERA de la
+        // transacción: un fallo al avisar no puede deshacer una decisión ya
+        // tomada.
+        if ($action === 'corrections_required') {
+            Notifier::toCarrier(
+                tenantId: (string) $model->tenant_id,
+                carrierId: (string) $model->id,
+                permission: (string) Events::permiso('onboarding.corrections_required'),
+                eventKey: 'onboarding.corrections_required',
+                // Por MOMENTO y no por alta: pedir correcciones dos veces son
+                // dos noticias, y la segunda importa tanto como la primera.
+                dedupeKey: 'onboarding.corrections_required:'.$onboarding->id.':'.$now->format('YmdHis'),
+                params: ['notes' => $reason],
+                actionUrl: '/carriers/'.$model->id,
+                subjectType: 'carrier',
+                subjectId: (string) $model->id,
+            );
+        }
 
         return back()->with('success', __('carriers.onboarding.moved', [
             'status' => __("nav.status.onboarding.{$this->camel($to->value)}"),

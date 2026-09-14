@@ -102,6 +102,80 @@ final class Notifier
     }
 
     /**
+     * Avisa a los usuarios de UN transportista, y de nadie más.
+     *
+     * ## Por qué hacía falta una vía aparte
+     *
+     * `toPermissionHolders()` elige destinatario por permiso con alcance de
+     * empresa o más, y eso deja fuera al transportista a propósito: su
+     * `invoice:read` tiene alcance de transportista, y mandarle «hay facturas
+     * vencidas» le contaría que existen las de los demás. La regla es correcta
+     * y no se toca.
+     *
+     * Lo que faltaba es la otra mitad: avisarle de LO SUYO. Al rechazarle un
+     * documento, la pantalla le exige al revisor diez caracteres de motivo
+     * porque «el transportista lo va a leer» — y no había nada que se lo
+     * dijera.
+     *
+     * ## El aislamiento, aquí y no en quien llama
+     *
+     * Los destinatarios salen de `user_tenant_memberships` con las TRES
+     * condiciones juntas: la empresa, el rol transportista y ese `carrier_id`.
+     * Quien llama pasa un id; si ese id fuera de otra empresa, el filtro por
+     * `tenant_id` no devuelve a nadie en vez de devolver a los de la otra.
+     *
+     * Y el permiso se comprueba igual que en la otra vía: un aviso sobre algo
+     * que quien lo recibe no puede abrir es una campana que suena para nada.
+     *
+     * @param  array<string, string|int>  $params  sustituciones del texto
+     * @return int cuántos avisos NUEVOS se escribieron
+     */
+    public static function toCarrier(
+        string $tenantId,
+        string $carrierId,
+        string $permission,
+        string $eventKey,
+        string $dedupeKey,
+        array $params = [],
+        ?string $actionUrl = null,
+        ?string $subjectType = null,
+        ?string $subjectId = null,
+    ): int {
+        $alcance = RoleMatrix::for(Role::Carrier)[$permission] ?? null;
+
+        if (! $alcance instanceof Scope || ! $alcance->atLeast(Scope::Carrier)) {
+            return 0;
+        }
+
+        $ids = DB::table('user_tenant_memberships')
+            ->where('tenant_id', $tenantId)
+            ->where('carrier_id', $carrierId)
+            ->where('role', Role::Carrier->value)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->pluck('user_id')
+            ->unique()
+            ->all();
+
+        $escritos = 0;
+
+        foreach ($ids as $userId) {
+            $escritos += self::toUser(
+                $tenantId,
+                (string) $userId,
+                $eventKey,
+                $dedupeKey,
+                $params,
+                $actionUrl,
+                $subjectType,
+                $subjectId,
+            );
+        }
+
+        return $escritos;
+    }
+
+    /**
      * Avisa a una persona concreta.
      *
      * @param  array<string, string|int>  $params

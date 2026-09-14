@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Support\InertiaPage;
+use App\Support\Notifications\Events;
 use App\Support\Time\Viewer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -38,34 +39,24 @@ final class NotificationController
     private const PER_PAGE = 30;
 
     /**
-     * Los sucesos que hoy se pueden recibir.
+     * Los sucesos que ESTA PERSONA puede llegar a recibir.
      *
-     * Lista explícita y no `distinct` sobre la tabla: la pantalla de
-     * preferencias tiene que poder ofrecer un suceso que a esta persona todavía
-     * no le ha ocurrido nunca. Con `distinct`, quien no hubiera recibido nada no
-     * podría configurar nada.
+     * Aquí había una lista explícita de diecisiete, la misma para todos. A un
+     * transportista o a un conductor no puede llegarle ninguno de esos
+     * diecisiete —`Notifier` manda por permiso con alcance de empresa o más, y
+     * esos dos roles lo tienen todo con alcance de transportista o propio—, así
+     * que configuraban diecisiete cosas que nunca iban a ocurrirles.
      *
-     * @var list<string>
+     * Sigue SIN ser un `distinct` sobre lo ya recibido: la pantalla tiene que
+     * poder ofrecer un aviso que a esta persona todavía no le ha pasado nunca.
+     * Lo que se estrecha no es por historial, es por si le puede pasar.
+     *
+     * @return list<string>
      */
-    private const EVENTS = [
-        'document.expiring',
-        'document.expired',
-        'carrier.reverification_due',
-        'invoice.overdue',
-        'tracking.link_not_sent',
-        'lead.received',
-        'lead.unattended',
-        'lead.assigned',
-        'signature.signed',
-        'signature.declined',
-        'signature.expired',
-        'load.rateconf.accepted',
-        'load.rateconf.rejected',
-        'load.rateconf.changes_requested',
-        'load.rateconf.unanswered',
-        'subscription.trial_ending',
-        'subscription.trial_ended',
-    ];
+    private static function eventosDe(Actor $actor): array
+    {
+        return $actor->role === null ? [] : Events::paraRol($actor->role);
+    }
 
     public function index(Request $request, CurrentActor $current): Response
     {
@@ -111,7 +102,7 @@ final class NotificationController
                 ],
             ],
             'filters' => ['unread' => $soloSinLeer ? '1' : ''],
-            'events' => self::EVENTS,
+            'events' => self::eventosDe($actor),
             'preferences' => $this->preferences($actor),
         ]);
     }
@@ -173,7 +164,11 @@ final class NotificationController
 
         $data = $request->validate([
             'preferences' => ['required', 'array'],
-            'preferences.*.event_key' => ['required', 'string', Rule::in(self::EVENTS)],
+            // La validación se estrecha igual: guardar la preferencia de un
+            // suceso que no puede llegarle es escribir una fila que nadie va a
+            // leer nunca, y deja la pantalla y la tabla contando cosas
+            // distintas.
+            'preferences.*.event_key' => ['required', 'string', Rule::in(self::eventosDe($actor))],
             'preferences.*.in_app' => ['required', 'boolean'],
             'preferences.*.email' => ['required', 'boolean'],
         ]);
@@ -247,7 +242,7 @@ final class NotificationController
                 'inApp' => $fila === null ? true : (bool) $fila->in_app,
                 'email' => $fila === null ? true : (bool) $fila->email,
             ];
-        }, self::EVENTS);
+        }, self::eventosDe($actor));
     }
 
     /**
@@ -272,9 +267,13 @@ final class NotificationController
             ->count();
     }
 
-    /** @return list<string> */
+    /**
+     * Todos los sucesos del catálogo, para quien necesite la lista entera.
+     *
+     * @return list<string>
+     */
     public static function events(): array
     {
-        return self::EVENTS;
+        return array_keys(Events::CATALOGO);
     }
 }

@@ -2954,3 +2954,44 @@ se ha puesto la cifra nueva —se ha quitado la cifra—, porque lo que enseña 
 párrafo es por qué el diccionario se reparte, no cuánto mide hoy. Que ningún
 sabotaje pueda ponerse rojo contra un comentario es exactamente el motivo para
 no escribir en él nada que caduque.
+
+---
+
+## Lote «los interruptores del transportista» (`docs/carrier-notices.md`)
+
+**Un dato de prueba que no puede existir hace fallar la prueba por el motivo
+equivocado.** Planté un documento sin versión; la revisión reventó con
+«`document_version_id` cannot be null» y el fallo parecía del aviso nuevo.
+Un documento SIEMPRE tiene una versión —la revisión apunta a la que se miró—,
+así que el dato era imposible. Antes de dudar del código, comprobar que el
+escenario podría haber ocurrido de verdad.
+
+**Un registro nuevo audita lo que toca.** Al derivar por rol qué avisos puede
+recibir cada uno salió que el despachador solo puede recibir DOS de diecinueve.
+No lo rompió este lote: es la regla del emisor aplicada a un rol con alcance
+asignado, y llevaba así desde siempre. Una lista escrita a mano no contesta esa
+pregunta; una derivada la contesta sin que se la hagas.
+
+**Una prueba que pasaba puede estar pasando por lo que el lote viene a
+arreglar.** `DocumentDeleteTest` guardaba la preferencia de `invoice.overdue`
+para un DESPACHADOR — un aviso que no puede llegarle. Pasaba porque la pantalla
+ofrecía los diecinueve a todo el mundo. Se corrigió con el motivo escrito dentro,
+no se relajó la regla nueva para que la prueba vieja siguiera verde.
+
+**Cuando la fuente de la verdad se muda, los guardianes que la leían se mudan
+con ella.** Dos guardianes de otros lotes comprobaban que sus sucesos estaban
+«en el catálogo» buscando la cadena en el CÓDIGO del controlador. La lista se
+fue a `Events::CATALOGO` y los dos se pusieron rojos — correctamente. Ahora
+preguntan al registro, y de paso comprueban a qué público va cada uno.
+
+**Dos sabotajes escaparon y los dos eran huecos míos**: nada medía que a un
+miembro suspendido no se le avisa, ni que la vía nueva exige el permiso. Las dos
+comprobaciones existían en el código y ninguna prueba las tocaba. Un sabotaje
+que escapa no dice «el código está mal»: dice «esa línea la escribí yo confiando
+en que se cumple».
+
+**El `dedupeKey` decide qué es una noticia distinta.** Para el rechazo va por
+VERSIÓN del documento —rechazar, corregir y volver a rechazar son dos noticias— y
+para las correcciones por MOMENTO. Con la clave puesta por documento, la segunda
+vez se habría tragado en silencio, que es la forma más cara de no avisar: parece
+que funciona.

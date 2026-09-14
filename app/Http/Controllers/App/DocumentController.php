@@ -21,6 +21,8 @@ use App\Support\Documents\Scanning;
 use App\Support\EnumValue;
 use App\Support\InertiaPage;
 use App\Support\Lists\FacetCounts;
+use App\Support\Notifications\Events;
+use App\Support\Notifications\Notifier;
 use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -462,6 +464,40 @@ final class DocumentController
                 reason: $data['notes'] ?? null,
             );
         });
+
+        // Y AHORA SÍ se le dice. Esta misma función lleva escrito desde hace
+        // lotes que «el transportista va a recibirlo», y exige diez caracteres
+        // de motivo en su nombre; hasta aquí el motivo se guardaba, se podía
+        // leer en la ficha del documento, y nada le decía que existiera. Se
+        // entera si abre ese documento, y el motivo por el que lo abriría es
+        // que alguien le hubiera dicho que lo mirara.
+        //
+        // Fuera de la transacción a propósito: un fallo al avisar no puede
+        // deshacer una revisión que ya está tomada. Es la misma regla que
+        // `Notifier` aplica con el correo.
+        if ($data['decision'] === 'rejected') {
+            $transportista = DocumentScope::carrierOf($model);
+
+            if ($transportista !== null) {
+                Notifier::toCarrier(
+                    tenantId: (string) $model->tenant_id,
+                    carrierId: $transportista,
+                    permission: (string) Events::permiso('document.rejected'),
+                    eventKey: 'document.rejected',
+                    // Por REVISIÓN y no por documento: si se rechaza, se sube
+                    // una corrección y se vuelve a rechazar, son dos noticias
+                    // distintas y las dos hay que darlas.
+                    dedupeKey: 'document.rejected:'.$model->id.':'.$model->current_version_id,
+                    params: [
+                        'title' => (string) $model->title,
+                        'reason' => (string) $data['notes'],
+                    ],
+                    actionUrl: '/documents/'.$model->id,
+                    subjectType: 'document',
+                    subjectId: (string) $model->id,
+                );
+            }
+        }
 
         return back()->with('success', __('documents.review.done'));
     }
