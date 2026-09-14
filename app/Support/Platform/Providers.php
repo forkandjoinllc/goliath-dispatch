@@ -202,18 +202,40 @@ final class Providers
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * SMS: declarado y sin construir.
+     *
+     * Esto decía `live` en cuanto hubiera un `TWILIO_SID` escrito, y era la
+     * mentira más cara de la lista porque se la cuenta al operador — a quien
+     * decide si algo está listo para producción. Escribir la variable no manda
+     * un solo mensaje: no hay clase que envíe, no hay interfaz `SmsSender` a la
+     * que atar nada, y no existe ruta de entrada para STOP ni para HELP.
+     *
+     * `mock` tampoco sirve: un simulado es un proveedor que responde como el
+     * de verdad sin salir a la red, y aquí no hay ni eso. `unbuilt` es su
+     * propio estado y su copia lo dice con todas las letras.
+     *
+     * El día que se construya, este método vuelve a mirar la configuración —y
+     * el guardián de `SmsPromiseTest` exigirá que la copia de la política de
+     * privacidad se actualice en el mismo lote.
+     *
+     * @return array<string, mixed>
+     */
     private static function sms(): array
     {
-        $sid = trim((string) Config::get('services.twilio.sid', ''));
-
         return [
             'key' => 'sms',
-            'interface' => 'Twilio',
-            'bound' => $sid === '' ? 'sin configurar' : 'twilio',
-            'status' => $sid === '' ? 'mock' : 'live',
-            'detail' => $sid === '' ? 'TWILIO_SID' : null,
-            'envVar' => $sid === '',
+            // La primera columna es lo único que identifica la fila, así que
+            // dice SMS: puesta con una raya, el operador veía una fila sin
+            // nombre y un estado. Y `bound` queda vacío en vez de llevar texto
+            // castellano —«sin construir»— que en la pantalla en inglés se
+            // quedaba sin traducir: quien dice el estado es la etiqueta, que
+            // sí está en los dos idiomas.
+            'interface' => 'SMS',
+            'bound' => '—',
+            'status' => 'unbuilt',
+            'detail' => null,
+            'envVar' => false,
         ];
     }
 

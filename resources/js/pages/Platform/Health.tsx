@@ -31,7 +31,7 @@ interface Proveedor {
   key: string
   interface: string
   bound: string
-  status: 'live' | 'mock' | 'fallback'
+  status: 'live' | 'mock' | 'fallback' | 'unbuilt'
   detail: string | null
   envVar: boolean
 }
@@ -126,15 +126,24 @@ export default function PlatformHealth({
                             ? 'bg-success-50 text-success-700'
                             : p.status === 'fallback'
                               ? 'bg-steel-100 text-steel-700'
-                              : 'bg-warning-50 text-warning-700'
+                              : p.status === 'unbuilt'
+                                ? 'bg-steel-100 text-steel-600'
+                                : 'bg-warning-50 text-warning-700'
                         }`}
                       >
+                        {/* `unbuilt` no es `mock`. Un simulado responde como
+                            el de verdad sin salir a la red; esto no responde
+                            nada porque no existe. SMS decía «Real» en cuanto
+                            hubiera un TWILIO_SID escrito, y quien lee esta
+                            tabla es quien decide si algo está listo. */}
                         {t(
                           p.status === 'live'
                             ? 'platform.health.providerLive'
                             : p.status === 'fallback'
                               ? 'platform.health.providerFallback'
-                              : 'platform.health.providerMock',
+                              : p.status === 'unbuilt'
+                                ? 'platform.health.providerUnbuilt'
+                                : 'platform.health.providerMock',
                         )}
                       </span>
                     </td>

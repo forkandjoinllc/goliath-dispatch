@@ -142,6 +142,7 @@
         "providersDescription": "What is bound to each interface in this installation. Read from the container when this page opens, not from a table — a table could say \"connected\" with the environment variable already gone.",
         "providerLive": "Live",
         "providerMock": "Mock",
+        "providerUnbuilt": "Not built",
         "providerMissingEnv": "{env} is missing",
         "providerBound": "Bound to {class}",
         "expirationsTitle": "Document expirations",

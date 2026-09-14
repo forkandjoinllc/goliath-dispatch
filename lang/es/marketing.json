@@ -42,7 +42,7 @@
     },
     "privacy": {
       "title": "Política de Privacidad",
-      "description": "Cómo Goliath Dispatch recopila, usa, conserva y protege los datos, incluido el consentimiento de SMS y de rastreo."
+      "description": "Cómo Goliath Dispatch recopila, usa, conserva y protege los datos, incluido el consentimiento de rastreo por GPS."
     },
     "terms": {
       "title": "Términos y Condiciones",
@@ -495,8 +495,8 @@
         "body": "Cuando la plataforma solicita una firma electrónica — por ejemplo, en un acuerdo de registro o una confirmación de tarifa — su acción de firmar electrónicamente constituye su consentimiento para realizar esa transacción por medios electrónicos, y se conserva un registro de la firma, incluyendo el firmante, la marca de tiempo, la dirección IP y el hash del documento, según se describe más abajo."
       },
       "smsConsentAndStop": {
-        "title": "Consentimiento de SMS y manejo de STOP",
-        "body": "Si opta por recibir mensajes de texto — actualizaciones del estado de la carga, códigos de verificación o avisos de cuenta — pueden aplicar tarifas estándar de mensajes y datos, y la frecuencia de los mensajes varía. Puede retirar su consentimiento en cualquier momento respondiendo STOP a cualquier mensaje, lo que suprime de inmediato el envío de más SMS a ese número; responder HELP devuelve la información de contacto de soporte. Retirar el consentimiento de SMS no afecta las notificaciones por correo electrónico ni dentro de la aplicación."
+        "title": "Mensajes de texto (SMS)",
+        "body": "Goliath Dispatch no envía mensajes de texto. No usamos su número de teléfono para SMS, no hay envíos de marketing ni operativos por ese medio, y por lo tanto no hay nada de lo que darse de baja: los avisos del sistema salen por correo electrónico y dentro de la aplicación. Guardamos los números de teléfono que usted introduce como datos de contacto de su empresa, sus clientes y sus conductores, y se tratan como el resto de los datos de contacto descritos en este documento. Si algún día enviáramos mensajes de texto, pediríamos su consentimiento antes del primer mensaje y esta política se actualizaría antes, no después."
       },
       "trackingLocationDriverConsent": {
         "title": "Rastreo, datos de ubicación y consentimiento del conductor",
@@ -508,7 +508,7 @@
       },
       "subprocessors": {
         "title": "Subencargados",
-        "body": "Utilizamos proveedores de servicios evaluados para operar la plataforma, incluyendo infraestructura de alojamiento y bases de datos, entrega de correo electrónico transaccional, entrega de SMS, procesamiento de pagos, mapas y rutas, verificación de autoridad de transportista motorizado (FMCSA), extracción de texto de documentos, y proveedores de datos de rastreo de cargas. Cada subencargado está sujeto a un acuerdo escrito que limita el uso de los datos a los servicios que nos presta."
+        "body": "Utilizamos proveedores de servicios evaluados para operar la plataforma: infraestructura de alojamiento y bases de datos, entrega de correo electrónico transaccional, procesamiento de pagos y verificación de autoridad de transportista motorizado (FMCSA). Cada subencargado está sujeto a un acuerdo escrito que limita el uso de los datos a los servicios que nos presta. Las rutas y el progreso de las cargas se calculan dentro de la aplicación a partir de las paradas que usted introduce: no se mandan a un proveedor de mapas ni a un proveedor de datos de rastreo. No usamos ningún servicio de mensajería de texto ni de extracción automática de texto de documentos."
       },
       "yourRights": {
         "title": "Sus derechos",

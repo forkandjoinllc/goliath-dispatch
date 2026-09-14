@@ -82,6 +82,49 @@ final class PublicClaims
         // Retención
         'privacy.sections.retention.body' => 'App\Support\Retention\Policy',
 
+        // Rastreo
+        //
+        // «Una vez despachada su carga, recibirá un enlace seguro por correo
+        // electrónico» es cierto: `LoadController` llama a `sendForLoad` al
+        // despachar, y cuando el envío no sale —cliente sin contacto, correo
+        // caído— hay un aviso que lo dice en vez de dejarlo en silencio. Entró
+        // en el registro al ampliar el vocabulario del detector: llevaba meses
+        // siendo una promesa sin declarar porque ninguna de sus palabras
+        // estaba en la lista.
+        'forClients.tracking.body' => 'App\Support\Tracking\CustomerLink',
+
+        // Subencargados
+        //
+        // La lista nombraba «entrega de SMS», «extracción de texto de
+        // documentos», «mapas y rutas» y «proveedores de datos de rastreo».
+        // Ninguno de los cuatro recibe un dato: no hay emisor de SMS, no hay
+        // OCR —`Equipment\Verification` lo dice: «las columnas existen y se
+        // quedan vacías»—, y tanto las rutas como el progreso los calcula la
+        // propia aplicación a partir de las paradas (`StopDerivedRouteProvider`,
+        // `StopDerivedTrackingProvider`). Decirle a alguien que sus datos van a
+        // cuatro empresas a las que no van hace que el documento entero deje
+        // de ser de fiar.
+        //
+        // El respaldo es `Platform\Providers` porque esa clase ES la lista: lo
+        // que la instalación tiene atado a una interfaz externa es,
+        // exactamente, lo que la política puede nombrar.
+        'privacy.sections.subprocessors.body' => 'App\Support\Platform\Providers',
+
+        // Mensajes de texto
+        //
+        // La sección decía que responder STOP «suprime de inmediato» el envío
+        // de más SMS y que HELP devuelve el contacto de soporte. No hay envío,
+        // no hay ruta que escuche un STOP y no hay proveedor atado: era una
+        // promesa sobre el trato de los mensajes de alguien, en la página que
+        // lee quien todavía no puede comprobar nada.
+        //
+        // Ahora dice lo que hay —que no se mandan mensajes de texto— y su
+        // respaldo es el registro de canales. Si alguien construye el envío,
+        // `Channels::SUPRIMIDOS` deja de nombrar `sms` y el guardián de
+        // `SmsPromiseTest` obliga a volver aquí antes de que salga el primer
+        // mensaje.
+        'privacy.sections.smsConsentAndStop.body' => 'App\Support\Notifications\Channels',
+
         // Comercial, sin código detrás a propósito: describe lo que hace una
         // persona con la solicitud, no lo que hace el sistema.
         'forClients.quoting.body' => self::LO_HACE_UNA_PERSONA,

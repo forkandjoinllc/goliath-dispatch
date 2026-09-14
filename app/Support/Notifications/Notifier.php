@@ -56,8 +56,16 @@ use Illuminate\Support\Str;
  */
 final class Notifier
 {
-    /** Canales que este lote entrega de verdad. `sms` está declarado y suprimido. */
-    private const CANALES = ['in_app', 'email'];
+    /**
+     * Canales que entregan de verdad.
+     *
+     * Esta línea decía «`sms` está declarado y suprimido» y era cierta — pero
+     * era un comentario privado en una clase interna mientras la política de
+     * privacidad pública, el panel de proveedores y la ficha del conductor
+     * decían lo contrario. Ahora el motivo vive donde lo puede leer un
+     * guardián: `Channels::SUPRIMIDOS`.
+     */
+    private const CANALES = Channels::ENTREGADOS;
 
     /**
      * Avisa a todas las personas de una empresa que tengan cierto permiso.

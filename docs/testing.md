@@ -2863,3 +2863,54 @@ llegaron con `\$` de más —Python no interpreta esa secuencia— y el arnés l
 marcó como «sintaxis rota», no como guardián que escapa. Sin esa comprobación
 habrían contado como verde falso. El arnés valida `php -l` y `json_decode` antes
 de creerse un resultado.
+
+---
+
+## Lote «el SMS que nadie manda» (`docs/sms-promise.md`)
+
+**Una aguja que aparece en el fichero que vigila se cumple sola.** Dos veces en
+este lote. La segunda fue así: para comprobar que el registro de promesas mira
+los dos idiomas, escribí `assertStringContainsString("...compromisosPublicos('en')...", $fuente)`
+— y esa cadena estaba, literalmente, en la línea de la propia comprobación. El
+sabotaje que devolvía el cálculo a un solo idioma salió verde. La aguja se arma
+ahora en dos trozos concatenados, que no casan con su propio texto. Si un
+guardián lee el fichero donde vive, hay que preguntarse si se está encontrando a
+sí mismo.
+
+**El detector de promesas es una lista de palabras, y una lista de palabras no
+sabe lo que no está en ella.** La política de privacidad prometió durante meses
+que responder STOP «suprime de inmediato» el envío de SMS, y `PublicClaimsTest`
+la dejó pasar porque «suprime» no estaba escrito en el patrón. Ampliar el
+vocabulario no basta: ahora hay un corpus de frases que el detector **tiene**
+que reconocer —con las dos originales dentro— y otro de frases que no debe
+marcar, para que estrecharlo otra vez se ponga rojo.
+
+**Un guardián con un argumento por omisión vigila la mitad.**
+`compromisosPublicos(string $idioma = 'es')` se llamaba sin argumento desde la
+comprobación general, así que una promesa escrita solo en la página inglesa no
+tenía que declarar nada — y la inglesa es la que lee un comprador en Estados
+Unidos. Las comprobaciones concretas de ese mismo fichero sí recorrían los dos
+idiomas: el hueco estaba en la general, que es la que cierra el resto.
+
+**Un sabotaje que hace el fichero MÁS largo no sabotea nada.** Para comprobar
+que un motivo de una línea no pasa, sustituí el motivo por «Pendiente. » + el
+motivo entero: siguió midiendo más de 80 caracteres y el guardián siguió verde.
+Lo apunté como escape del guardián cuando el fallo era del sabotaje. Un sabotaje
+tiene que producir exactamente el defecto que se teme, no algo parecido.
+
+**Inertia manda las traducciones con los escapes Unicode puestos.** Una prueba
+de característica que busque «no envía mensajes de texto» en la respuesta cruda
+NO CASA NUNCA: viene `no envía`. Lo peligroso no es el fallo —se ve— sino
+el acierto: una comprobación en negativo («que la página no diga X») con una
+tilde dentro pasa siempre, con el defecto puesto y sin él. `textoDeLaPagina()`
+deshace los escapes antes de mirar.
+
+**El guardián verde no es la pantalla.** Puse el estado nuevo del panel de
+proveedores, la prueba pasó, y la fila quedaba así: «— | Sin construir | sin
+construir». Sin nada que dijera que era la de SMS. Lo vi al abrir la pantalla en
+el recorrido, no en la suite. El recorrido bilingüe no es el trámite final: es
+la única comprobación que mira lo que mira una persona.
+
+**Un guardián nuevo es un barrido.** El de este lote encontró, en su primera
+pasada, una lista de subencargados de la política de privacidad que nombraba
+cuatro proveedores externos a los que no va un solo dato. No venía a mirar eso.

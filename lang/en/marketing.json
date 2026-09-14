@@ -42,7 +42,7 @@
     },
     "privacy": {
       "title": "Privacy Policy",
-      "description": "How Goliath Dispatch collects, uses, retains and protects data, including SMS and tracking consent."
+      "description": "How Goliath Dispatch collects, uses, retains and protects data, including GPS tracking consent."
     },
     "terms": {
       "title": "Terms and Conditions",
@@ -495,8 +495,8 @@
         "body": "Where the platform requests an electronic signature — for example, on an onboarding agreement or a rate confirmation — your action to sign electronically constitutes your consent to conduct that transaction by electronic means, and a record of the signature, including the signer, timestamp, IP address and document hash, is retained as described below."
       },
       "smsConsentAndStop": {
-        "title": "SMS consent and STOP handling",
-        "body": "If you opt in to receive text messages — load status updates, verification codes, or account notices — standard message and data rates may apply, and message frequency varies. You may withdraw consent at any time by replying STOP to any message, which immediately suppresses further SMS to that number; replying HELP returns support contact information. Withdrawing SMS consent does not affect email or in-app notifications."
+        "title": "Text messages (SMS)",
+        "body": "Goliath Dispatch does not send text messages. We do not use your phone number for SMS, there are no marketing or operational texts, and so there is nothing to opt out of: system notices go out by email and inside the application. We store the phone numbers you enter as contact details for your company, your customers and your drivers, and they are handled like the other contact data described in this document. If we ever do send text messages, we would ask for your consent before the first one, and this policy would be updated beforehand, not afterwards."
       },
       "trackingLocationDriverConsent": {
         "title": "Tracking, location data and driver consent",
@@ -508,7 +508,7 @@
       },
       "subprocessors": {
         "title": "Subprocessors",
-        "body": "We use vetted service providers to operate the platform, including hosting and database infrastructure, transactional email delivery, SMS delivery, payment processing, mapping and routing, motor carrier authority verification (FMCSA), document text extraction, and load tracking data providers. Each subprocessor is bound by a written agreement limiting its use of data to the services it provides us."
+        "body": "We use vetted service providers to operate the platform: hosting and database infrastructure, transactional email delivery, payment processing, and motor carrier authority verification (FMCSA). Each subprocessor is bound by a written agreement limiting its use of data to the services it provides us. Routes and load progress are computed inside the application from the stops you enter: they are not sent to a mapping provider or to a tracking data provider. We do not use any text messaging service or any automatic document text extraction service."
       },
       "yourRights": {
         "title": "Your rights",

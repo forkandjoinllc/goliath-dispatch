@@ -559,7 +559,6 @@ final class DriverController
             'trackingConsentAt' => Consent::vigente($tenantId, $cuenta)
                 ? $d->tracking_consent_granted_at?->toIso8601String()
                 : null,
-            'smsConsentAt' => $d->sms_consent_granted_at?->toIso8601String(),
             // Por la AFILIACIÓN y no por `drivers.user_id`: esa columna la
             // escribe el sembrador y nadie más, así que un conductor invitado
             // por el camino normal salía como «sin cuenta de acceso» teniéndola.

@@ -26,7 +26,6 @@ interface Props {
     verifiedAt: string | null
     verificationNotes: string | null
     trackingConsentAt: string | null
-    smsConsentAt: string | null
     hasLogin: boolean
     notes: string | null
     createdAt: string | null
@@ -266,11 +265,14 @@ export default function DriverShow({ driver, carriers, loads, can }: Props) {
                   ? t('drivers.detail.granted', { date: day(driver.trackingConsentAt) })
                   : t('drivers.detail.notGranted')}
               </Item>
-              <Item label={t('drivers.detail.smsConsent')}>
-                {driver.smsConsentAt
-                  ? t('drivers.detail.granted', { date: day(driver.smsConsentAt) })
-                  : t('drivers.detail.notGranted')}
-              </Item>
+              {/* Aquí había una fila de «consentimiento de SMS». Decía «No
+                  otorgado» para TODOS los conductores, siempre, porque nadie
+                  escribe nunca `drivers.sms_consent_granted_at`: no hay
+                  pantalla que lo pida ni proceso que lo guarde. Y puesta al
+                  lado del consentimiento de rastreo —que sí es real y sí se
+                  otorga— parecía igual de real, como si faltara pedirlo.
+                  Mientras no salga un SMS de esta aplicación, no hay nada que
+                  consentir. Ver `App\Support\Notifications\Channels`. */}
               <Item label={t('drivers.detail.hasLogin')}>
                 {driver.hasLogin ? t('common.labels.yes') : t('drivers.detail.noLogin')}
               </Item>

@@ -142,6 +142,7 @@
         "providersDescription": "Qué está atado a cada interfaz en esta instalación. Se lee del contenedor al abrir la pantalla, no de una tabla — una tabla podría decir «conectado» con la variable de entorno ya quitada.",
         "providerLive": "Real",
         "providerMock": "Simulado",
+        "providerUnbuilt": "Sin construir",
         "providerMissingEnv": "Falta {env}",
         "providerBound": "Atado a {class}",
         "expirationsTitle": "Vencimientos de documentos",

@@ -68,7 +68,6 @@
     "verifiedNever": "Not verified yet",
     "verificationNotes": "Notes from the review",
     "trackingConsent": "Location tracking",
-    "smsConsent": "SMS messages",
     "granted": "Granted {date}",
     "notGranted": "Not granted",
     "hasLogin": "Has a login",

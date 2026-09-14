@@ -40,7 +40,15 @@ function pareceCompromiso(string $texto): bool
     // «escort gate» solo en inglés salió verde por esto.
     return mb_strlen($texto) >= 40 && preg_match(
         '/autom[áa]tic|se verifica|se comprueba|no puede|bloquea|se avisa|marca de agua|cifrad|se guarda|se registra|nunca|siempre|antes de|se ejecuta|se calcul|se evalú|vigila'
-        .'|automatic|is checked|are checked|cannot|blocks?\b|watermark|encrypt|is kept|are kept|never|always|before (any|it|we|you)|is verified|are verified|watches|runs? automatically/iu',
+        .'|automatic|is checked|are checked|cannot|blocks?\b|watermark|encrypt|is kept|are kept|never|always|before (any|it|we|you)|is verified|are verified|watches|runs? automatically'
+        // Verbos de ENTREGA y de BAJA. Sin ellos, la política de privacidad
+        // pudo prometer durante meses que responder STOP «suprime de inmediato»
+        // el envío de más SMS —sin que exista un solo envío, ni ruta que
+        // escuche un STOP— y este guardián la dejó pasar sin pedirle respaldo.
+        // El detector es una lista de palabras: lo que no está en la lista no
+        // es una promesa PARA ÉL, por mucho que lo sea para quien la lee.
+        .'|suprime|de inmediato|al instante|responda [A-Z]{2,}|puede retirar|deja de recibir|se env[íi]a|recibir[áa]|le llega|se manda'
+        .'|suppress|immediately|reply [A-Z]{2,}|opt out|opts out|withdraw consent|stops? receiving|is sent|are sent|will receive|we send|we text/iu',
         $texto,
     ) === 1;
 }
@@ -103,7 +111,17 @@ function compromisosPublicos(string $idioma = 'es'): array
 it('cada promesa de la página pública declara qué la sostiene', function (): void {
     // El hueco por el que entró la primera afirmación falsa: escribir en la
     // página de ventas sin tener que enseñar dónde está cumplida.
-    $sinDeclarar = array_diff(array_keys(compromisosPublicos()), array_keys(PublicClaims::RESPALDOS));
+    // LAS DOS LENGUAS. Se llamaba sin argumento, así que solo miraba el
+    // castellano: una promesa escrita únicamente en la página inglesa —la que
+    // lee un comprador en Estados Unidos— no tenía que declarar nada. Las
+    // comprobaciones concretas de más abajo ya recorrían los dos idiomas; la
+    // del registro, que es la que cierra el hueco general, no.
+    $sinDeclarar = array_diff(
+        array_merge(array_keys(compromisosPublicos('es')), array_keys(compromisosPublicos('en'))),
+        array_keys(PublicClaims::RESPALDOS),
+    );
+
+    $sinDeclarar = array_values(array_unique($sinDeclarar));
 
     sort($sinDeclarar);
 
@@ -114,6 +132,82 @@ it('cada promesa de la página pública declara qué la sostiene', function (): 
         'Cada una va a PublicClaims::RESPALDOS con la clase que la cumple, o con',
         'PublicClaims::LO_HACE_UNA_PERSONA si describe trabajo humano y no una función.',
     ]));
+});
+
+/**
+ * Frases que el detector TIENE que reconocer, y frases que no.
+ *
+ * El detector es una lista de palabras, y una lista de palabras no sabe lo que
+ * no está en ella: la política de privacidad prometió durante meses que
+ * responder STOP «suprime de inmediato» el envío de más SMS, y este fichero la
+ * dejó pasar porque «suprime» no estaba escrito aquí. Ampliar el vocabulario
+ * sin dejar constancia de QUÉ tiene que ver deja el mismo agujero abierto para
+ * el siguiente que lo recorte.
+ *
+ * @return array<string, array{0: string, 1: bool}>
+ */
+function corpusDelDetector(): array
+{
+    return [
+        // Las dos que entraron por el hueco, tal como estaban escritas.
+        'STOP en castellano' => ['Puede retirar su consentimiento en cualquier momento respondiendo STOP a cualquier mensaje, lo que suprime de inmediato el envío de más SMS a ese número.', true],
+        'STOP en inglés' => ['You may withdraw consent at any time by replying STOP to any message, which immediately suppresses further SMS to that number.', true],
+        'entrega del enlace' => ['Una vez despachada su carga, recibirá un enlace seguro por correo electrónico — no un usuario y contraseña.', true],
+        'entrega en inglés' => ['Once your load is dispatched, a secure link is sent to you by email instead of a username and password.', true],
+
+        // Las de siempre, para que ampliar no rompa lo que ya veía.
+        'bloqueo' => ['El despacho se bloquea automáticamente cuando un documento obligatorio ha caducado, sin excepción para ningún rol.', true],
+        'cifrado' => ['Every document is encrypted at rest and access is checked against the role of whoever asks for it.', true],
+
+        // Y lo que NO es una promesa de funcionamiento: si el detector empieza
+        // a marcarlo, el registro se llena de ruido y deja de decir nada.
+        'descripción de oficio' => ['El transporte sobredimensionado exige planificación, y cada estado publica sus propias reglas de circulación.', false],
+        'saludo' => ['Somos una empresa de despacho con base en Texas que trabaja en inglés y en español todos los días del año.', false],
+    ];
+}
+
+it('el detector reconoce las promesas que una vez se le escaparon', function (): void {
+    foreach (corpusDelDetector() as $nombre => [$texto, $esPromesa]) {
+        expect(pareceCompromiso($texto))->toBe(
+            $esPromesa,
+            $esPromesa
+                ? "«{$nombre}» es una promesa y el detector no la ve"
+                : "«{$nombre}» no promete nada y el detector la marca",
+        );
+    }
+});
+
+it('el registro se calcula con los dos idiomas', function (): void {
+    // Se llamaba sin argumento —solo castellano— y una promesa escrita
+    // únicamente en la página inglesa no tenía que declarar nada. La página
+    // inglesa es la que lee un comprador en Estados Unidos.
+    $fuente = Source::compacta(raizPaginaPublica().'/tests/Unit/Suite/PublicClaimsTest.php');
+
+    // La EXPRESIÓN entera, no «que aparezca `compromisosPublicos('en')` en
+    // alguna parte del fichero»: con esa aguja floja, esta misma prueba —que
+    // lo llama tres líneas más abajo— se sostenía sola. Un sabotaje que
+    // devolvía el cálculo al castellano salía verde por eso, y lo enseñó.
+    // La aguja se ARMA en dos trozos a propósito. Escrita entera, aparecía
+    // literalmente en este fichero —en esta misma línea— y `compacta()`, que
+    // quita los espacios, la encontraba en su propio texto: la comprobación se
+    // cumplía sola y el sabotaje que devolvía el cálculo al castellano salía
+    // verde. Es la segunda vez en este lote que una aguja se autosatisface.
+    $aguja = "array_merge(array_keys(compromisosPublicos('es')),"
+        ."array_keys(compromisosPublicos('en')))";
+
+    test()->assertStringContainsString(
+        $aguja,
+        $fuente,
+        'el registro de promesas ha vuelto a calcularse con un solo idioma',
+    );
+
+    // Y que de verdad saquen listas distintas: si las dos lenguas dieran
+    // siempre lo mismo, mirar una sola no habría sido un hueco y esta
+    // comprobación no estaría midiendo nada.
+    $es = array_keys(compromisosPublicos('es'));
+    $en = array_keys(compromisosPublicos('en'));
+
+    expect(array_diff($es, $en) + array_diff($en, $es))->not->toBe([]);
 });
 
 it('una promesa funcional no puede declararse texto legal', function (): void {
