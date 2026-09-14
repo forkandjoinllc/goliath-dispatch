@@ -10,10 +10,18 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Carga los diccionarios de traducción para enviarlos al cliente.
  *
- * Lo importante aquí es lo que NO hace: no manda los 22 espacios de nombres a
- * cada página. Son 3.374 claves, unos 190 KB de JSON en dos idiomas, y una
- * página de marketing necesita tres de ellos. Enviarlo todo triplicaría el peso
- * del HTML inicial por comodidad del programador.
+ * Lo importante aquí es lo que NO hace: no manda todos los espacios de nombres
+ * a cada página. Son treinta y cuatro espacios vivos y más de cuatro mil claves
+ * en dos idiomas, y una página de marketing necesita tres de ellos. Enviarlo
+ * todo multiplicaría el peso del HTML inicial por comodidad del programador.
+ *
+ * Sin cifras exactas a propósito: decía «22 espacios, 3.374 claves» y para
+ * cuando alguien lo leyó eran 34 y 4.106. Un comentario con un número que se
+ * mueve envejece solo, y lo que enseña no es el número sino por qué se reparte.
+ *
+ * Aparte de esos viven los diccionarios PORTADOS, que ninguna pantalla carga:
+ * son la especificación de los dominios que faltan. Ver
+ * `tests/Unit/I18n/PortedDictionariesTest.php` y `docs/ported-dictionaries.md`.
  *
  * Cada página declara los espacios que usa y solo esos viajan.
  */

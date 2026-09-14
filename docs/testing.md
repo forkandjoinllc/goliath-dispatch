@@ -2914,3 +2914,43 @@ la única comprobación que mira lo que mira una persona.
 **Un guardián nuevo es un barrido.** El de este lote encontró, en su primera
 pasada, una lista de subencargados de la política de privacidad que nombraba
 cuatro proveedores externos a los que no va un solo dato. No venía a mirar eso.
+
+---
+
+## Lote «leer lo portado» (`docs/ported-dictionaries.md`)
+
+**Una lista escrita a mano dentro de un guardián envejece sin avisar.**
+`PortedDictionariesTest` sabía qué diccionarios había que repasar porque
+emparejaba `X.json` con `Xs.json`. El mayor de todos, `finance.json` —382
+claves—, no tiene plural: su dominio se construyó en `invoices`, `payments`,
+`settlements`… y por eso el guardián dijo durante meses que estaba todo
+repasado. Ahora la lista se DEDUCE del código: un portado es un espacio que
+ninguna pantalla declara, ningún `__()` lee y ningún `t()` cita.
+
+**Un guardián con tres patas y ninguna prueba por pata sujeta las que quiera.**
+El detector mira tres vías; borré la del servidor entera y la suite siguió
+verde, porque hoy todos los espacios llegan además por otra vía. Que no haya
+nadie que dependa de una pata HOY no es motivo para dejarla sin prueba: es
+justo cuando se rompe sin que nadie se entere. La función se partió en dos
+—una que lee el disco y otra pura— para poder darle a cada pata un texto de
+mentira y comprobarla sola.
+
+**`toContain($aguja, $mensaje)` busca el mensaje como SEGUNDA AGUJA.** Cuarta
+vez en este proyecto, y la primera en que las cuatro pruebas de una tabla
+fallaron a la vez diciendo «no contiene "la vía «pantalla» dejó de
+encontrarse"». Regla, ya sin matices: a `toContain` y a `toHaveKey` no se les
+pasa un segundo argumento nunca. Cuando haga falta un mensaje,
+`assertContains($aguja, $pajar, $mensaje)` o `assertArrayHasKey(...)`.
+
+**Una salida fácil sin guardián se toma.** Cuatro entradas del registro decían
+«Pendiente de repasar» y una lo decía en mayúsculas; nadie volvió. La
+comprobación nueva rechaza un repaso que diga «pendiente» o que no llegue a
+noventa caracteres — y lo primero que hizo fue ponerse roja contra una entrada
+que acababa de escribir yo.
+
+**Un número dentro de un comentario es una promesa que se rompe sola.**
+`Dictionary` decía «22 espacios de nombres, 3.374 claves»: son 34 y 4.106. No
+se ha puesto la cifra nueva —se ha quitado la cifra—, porque lo que enseña ese
+párrafo es por qué el diccionario se reparte, no cuánto mide hoy. Que ningún
+sabotaje pueda ponerse rojo contra un comentario es exactamente el motivo para
+no escribir en él nada que caduque.
