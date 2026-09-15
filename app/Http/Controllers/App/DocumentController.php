@@ -13,6 +13,7 @@ use App\Enums\Scope;
 use App\Models\Document;
 use App\Support\Audit;
 use App\Support\Compliance\ExpiryWindow;
+use App\Support\Documents\DocumentAudience;
 use App\Support\Documents\DocumentOwners;
 use App\Support\Documents\DocumentScope;
 use App\Support\Documents\DocumentTypes;
@@ -177,6 +178,22 @@ final class DocumentController
             // ajustes, con 30 por defecto: quien planeaba la renovación contaba
             // con quince días que el producto no le daba.
             'warnDays' => ExpiryWindow::days(),
+            // A QUIÉN se le avisa de verdad, por dueño, para ESTE lector.
+            //
+            // El texto de debajo de la fecha decía «se le avisará N días antes»
+            // a todo el que subía, y el aviso solo salía a quien tiene
+            // `document:read` con alcance de EMPRESA: administrador y
+            // contabilidad. El transportista, el conductor y el despachador
+            // leían una promesa que ningún camino podía cumplir.
+            //
+            // Ahora el transportista y el conductor sí lo reciben —ver
+            // `DocumentAudience` y el barrido—, y al despachador se le dice la
+            // verdad: el aviso va a la oficina y no a él. La promesa se calcula
+            // con las reglas del emisor y no con una copia parecida.
+            'notifiedOwners' => array_values(array_filter(
+                DocumentOwners::selectable(),
+                static fn (string $tipo): bool => DocumentAudience::avisaAlActor($actor, $tipo),
+            )),
             'requiredTypes' => [
                 'carrier' => DocumentTypes::requiredFor('carrier'),
                 'driver' => DocumentTypes::requiredFor('driver'),

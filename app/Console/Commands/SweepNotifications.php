@@ -7,9 +7,12 @@ namespace App\Console\Commands;
 use App\Enums\LoadStatus;
 use App\Services\Fmcsa\FmcsaDirectory;
 use App\Services\Fmcsa\FmcsaVerifier;
+use App\Support\Documents\DocumentAudience;
+use App\Support\Documents\DocumentScope;
 use App\Support\Fmcsa\Revalidation;
 use App\Support\Leads\Arrival;
 use App\Support\Loads\RateResponse;
+use App\Support\Notifications\Events;
 use App\Support\Notifications\Notifier;
 use App\Support\Platform\Expirations;
 use App\Support\Platform\ScheduledRuns;
@@ -224,7 +227,10 @@ final class SweepNotifications extends Command
             ->where('expiration_date', '<=', $limite)
             ->orderBy('expiration_date')
             ->limit(500)
-            ->get(['id', 'title', 'expiration_date']);
+            // El dueño entra en la consulta desde el lote del aviso de
+            // caducidad: sin él no se puede saber a quién más avisar, y
+            // «a quién más» era todo el defecto.
+            ->get(['id', 'title', 'expiration_date', 'owner_type', 'owner_id', 'tenant_id']);
 
         $escritos = 0;
 
@@ -269,6 +275,85 @@ final class SweepNotifications extends Command
                 dedupeKey: ($caducado ? 'document.expired:' : 'document.expiring:')."{$documento->id}:{$vence}",
                 params: ['title' => (string) $documento->title, 'date' => $vence],
                 actionUrl: '/documents?expiring=1',
+                subjectType: 'document',
+                subjectId: (string) $documento->id,
+            );
+
+            $escritos += $this->avisarAlDuenoDelPapel($tenantId, $documento, $caducado, $vence);
+        }
+
+        return $escritos;
+    }
+
+    /**
+     * El mismo aviso, a quien tiene que renovar el papel.
+     *
+     * Esto no existía. `toPermissionHolders` exige alcance de empresa —por un
+     * motivo que es bueno para los avisos AGREGADOS, y que aquí no aplica: «su
+     * certificado de seguro vence el 3 de marzo» habla de UN papel que es suyo
+     * entero— así que el aviso solo llegaba a administrador y contabilidad,
+     * mientras el formulario de subida le prometía a todo el que sube que «se
+     * le avisará N días antes».
+     *
+     * El caso caro es el conductor con su tarjeta médica: leía la promesa,
+     * dejaba de vigilar la fecha, y se enteraba el día que la puerta de
+     * cumplimiento le cerró la carga.
+     *
+     * Quién recibe qué lo decide `DocumentAudience`, y la clave de
+     * deduplicación es la MISMA que la de la oficina: el índice único es por
+     * (clave, usuario, canal), así que una clave compartida no pisa el aviso de
+     * nadie y sí impide que el mismo barrido avise dos veces a la misma persona.
+     */
+    private function avisarAlDuenoDelPapel(string $tenantId, object $documento, bool $caducado, string $vence): int
+    {
+        $tipo = (string) $documento->owner_type;
+
+        if (! DocumentAudience::tieneAvisados($tipo)) {
+            return 0;
+        }
+
+        $suceso = $caducado ? 'document.expired' : 'document.expiring';
+        $clave = ($caducado ? 'document.expired:' : 'document.expiring:')."{$documento->id}:{$vence}";
+        $permiso = (string) Events::permiso($suceso);
+
+        $params = ['title' => (string) $documento->title, 'date' => $vence];
+
+        // Al papel mismo y no a la lista filtrada: quien tiene que renovarlo
+        // necesita ver ESE documento, no una lista donde buscarlo.
+        $url = '/documents/'.$documento->id;
+
+        $escritos = 0;
+
+        $transportista = DocumentScope::carrierOf($documento);
+
+        if ($transportista !== null) {
+            $escritos += Notifier::toCarrier(
+                tenantId: $tenantId,
+                carrierId: $transportista,
+                permission: $permiso,
+                eventKey: $suceso,
+                dedupeKey: $clave,
+                params: $params,
+                actionUrl: $url,
+                subjectType: 'document',
+                subjectId: (string) $documento->id,
+            );
+        }
+
+        // Y la persona, cuando el papel es de una persona. Que su empresa se
+        // entere no es lo mismo: la licencia la renueva él, en una oficina de
+        // tráfico, con su cita.
+        $persona = DocumentAudience::personaDe($documento);
+
+        if ($persona !== null) {
+            $escritos += Notifier::toOwner(
+                tenantId: $tenantId,
+                userId: $persona,
+                permission: $permiso,
+                eventKey: $suceso,
+                dedupeKey: $clave,
+                params: $params,
+                actionUrl: $url,
                 subjectType: 'document',
                 subjectId: (string) $documento->id,
             );

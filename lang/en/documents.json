@@ -139,6 +139,8 @@
         "expirationHintPick": "You will be warned {days} days before. Whether it also blocks dispatch on expiry depends on the type — pick one above.",
         "expirationHintBlocks": "You will be warned {days} days before, and the dispatch gate blocks the moment it expires.",
         "expirationHintWarns": "You will be warned {days} days before. This type closes no gate when it expires: loads keep dispatching.",
+        "expirationHintOffice": "The office will be warned {days} days before. This notice does not reach you: today it only goes to whoever handles the whole company’s documents, so the date is still yours to watch.",
+        "expirationHintOfficeBlocks": "The office will be warned {days} days before, and the dispatch gate blocks the moment it expires. That notice does not reach you: the date is still yours to watch.",
         "unknownType": "That document type does not exist.",
         "ownerNotAllowed": "You cannot upload documents for that owner.",
         "ownerNotFound": "That owner does not exist in this company.",

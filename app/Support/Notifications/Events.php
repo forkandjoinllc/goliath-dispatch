@@ -66,11 +66,17 @@ final class Events
      * puede abrir es una campana que suena para nada, y en el caso de la
      * oficina es además cómo se evita contarle a un rol lo que no le toca.
      *
-     * @var array<string, array{0: string, 1: string}>
+     * El público puede ser UNO o VARIOS. Que fuera siempre uno era una
+     * limitación de este registro, no del dominio: el vencimiento de un
+     * documento le importa a la oficina Y al dueño del papel, y mientras aquí
+     * solo cupo «oficina» el dueño no se enteraba de que su licencia caducaba
+     * — con la pantalla prometiéndole que sí. Ver `docs/expiry-audience.md`.
+     *
+     * @var array<string, array{0: string, 1: string|list<string>}>
      */
     public const CATALOGO = [
-        'document.expiring' => ['document:read', self::OFICINA],
-        'document.expired' => ['document:read', self::OFICINA],
+        'document.expiring' => ['document:read', [self::OFICINA, self::TRANSPORTISTA, self::PROPIO]],
+        'document.expired' => ['document:read', [self::OFICINA, self::TRANSPORTISTA, self::PROPIO]],
         'document.rejected' => ['document:read', self::TRANSPORTISTA],
         'carrier.reverification_due' => ['carrier:read', self::OFICINA],
         'onboarding.corrections_required' => ['carrier:onboarding:read', self::TRANSPORTISTA],
@@ -105,7 +111,7 @@ final class Events
         $permisos = RoleMatrix::for($rol);
         $suyos = [];
 
-        foreach (self::CATALOGO as $suceso => [$permiso, $publico]) {
+        foreach (self::CATALOGO as $suceso => [$permiso, $_]) {
             $alcance = $permisos[$permiso] ?? null;
 
             if (! $alcance instanceof Scope) {
@@ -123,12 +129,18 @@ final class Events
             //  - al dueño, cualquier alcance vale: la cosa es suya por
             //    construcción, y lo único que hay que comprobar es que su rol
             //    pueda leerla.
-            $llega = match ($publico) {
-                self::OFICINA => $alcance->atLeast(Scope::Tenant),
-                self::TRANSPORTISTA => $rol === Role::Carrier && $alcance->atLeast(Scope::Carrier),
-                self::PROPIO => true,
-                default => false,
-            };
+            // Con CUALQUIERA de sus públicos basta: un suceso que le llega al
+            // dueño le llega, aunque su rol no sea el de la oficina.
+            $llega = false;
+
+            foreach (self::publicos($suceso) as $publico) {
+                $llega = $llega || match ($publico) {
+                    self::OFICINA => $alcance->atLeast(Scope::Tenant),
+                    self::TRANSPORTISTA => $rol === Role::Carrier && $alcance->atLeast(Scope::Carrier),
+                    self::PROPIO => true,
+                    default => false,
+                };
+            }
 
             if ($llega) {
                 $suyos[] = $suceso;
@@ -144,9 +156,25 @@ final class Events
         return self::CATALOGO[$suceso][0] ?? null;
     }
 
+    /**
+     * A quién le llega este suceso, siempre como lista.
+     *
+     * @return list<string>
+     */
+    public static function publicos(string $suceso): array
+    {
+        $publico = self::CATALOGO[$suceso][1] ?? null;
+
+        if ($publico === null) {
+            return [];
+        }
+
+        return is_array($publico) ? array_values($publico) : [$publico];
+    }
+
     /** A quién le llega este suceso. */
     public static function publico(string $suceso): ?string
     {
-        return self::CATALOGO[$suceso][1] ?? null;
+        return self::publicos($suceso)[0] ?? null;
     }
 }

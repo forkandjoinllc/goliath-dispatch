@@ -243,8 +243,14 @@ it('el aviso sale en el idioma de quien lo recibe', function () {
 it('el transportista ve en sus preferencias lo suyo y nada de la oficina', function () {
     signIn($this->scenario, Role::Carrier);
 
+    // Los dos del vencimiento entraron con el lote del aviso de caducidad: el
+    // formulario de subida le prometía «se le avisará N días antes» y no había
+    // ningún camino por el que le llegara. Ver `docs/expiry-audience.md`.
     $this->get('/notifications')->assertInertia(fn ($page) => $page
-        ->where('events', ['document.rejected', 'onboarding.corrections_required', 'expense.rejected']));
+        ->where('events', [
+            'document.expiring', 'document.expired',
+            'document.rejected', 'onboarding.corrections_required', 'expense.rejected',
+        ]));
 });
 
 it('la oficina sigue viendo las suyas', function () {

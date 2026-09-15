@@ -139,6 +139,8 @@
         "expirationHintPick": "Se le avisará {days} días antes. Si además bloquea el despacho al vencer depende del tipo — elija uno arriba.",
         "expirationHintBlocks": "Se le avisará {days} días antes, y la puerta de despacho bloquea en cuanto vence.",
         "expirationHintWarns": "Se le avisará {days} días antes. Este tipo no cierra ninguna puerta al vencer: las cargas se siguen despachando.",
+        "expirationHintOffice": "Se avisará a la oficina {days} días antes. Este aviso no le llega a usted: hoy solo sale a quien lleva los documentos de toda la empresa, así que la fecha la sigue vigilando usted.",
+        "expirationHintOfficeBlocks": "Se avisará a la oficina {days} días antes, y la puerta de despacho bloquea en cuanto vence. Ese aviso no le llega a usted: la fecha la sigue vigilando usted.",
         "unknownType": "Ese tipo de documento no existe.",
         "ownerNotAllowed": "No puede subir documentos para ese dueño.",
         "ownerNotFound": "Ese dueño no existe en esta empresa.",

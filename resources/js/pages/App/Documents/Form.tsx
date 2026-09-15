@@ -16,13 +16,29 @@ interface Props {
   requiredTypes: Record<OwnerType, string[]>
   expiryEffects: Record<string, 'blocks' | 'warns'>
   warnDays: number
+  /**
+   * Los dueños cuyo vencimiento SE LE AVISA a quien está mirando esta pantalla.
+   *
+   * Lo calcula el servidor con las reglas del emisor. Antes no existía y el
+   * texto de debajo de la fecha prometía el aviso a todo el mundo: al
+   * despachador, que no entra en `recipients()`, y al transportista y al
+   * conductor, a los que entonces no llegaba por ningún camino.
+   */
+  notifiedOwners: string[]
   /** Los tipos que el dueño elegido YA tiene. Llega por recarga parcial. */
   usedTypes?: UsedType[]
 }
 
-export default function DocumentForm({ owners, typesByOwner, requiredTypes, expiryEffects, warnDays, usedTypes = [] }: Props) {
+export default function DocumentForm({
+  owners, typesByOwner, requiredTypes, expiryEffects, warnDays, notifiedOwners, usedTypes = [],
+}: Props) {
   const { t } = useI18n()
   const [ownerType, setOwnerType] = useState<OwnerType>('carrier')
+
+  // Si a QUIEN MIRA le va a llegar el aviso de este dueño. El servidor manda la
+  // lista; la pantalla no la deduce del rol, que sería la copia parecida de
+  // siempre.
+  const avisan = notifiedOwners.includes(ownerType)
 
   const form = useForm({
     file: null as File | null,
@@ -229,16 +245,27 @@ export default function DocumentForm({ owners, typesByOwner, requiredTypes, expi
                   Decía «se le avisará N días antes, y la puerta de despacho
                   bloquea en cuanto vence» para los diecisiete tipos de este
                   desplegable, y la puerta solo mira los tres obligatorios del
-                  transportista. La primera mitad era verdad siempre; la
-                  segunda, en tres de diecisiete — y una media promesa es peor
-                  que una falsa, porque la mitad que se cumple hace creíble la
-                  otra y quien la lee deja de vigilar la fecha a mano. */}
+                  transportista. Una media promesa es peor que una falsa, porque
+                  la mitad que se cumple hace creíble la otra y quien la lee deja
+                  de vigilar la fecha a mano.
+
+                  El lote que arregló la segunda mitad escribió aquí que «la
+                  primera mitad era verdad siempre». NO LO ERA: el aviso salía
+                  solo a quien tiene document:read con alcance de empresa, y
+                  esta pantalla la abre también el transportista, el conductor y
+                  el despachador. Ahora los dos primeros lo reciben de verdad y
+                  al tercero se le dice a dónde va. Ver
+                  `docs/expiry-audience.md`. */}
               <p className="mt-1 text-xs text-steel-600">
-                {form.data.document_type === ''
-                  ? t('documents.form.expirationHintPick', { days: String(warnDays) })
-                  : expiryEffects[form.data.document_type] === 'blocks'
-                    ? t('documents.form.expirationHintBlocks', { days: String(warnDays) })
-                    : t('documents.form.expirationHintWarns', { days: String(warnDays) })}
+                {avisan
+                  ? form.data.document_type === ''
+                    ? t('documents.form.expirationHintPick', { days: String(warnDays) })
+                    : expiryEffects[form.data.document_type] === 'blocks'
+                      ? t('documents.form.expirationHintBlocks', { days: String(warnDays) })
+                      : t('documents.form.expirationHintWarns', { days: String(warnDays) })
+                  : form.data.document_type !== '' && expiryEffects[form.data.document_type] === 'blocks'
+                    ? t('documents.form.expirationHintOfficeBlocks', { days: String(warnDays) })
+                    : t('documents.form.expirationHintOffice', { days: String(warnDays) })}
               </p>
             </div>
           </div>

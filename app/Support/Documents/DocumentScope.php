@@ -179,8 +179,13 @@ final class DocumentScope
      *
      * Devuelve null cuando el documento no cuelga de ningún transportista: una
      * carga, por ejemplo. Eso NO es un error — es que no hay a quién avisar.
+     *
+     * Acepta cualquier objeto con `owner_type` y `owner_id`, no solo el modelo:
+     * el barrido nocturno recorre `DB::table('documents')` y montar un modelo
+     * por fila para preguntar dos columnas sería pagar un hidratado por
+     * documento y por noche. Es la misma firma que usa `CommissionOwner`.
      */
-    public static function carrierOf(Document $documento): ?string
+    public static function carrierOf(object $documento): ?string
     {
         $tipo = (string) $documento->owner_type;
         $id = (string) $documento->owner_id;

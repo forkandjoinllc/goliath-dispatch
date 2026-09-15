@@ -186,11 +186,15 @@ it('el aviso sale en el idioma de quien lo recibe', function () {
     expect($avisos[0]->body)->toContain('not approved');
 });
 
-it('el conductor puede apagar ese aviso, y solo ese', function () {
+it('el conductor puede apagar sus avisos, y solo los suyos', function () {
     signIn($this->scenario, Role::Driver);
 
+    // Los dos del vencimiento entraron con el lote del aviso de caducidad: la
+    // licencia y la tarjeta médica son SUYAS, y el formulario de subida ya le
+    // prometía el aviso cuando no le llegaba por ningún camino. Ver
+    // `docs/expiry-audience.md`. Sigue sin ver ni uno de la oficina.
     $this->get('/notifications')->assertOk()->assertInertia(fn ($page) => $page
-        ->where('events', ['expense.rejected']));
+        ->where('events', ['document.expiring', 'document.expired', 'expense.rejected']));
 });
 
 it('a un conductor suspendido no se le avisa', function () {

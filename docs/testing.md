@@ -3100,3 +3100,41 @@ despachador en el dinero de la carga», pintado sin mirar el permiso, a un
 despachador que no puede tocar el dinero y a un transportista al que se le pedía
 arreglar la nómina de otra empresa. El barrido que busca pantallas que prometen
 algo falso tiene que incluir lo que se entregó en el lote anterior.
+
+---
+
+## Lote «el aviso de vencimiento» (`docs/expiry-audience.md`)
+
+**Un comentario que declara que algo es verdad no lo hace verdad, y encima
+apaga al siguiente lector.** El lote anterior arregló la segunda mitad de una
+frase y escribió al lado: «La primera mitad era verdad siempre». No lo era —esa
+mitad se cumplía para dos roles de cinco— y el comentario estaba en el sitio
+exacto donde vivía el defecto. Ahora hay un guardián que comprueba que esa frase
+no vuelva.
+
+**Un guardián que un comentario dice tener, hay que ir a buscarlo.**
+`DocumentScope::carrierOf()` afirmaba desde su primer día que «hay un guardián
+que compara las dos direcciones». No lo había. Cuando un docblock cite una
+prueba, la prueba se busca por su nombre antes de creérselo.
+
+**Una prueba con UNA fila en la tabla no prueba un `where`.** Quité el
+`where('driver_id', …)` de la consulta que resuelve el transportista de un
+conductor y las doce pruebas siguieron verdes: todas plantaban un solo puente,
+así que la consulta sin filtro devolvía igualmente la fila correcta. Para probar
+que algo filtra hace falta que haya algo que descartar.
+
+**Dos mecanismos que se tapan el uno al otro dan un resultado correcto por
+accidente.** Quitar el filtro de afiliación activa de la pieza nueva no rompió
+nada porque `Notifier::toOwner` vuelve a comprobarlo. La prueba pasaba por el
+motivo equivocado; ahora le pregunta a la pieza directamente, además de mirar el
+efecto.
+
+**Una garantía que depende de que una búsqueda no encuentre nada no es una
+garantía.** `tieneAvisados()` devolviendo `true` a secas pasaba en verde: los
+papeles de una carga salían a buscar dueño y lo que los salvaba era que no hay
+ninguno que resolver. El día que alguien enseñe a esa consulta a resolver cargas,
+el aviso se va solo.
+
+**Los ayudantes de Pest son globales, otra vez.** `barrer()` chocó con el de
+`SweepTest` y tumbó la suite entera con «Cannot redeclare». Tercera vez en este
+proyecto: los ayudantes llevan apellido de lote.

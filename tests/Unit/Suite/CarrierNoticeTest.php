@@ -98,8 +98,19 @@ it('todo suceso que se emite está en el catálogo, y al revés', function (): v
 });
 
 it('cada suceso declara un permiso que existe y un público conocido', function (): void {
-    foreach (Events::CATALOGO as $suceso => [$permiso, $publico]) {
-        expect([Events::OFICINA, Events::TRANSPORTISTA, Events::PROPIO])->toContain($publico);
+    foreach (array_keys(Events::CATALOGO) as $suceso) {
+        $permiso = (string) Events::permiso($suceso);
+
+        // El público puede ser uno o VARIOS desde el lote del aviso de
+        // vencimiento: un documento que caduca le importa a la oficina y al
+        // dueño del papel. Se comprueban todos, y que haya al menos uno.
+        $publicos = Events::publicos($suceso);
+
+        expect($publicos)->not->toBe([], "«{$suceso}» no declara público");
+
+        foreach ($publicos as $publico) {
+            expect([Events::OFICINA, Events::TRANSPORTISTA, Events::PROPIO])->toContain($publico);
+        }
 
         // El permiso tiene que existir en la matriz de ALGÚN rol: uno
         // inventado deja el suceso sin destinatario posible y nadie lo nota,
@@ -138,12 +149,22 @@ it('a la oficina le llegan los suyos y al transportista los suyos', function ():
     expect($admin)->toContain('expense.rejected');
 
     // El transportista ve lo suyo —dirigido y propio— y nada de la oficina.
-    expect($transportista)->toBe(['document.rejected', 'onboarding.corrections_required', 'expense.rejected']);
+    //
+    // Los dos del vencimiento SE AÑADIERON en el lote del aviso de caducidad.
+    // Antes no estaban y la pantalla de subida le prometía el aviso igual: el
+    // formulario decía «se le avisará N días antes» a quien no entraba en
+    // `recipients()` por ningún camino. Ver `docs/expiry-audience.md`.
+    expect($transportista)->toBe([
+        'document.expiring', 'document.expired',
+        'document.rejected', 'onboarding.corrections_required', 'expense.rejected',
+    ]);
 
-    // Y el conductor, exactamente uno: el gasto que presentó él. Los sucesos
-    // de público PROPIO le llegan a cualquier rol que pueda leer esa cosa,
-    // porque la cosa es suya por construcción.
-    expect($conductor)->toBe(['expense.rejected']);
+    // Y el conductor: el gasto que presentó él, y el vencimiento de SUS
+    // papeles. La licencia es suya antes que de su transportista — es la que le
+    // quitan a él en una inspección. Los sucesos de público PROPIO le llegan a
+    // cualquier rol que pueda leer esa cosa, porque la cosa es suya por
+    // construcción.
+    expect($conductor)->toBe(['document.expiring', 'document.expired', 'expense.rejected']);
 });
 
 it('la pantalla ofrece lo que sale del catálogo, no una lista a mano', function (): void {
