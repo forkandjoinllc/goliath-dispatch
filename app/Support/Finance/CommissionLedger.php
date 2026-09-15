@@ -50,12 +50,46 @@ final class CommissionLedger
         LoadFinancials $financials,
         ?CarbonImmutable $at = null,
     ): ?string {
-        $dispatcherId = $load->dispatcher_user_id;
+        $dispatcherId = CommissionOwner::deCarga($load);
 
-        // Una carga sin despachador no genera comisión de nadie. Pasa: las que
-        // lleva el propio administrador, o las que entraron antes de que se
-        // repartieran.
-        if ($dispatcherId === null || $financials->dispatcherCommission <= 0) {
+        // Una carga sin dueño no devenga la comisión de nadie. Eso era cierto
+        // y sigue siéndolo; lo que no era aceptable es que se fuera EN
+        // SILENCIO mientras `Calculator` la calculaba igual y
+        // `netAfterCommission` la restaba del margen.
+        //
+        // Ese silencio era estructural: `loads.dispatcher_user_id` solo se
+        // escribía al crear la carga, y solo si quien la creaba era
+        // despachador. Un administrador —que puede crear cargas y no es
+        // despachador— dejaba sin dueño todo lo que metía, sin forma de
+        // arreglarlo después.
+        //
+        // Ahora se puede asignar desde la carga, y cuando aun así no hay
+        // nadie, el hecho SE ANOTA: ver `Audit::record` más abajo y
+        // `docs/commission-owner.md`.
+        if ($dispatcherId === null) {
+            if (CommissionOwner::comisionHuerfana($load, $financials->dispatcherCommission)) {
+                // Dinero restado del margen que no tiene destinatario. Queda en
+                // la pista de auditoría, que es donde se contesta «¿por qué el
+                // informe de marzo dice que ganamos menos y no hay comisión que
+                // pagar?» seis meses después.
+                Audit::record(
+                    $actor,
+                    AuditAction::FinancialChanged,
+                    entityType: 'load',
+                    entityId: (string) $load->id,
+                    entityLabel: (string) $load->load_number,
+                    after: [
+                        'dispatcher_commission_cents' => $financials->dispatcherCommission,
+                        'accrued' => false,
+                        'reason' => (string) CommissionOwner::porQueNoHayDueno($load),
+                    ],
+                );
+            }
+
+            return null;
+        }
+
+        if ($financials->dispatcherCommission <= 0) {
             return null;
         }
 

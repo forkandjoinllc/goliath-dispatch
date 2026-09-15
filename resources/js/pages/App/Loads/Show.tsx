@@ -55,6 +55,9 @@ interface Financials {
   netCarrierSettlement: number
   grossMargin: number
   dispatcherCommission: number
+  commissionOwner: string | null
+  commissionOwnerMissing: string | null
+  commissionOrphaned: boolean
   netMargin: number
 }
 
@@ -505,6 +508,17 @@ function MoneyCard({ f }: { f: Financials }) {
         value={`− ${m(f.dispatcherCommission)}`}
         muted
       />
+      {/* Una comisión restada del margen que no se le debe a NADIE.
+          `CommissionLedger` no escribe fila cuando la carga no tiene dueño, así
+          que este dinero no aparece en Comisiones ni hay a quién pagárselo — y
+          hasta este lote eso pasaba sin decirlo. Ver
+          `App\Support\Finance\CommissionOwner`. */}
+      {f.commissionOrphaned ? (
+        <p className="mt-2 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs text-carbon">
+          {t('loads.money.commissionNoOwner')}
+        </p>
+      ) : null}
+
       <Row label={t('loads.money.netMargin')} value={m(f.netMargin)} strong rule />
 
       <p className="mt-3 border-t border-steel-100 pt-3 text-xs text-steel-600">

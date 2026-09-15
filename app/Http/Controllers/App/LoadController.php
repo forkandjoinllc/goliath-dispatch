@@ -21,6 +21,7 @@ use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Finance\Billable;
+use App\Support\Finance\CommissionOwner;
 use App\Support\Finance\LoadCalculator;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
@@ -303,7 +304,13 @@ final class LoadController
             // transportista nace en borrador: publicarla es un acto aparte, con
             // sus propias comprobaciones.
             $load->status = LoadStatus::Draft;
-            $load->dispatcher_user_id = $actor->role === Role::Dispatcher ? $actor->userId : null;
+            // Quien crea siendo despachador sigue quedándose la comisión sin
+            // tener que decirlo — es lo que hacía y está bien—. Lo que cambia
+            // es que ya no es la ÚNICA forma: si el formulario trae un dueño
+            // explícito, `loadColumns()` ya lo escribió y no se pisa.
+            if ($load->dispatcher_user_id === null) {
+                $load->dispatcher_user_id = $actor->role === Role::Dispatcher ? $actor->userId : null;
+            }
             $load->save();
 
             $this->syncStops($actor, $load, $data['stops']);
@@ -352,6 +359,9 @@ final class LoadController
                 'carrierGrossRateCents' => $canMoney ? (int) $model->carrier_gross_rate_cents : null,
                 'carrierDispatchFeeBps' => $canMoney ? (int) $model->carrier_dispatch_fee_bps : null,
                 'dispatcherCommissionBps' => $canMoney ? (int) $model->dispatcher_commission_bps : null,
+                // Y el dueño de esa comisión, con la misma puerta: quien no ve
+                // el dinero tampoco ve a quién se le paga.
+                'dispatcherUserId' => $canMoney ? $model->dispatcher_user_id : null,
             ],
             'stops' => $this->stops($model),
             'requirements' => $this->requirements($model),
@@ -795,6 +805,21 @@ final class LoadController
                 ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
                 ->all(),
 
+            // Los despachadores que pueden quedarse la comisión. Se pide a
+            // `CommissionOwner` para que la lista que se OFRECE y la que se
+            // VALIDA sean la misma: dos consultas parecidas en dos sitios es
+            // como se acaba ofreciendo a alguien que luego el guardado
+            // rechaza.
+            'dispatchers' => DB::table('users')
+                ->whereIn('id', CommissionOwner::candidatos((string) $actor->tenantId))
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'last_name'])
+                ->map(fn ($r): array => [
+                    'id' => (string) $r->id,
+                    'name' => trim("{$r->first_name} {$r->last_name}"),
+                ])
+                ->all(),
+
             'carriers' => DB::table('carriers')
                 ->where('tenant_id', $actor->tenantId)
                 ->whereNull('deleted_at')
@@ -919,6 +944,13 @@ final class LoadController
                 ?? $policy->dispatcherCommissionBps;
             $columns['dispatcher_commission_basis'] = $data['dispatcher_commission_basis']
                 ?? $policy->dispatcherCommissionBasis->value;
+
+            // El dueño de la comisión viaja con el resto del dinero. Solo si
+            // viene la clave: sin ella no se pisa lo que ya hubiera, que es lo
+            // que pasaría al guardar un formulario que no la trae.
+            if (array_key_exists('dispatcher_user_id', $data)) {
+                $columns['dispatcher_user_id'] = $data['dispatcher_user_id'];
+            }
         }
 
         return $columns;
@@ -1320,7 +1352,26 @@ final class LoadController
             'carrier_gross_rate_cents' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
             'carrier_dispatch_fee_bps' => ['nullable', 'integer', 'min:0', 'max:10000'],
             'dispatcher_commission_bps' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            // QUIÉN gana esa comisión. Iba junto al porcentaje desde siempre en
+            // el esquema y no lo escribía ninguna pantalla: solo se ponía al
+            // crear la carga, y solo si quien la creaba era despachador. Ver
+            // App\Support\Finance\CommissionOwner.
+            'dispatcher_user_id' => ['nullable', 'string', 'size:36'],
         ]);
+
+        // Y tiene que ser un despachador ACTIVO de esta empresa. `size:36` deja
+        // pasar el id de un usuario de otra empresa, o el de alguien que ya no
+        // trabaja aquí: las dos cosas crean una comisión que nadie reclama, que
+        // es el defecto que este lote arregla con otra ropa.
+        if (($data['dispatcher_user_id'] ?? null) !== null) {
+            $tenantId = (string) app(TenantContext::class)->id();
+
+            if (! in_array($data['dispatcher_user_id'], CommissionOwner::candidatos($tenantId), true)) {
+                throw ValidationException::withMessages([
+                    'dispatcher_user_id' => __('loads.errors.notADispatcher'),
+                ]);
+            }
+        }
 
         if (! $withFreight) {
             return $data;
@@ -1744,6 +1795,16 @@ final class LoadController
             'grossMargin' => $f->grossMargin,
             'dispatcherCommission' => $f->dispatcherCommission,
             'netMargin' => $f->netMargin(),
+            // QUIÉN la gana, y si nadie, por qué.
+            //
+            // La pantalla enseñaba «Comisión del despachador − $X» restada del
+            // margen sin decir nunca de quién era. Cuando no hay dueño, ese
+            // dinero no se le devenga a nadie: la fila no se escribe y la
+            // pantalla de Comisiones se queda vacía, en silencio. Ahora se dice
+            // aquí, donde se está mirando la cifra.
+            'commissionOwner' => CommissionOwner::deCarga($l),
+            'commissionOwnerMissing' => CommissionOwner::porQueNoHayDueno($l),
+            'commissionOrphaned' => CommissionOwner::comisionHuerfana($l, $f->dispatcherCommission),
         ];
     }
 }

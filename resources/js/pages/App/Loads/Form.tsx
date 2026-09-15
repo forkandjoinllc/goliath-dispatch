@@ -39,6 +39,7 @@ interface Props {
   requirements?: Record<string, unknown>[]
   choices: {
     customers: { id: string; name: string }[]
+    dispatchers: { id: string; name: string }[]
     customerLocations: {
       id: string
       customerId: string
@@ -196,6 +197,7 @@ export default function LoadForm({
     // infiere `number` del valor inicial y borrarlo deja de compilar.
     carrier_dispatch_fee_bps: (n('carrierDispatchFeeBps') ?? 1000) as number | null,
     dispatcher_commission_bps: (n('dispatcherCommissionBps') ?? 2500) as number | null,
+    dispatcher_user_id: (load?.dispatcherUserId ?? null) as string | null,
     stops: stopList as unknown as StopDraft[],
   })
 
@@ -747,6 +749,24 @@ export default function LoadForm({
                 bps={form.data.dispatcher_commission_bps}
                 onChange={(v) => form.setData('dispatcher_commission_bps', v)}
                 error={form.errors.dispatcher_commission_bps}
+              />
+
+              {/* QUIÉN gana esa comisión.
+                  El porcentaje estaba aquí desde siempre y el dueño no: se
+                  escribía solo al crear la carga, y solo si quien la creaba era
+                  despachador. Una carga dada de alta por un administrador
+                  quedaba sin dueño para siempre, la comisión se restaba del
+                  margen igual y no se le devengaba a nadie. */}
+              <SelectField
+                label={t('loads.form.commissionOwner')}
+                value={form.data.dispatcher_user_id ?? ''}
+                onChange={(e) => form.setData('dispatcher_user_id', e.target.value === '' ? null : e.target.value)}
+                error={form.errors.dispatcher_user_id}
+                hint={t('loads.form.commissionOwnerHint')}
+                options={[
+                  { value: '', label: t('loads.form.commissionOwnerNone') },
+                  ...choices.dispatchers.map((d) => ({ value: d.id, label: d.name })),
+                ]}
               />
             </>
           ) : (

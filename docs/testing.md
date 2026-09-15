@@ -3025,3 +3025,34 @@ forma de garantía. Se reescribió con el motivo dentro.
 pantalla de gastos al conductor, se le empezó a enseñar un aviso que habla de
 notas de crédito y ajustes — cosas de la oficina. Ninguna prueba comprueba a
 quién se le enseña un párrafo informativo, y ninguna lo habría comprobado.
+
+---
+
+## Lote «el dueño de la comisión» (`docs/commission-owner.md`)
+
+**Una prueba que planta a mano lo que la aplicación no sabe producir tapa el
+defecto que la hizo necesaria.** `CommissionTest` escribía `dispatcher_user_id`
+directamente en la tabla y lo explicaba: «el escenario no lo pone porque sus
+cargas no se despachan a mano». Era verdad y era el defecto. Cuando haya que
+plantar una columna a mano para que una prueba funcione, la pregunta no es cómo
+plantarla: es quién la escribe en producción.
+
+**Lo mismo con el sembrador de demostración.** Diez de once cargas tenían
+despachador porque lo escribe el sembrador; el módulo de comisiones parecía
+funcionar en el demo y no podía funcionar en una instalación real. Un sembrador
+que produce estados que la aplicación no alcanza no es datos de prueba: es una
+demostración de algo que no existe.
+
+**El `PATCH` de una carga valida el flete entero.** Mandé solo el campo nuevo y
+los fallos parecían suyos. Y al mandar el cuerpo completo sin las cifras, otra
+prueba falló porque `loadColumns()` escribe `?? 0`: un guardado que no trae la
+tarifa la pone a cero. Dos fallos seguidos por el mismo motivo — el cuerpo de la
+petición no era el que manda la pantalla.
+
+**`toContain('f.commissionOrphaned')` no distingue `{f.x ? (` de `{false && f.x ? (`.**
+Un sabotaje que apagaba el aviso de la pantalla dejando la palabra en su sitio
+salió verde. Cuando se vigila una condición de React con una aguja de texto, la
+aguja es la CONDICIÓN entera, no el nombre de la variable.
+
+**El JSON de una columna `json` lleva espacios.** `'"accrued":false'` no casa con
+`{"accrued": false}`. En negativo habría pasado siempre.

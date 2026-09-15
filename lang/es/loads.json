@@ -207,7 +207,8 @@
     "errors": {
         "locationNotOfCustomer": "Ese sitio no es de este cliente.",
         "requirementDuplicated": "Ese requisito ya está en la carga.",
-        "requirementNeedsSource": "Un requisito de autorización de trabajo tiene que decir de dónde sale: el contrato o la base que lo exige."
+        "requirementNeedsSource": "Un requisito de autorización de trabajo tiene que decir de dónde sale: el contrato o la base que lo exige.",
+        "notADispatcher": "Esa persona no es un despachador activo de su empresa, así que no puede ser dueña de la comisión."
     },
     "filters": {
         "status": "Estado",
@@ -289,7 +290,10 @@
         "weight": "Peso (lb)",
         "width": "Ancho (pulg)",
         "windowEnd": "La ventana cierra",
-        "windowStart": "La ventana abre"
+        "windowStart": "La ventana abre",
+        "commissionOwner": "Comisión para",
+        "commissionOwnerNone": "Nadie — no se devengará",
+        "commissionOwnerHint": "Quién se lleva la comisión de esta carga. Sin despachador el porcentaje se calcula igual y se resta del margen, pero no se le devenga a ninguna persona."
     },
     "index": {
         "title": "Cargas",
@@ -324,7 +328,8 @@
             "carrier_gross_rate": "la tarifa bruta del transportista",
             "commissionable_base": "la base comisionable"
         },
-        "noRateYet": "Todavía no hay tarifa pactada con el transportista, así que no hay nada que liquidar."
+        "noRateYet": "Todavía no hay tarifa pactada con el transportista, así que no hay nada que liquidar.",
+        "commissionNoOwner": "Nadie gana esta comisión: la carga no tiene despachador asignado, así que este importe se resta del margen y no se le devenga a ninguna persona. Asigne un despachador en el dinero de la carga."
     },
     "rateConfirmation": {
         "title": "Confirmación de tarifa",

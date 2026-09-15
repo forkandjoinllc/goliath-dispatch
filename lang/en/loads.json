@@ -207,7 +207,8 @@
     "errors": {
         "locationNotOfCustomer": "That location does not belong to this customer.",
         "requirementDuplicated": "That requirement is already on the load.",
-        "requirementNeedsSource": "A work-authorization requirement has to say where it comes from — the contract or base that demands it."
+        "requirementNeedsSource": "A work-authorization requirement has to say where it comes from — the contract or base that demands it.",
+        "notADispatcher": "That person is not an active dispatcher at your company, so they cannot own the commission."
     },
     "filters": {
         "status": "Status",
@@ -289,7 +290,10 @@
         "weight": "Weight (lb)",
         "width": "Width (in)",
         "windowEnd": "Window closes",
-        "windowStart": "Window opens"
+        "windowStart": "Window opens",
+        "commissionOwner": "Commission goes to",
+        "commissionOwnerNone": "Nobody — none will accrue",
+        "commissionOwnerHint": "Who earns the commission on this load. With no dispatcher the percentage is still calculated and deducted from the margin, but it accrues to no one."
     },
     "index": {
         "title": "Loads",
@@ -324,7 +328,8 @@
             "carrier_gross_rate": "the carrier gross rate",
             "commissionable_base": "the commissionable base"
         },
-        "noRateYet": "No carrier rate agreed yet, so there is nothing to settle."
+        "noRateYet": "No carrier rate agreed yet, so there is nothing to settle.",
+        "commissionNoOwner": "Nobody earns this commission: the load has no dispatcher assigned, so this amount is deducted from the margin and accrues to no one. Assign a dispatcher in the load money section."
     },
     "rateConfirmation": {
         "title": "Rate confirmation",
