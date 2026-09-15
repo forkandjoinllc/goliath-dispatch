@@ -2995,3 +2995,33 @@ VERSIÓN del documento —rechazar, corregir y volver a rechazar son dos noticia
 para las correcciones por MOMENTO. Con la clave puesta por documento, la segunda
 vez se habría tragado en silencio, que es la forma más cara de no avisar: parece
 que funciona.
+
+---
+
+## Lote «el gasto del conductor» (`docs/driver-expense.md`)
+
+**Ampliar un alcance se prueba por los dos lados.** Darle `expense:read` al
+conductor sin medir que sigue sin ver lo ajeno sería cambiar una ceguera por un
+agujero. Las pruebas que importan aquí no son las que enseñan lo suyo: son las
+que plantan el gasto de otra persona y comprueban que no sale, ni en la lista ni
+por su enlace directo.
+
+**Una acción denegada vuelve atrás; una PÁGINA denegada da 403.** Escribí
+`assertForbidden()` sobre un POST y la prueba enseñó la convención de la casa,
+que está escrita en `bootstrap/app.php` con su motivo: quien pulsó un botón que
+no debía estar ahí no tiene por qué perder la página.
+
+**Escribir una comprobación en una vía no la escribe en la otra.** En el lote
+anterior se me escapó que nadie medía el caso del miembro suspendido, y lo
+cerré. Al construir la tercera vía de envío volvió a escaparse el mismo
+sabotaje, en el método nuevo. Cada camino de entrega necesita su propia prueba
+de lo mismo — o la comprobación se comparte de verdad en un sitio.
+
+**Otra prueba que pasaba por lo que el lote viene a arreglar**: `ExpenseTest`
+comprobaba que al conductor se le DESVIABA al formulario. Era el síntoma con
+forma de garantía. Se reescribió con el motivo dentro.
+
+**El recorrido volvió a enseñar algo que la suite no mira.** Al abrirle la
+pantalla de gastos al conductor, se le empezó a enseñar un aviso que habla de
+notas de crédito y ajustes — cosas de la oficina. Ninguna prueba comprueba a
+quién se le enseña un párrafo informativo, y ninguna lo habría comprobado.

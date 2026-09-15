@@ -16,6 +16,8 @@ use App\Support\Audit;
 use App\Support\Documents\ExpenseFile;
 use App\Support\Finance\ExpenseTransitions;
 use App\Support\InertiaPage;
+use App\Support\Notifications\Events;
+use App\Support\Notifications\Notifier;
 use App\Support\Storage\DocumentStore;
 use App\Support\Loads\LoadScope;
 use Carbon\CarbonImmutable;
@@ -487,6 +489,42 @@ final class ExpenseController
             after: ['status' => $nuevo],
             reason: $motivo,
         );
+
+        // Y se le dice a quien lo presentó.
+        //
+        // Rechazar EXIGE un motivo de cinco caracteres como mínimo, escrito
+        // para él, sobre una decisión que no vuelve —ver `ExpenseTransitions`—.
+        // Hasta este lote ese texto se guardaba y nadie se lo contaba: un
+        // conductor ni siquiera podía abrir la lista donde sale.
+        //
+        // Solo al rechazar: una campana que también suena con las buenas
+        // noticias deja de mirarse, y lo que hay que explicar es el «no».
+        //
+        // Fuera de lo que decide el dinero, y sin poder tumbarlo: si el aviso
+        // falla, la decisión ya está tomada y escrita.
+        if ($nuevo === 'rejected' && $model->submitted_by_user_id !== null) {
+            Notifier::toOwner(
+                tenantId: (string) $actor->tenantId,
+                userId: (string) $model->submitted_by_user_id,
+                permission: (string) Events::permiso('expense.rejected'),
+                eventKey: 'expense.rejected',
+                // Por gasto: un gasto se rechaza una vez y no vuelve, así que
+                // no hay una segunda noticia que dar sobre el mismo.
+                dedupeKey: 'expense.rejected:'.$model->id,
+                // Su DESCRIPCIÓN y no el importe: es lo que él escribió y lo
+                // que le permite reconocer cuál de sus gastos es. Ningún otro
+                // aviso de este sistema mete cifras de dinero en el cuerpo, y
+                // formatear moneda en un texto que se guarda congelado es una
+                // forma barata de que dentro de un año diga algo raro.
+                params: [
+                    'description' => (string) $model->description,
+                    'reason' => (string) $motivo,
+                ],
+                actionUrl: '/expenses',
+                subjectType: 'expense',
+                subjectId: (string) $model->id,
+            );
+        }
 
         // Si la carga ya está facturada o liquidada, este gasto NO cambia esos
         // documentos: sus cifras están congeladas en `financial_snapshots`. Se

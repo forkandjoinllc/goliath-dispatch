@@ -120,6 +120,12 @@
                 "title": "Your onboarding needs corrections",
                 "body": "Before it can continue, this needs fixing: {notes}"
             }
+        },
+        "expense": {
+            "rejected": {
+                "title": "An expense of yours was rejected: {description}",
+                "body": "It was not approved. The reason: {reason}. The decision is final; submit a new expense if you need to."
+            }
         }
     },
     "eventNames": {
@@ -161,6 +167,9 @@
         },
         "onboarding": {
             "corrections_required": "Corrections on your onboarding"
+        },
+        "expense": {
+            "rejected": "Expenses rejected back to you"
         }
     },
     "flash": {

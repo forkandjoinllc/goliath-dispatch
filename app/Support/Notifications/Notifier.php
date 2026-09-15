@@ -176,6 +176,63 @@ final class Notifier
     }
 
     /**
+     * Avisa a la persona DUEÑA de algo: quien lo presentó.
+     *
+     * El caso del gasto. Quien entrega el recibo del combustible es quien tiene
+     * que enterarse de la decisión, y hasta este lote no se enteraba de nada:
+     * un conductor tenía `expense:submit` y NO `expense:read`, así que el
+     * listado le devolvía al formulario. Rechazar exige un motivo escrito para
+     * él, sobre una decisión que no se deshace, y no había forma de leerlo.
+     *
+     * Se comprueba el permiso EN SU ROL, como en las otras dos vías: si su rol
+     * no puede leer eso, el aviso es una campana que suena para nada. Basta con
+     * que lo tenga con CUALQUIER alcance —la cosa es suya por construcción, y
+     * el alcance propio es justo el que se le acaba de dar.
+     *
+     * @param  array<string, string|int>  $params  sustituciones del texto
+     * @return int cuántos avisos NUEVOS se escribieron
+     */
+    public static function toOwner(
+        string $tenantId,
+        string $userId,
+        string $permission,
+        string $eventKey,
+        string $dedupeKey,
+        array $params = [],
+        ?string $actionUrl = null,
+        ?string $subjectType = null,
+        ?string $subjectId = null,
+    ): int {
+        $rol = DB::table('user_tenant_memberships')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->value('role');
+
+        if ($rol === null) {
+            return 0;
+        }
+
+        $caso = Role::tryFrom((string) $rol);
+
+        if ($caso === null || ! array_key_exists($permission, RoleMatrix::for($caso))) {
+            return 0;
+        }
+
+        return self::toUser(
+            $tenantId,
+            $userId,
+            $eventKey,
+            $dedupeKey,
+            $params,
+            $actionUrl,
+            $subjectType,
+            $subjectId,
+        );
+    }
+
+    /**
      * Avisa a una persona concreta.
      *
      * @param  array<string, string|int>  $params

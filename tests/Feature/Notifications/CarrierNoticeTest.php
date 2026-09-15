@@ -244,7 +244,7 @@ it('el transportista ve en sus preferencias lo suyo y nada de la oficina', funct
     signIn($this->scenario, Role::Carrier);
 
     $this->get('/notifications')->assertInertia(fn ($page) => $page
-        ->where('events', ['document.rejected', 'onboarding.corrections_required']));
+        ->where('events', ['document.rejected', 'onboarding.corrections_required', 'expense.rejected']));
 });
 
 it('la oficina sigue viendo las suyas', function () {

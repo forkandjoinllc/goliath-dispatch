@@ -57,6 +57,7 @@ it('todo suceso que se emite está en el catálogo, y al revés', function (): v
         '/app/Http/Controllers/App/LeadController.php',
         '/app/Http/Controllers/App/DocumentController.php',
         '/app/Http/Controllers/App/CarrierOnboardingController.php',
+        '/app/Http/Controllers/App/ExpenseController.php',
     ] as $ruta) {
         $fuente .= Source::sinComentarios(raizAvisoTransportista().$ruta);
     }
@@ -98,7 +99,7 @@ it('todo suceso que se emite está en el catálogo, y al revés', function (): v
 
 it('cada suceso declara un permiso que existe y un público conocido', function (): void {
     foreach (Events::CATALOGO as $suceso => [$permiso, $publico]) {
-        expect([Events::OFICINA, Events::TRANSPORTISTA])->toContain($publico);
+        expect([Events::OFICINA, Events::TRANSPORTISTA, Events::PROPIO])->toContain($publico);
 
         // El permiso tiene que existir en la matriz de ALGÚN rol: uno
         // inventado deja el suceso sin destinatario posible y nadie lo nota,
@@ -126,18 +127,23 @@ it('a la oficina le llegan los suyos y al transportista los suyos', function ():
     assertContains('invoice.overdue', $admin, 'el administrador dejó de ver las facturas vencidas');
     assertContains('document.expiring', $admin);
 
-    // Y NO ve como suyos los dos del transportista: son avisos dirigidos, no
-    // una copia de la decisión que acaba de tomar él mismo.
+    // Y NO ve como suyos los dos dirigidos al transportista: son avisos con
+    // destinatario, no una copia de la decisión que acaba de tomar él mismo.
     expect($admin)->not->toContain('document.rejected');
     expect($admin)->not->toContain('onboarding.corrections_required');
 
-    // El transportista ve exactamente lo suyo, y nada de la oficina.
-    expect($transportista)->toBe(['document.rejected', 'onboarding.corrections_required']);
+    // `expense.rejected` sí: un administrador también presenta gastos, y si le
+    // rechazan el suyo se entera como cualquiera. El público PROPIO no depende
+    // del rol sino de quién sea el dueño.
+    expect($admin)->toContain('expense.rejected');
 
-    // El conductor, por ahora, nada: no tiene ningún suceso dirigido a él y la
-    // pantalla se lo dice en vez de enseñarle interruptores muertos. El día que
-    // se le dirija uno, esta línea se pone roja y hay que decidirlo a la cara.
-    expect($conductor)->toBe([]);
+    // El transportista ve lo suyo —dirigido y propio— y nada de la oficina.
+    expect($transportista)->toBe(['document.rejected', 'onboarding.corrections_required', 'expense.rejected']);
+
+    // Y el conductor, exactamente uno: el gasto que presentó él. Los sucesos
+    // de público PROPIO le llegan a cualquier rol que pueda leer esa cosa,
+    // porque la cosa es suya por construcción.
+    expect($conductor)->toBe(['expense.rejected']);
 });
 
 it('la pantalla ofrece lo que sale del catálogo, no una lista a mano', function (): void {
@@ -188,7 +194,7 @@ it('los dos sucesos nuevos tienen copia en los dos idiomas', function (): void {
             JSON_THROW_ON_ERROR,
         );
 
-        foreach ([['document', 'rejected'], ['onboarding', 'corrections_required']] as [$grupo, $clave]) {
+        foreach ([['document', 'rejected'], ['onboarding', 'corrections_required'], ['expense', 'rejected']] as [$grupo, $clave]) {
             expect($d['events'][$grupo][$clave]['title'] ?? null)->toBeString("falta el título de {$grupo}.{$clave} en {$idioma}");
             expect($d['events'][$grupo][$clave]['body'] ?? null)->toBeString("falta el cuerpo de {$grupo}.{$clave} en {$idioma}");
             expect($d['eventNames'][$grupo][$clave] ?? null)->toBeString("falta el nombre de {$grupo}.{$clave} en {$idioma}");

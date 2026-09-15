@@ -336,10 +336,19 @@ it('el desplegable de cargas del despachador solo trae las suyas', function () {
         ->assertInertia(fn (Assert $page) => $page->has('loads', 1));
 });
 
-it('el conductor llega al formulario en vez de a un 403', function () {
+it('el conductor ya no acaba en el formulario: ve los suyos', function () {
     signIn($this->scenario, Role::Driver);
 
-    // Tiene `expense:submit` pero no `expense:read`: el menú le enseña la
-    // entrada, así que el listado tiene que llevarle a algún sitio.
-    $this->get('/expenses')->assertRedirect('/expenses/create');
+    // Esta prueba comprobaba el DESVÍO al formulario, que era el síntoma de
+    // que un conductor entregaba el recibo del combustible y no volvía a saber
+    // nada: tenía `expense:submit` y no `expense:read`. Y rechazar le exige a
+    // la oficina un motivo escrito PARA ÉL sobre una decisión que no vuelve.
+    //
+    // Ahora tiene `expense:read` con alcance PROPIO. El desvío sigue en el
+    // controlador para cualquier rol que pueda presentar sin poder leer; lo que
+    // ya no ocurre es que caiga por ahí el conductor.
+    //
+    // Que vea los suyos y solo los suyos lo mide
+    // `tests/Feature/Expenses/DriverVisibilityTest.php`.
+    $this->get('/expenses')->assertOk();
 });

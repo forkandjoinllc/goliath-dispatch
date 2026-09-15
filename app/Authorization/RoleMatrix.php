@@ -313,6 +313,24 @@ final class RoleMatrix
         'tracking:consent' => Scope::Own,
         'tracking:read' => Scope::Own,
         'expense:submit' => Scope::Own,
+        // Y LEER LOS SUYOS.
+        //
+        // Tenía `expense:submit` y no `expense:read`: un conductor entregaba el
+        // recibo del combustible y no volvía a saber nada. `ExpenseController`
+        // lo daba por bueno y lo devolvía al formulario —«es lo único que este
+        // dominio le ofrece»—, así que no podía ver si se lo aprobaron, si se
+        // lo rechazaron, ni el motivo.
+        //
+        // Y rechazar EXIGE un motivo de cinco caracteres como mínimo, escrito
+        // para él, sobre una decisión que no se deshace. Pedirle a alguien que
+        // explique algo definitivo a un lector al que le cierras la puerta es
+        // la misma forma del defecto que el lote del transportista.
+        //
+        // Con alcance PROPIO: `ScopeFilter` lo resuelve por
+        // `submitted_by_user_id`, así que ve los suyos y ni uno más. Lo que
+        // puede HACER no cambia: aprobar sigue siendo `expense:approve`, que no
+        // tiene.
+        'expense:read' => Scope::Own,
         'permit:read' => Scope::Own,
     ];
 

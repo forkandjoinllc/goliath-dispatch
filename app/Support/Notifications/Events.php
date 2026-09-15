@@ -51,6 +51,15 @@ final class Events
     public const TRANSPORTISTA = 'transportista';
 
     /**
+     * Le llega a UNA persona: la dueña de eso.
+     *
+     * El caso del gasto. Quien lo presentó es quien tiene que enterarse de la
+     * decisión — y hasta que se le dio `expense:read` con alcance propio, no
+     * podía enterarse ni mirando.
+     */
+    public const PROPIO = 'propio';
+
+    /**
      * Suceso => [permiso que hay que tener, a quién le llega].
      *
      * El permiso no es decoración: un aviso sobre algo que quien lo recibe no
@@ -65,6 +74,7 @@ final class Events
         'document.rejected' => ['document:read', self::TRANSPORTISTA],
         'carrier.reverification_due' => ['carrier:read', self::OFICINA],
         'onboarding.corrections_required' => ['carrier:onboarding:read', self::TRANSPORTISTA],
+        'expense.rejected' => ['expense:read', self::PROPIO],
         'invoice.overdue' => ['invoice:read', self::OFICINA],
         'tracking.link_not_sent' => ['tracking:read', self::OFICINA],
         'lead.received' => ['lead:read', self::OFICINA],
@@ -106,9 +116,19 @@ final class Events
             // a la oficina se le manda por permiso con alcance de empresa o
             // más; al transportista, por su afiliación, y su alcance propio
             // basta porque solo ve lo suyo.
-            $llega = $publico === self::OFICINA
-                ? $alcance->atLeast(Scope::Tenant)
-                : $rol === Role::Carrier && $alcance->atLeast(Scope::Carrier);
+            // Las tres reglas son las del emisor, no una copia parecida:
+            //  - a la oficina, por permiso con alcance de empresa o más;
+            //  - al transportista, por su afiliación, y su alcance propio basta
+            //    porque solo ve lo suyo;
+            //  - al dueño, cualquier alcance vale: la cosa es suya por
+            //    construcción, y lo único que hay que comprobar es que su rol
+            //    pueda leerla.
+            $llega = match ($publico) {
+                self::OFICINA => $alcance->atLeast(Scope::Tenant),
+                self::TRANSPORTISTA => $rol === Role::Carrier && $alcance->atLeast(Scope::Carrier),
+                self::PROPIO => true,
+                default => false,
+            };
 
             if ($llega) {
                 $suyos[] = $suceso;

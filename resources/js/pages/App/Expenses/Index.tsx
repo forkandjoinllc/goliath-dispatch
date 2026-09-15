@@ -151,8 +151,14 @@ function ExpenseCard({
       <Recibo gasto={e} puedeSubir={canApprove || canSubmit} puedeQuitar={canApprove} />
 
       {/* Si la carga ya está facturada o liquidada, aprobar esto no cambia esos
-          documentos: sus cifras están congeladas. Se dice antes de pulsar. */}
-      {e.loadFrozen && e.status === 'submitted' ? (
+          documentos: sus cifras están congeladas. Se dice antes de pulsar —y
+          SOLO a quien va a pulsar.
+
+          Este aviso habla de notas de crédito y de ajustes, que son cosas de la
+          oficina; a quien entregó el recibo del combustible no le dice nada que
+          pueda usar. Apareció al abrirle esta pantalla al conductor, que hasta
+          ahora acababa en el formulario y no la veía. */}
+      {canApprove && e.loadFrozen && e.status === 'submitted' ? (
         <p className="mt-3 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs">
           {t('expenses.index.frozenWarning')}
         </p>

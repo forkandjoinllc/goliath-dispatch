@@ -120,6 +120,12 @@
                 "title": "Su incorporación necesita correcciones",
                 "body": "Antes de continuar hay que corregir esto: {notes}"
             }
+        },
+        "expense": {
+            "rejected": {
+                "title": "Le rechazaron un gasto: {description}",
+                "body": "No se aprobó. El motivo: {reason}. La decisión es definitiva; si hace falta, presente un gasto nuevo."
+            }
         }
     },
     "eventNames": {
@@ -161,6 +167,9 @@
         },
         "onboarding": {
             "corrections_required": "Correcciones en su incorporación"
+        },
+        "expense": {
+            "rejected": "Gastos que le rechazan"
         }
     },
     "flash": {
