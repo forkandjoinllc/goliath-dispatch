@@ -3,6 +3,14 @@ import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
+/**
+ * Las columnas del margen y del cobro al cliente son OPCIONALES.
+ *
+ * El transportista tiene `report:read` sobre lo suyo y el informe le estrecha
+ * las FILAS desde siempre; lo que no le estrechaba eran las columnas, y entre
+ * ellas iba el resultado de la casa en sus propias cargas. El servidor ya no las
+ * manda. Ver `App\Support\Finance\MoneyAudience`.
+ */
 interface CarrierRow {
   id: string
   name: string
@@ -10,16 +18,16 @@ interface CarrierRow {
   grossCents: number
   feeCents: number
   netCents: number
-  marginCents: number
+  marginCents?: number
 }
 
 interface CustomerRow {
   id: string | null
   name: string | null
   loads: number
-  chargeCents: number
   feeCents: number
-  marginCents: number
+  chargeCents?: number
+  marginCents?: number
 }
 
 interface CommissionRow {
@@ -32,7 +40,7 @@ interface CommissionRow {
 
 interface Props {
   period: { from: string; to: string }
-  summary: { feeCents: number; marginCents: number; loads: number; outstandingCents: number }
+  summary: { feeCents: number; loads: number; outstandingCents: number; marginCents?: number }
   byCarrier: CarrierRow[]
   byCustomer: CustomerRow[]
   aging: Record<string, { amountCents: number; count: number }>
@@ -51,6 +59,12 @@ export default function ReportsIndex({
   expensesByTreatment, commissionsByDispatcher, loadsByStatus, can,
 }: Props) {
   const { t, locale } = useI18n()
+
+  // Si la casa manda su margen. Se pregunta por el TOTAL y no por cada fila
+  // porque la cabecera de la tabla se pinta una vez: con la lista vacía no hay
+  // primera fila a la que preguntarle, y una cabecera que sobra deja la tabla
+  // descuadrada. Ver `App\Support\Finance\MoneyAudience`.
+  const verMargen = summary.marginCents !== undefined
 
   // Una fecha suelta en ISO no la lee nadie de un vistazo, y en un informe que
   // se enseña a un cliente menos.
@@ -91,9 +105,20 @@ export default function ReportsIndex({
           {t('reports.index.basis')}
         </p>
 
+        {/* Y a quien no es de la casa se le dice de qué informe se trata. Una
+            tabla a la que le falta una columna, sin una frase, se lee como una
+            pantalla rota; con la frase se lee como lo que es. */}
+        {verMargen ? null : (
+          <p className="rounded border-l-4 border-steel-300 bg-steel-50 p-3 text-sm text-carbon">
+            {t('reports.index.basisCarrier')}
+          </p>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-4">
           <Tile label={t('reports.summary.fee')} value={formatCents(summary.feeCents, locale)} />
-          <Tile label={t('reports.summary.margin')} value={formatCents(summary.marginCents, locale)} />
+          {summary.marginCents !== undefined ? (
+            <Tile label={t('reports.summary.margin')} value={formatCents(summary.marginCents, locale)} />
+          ) : null}
           <Tile label={t('reports.summary.loads')} value={String(summary.loads)} />
           <Tile
             label={t('reports.summary.outstanding')}
@@ -132,12 +157,14 @@ export default function ReportsIndex({
             head={[
               t('reports.carriers.carrier'), t('reports.carriers.loads'),
               t('reports.carriers.gross'), t('reports.carriers.fee'),
-              t('reports.carriers.net'), t('reports.carriers.margin'),
+              t('reports.carriers.net'),
+              ...(verMargen ? [t('reports.carriers.margin')] : []),
             ]}
             rows={byCarrier.map((r) => [
               r.name, String(r.loads),
               formatCents(r.grossCents, locale), formatCents(r.feeCents, locale),
-              formatCents(r.netCents, locale), formatCents(r.marginCents, locale),
+              formatCents(r.netCents, locale),
+              ...(r.marginCents === undefined ? [] : [formatCents(r.marginCents, locale)]),
             ])}
             empty={t('reports.index.empty')}
           />
@@ -150,12 +177,15 @@ export default function ReportsIndex({
           <Tabla
             head={[
               t('reports.customers.customer'), t('reports.carriers.loads'),
-              t('reports.customers.charge'), t('reports.carriers.fee'), t('reports.carriers.margin'),
+              ...(verMargen ? [t('reports.customers.charge')] : []),
+              t('reports.carriers.fee'),
+              ...(verMargen ? [t('reports.carriers.margin')] : []),
             ]}
             rows={byCustomer.map((r) => [
               r.name ?? t('reports.customers.none'), String(r.loads),
-              formatCents(r.chargeCents, locale), formatCents(r.feeCents, locale),
-              formatCents(r.marginCents, locale),
+              ...(r.chargeCents === undefined ? [] : [formatCents(r.chargeCents, locale)]),
+              formatCents(r.feeCents, locale),
+              ...(r.marginCents === undefined ? [] : [formatCents(r.marginCents, locale)]),
             ])}
             empty={t('reports.index.empty')}
           />

@@ -329,7 +329,8 @@
             "commissionable_base": "la base comisionable"
         },
         "noRateYet": "Todavía no hay tarifa pactada con el transportista, así que no hay nada que liquidar.",
-        "commissionNoOwner": "Nadie gana esta comisión: la carga no tiene despachador asignado, así que este importe se resta del margen y no se le devenga a ninguna persona. Asigne un despachador en el dinero de la carga."
+        "commissionNoOwner": "Nadie gana esta comisión: la carga no tiene despachador asignado, así que este importe se resta del margen y no se le devenga a ninguna persona. Asigne un despachador en el dinero de la carga.",
+        "commissionNoOwnerReadOnly": "Nadie gana esta comisión: la carga no tiene despachador asignado, así que este importe se resta del margen y no se le devenga a ninguna persona. Quien lleve las finanzas puede asignar un despachador desde la carga."
     },
     "rateConfirmation": {
         "title": "Confirmación de tarifa",

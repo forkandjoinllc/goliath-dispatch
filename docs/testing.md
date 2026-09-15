@@ -3056,3 +3056,47 @@ aguja es la CONDICIÓN entera, no el nombre de la variable.
 
 **El JSON de una columna `json` lleva espacios.** `'"accrued":false'` no casa con
 `{"accrued": false}`. En negativo habría pasado siempre.
+
+---
+
+## Lote «el margen de la casa» (`docs/money-audience.md`)
+
+**Una regla escrita para dos campos de texto no se aplica sola al dinero.**
+`App\Support\Privacy\Internal` dice, con todas las letras, que hay cosas que no
+cruzan la mesa porque quien mira es otra empresa. Se escribió para las notas del
+transportista y las notas internas de la carga, y **cita el bloque de dinero**
+como precedente de una técnica. Miró la tarjeta para copiar cómo NO se manda un
+dato escondido, y no vio lo que la tarjeta estaba enseñando. Cuando una pieza
+nueva cite a otra, la pregunta es si lo citado cumple lo que la pieza nueva
+exige.
+
+**Una consulta de cuatro sabía la regla.** En `PeriodReport`,
+`commissionsByDispatcher()` devolvía lista vacía fuera de la casa mientras
+`byCarrier()`, tres métodos más arriba, mandaba el margen. La forma recurrente de
+todo este proyecto en su versión más pequeña: no en otro fichero, no en otro
+lote — **en el mismo fichero, treinta líneas más abajo**.
+
+**Un registro exhaustivo vale más que una lista de prohibidos.** El guardián no
+comprueba que ciertas cifras estén escondidas: comprueba que la unión de «lo suyo»
+y «lo de la casa» sea EXACTAMENTE lo que produce el reparto. Una cifra nueva hay
+que clasificarla o la suite se pone en rojo. Con una lista de prohibidos, la
+cifra nueva se cuela por omisión, que es exactamente cómo llegó aquí el margen.
+
+**Sabotear en los dos sentidos.** «Todo el mundo es de la casa» y «nadie es de la
+casa» son dos sabotajes distintos y los dos tienen que ponerse en rojo. El
+segundo caza el filtro que se pasa de listo y le esconde el margen a
+contabilidad, que es romper la pantalla para la que se escribió. Un lote que
+esconde algo necesita la prueba de que **sigue enseñándoselo a quien sí**.
+
+**Un escape por un escenario que no tenía el dato.** Quité el filtro de los
+gastos absorbidos del informe y la prueba siguió verde: el escenario no tenía
+ningún gasto `tenant_absorbed` aprobado, así que la clave no estaba ni con filtro
+ni sin él. Una comprobación en negativo sobre una clave que nunca aparece no
+comprueba nada. Ahora la prueba planta un gasto de cada lado y exige que el suyo
+siga estando.
+
+**El aviso que escribí la semana pasada era el defecto de este lote.** «Asigne un
+despachador en el dinero de la carga», pintado sin mirar el permiso, a un
+despachador que no puede tocar el dinero y a un transportista al que se le pedía
+arreglar la nómina de otra empresa. El barrido que busca pantallas que prometen
+algo falso tiene que incluir lo que se entregó en el lote anterior.

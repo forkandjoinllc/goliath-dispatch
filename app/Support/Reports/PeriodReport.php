@@ -6,6 +6,7 @@ namespace App\Support\Reports;
 
 use App\Authorization\Actor;
 use App\Enums\Scope;
+use App\Support\Finance\MoneyAudience;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,17 @@ use Illuminate\Support\Facades\DB;
  * La ANTIGÜEDAD DEL COBRO sí sale de `invoices`, porque pregunta otra cosa:
  * cuánto se debe hoy y desde cuándo. Y el saldo de una factura lo deriva
  * PaymentLedger de sus cobros, así que esa columna sí es de fiar.
+ *
+ * QUIÉN LO MIRA
+ *
+ * `narrowByCarrier()` estrecha por FILAS: un transportista ve las suyas. Eso no
+ * contesta la otra pregunta —qué COLUMNAS de sus propias filas son suyas—, y
+ * durante un tiempo el informe contestó que todas: el margen de la casa por
+ * transportista, el cobro al cliente y el margen por cliente, y el total de
+ * arriba. `commissionsByDispatcher()` sí la contestaba, tres métodos más abajo,
+ * devolviendo lista vacía fuera de la casa. La regla estaba escrita en este
+ * mismo fichero y aplicada a una sola de sus consultas; ahora pasa por
+ * `MoneyAudience`, que es donde vive la lista entera.
  */
 final class PeriodReport
 {
@@ -82,7 +94,7 @@ final class PeriodReport
                 DB::raw('sum(s.net_carrier_settlement_cents) as net'),
                 DB::raw('sum(s.gross_margin_cents) as margin'),
             ])
-            ->map(static fn ($r): array => [
+            ->map(fn ($r): array => MoneyAudience::filtraInforme([
                 'id' => (string) $r->carrier_id,
                 'name' => (string) ($r->dba ?: $r->legal_name),
                 'loads' => (int) $r->loads,
@@ -90,7 +102,7 @@ final class PeriodReport
                 'feeCents' => (int) $r->fee,
                 'netCents' => (int) $r->net,
                 'marginCents' => (int) $r->margin,
-            ])
+            ], $this->actor))
             ->all();
     }
 
@@ -117,14 +129,14 @@ final class PeriodReport
                 DB::raw('sum(s.dispatch_fee_amount_cents) as fee'),
                 DB::raw('sum(s.gross_margin_cents) as margin'),
             ])
-            ->map(static fn ($r): array => [
+            ->map(fn ($r): array => MoneyAudience::filtraInforme([
                 'id' => $r->customer_id === null ? null : (string) $r->customer_id,
                 'name' => $r->company_name,
                 'loads' => (int) $r->loads,
                 'chargeCents' => (int) $r->charge,
                 'feeCents' => (int) $r->fee,
                 'marginCents' => (int) $r->margin,
-            ])
+            ], $this->actor))
             ->all();
     }
 
@@ -297,12 +309,17 @@ final class PeriodReport
         // expresión y revienta con «Undefined property: stdClass::$amount_cents»
         // en cuanto hay una sola fila. Con cero filas no falla — por eso la
         // suite estaba verde y la pantalla daba 500 en cuanto había un gasto.
-        return $query
+        $totales = $query
             ->selectRaw('e.treatment_snapshot as treatment, sum(e.amount_cents) as total')
             ->groupBy('e.treatment_snapshot')
             ->pluck('total', 'treatment')
             ->map(static fn ($v): int => (int) $v)
             ->all();
+
+        // Tres de los cuatro tratamientos mueven SU liquidación y son suyos.
+        // `tenant_absorbed` es lo que la casa se come, y su total es el margen
+        // por la puerta de atrás: el margen bruto es la tarifa MENOS esto.
+        return MoneyAudience::filtraTratamientos($totales, $this->actor);
     }
 
     /**

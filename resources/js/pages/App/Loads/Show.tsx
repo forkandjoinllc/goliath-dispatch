@@ -39,26 +39,37 @@ interface Assignment {
   medicalCardExpiresAt: string | null
 }
 
+/**
+ * El reparto, tal y como llega.
+ *
+ * Las cifras de la casa son OPCIONALES en el tipo porque el servidor no las
+ * manda a quien no es de la casa: el transportista abre su propia carga, tiene
+ * el permiso del dinero —lo necesita para su liquidación— y aun así no recibe el
+ * margen ni la comisión. Ver `App\Support\Finance\MoneyAudience`.
+ *
+ * Opcionales y no `| null`: null diría que el dato existe y que alguien decidió
+ * no dártelo. Ausente no dice nada, que es lo que hay que decir.
+ */
 interface Financials {
-  customerCharge: number
   carrierGrossRate: number
   dispatchFeeBps: number
-  commissionBps: number
-  commissionBasis: string
   feeBase: string
   excludedExpenses: number
   reimbursableExpenses: number
-  tenantAbsorbedExpenses: number
   carrierDeductions: number
   commissionableBase: number
   dispatchFee: number
   netCarrierSettlement: number
-  grossMargin: number
-  dispatcherCommission: number
-  commissionOwner: string | null
-  commissionOwnerMissing: string | null
-  commissionOrphaned: boolean
-  netMargin: number
+  customerCharge?: number
+  commissionBps?: number
+  commissionBasis?: string
+  tenantAbsorbedExpenses?: number
+  grossMargin?: number
+  dispatcherCommission?: number
+  commissionOwner?: string | null
+  commissionOwnerMissing?: string | null
+  commissionOrphaned?: boolean
+  netMargin?: number
 }
 
 interface Action {
@@ -432,7 +443,7 @@ export default function LoadShow({
           {/* El bloque de dinero solo existe si el servidor lo mandó. Un
               conductor tiene load:read pero no load:financials:read, y su
               respuesta no lleva estos números en absoluto. */}
-          {financials ? <MoneyCard f={financials} /> : null}
+          {financials ? <MoneyCard f={financials} canAssignOwner={Boolean(can.updateFinancials)} /> : null}
 
           <Card title={t('loads.detail.plannedPickup')}>
             <Dl compact>
@@ -456,14 +467,20 @@ export default function LoadShow({
  * liquidación pregunta «¿de dónde sale este número?», y una tarjeta que solo
  * enseñara el total obligaría a rehacer la cuenta a mano para responderle.
  */
-function MoneyCard({ f }: { f: Financials }) {
+function MoneyCard({ f, canAssignOwner }: { f: Financials; canAssignOwner: boolean }) {
   const { t, locale } = useI18n()
   const m = (c: number) => formatCents(c, locale)
+
+  // Una fila solo por lo que llegó. `undefined` no es «cero»: es «esta cifra no
+  // es tuya», y el servidor ya la quitó. Pintar «$0,00» sería peor que no pintar
+  // nada, porque un cero se lee como un dato.
+  const fila = (clave: string, valor: number | undefined, extra: Record<string, unknown> = {}) =>
+    valor === undefined ? null : <Row label={t(clave)} value={m(valor)} {...extra} />
 
   if (f.carrierGrossRate === 0) {
     return (
       <Card title={t('loads.detail.money')}>
-        <Row label={t('loads.money.customerCharge')} value={m(f.customerCharge)} />
+        {fila('loads.money.customerCharge', f.customerCharge)}
         <p className="mt-3 text-sm text-steel-700">{t('loads.money.noRateYet')}</p>
       </Card>
     )
@@ -471,7 +488,7 @@ function MoneyCard({ f }: { f: Financials }) {
 
   return (
     <Card title={t('loads.detail.money')}>
-      <Row label={t('loads.money.customerCharge')} value={m(f.customerCharge)} />
+      {fila('loads.money.customerCharge', f.customerCharge)}
       <Row label={t('loads.money.carrierGrossRate')} value={m(f.carrierGrossRate)} />
 
       {f.excludedExpenses > 0 ? (
@@ -496,30 +513,41 @@ function MoneyCard({ f }: { f: Financials }) {
 
       <Row label={t('loads.money.netCarrierSettlement')} value={m(f.netCarrierSettlement)} rule />
 
-      {f.tenantAbsorbedExpenses > 0 ? (
+      {f.tenantAbsorbedExpenses !== undefined && f.tenantAbsorbedExpenses > 0 ? (
         <Row label={t('loads.money.absorbed')} value={`− ${m(f.tenantAbsorbedExpenses)}`} muted />
       ) : null}
 
-      <Row label={t('loads.money.grossMargin')} value={m(f.grossMargin)} rule />
-      <Row
-        label={`${t('loads.money.dispatcherCommission')} · ${t('loads.money.commissionOn', {
-          basis: t(`loads.money.basis.${f.commissionBasis}`),
-        })}`}
-        value={`− ${m(f.dispatcherCommission)}`}
-        muted
-      />
+      {/* De aquí abajo es el resultado de la casa. El transportista no recibe
+          ninguna de estas cifras: su cuenta termina en la liquidación neta de
+          arriba. Ver `App\Support\Finance\MoneyAudience`. */}
+      {fila('loads.money.grossMargin', f.grossMargin, { rule: true })}
+      {f.dispatcherCommission !== undefined ? (
+        <Row
+          label={`${t('loads.money.dispatcherCommission')} · ${t('loads.money.commissionOn', {
+            basis: t(`loads.money.basis.${f.commissionBasis}`),
+          })}`}
+          value={`− ${m(f.dispatcherCommission)}`}
+          muted
+        />
+      ) : null}
       {/* Una comisión restada del margen que no se le debe a NADIE.
           `CommissionLedger` no escribe fila cuando la carga no tiene dueño, así
           que este dinero no aparece en Comisiones ni hay a quién pagárselo — y
-          hasta este lote eso pasaba sin decirlo. Ver
-          `App\Support\Finance\CommissionOwner`. */}
+          hasta el lote anterior eso pasaba sin decirlo. Ver
+          `App\Support\Finance\CommissionOwner`.
+
+          Y el aviso se dice de DOS maneras: al que puede asignar el dueño se le
+          pide que lo asigne; al que solo mira el dinero sin poder tocarlo —el
+          despachador— se le cuenta el hecho y nada más. Mandar a arreglar algo a
+          quien no tiene el botón es la misma forma del defecto que esta pantalla
+          vino a corregir. */}
       {f.commissionOrphaned ? (
         <p className="mt-2 rounded border-l-4 border-safety-500 bg-safety-50 p-2 text-xs text-carbon">
-          {t('loads.money.commissionNoOwner')}
+          {t(canAssignOwner ? 'loads.money.commissionNoOwner' : 'loads.money.commissionNoOwnerReadOnly')}
         </p>
       ) : null}
 
-      <Row label={t('loads.money.netMargin')} value={m(f.netMargin)} strong rule />
+      {fila('loads.money.netMargin', f.netMargin, { strong: true, rule: true })}
 
       <p className="mt-3 border-t border-steel-100 pt-3 text-xs text-steel-600">
         {t(f.feeBase === 'commissionable_base' ? 'loads.money.feeBaseNote' : 'loads.money.feeBaseNoteGross')}

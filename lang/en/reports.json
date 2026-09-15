@@ -3,6 +3,7 @@
     "title": "Reports",
     "subtitle": "What was billed, what it earned, and what is still owed to you.",
     "basis": "These figures come from invoiced work and the frozen snapshot each invoice used — never from a recalculation. A closed period always says the same thing, and a load that has been delivered but not invoiced does not appear here yet.",
+    "basisCarrier": "This report shows what is yours: your gross, the dispatch fee you are charged, and what is settled to you. The dispatch company’s own result is not part of it.",
     "from": "From",
     "to": "To",
     "export": "Export CSV",

@@ -3,6 +3,7 @@
     "title": "Informes",
     "subtitle": "Qué se facturó, qué dejó, y qué le siguen debiendo.",
     "basis": "Estas cifras salen del trabajo FACTURADO y de la instantánea congelada que usó cada factura — nunca de un recálculo. Un periodo cerrado dice siempre lo mismo, y una carga entregada y todavía sin facturar aún no aparece aquí.",
+    "basisCarrier": "Este informe enseña lo suyo: su bruto, la tarifa de despacho que se le cobra y lo que se le liquida. El resultado de la casa de despacho no forma parte de él.",
     "from": "Desde",
     "to": "Hasta",
     "export": "Exportar CSV",

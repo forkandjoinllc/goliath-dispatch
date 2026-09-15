@@ -23,6 +23,7 @@ use App\Support\Equipment\UnitFacts;
 use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionOwner;
 use App\Support\Finance\LoadCalculator;
+use App\Support\Finance\MoneyAudience;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Lists\FacetCounts;
@@ -135,7 +136,7 @@ final class LoadController
 
         return Inertia::render('App/Loads/Index', [
             'loads' => [
-                'data' => $rows->map(fn (Load $l): array => $this->row($l, $names, $showMoney))->all(),
+                'data' => $rows->map(fn (Load $l): array => $this->row($l, $names, $showMoney, $actor))->all(),
                 'meta' => [
                     'total' => $page->total(),
                     'perPage' => $page->perPage(),
@@ -221,7 +222,7 @@ final class LoadController
             // El bloque de dinero NO SE CALCULA si falta el permiso. Enviarlo y
             // esconderlo en React lo dejaría al alcance de cualquiera que abra
             // las herramientas del navegador.
-            'financials' => $canMoney ? $this->financials($model) : null,
+            'financials' => $canMoney ? $this->financials($model, $actor) : null,
             'actions' => $actions,
             // Lo que se puede asignar, solo si este actor puede asignarlo. Un
             // catálogo de conductores en la respuesta de quien no puede asignar
@@ -1574,7 +1575,7 @@ final class LoadController
      * @param  array{customers: array<string, string>, carriers: array<string, string>}  $names
      * @return array<string, mixed>
      */
-    private function row(Load $l, array $names, bool $showMoney): array
+    private function row(Load $l, array $names, bool $showMoney, Actor $actor): array
     {
         return [
             'id' => $l->id,
@@ -1590,7 +1591,15 @@ final class LoadController
             // Cuando falta el permiso, la clave sale con null en vez de omitirse:
             // así el tipo de TypeScript es uno solo y la tabla no tiene que
             // adivinar si la columna existe.
-            'customerChargeCents' => $showMoney ? (int) $l->customer_charge_cents : null,
+            //
+            // El cobro al cliente lleva ADEMÁS la frontera de la ficha: el
+            // transportista tiene el permiso del dinero —lo necesita para su
+            // liquidación— y esta columna no es suya. Aquí sale null, que en
+            // este listado ya significa «no te toca»; lo que no puede pasar es
+            // que el número viaje.
+            'customerChargeCents' => $showMoney && MoneyAudience::ve($actor, 'customerCharge')
+                ? (int) $l->customer_charge_cents
+                : null,
             'carrierGrossRateCents' => $showMoney ? (int) $l->carrier_gross_rate_cents : null,
         ];
     }
@@ -1774,11 +1783,17 @@ final class LoadController
     /**
      * @return array<string, mixed>
      */
-    private function financials(Load $l): array
+    private function financials(Load $l, Actor $actor): array
     {
         $f = (new LoadCalculator)->for($l);
 
-        return [
+        // El reparto entero, y después la frontera.
+        //
+        // Se construye completo y se filtra al salir, en vez de ir preguntando
+        // cifra a cifra: así hay UN sitio donde está la lista de lo que es de la
+        // casa —`MoneyAudience`— y no diecinueve condiciones que se descuadran
+        // en cuanto alguien añade un número. Ver `docs/money-audience.md`.
+        return MoneyAudience::filtra([
             'customerCharge' => $f->customerCharge,
             'carrierGrossRate' => $f->carrierGrossRate,
             'dispatchFeeBps' => $f->dispatchFeeBps,
@@ -1805,6 +1820,6 @@ final class LoadController
             'commissionOwner' => CommissionOwner::deCarga($l),
             'commissionOwnerMissing' => CommissionOwner::porQueNoHayDueno($l),
             'commissionOrphaned' => CommissionOwner::comisionHuerfana($l, $f->dispatcherCommission),
-        ];
+        ], $actor);
     }
 }

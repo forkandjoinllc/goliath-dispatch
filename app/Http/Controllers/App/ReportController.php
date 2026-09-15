@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\App;
 
+use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Enums\AuditAction;
 use App\Support\Audit;
+use App\Support\Finance\MoneyAudience;
 use App\Support\InertiaPage;
 use App\Support\Reports\PeriodReport;
 use Carbon\CarbonImmutable;
@@ -59,7 +61,7 @@ final class ReportController
 
         return Inertia::render('App/Reports/Index', [
             'period' => ['from' => $desde->toDateString(), 'to' => $hasta->toDateString()],
-            'summary' => $this->summary($porTransportista, $cartera),
+            'summary' => $this->summary($porTransportista, $cartera, $actor),
             'byCarrier' => $porTransportista,
             'byCustomer' => $informe->byCustomer(),
             'aging' => $cartera,
@@ -96,6 +98,18 @@ final class ReportController
         [$desde, $hasta] = $this->period($request);
         $informe = new PeriodReport($actor, $scope, $desde, $hasta);
 
+        // LAS COLUMNAS DE AQUÍ NO PASAN POR `MoneyAudience`, a propósito.
+        //
+        // `report:export` no se concede fuera de la casa: la matriz lo da a
+        // administrador, contabilidad y despachador, y al transportista le da
+        // `report:read` a secas. Filtrar aquí sería escribir una segunda vez una
+        // frontera que hoy nadie puede cruzar, y una rama que no se ejecuta
+        // nunca se pudre sin avisar.
+        //
+        // Lo que sí existe es el guardián: `MoneyAudienceTest` comprueba que
+        // ningún rol de fuera de la casa tiene `report:export`. El día que
+        // alguien se lo conceda, la suite se pone en rojo y manda a este
+        // comentario — que es la única forma de deuda declarada que no miente.
         [$cabeceras, $filas] = match ($data['table']) {
             'carriers' => [
                 ['carrier', 'loads', 'gross', 'dispatch_fee', 'net_to_carrier', 'gross_margin'],
@@ -190,14 +204,19 @@ final class ReportController
     /**
      * @param  array<string, array{amountCents: int, count: int}>  $aging
      */
-    private function summary(array $porTransportista, array $aging): array
+    private function summary(array $porTransportista, array $aging, Actor $actor): array
     {
-        return [
+        // El total se suma de las filas que ya pasaron la frontera, así que
+        // fuera de la casa `marginCents` viene de una columna que no existe y
+        // `array_column` devuelve vacío: el total saldría CERO, que es peor que
+        // esconderlo — un cero se lee como un dato. Por eso la clave se quita
+        // aquí también, con la misma lista.
+        return MoneyAudience::filtraInforme([
             'feeCents' => (int) array_sum(array_column($porTransportista, 'feeCents')),
             'marginCents' => (int) array_sum(array_column($porTransportista, 'marginCents')),
             'loads' => (int) array_sum(array_column($porTransportista, 'loads')),
             'outstandingCents' => (int) array_sum(array_column($aging, 'amountCents')),
-        ];
+        ], $actor);
     }
 
     /** Céntimos a decimal, para que una hoja de cálculo lo sume sin pelearse. */

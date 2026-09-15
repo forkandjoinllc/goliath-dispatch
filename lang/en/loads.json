@@ -329,7 +329,8 @@
             "commissionable_base": "the commissionable base"
         },
         "noRateYet": "No carrier rate agreed yet, so there is nothing to settle.",
-        "commissionNoOwner": "Nobody earns this commission: the load has no dispatcher assigned, so this amount is deducted from the margin and accrues to no one. Assign a dispatcher in the load money section."
+        "commissionNoOwner": "Nobody earns this commission: the load has no dispatcher assigned, so this amount is deducted from the margin and accrues to no one. Assign a dispatcher in the load money section.",
+        "commissionNoOwnerReadOnly": "Nobody earns this commission: the load has no dispatcher assigned, so this amount is deducted from the margin and accrues to no one. Whoever handles finance can assign a dispatcher from the load."
     },
     "rateConfirmation": {
         "title": "Rate confirmation",
