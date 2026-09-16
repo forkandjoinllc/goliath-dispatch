@@ -3286,3 +3286,21 @@ el lote anterior dejó escrito que la primera mitad estaba bien.
 **Un valor por omisión es una decisión escondida.** `ttlHours: null` no se lee
 como «72 horas», se lee como «lo normal». Cuando lo normal depende de cuánto dure
 un viaje, el valor tiene que calcularse y el cálculo tiene que tener nombre.
+
+---
+
+## Lote «el filtro de dueño» (`docs/document-owner-filter.md`)
+
+**Una promesa muda se esconde mejor que una equivocada.** Los chips de la
+pantalla de documentos llevan número y pasaron por `FacetCounts`; el desplegable
+que vive al lado hace la misma promesa sin número y sobrevivió a aquel lote.
+Cuando se arregle «el número tiene que ser el que sale», conviene mirar qué
+controles de la misma pantalla prometen lo mismo **sin enseñar nada**.
+
+**Una prueba anterior puede encodar media verdad.** `UnnamedValuesTest` exigía el
+catálogo entero, y era correcto contra el defecto de su lote —la lista estaba
+escrita a mano en React—. Se corrigió con el motivo dentro, no se relajó.
+
+**Recortar y validar son dos preguntas.** La pantalla recibe lo alcanzable; el
+servidor valida contra el catálogo. Juntarlas parece elegante y hace que un
+parámetro escrito a mano se comporte distinto según quién mire.

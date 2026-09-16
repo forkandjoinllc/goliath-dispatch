@@ -360,10 +360,20 @@ it('la lista de dueños no está escrita a mano en ningún sitio más', function
         'El filtro tiene que salir del catálogo.',
     );
 
+    // El desplegable sale del catálogo, RECORTADO por el alcance.
+    //
+    // Esta comprobación pedía `DocumentOwners::all()` y era correcta para lo
+    // que aquel lote arreglaba: la lista estaba escrita a mano en el
+    // componente. Lo que no vio es que el catálogo entero también miente, en
+    // otra dirección: con alcance propio, ocho de las nueve opciones no pueden
+    // casar con nada y la lista se vacía en silencio.
+    //
+    // `ownerTypesFor()` sigue saliendo del catálogo para quien lo ve todo, y
+    // del recorte para los demás. Ver `docs/document-owner-filter.md`.
     test()->assertStringContainsString(
-        "'ownerTypes'=>DocumentOwners::all()",
+        "'ownerTypes'=>DocumentScope::ownerTypesFor(\$scope)",
         $controlador,
-        'El desplegable tiene que salir del catálogo, no del componente.',
+        'El desplegable tiene que salir del catálogo recortado por el alcance, no del componente.',
     );
 
     $pantalla = (string) file_get_contents(raizNombres().'/resources/js/pages/App/Documents/Index.tsx');

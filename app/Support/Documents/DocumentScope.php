@@ -112,6 +112,51 @@ final class DocumentScope
     }
 
     /**
+     * Los tipos de dueño que este alcance puede LLEGAR A VER.
+     *
+     * ## El defecto
+     *
+     * El filtro de dueño de la pantalla de documentos ofrecía los nueve del
+     * catálogo, a todo el mundo. Y `apply()` de aquí arriba recorta:
+     *
+     *  - con alcance PROPIO fuerza `owner_type = 'driver'`, así que **ocho de
+     *    las nueve** opciones devuelven cero filas siempre, para cualquier
+     *    conductor, en cualquier empresa;
+     *  - con alcance de transportista o asignado, `forCarriers()` solo emite
+     *    cuatro ramas, así que **cinco de nueve** son estructuralmente vacías —
+     *    incluidas «carga» y «gasto», que son las de más volumen.
+     *
+     * La lista se vaciaba en silencio: ninguna señal de que esa opción no podía
+     * casar con nada.
+     *
+     * `App\Support\Lists\FacetCounts` ya dice la regla para los atajos de esas
+     * mismas pantallas: «el número de un atajo tiene que ser el número que sale
+     * al pulsarlo». Un desplegable sin número es el caso en el que la promesa se
+     * hace sin decir nada, y por eso se le escapó.
+     *
+     * ## Por qué aquí
+     *
+     * Porque es `apply()` leído al revés, igual que `carrierOf()` es
+     * `forCarriers()` leído al revés. Las dos direcciones tienen que decir lo
+     * mismo, y hay un guardián que las compara — el mismo que faltaba para
+     * `carrierOf()` hasta el lote del aviso de vencimiento.
+     *
+     * @return list<string>
+     */
+    public static function ownerTypesFor(Scope $scope): array
+    {
+        return match ($scope) {
+            Scope::Platform, Scope::Tenant => DocumentOwners::all(),
+
+            // Las cuatro ramas de `forCarriers()`, en el mismo orden.
+            Scope::Carrier, Scope::Assigned => ['carrier', 'driver', 'truck', 'trailer'],
+
+            // La única rama de `Scope::Own`.
+            Scope::Own => ['driver'],
+        };
+    }
+
+    /**
      * ¿Puede este actor tocar un documento de este dueño?
      *
      * La comprobación de SUBIDA, que va al revés que la de lectura: al leer se

@@ -115,7 +115,11 @@ final class DocumentController
             // filtrar: el desplegable no llegaba a ellas. Ahora sale del mismo
             // catálogo que las nombra, así que un dueño nuevo aparece en los dos
             // sitios o en ninguno.
-            'ownerTypes' => DocumentOwners::all(),
+            // Los que ESTE alcance puede llegar a ver, no los nueve del
+            // catálogo. Un conductor tenía ocho opciones de nueve que
+            // devolvían cero filas siempre, y la lista se vaciaba en silencio.
+            // Ver `DocumentScope::ownerTypesFor()`.
+            'ownerTypes' => DocumentScope::ownerTypesFor($scope),
             'filters' => $filters,
             'scope' => $scope->value,
             'facets' => $this->facets($checker, $actor, $scope, $filters),
