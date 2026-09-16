@@ -19,6 +19,7 @@ use App\Support\InertiaPage;
 use App\Support\Notifications\Events;
 use App\Support\Notifications\Notifier;
 use App\Support\Storage\DocumentStore;
+use App\Support\Screens\Reachable;
 use App\Support\Loads\LoadScope;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,8 +63,6 @@ final class ExpenseController
     private const PER_PAGE = 25;
 
     /** @var list<string> */
-    private const STATUSES = ['submitted', 'approved', 'rejected', 'reimbursed'];
-
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response|RedirectResponse
     {
         $actor = $current->require();
@@ -84,7 +83,7 @@ final class ExpenseController
         $this->usesDictionary($request, ['expenses', 'nav', 'common']);
 
         $filters = [
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('expenses.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : '',
             'load' => trim((string) $request->query('load', '')),
@@ -117,7 +116,7 @@ final class ExpenseController
                 ],
             ],
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('expenses.status'),
             // Lo que de verdad importa de un listado de gastos: cuánto hay
             // esperando a que alguien lo mire, y cuánto ya cuenta en el dinero.
             // La MISMA consulta que la lista, filtros incluidos. Antes se

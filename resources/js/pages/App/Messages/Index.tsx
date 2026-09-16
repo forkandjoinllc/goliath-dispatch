@@ -55,19 +55,30 @@ export default function MessagesIndexPage({ threads, filters, kinds }: Props) {
     >
       <div className="flex flex-col gap-4">
         <section className="flex flex-wrap items-end gap-4 rounded border border-steel-200 bg-white p-4">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-steel-700">{t('messages.index.kindLabel')}</span>
-            <select
-              value={filters.kind ?? ''}
-              onChange={(e) => filtrar({ kind: e.target.value || null })}
-              className="rounded border border-steel-300 px-3 py-2 text-sm"
-            >
-              <option value="">{t('messages.index.allKinds')}</option>
-              {kinds.map((k) => (
-                <option key={k} value={k}>{t(`messages.kind.${k}`)}</option>
-              ))}
-            </select>
-          </label>
+          {/*
+            El filtro solo existe si hay más de una clase de hilo.
+
+            Ofrecía «Directo» y «Aviso general» y ninguno de los dos se
+            puede crear: elegirlos daba cero hilos con el texto «Ningún
+            hilo cuadra con lo que buscas», culpando al filtro de algo
+            imposible. Con una sola clase, un desplegable de una opción
+            tampoco dice nada — así que no se pinta.
+          */}
+          {kinds.length > 1 ? (
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-steel-700">{t('messages.index.kindLabel')}</span>
+              <select
+                value={filters.kind ?? ''}
+                onChange={(e) => filtrar({ kind: e.target.value || null })}
+                className="rounded border border-steel-300 px-3 py-2 text-sm"
+              >
+                <option value="">{t('messages.index.allKinds')}</option>
+                {kinds.map((k) => (
+                  <option key={k} value={k}>{t(`messages.kind.${k}`)}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-steel-700">{t('messages.index.searchLabel')}</span>

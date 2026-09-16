@@ -206,7 +206,13 @@ final class CommissionLedger
             ->where('tenant_id', $actor->tenantId)
             ->whereIn('id', $ids)
             ->whereNull('deleted_at')
-            ->whereIn('status', ['accrued', 'approved'])
+            // Solo `accrued`. Esto decía `['accrued', 'approved']`, y
+            // `approved` es un estado que NADA escribe: no hay paso de
+            // aprobación de comisiones. Una cláusula que lee un estado
+            // imposible no hace daño, pero dice que existe — y la pantalla la
+            // creía: ofrecía «Aprobado» en su desplegable. Ver
+            // `Screens\Reachable`.
+            ->where('status', 'accrued')
             ->update([
                 'status' => 'paid',
                 'paid_at' => $ahora,

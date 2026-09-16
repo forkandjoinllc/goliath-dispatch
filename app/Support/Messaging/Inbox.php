@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\PermissionChecker;
 use App\Enums\Scope;
 use App\Models\Conversation;
+use App\Support\Screens\Reachable;
 use App\Support\Time\Viewer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ final class Inbox
     {
         $query = MessageScope::apply(Conversation::query(), $checker, $actor, $scope);
 
-        if (($filtros['kind'] ?? null) !== null && in_array($filtros['kind'], Threads::KINDS, true)) {
+        if (Reachable::admite('messages.kind', $filtros['kind'] ?? null)) {
             $query->where('conversations.kind', $filtros['kind']);
         }
 

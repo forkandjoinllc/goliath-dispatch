@@ -12,6 +12,7 @@ use App\Support\Audit;
 use App\Support\Customers\NameKey;
 use App\Support\InertiaPage;
 use App\Support\Notifications\Notifier;
+use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -68,8 +69,6 @@ final class LeadController
      *
      * @var list<string>
      */
-    private const STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost'];
-
     /** @var list<string> */
     private const SOURCES = ['contact_form', 'quote_form', 'carrier_signup'];
 
@@ -106,7 +105,7 @@ final class LeadController
                 ],
             ],
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('leads.status'),
             'sources' => self::SOURCES,
             'counts' => $this->countsByStatus($actor),
             'assignees' => $this->assignees($actor),
@@ -138,7 +137,7 @@ final class LeadController
             ],
             'quotes' => $this->quotes($actor, (string) $fila->id),
             'matches' => $this->matches($actor, $fila),
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('leads.status'),
             'assignees' => $this->assignees($actor),
             'can' => [
                 'update' => $checker->can($actor, 'lead:update', null, $policy)->allowed,
@@ -164,7 +163,7 @@ final class LeadController
         $fila = $this->find($actor, $lead);
 
         $data = $request->validate([
-            'status' => ['required', 'string', Rule::in(self::STATUSES)],
+            'status' => ['required', 'string', Rule::in(Reachable::valores('leads.status'))],
             'reason' => ['nullable', 'string', 'max:2000', Rule::requiredIf(
                 static fn (): bool => $request->input('status') === 'lost'
             )],
@@ -331,7 +330,7 @@ final class LeadController
     private function filters(Request $request): array
     {
         return [
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('leads.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : '',
             'source' => in_array($request->query('source'), self::SOURCES, true)
@@ -411,7 +410,7 @@ final class LeadController
 
         $salida = [];
 
-        foreach (self::STATUSES as $estado) {
+        foreach (Reachable::valores('leads.status') as $estado) {
             $salida[$estado] = (int) ($conteo[$estado] ?? 0);
         }
 

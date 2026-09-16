@@ -145,7 +145,12 @@ it('cobros: filtrar por un estado sin filas deja la suma en cero', function (): 
     signIn($this->scenario, Role::Admin);
 
     // Era el caso medido: cero filas y «En casa 1.721,74 $» encima.
-    $p = propsDe('/payments?status=cancelled');
+    //
+    // `refunded` y no `cancelled`: la pantalla ya no admite estados que nada
+    // puede escribir —ver `Screens\Reachable`— así que filtrar por uno de esos
+    // no filtra, se ignora. El caso que esta prueba mide es otro: un estado que
+    // SÍ existe y hoy no tiene filas.
+    $p = propsDe('/payments?status=refunded');
 
     expect(filasVisibles($p, 'payments'))->toBe(0);
     expect($p['totals']['settledCents'])->toBe(0);

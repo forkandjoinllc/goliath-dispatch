@@ -20,6 +20,7 @@ use App\Support\Finance\InvoiceLink;
 use App\Support\Finance\PaymentLedger;
 use App\Support\InertiaPage;
 use App\Support\Loads\BillingState;
+use App\Support\Screens\Reachable;
 use App\Support\Tenancy\TenantPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,7 +66,7 @@ final class InvoiceController
 
         $filters = [
             'search' => trim((string) $request->query('search', '')),
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('invoices.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : '',
             'overdue' => $request->query('overdue') === '1' ? '1' : '',
@@ -98,7 +99,7 @@ final class InvoiceController
                 ],
             ],
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('invoices.status'),
             // Los totales se calculan sobre TODO el filtro, no sobre la página.
             // Una suma que cambia al pasar de página no es una suma.
             //
@@ -428,10 +429,6 @@ final class InvoiceController
     // ------------------------------------------------------------------ ayudas
 
     /** @var list<string> */
-    private const STATUSES = [
-        'draft', 'sent', 'due', 'paid', 'overdue', 'disputed', 'voided', 'uncollectable',
-    ];
-
     /**
      * @return Builder<Invoice>
      */

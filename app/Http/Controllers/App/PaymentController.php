@@ -12,6 +12,7 @@ use App\Enums\Scope;
 use App\Models\Payment;
 use App\Support\Finance\PaymentLedger;
 use App\Support\InertiaPage;
+use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -42,11 +43,6 @@ final class PaymentController
     private const PER_PAGE = 30;
 
     /** @var list<string> */
-    private const STATUSES = [
-        'pending', 'processing', 'succeeded', 'failed',
-        'refunded', 'partially_refunded', 'disputed', 'cancelled',
-    ];
-
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
         $actor = $current->require();
@@ -58,7 +54,7 @@ final class PaymentController
         $this->usesDictionary($request, ['payments', 'invoices', 'nav', 'common']);
 
         $filters = [
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('payments.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : '',
             'method' => in_array($request->query('method'), PaymentMethod::values(), true)
@@ -96,7 +92,7 @@ final class PaymentController
                 ],
             ],
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('payments.status'),
             'methods' => PaymentMethod::values(),
             // La MISMA consulta que la lista, filtros incluidos. Antes se
             // sumaba sobre el ámbito pelado: filtrar por «en disputa» dejaba la

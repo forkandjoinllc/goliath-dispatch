@@ -3457,3 +3457,41 @@ cabecera `content-disposition` porque nadie había pensado en ella.
 construía la URL firmada él solo, así que cuando `temporaryUrl()` aprendió a
 poner el nombre, el papel de un permiso siguió bajando con el UUID. La copia no
 se entera de que el original cambió.
+
+---
+
+## Lote «las opciones que no pueden pasar» (`docs/reachable-options.md`)
+
+**Una lista donde todo está bien es lo que demuestra que el registro mide algo.**
+De ocho listas de estados, cuatro estaban enteras. Declararlas también —en vez
+de anotar solo las rotas— es lo que convierte el registro en una medida y no en
+una lista de averías, y es lo que avisa el día que una de las sanas pierde un
+productor.
+
+**«Producir» tiene más de una forma.** Un valor puede venir de una línea de
+código, del `default` de la columna, de un cálculo al leer, o de un formulario
+que valida contra el propio registro. Dar por hecho la primera habría dejado
+tres falsos positivos y, peor, habría empujado a declarar productores falsos
+para que el guardián callara.
+
+**Cuando el esquema no restringe, el catálogo es el diccionario.** Tres de las
+columnas no tienen CHECK ni enum: son `varchar` con un valor por omisión. Lo
+único que enumera sus estados es el texto que la pantalla sabe pintar — así que
+eso es el catálogo, y comparar contra él encuentra el estado que alguien añadió
+al diccionario y nadie produce.
+
+**Una cláusula que lee un estado imposible dice que existe.** `whereIn('status',
+['accrued','approved'])` no hacía daño y la pantalla la creía. Vale la pena
+distinguir las permisivas —que prometen— de las defensivas —que excluyen algo
+que no puede pasar y no prometen nada—; las primeras se limpian, las segundas se
+dejan.
+
+**Una prueba anterior puede apoyarse justo en el defecto.** `ListTotalsTest`
+usaba `?status=cancelled` precisamente porque no tenía filas. Al dejar de
+admitirse, el filtro se ignoraba y la prueba caía. Se corrigió con el motivo
+dentro y un estado que sí existe; no se relajó.
+
+**Un sabotaje puede salir nulo sin parecerlo.** El que acortaba un motivo lo
+concatenaba con el resto del original, así que el texto seguía siendo largo y el
+guardián callaba con razón. Un sabotaje que no cambia lo que dice medir es una
+comprobación que no se ha hecho.

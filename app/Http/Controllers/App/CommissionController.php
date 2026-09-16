@@ -11,6 +11,7 @@ use App\Enums\Scope;
 use App\Support\Finance\CommissionLedger;
 use App\Support\InertiaPage;
 use App\Support\Plural;
+use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -39,8 +40,6 @@ final class CommissionController
     use InertiaPage;
 
     /** @var list<string> */
-    private const STATUSES = ['accrued', 'approved', 'paid', 'voided'];
-
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
         $actor = $current->require();
@@ -50,7 +49,7 @@ final class CommissionController
         $this->usesDictionary($request, ['commissions', 'nav', 'common']);
 
         $filters = [
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('commissions.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : 'accrued',
             'from' => $this->fecha($request->query('from')),
@@ -63,7 +62,7 @@ final class CommissionController
         return Inertia::render('App/Commissions/Index', [
             'dispatchers' => $this->groupByDispatcher($filas, $this->names($ids)),
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('commissions.status'),
             'totals' => [
                 'shownCents' => (int) $filas->sum('amount_cents'),
                 'rows' => $filas->count(),
@@ -93,7 +92,11 @@ final class CommissionController
             'dispatcher_user_id' => ['required', 'string', 'size:36'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
-            'status' => ['nullable', 'string', Rule::in(self::STATUSES)],
+            // La MISMA lista que la pantalla ofrece. Admitía los cuatro, así
+            // que se podía pedir pagar las comisiones «aprobadas» —un estado
+            // que nada puede escribir—, no se pagaba ninguna y el mensaje de
+            // éxito decía «0 comisiones marcadas como pagadas».
+            'status' => ['nullable', 'string', Rule::in(Reachable::valores('commissions.status'))],
         ]);
 
         // Se recalcula la MISMA consulta que pintó la pantalla y se pagan sus

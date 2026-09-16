@@ -15,6 +15,7 @@ use App\Models\CarrierSettlement;
 use App\Models\Load;
 use App\Support\Audit;
 use App\Support\Finance\SettlementBuilder;
+use App\Support\Screens\Reachable;
 use App\Support\InertiaPage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,8 +45,6 @@ final class SettlementController
     private const PER_PAGE = 25;
 
     /** @var list<string> */
-    private const STATUSES = ['draft', 'issued', 'paid', 'voided'];
-
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
         $actor = $current->require();
@@ -56,7 +55,7 @@ final class SettlementController
 
         $filters = [
             'search' => trim((string) $request->query('search', '')),
-            'status' => in_array($request->query('status'), self::STATUSES, true)
+            'status' => Reachable::admite('settlements.status', $request->query('status'))
                 ? (string) $request->query('status')
                 : '',
         ];
@@ -87,7 +86,7 @@ final class SettlementController
                 ],
             ],
             'filters' => $filters,
-            'statuses' => self::STATUSES,
+            'statuses' => Reachable::valores('settlements.status'),
             // La MISMA consulta que la lista. `totals()` llevaba su propia copia
             // del filtro de estado y no sabía nada de la búsqueda: buscar un
             // número que no existe dejaba la lista vacía y encima seguía

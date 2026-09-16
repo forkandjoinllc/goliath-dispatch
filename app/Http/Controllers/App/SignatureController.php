@@ -16,6 +16,7 @@ use App\Support\Signatures\State;
 use App\Support\Signatures\TemplateBody;
 use App\Support\Signatures\Templates;
 use App\Support\Signatures\Verifier;
+use App\Support\Screens\Reachable;
 use App\Support\Time\PresentsTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
@@ -57,8 +58,6 @@ final class SignatureController
     use PresentsTime;
 
     /** @var list<string> */
-    private const ESTADOS = ['pending', 'viewed', 'signed', 'declined', 'expired', 'voided', 'superseded'];
-
     /** El índice de solicitudes. */
     public function index(Request $request, CurrentActor $current, PermissionChecker $checker): Response
     {
@@ -69,7 +68,7 @@ final class SignatureController
         $this->usesDictionary($request, ['signature', 'carriers', 'nav', 'common', 'validation']);
 
         $estado = (string) $request->query('status', '');
-        $estado = in_array($estado, self::ESTADOS, true) ? $estado : '';
+        $estado = in_array($estado, Reachable::valores('signatures.status'), true) ? $estado : '';
 
         $filas = $this->scoped($checker, $actor, $scope)
             ->leftJoin('signature_templates as t', 't.id', '=', 'r.template_id')
@@ -115,7 +114,7 @@ final class SignatureController
                 ->values()
                 ->all(),
             'filters' => ['status' => $estado],
-            'statuses' => self::ESTADOS,
+            'statuses' => Reachable::valores('signatures.status'),
             // Como el enlace de rastreo: viaja una vez, en el flash de ESTA
             // respuesta, y como prop propia — la bolsa `flash` compartida solo
             // lleva `success` y `error`, a propósito.

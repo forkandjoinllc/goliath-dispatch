@@ -17,6 +17,7 @@ use App\Support\Messaging\Inbox;
 use App\Support\Messaging\MessageScope;
 use App\Support\Messaging\Posting;
 use App\Support\Messaging\Threads;
+use App\Support\Screens\Reachable;
 use App\Support\Storage\DocumentStore;
 use App\Support\Time\PresentsTime;
 use App\Support\Time\Viewer;
@@ -92,7 +93,11 @@ final class MessageController
                 'kind' => $request->query('kind'),
                 'q' => $request->query('q'),
             ],
-            'kinds' => Threads::KINDS,
+            // Las clases de hilo que de verdad existen. `Threads::KINDS` son
+            // las tres que el esquema nombra, y solo una se puede crear: el
+            // desplegable ofrecía «Directo» y «Aviso general», y elegirlos daba
+            // siempre cero con el texto «Ningún hilo cuadra con lo que buscas».
+            'kinds' => Reachable::valores('messages.kind'),
         ]);
     }
 
