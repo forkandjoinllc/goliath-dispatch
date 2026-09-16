@@ -3168,3 +3168,32 @@ prueba de que NO aplanó el de al lado.
 **Dos funciones con dos nombres valen más que una con un parámetro.** `day()` y
 `date()` estaban copiadas a mano en cada pantalla y la mitad trataba un día como
 una hora. `formatDay()` y `formatInstant()` no se confunden al leerlas.
+
+---
+
+## Lote «los relojes de la carga» (`docs/load-clock.md`)
+
+**Un lote que arregla una tabla no arregla la columna equivalente de la tabla de
+al lado.** `StopClock` resolvió exactamente este defecto para `load_stops`, con
+su medición y su alternativa descartada por escrito, y las columnas
+`planned_*`/`actual_*` de `loads` —lo mismo un nivel más arriba, en la misma
+pantalla— se quedaron fuera. Al cerrar un lote conviene preguntarse qué otras
+filas del esquema tienen la misma forma.
+
+**El sembrador volvió a tapar el defecto.** Los datos de demostración escriben
+`actual_pickup_at` con la misma hora de pared que `planned_pickup_at`, así que en
+el demo las dos filas se leían bien. En producción una la escribe `now()` en UTC.
+Es la tercera vez en este proyecto que el sembrador produce un estado que la
+aplicación no produce.
+
+**Un sabotaje nulo se nota y hay que rehacerlo.** Escribí uno cuya aguja y
+reemplazo eran idénticos; el arnés lo marcó como «SABOTAJE NULO» en vez de
+contarlo como rojo. Un sabotaje que no cambia nada es un rojo regalado.
+
+**Cuando quitar una comprobación no rompe nada, sobra.** El huso vacío lo
+resolvía ya `StopClock`, así que la comprobación equivalente en la pieza nueva
+era decoración. Se quitó, y en su lugar entró el sabotaje que sí importa: coger
+el huso de la parada equivocada.
+
+**Los ayudantes de Pest, otra vez.** `raizReloj()` chocó con el de
+`StopClockTest`. Cuarta vez. El apellido del lote no es opcional.

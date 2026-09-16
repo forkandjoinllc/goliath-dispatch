@@ -14,8 +14,8 @@ interface LoadRow {
   carrier: string | null
   commodity: string | null
   isOversize: boolean
-  plannedPickupAt: string | null
-  plannedDeliveryAt: string | null
+  plannedPickup: { at: string | null; zone: string }
+  plannedDelivery: { at: string | null; zone: string }
   miles: number | null
   customerChargeCents: number | null
   carrierGrossRateCents: number | null
@@ -95,12 +95,26 @@ export default function LoadsIndex({
     filters.search !== '' || filters.status !== '' || filters.customer !== '' ||
     filters.carrier !== '' || filters.uninvoiced !== ''
 
-  const day = (value: string | null): string =>
-    value
-      ? new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
-          month: 'short', day: 'numeric',
-        }).format(new Date(value))
-      : '—'
+  /**
+   * El día previsto, en la hora DEL MUELLE.
+   *
+   * Llegaba el instante y se construía la fecha aquí, con el reloj del
+   * navegador: una recogida planificada a las 02:00 salía con la fecha del día
+   * ANTERIOR para cualquiera al oeste de Greenwich. Ahora el servidor manda la
+   * hora del muelle ya resuelta —«2026-09-16 02:00»— y aquí solo se recorta el
+   * día. Ver `App\Support\Loads\LoadClock`.
+   */
+  const dia = (v: { at: string | null; zone: string }): string => {
+    if (v.at === null) {
+      return '—'
+    }
+
+    // Medianoche LOCAL, no UTC: el valor ya viene en el reloj correcto y lo
+    // único que hace falta es darle formato sin volver a moverlo.
+    return new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
+      month: 'short', day: 'numeric',
+    }).format(new Date(`${v.at.slice(0, 10)}T00:00:00`))
+  }
 
   return (
     <AppLayout
@@ -264,10 +278,10 @@ export default function LoadsIndex({
                     <td className="max-w-40 truncate px-3 py-3 text-steel-700">{l.customer ?? '—'}</td>
                     <td className="max-w-40 truncate px-3 py-3 text-steel-700">{l.carrier ?? '—'}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-steel-700">
-                      {day(l.plannedPickupAt)}
+                      {dia(l.plannedPickup)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-steel-700">
-                      {day(l.plannedDeliveryAt)}
+                      {dia(l.plannedDelivery)}
                     </td>
                     {showMoney ? (
                       <td className="px-3 py-3 tabular-nums">

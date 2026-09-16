@@ -30,6 +30,7 @@ use App\Support\Lists\FacetCounts;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
 use App\Support\Loads\Guards;
+use App\Support\Loads\LoadClock;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\NumberGenerator;
 use App\Support\Loads\ScheduleConflict;
@@ -133,10 +134,21 @@ final class LoadController
 
         $rows = collect($page->items());
         $names = $this->relatedNames($rows);
+        $muelles = LoadClock::muellesDe($rows->map(fn (Load $l): string => (string) $l->id)->all());
 
         return Inertia::render('App/Loads/Index', [
             'loads' => [
-                'data' => $rows->map(fn (Load $l): array => $this->row($l, $names, $showMoney, $actor))->all(),
+                // Los husos de las paradas de ESTA página, en una consulta. La
+                // fecha prevista de una carga es hora del muelle: pintada con
+                // el reloj del navegador, una recogida planificada a las 02:00
+                // salía en la lista con la fecha del día anterior.
+                'data' => $rows->map(fn (Load $l): array => $this->row(
+                    $l,
+                    $names,
+                    $showMoney,
+                    $actor,
+                    $muelles[(string) $l->id] ?? ['pickup' => null, 'delivery' => null],
+                ))->all(),
                 'meta' => [
                     'total' => $page->total(),
                     'perPage' => $page->perPage(),
@@ -1573,9 +1585,10 @@ final class LoadController
 
     /**
      * @param  array{customers: array<string, string>, carriers: array<string, string>}  $names
+     * @param  array{pickup: ?string, delivery: ?string}  $muelles
      * @return array<string, mixed>
      */
-    private function row(Load $l, array $names, bool $showMoney, Actor $actor): array
+    private function row(Load $l, array $names, bool $showMoney, Actor $actor, array $muelles): array
     {
         return [
             'id' => $l->id,
@@ -1585,8 +1598,9 @@ final class LoadController
             'carrier' => $l->carrier_id === null ? null : ($names['carriers'][$l->carrier_id] ?? null),
             'commodity' => $l->commodity,
             'isOversize' => (bool) $l->is_oversize,
-            'plannedPickupAt' => $l->planned_pickup_at?->toIso8601String(),
-            'plannedDeliveryAt' => $l->planned_delivery_at?->toIso8601String(),
+            // Hora del muelle, con su etiqueta. Ver `App\Support\Loads\LoadClock`.
+            'plannedPickup' => LoadClock::previsto($l->planned_pickup_at, $muelles['pickup']),
+            'plannedDelivery' => LoadClock::previsto($l->planned_delivery_at, $muelles['delivery']),
             'miles' => $l->miles === null ? null : (int) $l->miles,
             // Cuando falta el permiso, la clave sale con null en vez de omitirse:
             // así el tipo de TypeScript es uno solo y la tabla no tiene que
@@ -1642,6 +1656,18 @@ final class LoadController
             'permitApprovedAt' => $l->permit_ready_approved_at?->toIso8601String(),
             'miles' => $l->miles === null ? null : (int) $l->miles,
             'deadheadMiles' => $l->deadhead_miles === null ? null : (int) $l->deadhead_miles,
+            // Las cinco horas de la carga, cada una con su reloj y su etiqueta.
+            //
+            // Se pintaban crudas, una debajo de otra, con la misma conversión
+            // de navegador aplicada a dos relojes distintos: lo previsto es
+            // hora de pared del muelle y lo real es UTC. Cinco minutos de
+            // retraso se leían como cinco horas. Ver
+            // `App\Support\Loads\LoadClock`.
+            'clock' => $this->reloj($l, $actor),
+            // Y los valores CRUDOS se quedan, igual que `windowStart` en las
+            // paradas: este payload alimenta también el formulario de edición,
+            // y ahí la hora tiene que volver tal cual salió para no cambiarla
+            // solo con abrir la pantalla.
             'plannedPickupAt' => $l->planned_pickup_at?->toIso8601String(),
             'plannedDeliveryAt' => $l->planned_delivery_at?->toIso8601String(),
             'actualPickupAt' => $l->actual_pickup_at?->toIso8601String(),
@@ -1661,6 +1687,26 @@ final class LoadController
     /**
      * @return list<array<string, mixed>>
      */
+    /**
+     * Las horas de la carga, cada una en su reloj.
+     *
+     * @return array<string, array{at: ?string, zone: string}>
+     */
+    private function reloj(Load $l, Actor $actor): array
+    {
+        $muelles = LoadClock::muelles((string) $l->id);
+
+        return [
+            'plannedPickup' => LoadClock::previsto($l->planned_pickup_at, $muelles['pickup']),
+            'actualPickup' => LoadClock::real($l->actual_pickup_at, $muelles['pickup']),
+            'plannedDelivery' => LoadClock::previsto($l->planned_delivery_at, $muelles['delivery']),
+            'actualDelivery' => LoadClock::real($l->actual_delivery_at, $muelles['delivery']),
+            // El comprobante no es una hora de muelle: es cuándo llegó el
+            // papel a la oficina.
+            'podReceived' => LoadClock::oficina($l->pod_received_at, $actor->timezone),
+        ];
+    }
+
     private function stops(Load $l): array
     {
         return DB::table('load_stops as s')

@@ -108,11 +108,18 @@ interface Props {
     permitApprovedAt: string | null
     miles: number | null
     deadheadMiles: number | null
+    /**
+     * El valor CRUDO, que solo usa el formulario de edición.
+     *
+     * Lo que se PINTA sale de `clock`, donde cada hora viene ya en su reloj y
+     * con su etiqueta. Ver `App\Support\Loads\LoadClock`.
+     */
     plannedPickupAt: string | null
     plannedDeliveryAt: string | null
     actualPickupAt: string | null
     actualDeliveryAt: string | null
     podReceivedAt: string | null
+    clock: Record<string, { at: string | null; zone: string }>
     specialInstructions: string | null
     internalNotes: string | null
     cancellationReason: string | null
@@ -146,6 +153,16 @@ export default function LoadShow({
           ...(withTime ? { timeStyle: 'short' } : {}),
         }).format(new Date(value))
       : '—'
+
+  /**
+   * Una hora que el servidor ya puso en su reloj, con la etiqueta al lado.
+   *
+   * No se construye ninguna fecha aquí: el valor llega formateado —«2026-09-16
+   * 06:00»— porque quien sabe en qué reloj está cada columna es el servidor. Un
+   * `new Date()` en esta pantalla es lo que produjo el defecto.
+   */
+  const reloj = (v: { at: string | null; zone: string } | undefined): string =>
+    v?.at ? `${v.at} ${v.zone}` : '—'
 
   const statusLabel = (s: string) =>
     t(`nav.status.load.${s.replace(/_(.)/g, (_, c: string) => c.toUpperCase())}`)
@@ -445,13 +462,19 @@ export default function LoadShow({
               respuesta no lleva estos números en absoluto. */}
           {financials ? <MoneyCard f={financials} canAssignOwner={Boolean(can.updateFinancials)} /> : null}
 
+          {/* Las cinco horas, cada una con la abreviatura de SU reloj.
+              Lo previsto es hora del muelle y lo real estaba en UTC, y las
+              cuatro se pintaban con la misma conversión de navegador: cinco
+              minutos de retraso se leían como cinco horas. Es el mismo defecto
+              que las paradas ya tenían arreglado justo encima, en esta misma
+              pantalla. Ver `App\Support\Loads\LoadClock`. */}
           <Card title={t('loads.detail.plannedPickup')}>
             <Dl compact>
-              <Item label={t('loads.detail.plannedPickup')}>{dt(load.plannedPickupAt)}</Item>
-              <Item label={t('loads.detail.actualPickup')}>{dt(load.actualPickupAt)}</Item>
-              <Item label={t('loads.detail.plannedDelivery')}>{dt(load.plannedDeliveryAt)}</Item>
-              <Item label={t('loads.detail.actualDelivery')}>{dt(load.actualDeliveryAt)}</Item>
-              <Item label={t('loads.detail.podReceived')}>{dt(load.podReceivedAt)}</Item>
+              <Item label={t('loads.detail.plannedPickup')}>{reloj(load.clock.plannedPickup)}</Item>
+              <Item label={t('loads.detail.actualPickup')}>{reloj(load.clock.actualPickup)}</Item>
+              <Item label={t('loads.detail.plannedDelivery')}>{reloj(load.clock.plannedDelivery)}</Item>
+              <Item label={t('loads.detail.actualDelivery')}>{reloj(load.clock.actualDelivery)}</Item>
+              <Item label={t('loads.detail.podReceived')}>{reloj(load.clock.podReceived)}</Item>
             </Dl>
           </Card>
         </div>
