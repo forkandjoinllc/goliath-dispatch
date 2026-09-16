@@ -166,7 +166,10 @@ final class Inbox
                 'u.first_name', 'u.last_name', 'u.email',
             ]);
 
-        $adjuntos = self::attachments($filas->pluck('id')->map(static fn ($i): string => (string) $i)->all());
+        $adjuntos = self::attachments(
+            $conversationId,
+            $filas->pluck('id')->map(static fn ($i): string => (string) $i)->all(),
+        );
 
         return $filas->map(static fn ($m): array => [
             'id' => (string) $m->id,
@@ -188,10 +191,32 @@ final class Inbox
     }
 
     /**
+     * Los adjuntos de estos mensajes, con la ruta para bajárselos.
+     *
+     * ## El defecto que arregla el `href`
+     *
+     * Esto devolvía nombre, tipo y peso, y la pantalla los pintaba como texto.
+     * **No existía ninguna ruta para descargar un adjunto de mensaje**, ni
+     * ninguna forma de llegar al fichero desde ningún sitio: se subía un
+     * comprobante a la conversación con el transportista, el otro leía
+     * «bol.pdf · 240 KB», y ni él ni quien lo había subido podían abrirlo
+     * jamás. El fichero se quedaba en el almacén ocupando sitio y reclamado por
+     * una fila, así que ni siquiera salía en el recuento de huérfanos.
+     *
+     * La aplicación tenía tres maneras de servir un fichero —`documents.show`,
+     * `documents.file` y los papeles de una carga— y esta pantalla no usaba
+     * ninguna.
+     *
+     * ## Lo que sigue sin viajar
+     *
+     * `storage_key`. La ruta lleva el id del adjunto y el servidor resuelve la
+     * clave; mandarla al cliente sería darle la dirección del fichero a quien
+     * quizá no puede abrirlo. Es la lección del lote de «mandado y escondido».
+     *
      * @param  list<string>  $messageIds
      * @return array<string, list<array<string, mixed>>>
      */
-    private static function attachments(array $messageIds): array
+    private static function attachments(string $conversationId, array $messageIds): array
     {
         if ($messageIds === []) {
             return [];
@@ -211,6 +236,10 @@ final class Inbox
                 'filename' => (string) $f->filename,
                 'contentType' => (string) $f->content_type,
                 'byteSize' => (int) $f->byte_size,
+                // La ruta la arma el servidor y no la pantalla: el hilo es
+                // parte de ella, y una pantalla que la construya sola acaba
+                // construyéndola distinto en el segundo sitio.
+                'href' => "/messages/{$conversationId}/attachments/{$f->id}",
             ];
         }
 

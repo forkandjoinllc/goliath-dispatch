@@ -540,7 +540,7 @@ final class DocumentController
 
         $version = DB::table('document_versions')
             ->where('id', $model->current_version_id)
-            ->first(['id', 'storage_key']);
+            ->first(['id', 'storage_key', 'original_filename']);
 
         if ($version === null || ! $store->exists($version->storage_key)) {
             throw ValidationException::withMessages([
@@ -570,7 +570,12 @@ final class DocumentController
             entityLabel: (string) $model->title,
         );
 
-        return redirect()->away($store->temporaryUrl($version->storage_key));
+        // `original_filename` llevaba guardado desde siempre y no se usaba al
+        // devolver el fichero: la descarga salía con el UUID de la clave.
+        return redirect()->away($store->temporaryUrl(
+            $version->storage_key,
+            filename: $version->original_filename === null ? null : (string) $version->original_filename,
+        ));
     }
 
     // ------------------------------------------------------------------ interno

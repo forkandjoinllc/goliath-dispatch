@@ -28,7 +28,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -498,6 +497,7 @@ final class PermitController
         string $row,
         CurrentActor $current,
         PermissionChecker $checker,
+        DocumentStore $store,
     ): RedirectResponse {
         $actor = $current->require();
         $policy = $current->policy();
@@ -526,10 +526,18 @@ final class PermitController
             return back()->with('error', __('oversize.papers.none'));
         }
 
-        return redirect()->to(URL::temporarySignedRoute(
-            'documents.file',
-            now()->addMinutes(5),
-            ['key' => base64_encode($clave)],
+        // Por la pieza y no a mano: firmar la ruta aquí era la copia que se
+        // quedó sin el nombre del fichero cuando `temporaryUrl()` aprendió a
+        // ponerlo. El papel del permiso se baja con el nombre con el que se
+        // subió, igual que cualquier otro documento.
+        $nombre = DB::table('document_versions as v')
+            ->join('documents as d', 'd.current_version_id', '=', 'v.id')
+            ->where('d.id', $documentId)
+            ->value('v.original_filename');
+
+        return redirect()->to($store->temporaryUrl(
+            $clave,
+            filename: $nombre === null ? null : (string) $nombre,
         ));
     }
 

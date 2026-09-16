@@ -7,8 +7,10 @@ namespace App\Http\Controllers\App;
 use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Enums\AuditAction;
 use App\Enums\Scope;
 use App\Models\Conversation;
+use App\Support\Audit;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\Messaging\Inbox;
@@ -142,6 +144,96 @@ final class MessageController
                 'send' => $checker->can($actor, 'message:send', null, $policy)->allowed,
             ],
         ]);
+    }
+
+    /**
+     * Baja el fichero de un adjunto.
+     *
+     * ## El defecto
+     *
+     * No existía. Se podía colgar un fichero de un mensaje —`Posting::attach()`
+     * lo guarda y escribe su fila— y la pantalla pintaba «bol.pdf · 240 KB»
+     * como TEXTO, sin enlace, porque no había ruta a la que enlazar. Ni quien
+     * lo recibía ni quien lo había subido podían abrirlo jamás.
+     *
+     * Era la peor forma de la promesa falsa: una lista de adjuntos parece una
+     * lista de adjuntos. Nadie mira un nombre de fichero y un peso y concluye
+     * que no se puede bajar; se concluye que se pulsa mal, o que falla el
+     * navegador. Y el comprobante que hacía falta para cobrar una detención
+     * está ahí, con su sha256 y todo, sin manera de sacarlo.
+     *
+     * ## Quién puede
+     *
+     * `find()` decide el hilo, y con él todo: `MessageScope` sólo lo devuelve
+     * si el actor está DENTRO —o es administrador de la empresa—, y si no,
+     * 404 en vez de 403, para no confirmar que ese hilo existe.
+     *
+     * Y el adjunto se busca CRUZÁNDOLO con su mensaje y el hilo, no por su id
+     * a secas. Sin ese cruce, el id de un adjunto de otra conversación
+     * emparejado con un hilo que sí se puede leer bajaría el fichero: la
+     * comprobación estaría hecha sobre una cosa y el fichero sería de otra.
+     *
+     * ## El registro
+     *
+     * Queda en la bitácora como `document.downloaded` con
+     * `entityType = 'message_attachment'`. La acción dice lo que pasó y el tipo
+     * dice sobre qué; inventar una acción nueva pedía tocar el CHECK de
+     * `audit_events.action`, o sea una migración, por una distinción que el
+     * tipo de entidad ya hace.
+     *
+     * NO se escribe en `document_access_logs`, y no por olvido: esa tabla
+     * apunta con clave foránea a `documents`, y un adjunto de mensaje no es una
+     * fila de `documents`. Meterlo ahí exigiría o relajar la clave o convertir
+     * cada adjunto en un documento, y las dos cosas son un lote aparte.
+     */
+    public function attachment(
+        string $conversation,
+        string $attachment,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        DocumentStore $store,
+    ): RedirectResponse {
+        $actor = $current->require();
+        $policy = $current->policy();
+        $scope = $checker->authorize($actor, 'message:read', null, $policy);
+
+        $hilo = $this->find($checker, $actor, $scope, $conversation);
+
+        $fila = DB::table('message_attachments as a')
+            ->join('messages as m', 'm.id', '=', 'a.message_id')
+            ->where('a.tenant_id', $actor->tenantId)
+            ->where('a.id', $attachment)
+            ->where('m.conversation_id', $hilo->id)
+            ->whereNull('a.deleted_at')
+            ->whereNull('m.deleted_at')
+            ->first(['a.id', 'a.storage_key', 'a.filename']);
+
+        if ($fila === null) {
+            throw new NotFoundHttpException;
+        }
+
+        // El fichero puede no estar: la pantalla de retención lleva contando
+        // «filas que nombran un fichero que no está» desde hace lotes y dice de
+        // ellas que «cada una es un botón de descarga que va a fallar». Desde
+        // hoy esos botones existen de verdad, así que el fallo se dice.
+        if (! $store->exists((string) $fila->storage_key)) {
+            return back()->with('error', __('messages.errors.attachmentMissing'));
+        }
+
+        Audit::record(
+            actor: $actor,
+            action: AuditAction::DocumentDownloaded,
+            entityType: 'message_attachment',
+            entityId: (string) $fila->id,
+            entityLabel: (string) $fila->filename,
+        );
+
+        // Con su nombre: quien se baja un comprobante tiene que encontrarse
+        // «comprobante.pdf» y no el UUID de la clave de almacenamiento.
+        return redirect()->away($store->temporaryUrl(
+            (string) $fila->storage_key,
+            filename: (string) $fila->filename,
+        ));
     }
 
     public function store(Request $request, string $conversation, CurrentActor $current, PermissionChecker $checker, DocumentStore $store): RedirectResponse

@@ -31,7 +31,8 @@
         "edited": "edited",
         "system": "From the system",
         "carrierMissingTitle": "Nobody from {carrier} is in this thread",
-        "carrierMissingHint": "The carrier is set up but their people do not have accounts yet, so nobody on their side will read what you write here. Invite them from Users, or call them."
+        "carrierMissingHint": "The carrier is set up but their people do not have accounts yet, so nobody on their side will read what you write here. Invite them from Users, or call them.",
+        "attachmentDownload": "Download {name}"
     },
     "compose": {
         "label": "Write",
@@ -50,6 +51,7 @@
         "removed": "That person was removed from the thread."
     },
     "errors": {
-        "notInThread": "You are not in that thread."
+        "notInThread": "You are not in that thread.",
+        "attachmentMissing": "That file is no longer in the store. The row names it and the file is not there, so there is nowhere to get it from: ask whoever uploaded it to attach it again."
     }
 }

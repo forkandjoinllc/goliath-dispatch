@@ -45,6 +45,8 @@ interface Props {
       contentType: string
       bytes: number
       createdAt: string
+      /** La ruta para verla. La arma el servidor, no esta pantalla. */
+      href: string
     }[]
     /** Los lados que faltan, como claves de `equipment.media.angles.*`. */
     missingAngles: string[]
@@ -599,8 +601,22 @@ function Fotos({
         <ul className="mt-3 flex flex-col gap-2">
           {media.photos.map((f) => (
             <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded border border-steel-200 p-2">
+              {/*
+                El ángulo es un ENLACE a la foto.
+
+                Había botón de subir y botón de quitar, y nada para mirarla. Los
+                cuatro ángulos son la puerta de `Eligibility` y la página
+                pública los promete: una foto que nadie puede mirar no documenta
+                el camión.
+              */}
               <span className="text-sm text-carbon">
-                {t(`equipment.media.angles.${f.angle}`)}
+                <a
+                  href={f.href}
+                  title={t('equipment.media.view')}
+                  className="font-medium text-navy-700 underline decoration-navy-300 underline-offset-2 transition hover:text-navy-900"
+                >
+                  {t(`equipment.media.angles.${f.angle}`)}
+                </a>
                 <span className="ml-2 text-xs text-steel-600">{f.createdAt}</span>
                 {f.caption ? <span className="ml-2 text-xs text-steel-700">{f.caption}</span> : null}
               </span>

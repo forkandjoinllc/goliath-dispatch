@@ -195,6 +195,8 @@
             "odometer": "Odómetro",
             "damage": "Daños",
             "other": "Otro"
-        }
+        },
+        "fileMissing": "Esa foto ya no está en el almacén. La fila la nombra y el fichero no está, así que no hay de dónde sacarla: vuelva a subir ese lado.",
+        "view": "Ver la foto"
     }
 }

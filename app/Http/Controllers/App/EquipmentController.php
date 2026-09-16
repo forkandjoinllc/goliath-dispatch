@@ -22,6 +22,7 @@ use App\Support\Geo\Regions;
 use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use App\Support\InertiaPage;
 use App\Support\Time\CalendarDates;
 use Carbon\CarbonImmutable;
@@ -455,6 +456,79 @@ final class EquipmentController
      * lote 53. Una foto que documenta el estado de un camión el día que salió es
      * exactamente el dato que alguien reclama nueve meses después.
      */
+    /**
+     * Enseña una foto del equipo.
+     *
+     * ## El defecto
+     *
+     * No existía. Había ruta para SUBIR una foto y ruta para BORRARLA, y
+     * ninguna para verla: la ficha del camión pintaba «Frontal · 12/03/2026» y
+     * un botón de quitar, y la foto no se podía abrir desde ningún sitio.
+     *
+     * Y esto no es una molestia de pantalla. Los cuatro ángulos son la puerta
+     * de `Equipment\Eligibility` —sin ellos la unidad no se puede asignar— y la
+     * página pública promete que «cada unidad documenta sus cuatro lados antes
+     * de poder asignarse». Una foto que nadie puede mirar no documenta nada:
+     * documenta que alguien subió un fichero de ese tamaño.
+     *
+     * Es el mismo defecto que los adjuntos de mensaje, en la segunda tabla del
+     * inventario de ficheros. Lo encontró el guardián que este lote añade.
+     *
+     * ## Quién puede
+     *
+     * `equipment:read` con el contexto de la unidad, que es el mismo permiso
+     * que abre la ficha donde la foto se anuncia. Pedir `media:upload` para
+     * MIRARLA dejaría fuera justo a quien tiene que comprobarla.
+     */
+    public function showMedia(
+        string $type,
+        string $unit,
+        string $media,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        DocumentStore $store,
+    ): RedirectResponse {
+        $this->assertType($type);
+
+        $actor = $current->require();
+        $model = $this->find($type, $unit);
+
+        $checker->authorize($actor, 'equipment:read', $this->context($model), $current->policy());
+
+        // Cruzada con SU unidad, no cogida por su id suelto: si no, el id de
+        // una foto de otro camión emparejado con una ficha que sí se puede
+        // abrir serviría el fichero.
+        $fila = DB::table('equipment_media')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('id', $media)
+            ->where('equipment_type', $this->singular($type))
+            ->where('equipment_id', $model->id)
+            ->whereNull('deleted_at')
+            ->first(['id', 'storage_key', 'angle', 'content_type']);
+
+        if ($fila === null) {
+            throw new NotFoundHttpException;
+        }
+
+        if (! $store->exists((string) $fila->storage_key)) {
+            return back()->with('error', __('equipment.media.fileMissing'));
+        }
+
+        // `inline`: una foto se MIRA. Servirla como adjunto baja un fichero en
+        // vez de enseñarla, y «ver la foto» que descarga algo con nombre
+        // aleatorio no es ver la foto.
+        //
+        // El nombre lo arma el ángulo, que es lo que esa foto es. La tabla no
+        // guarda el original a propósito —una foto de camión no se identifica
+        // por cómo la llamó el móvil que la hizo— y «frente.jpg» dice más que
+        // «IMG_20260914_093312.jpg».
+        return redirect()->away($store->temporaryUrl(
+            (string) $fila->storage_key,
+            filename: $fila->angle.'.'.(pathinfo((string) $fila->storage_key, PATHINFO_EXTENSION) ?: 'jpg'),
+            inline: true,
+        ));
+    }
+
     public function destroyMedia(
         Request $request,
         string $type,

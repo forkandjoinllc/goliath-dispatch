@@ -70,15 +70,22 @@ final class LocalDocumentStore implements DocumentStore
         return $key;
     }
 
-    public function temporaryUrl(string $storageKey, int $minutes = 5): string
+    public function temporaryUrl(string $storageKey, int $minutes = 5, ?string $filename = null, bool $inline = false): string
     {
         // El disco local no sabe firmar URLs —eso lo hace S3— así que se firma
         // una ruta propia de la aplicación. Cuando el adaptador sea S3, este
         // método devolverá su URL firmada y la ruta dejará de usarse.
+        //
+        // El nombre va en base64 por la misma razón que la clave: es un dato
+        // que escribió una persona y puede traer acentos, espacios o comillas.
         return URL::temporarySignedRoute(
             'documents.file',
             now()->addMinutes($minutes),
-            ['key' => base64_encode($storageKey)],
+            array_filter([
+                'key' => base64_encode($storageKey),
+                'name' => $filename === null ? null : base64_encode($filename),
+                'inline' => $inline ? '1' : null,
+            ], static fn (?string $v): bool => $v !== null),
         );
     }
 

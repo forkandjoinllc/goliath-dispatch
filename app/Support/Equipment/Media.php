@@ -59,8 +59,25 @@ final class Media
      *
      * @return list<array<string, mixed>>
      */
+    /**
+     * Las fotos de una unidad, con la ruta para verlas.
+     *
+     * El `href` no estaba, y no estaba porque no había ruta: había para subir
+     * una foto y para borrarla, y ninguna para mirarla. La ficha pintaba
+     * «Frontal · 12/03/2026» y un botón de quitar. Los cuatro ángulos son la
+     * puerta de `Eligibility`, así que una foto que nadie puede mirar no
+     * documenta el camión — documenta que alguien subió un fichero.
+     *
+     * La `storage_key` sigue sin viajar: la ruta lleva el id y el servidor
+     * resuelve la clave.
+     */
     public static function forUnit(string $tenantId, string $type, string $id): array
     {
+        // La ruta necesita el tipo en PLURAL, que es como lo nombra la pantalla
+        // de equipos (`/equipment/trucks/...`). Aquí llega en singular porque es
+        // como lo guarda la columna `equipment_type`.
+        $plural = $type.'s';
+
         return DB::table('equipment_media')
             ->where('tenant_id', $tenantId)
             ->where('equipment_type', $type)
@@ -76,6 +93,7 @@ final class Media
                 'contentType' => (string) $m->content_type,
                 'bytes' => (int) $m->byte_size,
                 'createdAt' => substr((string) $m->created_at, 0, 16),
+                'href' => "/equipment/{$plural}/{$id}/media/{$m->id}",
             ])
             ->all();
     }

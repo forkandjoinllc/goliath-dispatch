@@ -464,6 +464,13 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('messages', [MessageController::class, 'index'])->name('messages.index');
     Route::get('messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
     Route::post('messages/{conversation}', [MessageController::class, 'store'])->name('messages.store');
+    /*
+    | El adjunto se pide POR EL HILO, no por su id suelto: la ruta lleva las dos
+    | mitades y el controlador las cruza. Hasta este lote no había ruta ninguna
+    | —se podía subir un fichero a un mensaje y nadie podía bajarlo jamás—.
+    */
+    Route::get('messages/{conversation}/attachments/{attachment}', [MessageController::class, 'attachment'])
+        ->name('messages.attachments.show');
     Route::delete('messages/{conversation}/participants/{user}', [MessageController::class, 'removeParticipant'])->name('messages.participants.destroy');
     Route::post('loads/{load}/messages', [MessageController::class, 'forLoad'])->name('loads.messages.open');
 
@@ -611,6 +618,13 @@ Route::middleware(['auth'])->group(function (): void {
             Route::post('{unit}/status', [EquipmentController::class, 'status'])->name('equipment.status');
             Route::post('{unit}/verification', [EquipmentController::class, 'verify'])->name('equipment.verify');
             Route::post('{unit}/media', [EquipmentController::class, 'storeMedia'])->name('equipment.media.store');
+            /*
+            | Había ruta para subir una foto y ruta para borrarla, y ninguna
+            | para verla. Los cuatro ángulos son la puerta de `Eligibility` y la
+            | página pública los promete: una foto que nadie puede mirar no
+            | documenta el camión, documenta que alguien subió un fichero.
+            */
+            Route::get('{unit}/media/{media}', [EquipmentController::class, 'showMedia'])->name('equipment.media.show');
             Route::delete('{unit}/media/{media}', [EquipmentController::class, 'destroyMedia'])->name('equipment.media.destroy');
         });
 });

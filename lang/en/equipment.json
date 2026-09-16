@@ -195,6 +195,8 @@
             "odometer": "Odometer",
             "damage": "Damage",
             "other": "Other"
-        }
+        },
+        "fileMissing": "That photo is no longer in the store. The row names it and the file is not there, so there is nowhere to get it from: upload that angle again.",
+        "view": "View the photo"
     }
 }

@@ -31,7 +31,8 @@
         "edited": "editado",
         "system": "Del sistema",
         "carrierMissingTitle": "Nadie de {carrier} está en este hilo",
-        "carrierMissingHint": "El transportista está dado de alta pero su gente todavía no tiene cuenta, así que lo que escribas aquí no lo va a leer nadie de su lado. Invítalos desde Usuarios, o llámalos."
+        "carrierMissingHint": "El transportista está dado de alta pero su gente todavía no tiene cuenta, así que lo que escribas aquí no lo va a leer nadie de su lado. Invítalos desde Usuarios, o llámalos.",
+        "attachmentDownload": "Descargar {name}"
     },
     "compose": {
         "label": "Escribir",
@@ -50,6 +51,7 @@
         "removed": "Se ha sacado a esa persona del hilo."
     },
     "errors": {
-        "notInThread": "No estás en ese hilo."
+        "notInThread": "No estás en ese hilo.",
+        "attachmentMissing": "Ese fichero ya no está en el almacén. La fila lo nombra y el fichero no está, así que no hay de dónde sacarlo: pídale a quien lo subió que lo vuelva a adjuntar."
     }
 }

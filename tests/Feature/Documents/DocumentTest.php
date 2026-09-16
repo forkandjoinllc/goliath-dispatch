@@ -243,6 +243,21 @@ it('la descarga registra quién la pidió', function () {
     expect(DB::table('document_access_logs')->where('document_id', $documentId)->count())->toBe(1);
 });
 
+it('la descarga devuelve el fichero con el nombre con el que se subió', function () {
+    // `document_versions.original_filename` llevaba guardado desde siempre y no
+    // se usaba al devolver el fichero: la descarga salía con el UUID de la
+    // clave de almacenamiento, así que tres seguros en la carpeta de descargas
+    // eran tres nombres que no decían nada.
+    $documentId = uploadedDocument($this->scenario);
+
+    signIn($this->scenario, Role::Admin);
+
+    $firmada = $this->get("/documents/{$documentId}/download")->headers->get('Location');
+
+    expect($this->get((string) $firmada)->headers->get('content-disposition'))
+        ->toContain('seguro.pdf');
+});
+
 it('el fichero no se sirve sin firma', function () {
     $documentId = uploadedDocument($this->scenario);
     $key = base64_encode((string) DB::table('document_versions')

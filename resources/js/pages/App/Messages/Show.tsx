@@ -9,6 +9,8 @@ interface Attachment {
   filename: string
   contentType: string
   byteSize: number
+  /** La ruta para bajárselo. La arma el servidor, no esta pantalla. */
+  href: string
 }
 
 interface Msg {
@@ -155,11 +157,26 @@ function Burbuja({ m, me }: { m: Msg; me: string }) {
 
       <p className="mt-0.5 whitespace-pre-wrap text-sm text-carbon">{m.body}</p>
 
+      {/*
+        El nombre es un ENLACE, no un texto.
+
+        Esta lista pintaba nombre y peso sin nada que pulsar, porque no había
+        ninguna ruta a la que enlazar: se subía un comprobante y ni quien lo
+        recibía ni quien lo había subido podían abrirlo jamás. Una lista de
+        adjuntos parece una lista de adjuntos — nadie concluye de un nombre y un
+        peso que no se pueda bajar.
+      */}
       {m.attachments.length > 0 ? (
         <ul className="mt-1 flex flex-wrap gap-3">
           {m.attachments.map((a) => (
             <li key={a.id} className="text-xs text-steel-600">
-              <span className="font-medium text-carbon">{a.filename}</span>
+              <a
+                href={a.href}
+                title={t('messages.show.attachmentDownload', { name: a.filename })}
+                className="font-medium text-navy-700 underline decoration-navy-300 underline-offset-2 transition hover:text-navy-900"
+              >
+                {a.filename}
+              </a>
               <span className="ml-1">{peso(a.byteSize)}</span>
             </li>
           ))}

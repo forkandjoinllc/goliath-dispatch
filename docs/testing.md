@@ -3425,3 +3425,35 @@ regla escrita aquí y sin aplicarla: `sinAsignaciones()` chocó con
 `AssignmentTest`. `grep -rn "^function <nombre>(" tests/` antes de escribir la
 primera línea. Escribir la regla no es aplicarla — que es, literalmente, el
 defecto que este lote arregla.
+
+---
+
+## Lote «el fichero que no se podía sacar» (`docs/retrievable-files.md`)
+
+**Un inventario que existe para una cosa sirve para preguntar otra.**
+`StoredFiles::COLUMNS` estaba para borrar ficheros junto con sus filas.
+Preguntarle «¿y cómo se saca cada uno?» encontró la segunda tabla sin salida en
+diez minutos. Cuando ya hay una lista de algo, vale la pena probar a hacerle la
+pregunta contraria.
+
+**Una prueba de característica se queda en verde con la pantalla rota.** Medir
+que el `href` LLEGA a la pantalla no mide que la pantalla lo use: el estado del
+que veníamos era justamente ese —el dato estaba, el enlace no—. Hizo falta un
+guardián sobre el TSX buscando `<a href={…}>`, y lo destapó un sabotaje que
+cambiaba `href` por `data-href`.
+
+**Un actor que puede las dos cosas no prueba el cruce.** «El adjunto se cruza con
+su hilo» con un hilo ajeno no mide nada: el 404 llega antes. Y «mirar la foto no
+pide el permiso de subirla» con el despachador tampoco, porque los tiene los dos.
+Para medir una puerta hace falta alguien que esté exactamente a un lado.
+
+**Terminar la cadena hasta el final.** Las dos rutas funcionaban y el navegador
+bajaba `b29a564e-….pdf`. El nombre llevaba guardado desde siempre, con un
+comentario que decía que era un dato — y al devolverlo tampoco se usaba como
+dato. El recorrido por el navegador es lo que lo vio; ninguna prueba miraba la
+cabecera `content-disposition` porque nadie había pensado en ella.
+
+**Firmar la ruta a mano deja fuera de las mejoras.** `PermitController` se
+construía la URL firmada él solo, así que cuando `temporaryUrl()` aprendió a
+poner el nombre, el papel de un permiso siguió bajando con el UUID. La copia no
+se entera de que el original cambió.

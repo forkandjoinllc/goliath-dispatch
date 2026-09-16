@@ -185,6 +185,7 @@
         "legal_hold": "Bloqueo legal",
         "load": "Carga",
         "load_document": "Papel de una carga",
+        "message_attachment": "Adjunto de mensaje",
         "payment": "Cobro",
         "report": "Informe",
         "saas_plan": "Plan de SaaS",

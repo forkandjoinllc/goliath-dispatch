@@ -64,7 +64,28 @@ interface DocumentStore
      * correo, reenviado tres veces y abierto por alguien que ya no trabaja
      * allí.
      */
-    public function temporaryUrl(string $storageKey, int $minutes = 5): string;
+    /**
+     * Una URL firmada y temporal para servir el fichero.
+     *
+     * ## El nombre importa, y se perdía
+     *
+     * La clave de almacenamiento es un UUID: `documents/{empresa}/2026/09/
+     * b29a564e-….pdf`. Sin `$filename`, el navegador guarda EXACTAMENTE eso, y
+     * quien se baja un comprobante se encuentra `b29a564e-73e0-….pdf` en su
+     * carpeta de descargas. El nombre de verdad estaba guardado —`filename` en
+     * los adjuntos, `original_filename` en las versiones de documento, y el
+     * código lo dice: «el nombre original es un DATO, no un nombre de
+     * fichero»— y no se usaba al devolverlo.
+     *
+     * `$inline` es la otra mitad. Una foto se MIRA: servirla como adjunto
+     * descarga un fichero en vez de enseñarla, y «ver la foto» que baja un
+     * fichero con nombre aleatorio no es ver la foto. Va aparte y no deducido
+     * del tipo, porque quien llama sabe si está enseñando o entregando.
+     *
+     * Los dos viajan DENTRO de la firma, así que nadie puede cambiar el nombre
+     * con el que se sirve un fichero ajeno.
+     */
+    public function temporaryUrl(string $storageKey, int $minutes = 5, ?string $filename = null, bool $inline = false): string;
 
     public function exists(string $storageKey): bool;
 
