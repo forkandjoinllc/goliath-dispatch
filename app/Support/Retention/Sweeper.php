@@ -66,6 +66,17 @@ final class Sweeper
                 continue;
             }
 
+            // Hay una tabla de la política que no admite NINGÚN `update`:
+            // `signature_audit_events` lleva un disparador `before update` sin
+            // condición. Archivarla es marcarla para una purga que nunca llega
+            // —está en `NEVER_PURGE`— y el intento aborta la transacción, así
+            // que el barrido nocturno reventaba a mitad en cuanto una fila de
+            // auditoría de firma pasaba de la ventana activa. O sea, a los dos
+            // años. Ver `Policy::NEVER_UPDATE`.
+            if (! Policy::canMark($tabla)) {
+                continue;
+            }
+
             $edad = Policy::ageColumn($tabla);
 
             $base = fn () => DB::table($tabla)

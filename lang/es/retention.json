@@ -34,7 +34,12 @@
     "scope": {
         "tenant": "Toda la empresa",
         "entity_type": "Un tipo de registro",
-        "record": "Un registro concreto"
+        "record": "Un registro y lo que cuelga de él",
+        "hint": {
+            "tenant": "Todo lo de la empresa deja de envejecer. Es el martillo: se usa cuando llega una citación amplia y todavía no se sabe qué pide.",
+            "entity_type": "Todas las filas de ese tipo, y lo que cuelga de ellas.",
+            "record": "La fila y lo que cuelga de ella. Sobre una carga: sus papeles, la conversación con el transportista, las horas del viaje, la factura y sus cobros."
+        }
     },
     "entityClass": {
         "operational": "Operativo",

@@ -103,6 +103,100 @@ it('ninguna tabla de la política que se puede purgar prohíbe borrar', function
     expect($intrusas)->toBe([], 'El barrido purgaría tablas cuyo disparador lo prohíbe: '.implode(', ', $intrusas));
 });
 
+/**
+ * Las tablas con un `before update` que prohíbe CUALQUIER cambio.
+ *
+ * La otra mitad de la misma contradicción, que este fichero no miraba.
+ *
+ * Distinguir es lo que tiene miga, otra vez: `financial_snapshots`,
+ * `signature_records` y `stripe_events` también llevan `before update`, pero el
+ * suyo va dentro de un `if` que mira columnas y deja pasar `archived_at`,
+ * `purge_eligible_at` y `legal_hold` A PROPÓSITO — el DDL lo dice con todas las
+ * letras: «so the archival job can do its work without needing to bypass the
+ * guard». Esas no estorban. Las que lanzan sin condición, sí.
+ *
+ * @return list<string>
+ */
+function tablasQueProhibenActualizar(): array
+{
+    $prohibidas = [];
+
+    foreach (glob(raizDelRepo().'/database/schema/9*.sql') ?: [] as $fichero) {
+        preg_match_all('/create trigger.+?\bend;/is', (string) file_get_contents($fichero), $bloques);
+
+        foreach ($bloques[0] as $bloque) {
+            if (! preg_match('/before\s+update\s+on\s+`?(\w+)`?/i', $bloque, $m)) {
+                continue;
+            }
+
+            if (! preg_match('/signal\s+sqlstate/i', $bloque)) {
+                continue;
+            }
+
+            if (preg_match('/\bif\b/i', $bloque)) {
+                // Condicional: mira columnas y deja pasar las de retención.
+                continue;
+            }
+
+            $prohibidas[] = $m[1];
+        }
+    }
+
+    return array_values(array_unique($prohibidas));
+}
+
+it('la lista de tablas que no admiten escritura coincide con los disparadores', function () {
+    // EL FALLO QUE ESTO CIERRA. `Sweeper::archive()` hace un `update` por cada
+    // tabla de la política y `Holds` marca `legal_hold` en todas. Mientras
+    // `signature_audit_events` estuvo vacía no se notó —un `update` que no toca
+    // ninguna fila no dispara el disparador—, y en cuanto hubo una fila:
+    //
+    //  - levantar CUALQUIER bloqueo legal reventaba;
+    //  - y el barrido nocturno reventaba en cuanto una fila pasaba de la
+    //    ventana activa, o sea a los dos años, a mitad de la transacción.
+    //
+    // Este fichero llevaba desde el principio comprobando la mitad del DELETE.
+    $delEsquema = array_values(array_intersect(
+        tablasQueProhibenActualizar(),
+        array_keys(App\Support\Retention\Policy::ENTITIES),
+    ));
+    $delCodigo = App\Support\Retention\Policy::NEVER_UPDATE;
+
+    sort($delEsquema);
+    sort($delCodigo);
+
+    expect($delEsquema)->toBe($delCodigo, implode("\n", [
+        'Policy::NEVER_UPDATE no coincide con los disparadores del esquema.',
+        'En el esquema: '.implode(', ', $delEsquema),
+        'En el código:  '.implode(', ', $delCodigo),
+    ]));
+});
+
+it('lo que no se puede marcar tampoco se puede borrar', function () {
+    // El invariante que hace honesto saltárselas. Si una tabla no admite que le
+    // escriban `legal_hold` Y ADEMÁS se purga, entonces el bloqueo legal sobre
+    // ella es una promesa vacía: el barrido la borraría sin poder consultar
+    // nada. Saltársela solo es correcto porque nunca se borra.
+    $sinMarcar = App\Support\Retention\Policy::NEVER_UPDATE;
+    $sinBorrar = App\Support\Retention\Policy::NEVER_PURGE;
+
+    expect(array_values(array_diff($sinMarcar, $sinBorrar)))->toBe(
+        [],
+        'Hay tablas que no se pueden marcar y sí se purgan: el bloqueo legal no las protege.',
+    );
+});
+
+it('el barrido y los bloqueos se saltan lo que no admite escritura', function () {
+    $barrido = Tests\Support\Source::compacta(raizDelRepo().'/app/Support/Retention/Sweeper.php');
+    $bloqueos = Tests\Support\Source::compacta(raizDelRepo().'/app/Support/Retention/Holds.php');
+
+    expect(substr_count($barrido, 'Policy::canMark('))->toBeGreaterThanOrEqual(1);
+
+    // Tres sitios en `Holds`: la limpieza de `rebuild`, las tablas raíz y lo
+    // que cuelga. Dejarse uno revienta igual.
+    expect(substr_count($bloqueos, 'Policy::canMark('))->toBe(3);
+});
+
 it('el estado que escribe el barrido está en el CHECK de retention_jobs', function () {
     // El barrido escribía `completed` y el CHECK admite `succeeded`. Un literal
     // que el esquema no admite no da error de tipos ni de análisis estático: da

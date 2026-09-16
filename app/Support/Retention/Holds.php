@@ -92,7 +92,7 @@ final class Holds
                 'updated_at' => now(),
             ]);
 
-            self::stamp($actor, $scopeType, $entityType, $entityId, true);
+            self::stamp($actor, $scopeType, $entityType, $entityId);
         });
 
         Audit::record(
@@ -190,6 +190,13 @@ final class Holds
     public static function rebuild(Actor $actor): void
     {
         foreach (array_keys(Policy::ENTITIES) as $tabla) {
+            // `signature_audit_events` no admite ningún `update`: levantar
+            // CUALQUIER bloqueo reventaba en cuanto la empresa tenía una sola
+            // fila de auditoría de firma. Ver `Policy::NEVER_UPDATE`.
+            if (! Policy::canMark($tabla)) {
+                continue;
+            }
+
             DB::table($tabla)->where('tenant_id', $actor->tenantId)->update(['legal_hold' => 0]);
         }
 
@@ -199,15 +206,39 @@ final class Holds
                 (string) $h->scope_type,
                 $h->entity_type === null ? null : (string) $h->entity_type,
                 $h->entity_id === null ? null : (string) $h->entity_id,
-                true,
             );
         }
     }
 
-    /** Pone o quita la marca en las filas que un alcance cubre. */
-    private static function stamp(Actor $actor, string $scopeType, ?string $entityType, ?string $entityId, bool $held): void
+    /**
+     * Pone o quita la marca en las filas que un alcance cubre.
+     *
+     * ## Y en lo que cuelga de ellas
+     *
+     * Esto marcaba UNA fila para el alcance `record`. La cabecera de la clase
+     * dice, desde el primer día, que ese alcance es «una carga concreta **y lo
+     * que cuelga de ella**», y enumera qué: los papeles, la conversación con el
+     * transportista, las horas del viaje, la factura. Nada de eso se marcaba,
+     * así que el barrido lo purgaba en su fecha: el bloqueo protegía la carga y
+     * dejaba que se borrara la prueba.
+     *
+     * Qué cuelga de qué lo dice `HeldTogether`, con su guardián contra el
+     * esquema. Aquí solo se aplica.
+     *
+     * ## Esto solo PONE la marca
+     *
+     * Llevaba un parámetro `bool $held` y nadie lo llamaba nunca con falso:
+     * quitar la marca es trabajo de `rebuild()`, que borra las veintiuna tablas
+     * de golpe y vuelve a marcar desde los bloqueos vigentes. Y tiene que ser
+     * así, porque restar lo de un bloqueo levantado desprotegería lo que otro
+     * sigue cubriendo.
+     *
+     * Una rama que nadie toma es una rama que nadie prueba: un sabotaje que la
+     * rompía se quedó en verde. Se quita.
+     */
+    private static function stamp(Actor $actor, string $scopeType, ?string $entityType, ?string $entityId): void
     {
-        $valor = $held ? 1 : 0;
+        $tenantId = (string) $actor->tenantId;
 
         $tablas = match ($scopeType) {
             'tenant' => array_keys(Policy::ENTITIES),
@@ -216,13 +247,41 @@ final class Holds
         };
 
         foreach ($tablas as $tabla) {
-            $q = DB::table($tabla)->where('tenant_id', $actor->tenantId);
+            if (! Policy::canMark($tabla)) {
+                continue;
+            }
+
+            $q = DB::table($tabla)->where('tenant_id', $tenantId);
 
             if ($scopeType === 'record' && $entityId !== null) {
                 $q->where('id', $entityId);
             }
 
-            $q->update(['legal_hold' => $valor]);
+            $q->update(['legal_hold' => 1]);
+        }
+
+        // Un bloqueo de toda la empresa ya marcó todas las tablas de la
+        // política: no hay nada colgando fuera de ellas que alcanzar.
+        if ($scopeType === 'tenant' || $tablas === []) {
+            return;
+        }
+
+        $raices = $scopeType === 'record'
+            ? [(string) $entityId]
+            : DB::table((string) $entityType)->where('tenant_id', $tenantId)
+                ->pluck('id')->map(static fn ($id): string => (string) $id)->all();
+
+        foreach (HeldTogether::alcance($tenantId, (string) $entityType, $raices) as $tabla => $ids) {
+            if (! Policy::canMark($tabla)) {
+                continue;
+            }
+
+            foreach (array_chunk($ids, 500) as $trozo) {
+                DB::table($tabla)
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('id', $trozo)
+                    ->update(['legal_hold' => 1]);
+            }
         }
     }
 }

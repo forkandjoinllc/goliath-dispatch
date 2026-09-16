@@ -427,6 +427,17 @@ function NuevoBloqueo({ entities, scopes }: { entities: Entity[]; scopes: string
               <option key={s} value={s}>{t(`retention.scope.${s}`)}</option>
             ))}
           </select>
+          {/*
+            Qué alcanza cada alcance, dicho donde se elige.
+
+            «Un registro concreto» describía exactamente lo que el código hacía
+            —marcaba una fila— y exactamente lo que la cabecera de `Holds`
+            llevaba prometiendo desde el primer día que NO hacía: alcanzar lo
+            que cuelga. Ahora alcanza, y la pantalla lo enumera: quien aplica un
+            bloqueo por una reclamación tiene que poder saber si la factura
+            entra o no sin leer el código.
+          */}
+          <span className="text-[11px] text-steel-500">{t(`retention.scope.hint.${form.data.scope_type}`)}</span>
         </label>
 
         {necesitaTipo ? (

@@ -3359,3 +3359,38 @@ misma forma: el fixture de una sola fila —o de un solo campo— no prueba el
 **Colisión de ayudantes globales de Pest, sexta vez.** `raizPapeles()` chocó con
 `OversizePapersTest`. La comprobación barata es `grep -rn "^function <nombre>"
 tests/` antes de escribir la primera línea del guardián.
+
+---
+
+## Lote «el bloqueo que protegía una fila» (`docs/legal-hold-scope.md`)
+
+**El peor defecto es el que ya está diagnosticado por escrito.** La cabecera de
+`Holds` decía «una carga concreta y lo que cuelga de ella» y enumeraba qué;
+`stamp()` marcaba una fila. Cuando una clase describe su alcance en prosa, vale
+la pena leerla como una especificación y comprobarla línea por línea — es gratis
+y encuentra lo que ninguna prueba busca.
+
+**Media escalera es peor que ninguna, porque parece una escalera.**
+`CascadedFiles::heldParentIds()` resolvía la dirección hacia arriba con su
+propia explicación de por qué importaba. Que una dirección esté resuelta y
+documentada hace más difícil, no más fácil, notar que la otra no existe.
+
+**Un `update` que no toca ninguna fila no dispara el disparador.** Por eso
+`signature_audit_events` convivió con `Sweeper::archive()` y con `Holds` sin
+quejarse: la tabla estaba vacía. Un guardián contra el DDL lo caza; una suite
+sobre datos de prueba, no — y en producción el síntoma llega a los dos años.
+
+**La prueba la dio el navegador, no la suite.** Levantar un bloqueo reventaba en
+la demostración y estaba verde en las 2.093 pruebas. El recorrido bilingüe no es
+un trámite al final del lote: es la única parte que corre sobre datos que se
+parecen a los de alguien.
+
+**Una rama que nadie toma es una rama que nadie prueba.** `stamp()` llevaba un
+`bool $held` y nadie lo llamaba con falso —quitar la marca es trabajo de
+`rebuild()`—. Un sabotaje que rompía esa rama se quedó en verde, y la respuesta
+correcta fue quitar el parámetro, no escribir una prueba para código muerto.
+
+**Derivar en vez de copiar.** `DocumentOwners` ya decía qué dueño vive en qué
+tabla. Volver a escribirlo en el registro nuevo habría creado la segunda lista
+que contesta la misma pregunta, que es literalmente el defecto que el lote
+arregla.

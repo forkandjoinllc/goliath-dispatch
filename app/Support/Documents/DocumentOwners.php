@@ -81,6 +81,24 @@ final class DocumentOwners
         'escort' => [self::SISTEMA, 'escorts', ['provider_name', 'agency_name']],
     ];
 
+    /**
+     * Los tipos de dueño cuyas filas viven en esta tabla.
+     *
+     * Existe para `Retention\HeldTogether`: un bloqueo legal sobre una carga
+     * tiene que alcanzar sus papeles, y quién es dueño de qué ya está declarado
+     * aquí. Preguntarlo es lo contrario de copiar la lista — que es el defecto
+     * que aquel lote arregla.
+     *
+     * @return list<string>
+     */
+    public static function tiposDeTabla(string $tabla): array
+    {
+        return array_keys(array_filter(
+            self::CATALOG,
+            static fn (array $fila): bool => $fila[1] === $tabla,
+        ));
+    }
+
     public static function isKnown(string $ownerType): bool
     {
         return isset(self::CATALOG[$ownerType]);

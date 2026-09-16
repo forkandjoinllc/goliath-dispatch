@@ -34,7 +34,12 @@
     "scope": {
         "tenant": "The whole company",
         "entity_type": "One record type",
-        "record": "One specific record"
+        "record": "A record and everything hanging off it",
+        "hint": {
+            "tenant": "Everything in the company stops aging. This is the hammer: for a broad subpoena when it is not yet clear what it asks for.",
+            "entity_type": "Every row of that type, and everything hanging off them.",
+            "record": "The row and everything hanging off it. On a load: its paperwork, the conversation with the carrier, the trip timestamps, the invoice and its payments."
+        }
     },
     "entityClass": {
         "operational": "Operational",

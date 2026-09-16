@@ -102,6 +102,55 @@ final class Policy
      *
      * @var list<string>
      */
+    /**
+     * Tablas que NO admiten ningún `update`, aunque tengan columnas de retención.
+     *
+     * El esquema vuelve a contradecirse, y esta vez nadie lo había escrito.
+     * `NEVER_PURGE` recoge las tablas con disparador `before delete`. Hay una
+     * que además lleva `before update` **sin condición**:
+     *
+     * ```sql
+     * create trigger trg_signature_audit_events_no_update
+     * before update on signature_audit_events
+     * for each row
+     * begin
+     *   signal sqlstate '45000'
+     *     set message_text = 'signature_audit_events is append-only: rows cannot be updated';
+     * end;
+     * ```
+     *
+     * `signature_records`, `financial_snapshots` y `stripe_events` también
+     * llevan `before update`, pero el suyo mira COLUMNAS: dejan pasar
+     * `archived_at`, `purge_eligible_at` y `legal_hold` a propósito, «so the
+     * archival job can do its work without needing to bypass the guard». Esta
+     * no deja pasar nada.
+     *
+     * ## Lo que reventaba
+     *
+     * `Sweeper::archive()` hace un `update` por cada tabla de `ENTITIES`, y
+     * `Holds` marca `legal_hold` en todas. Mientras la tabla estuvo vacía no se
+     * notó: un `update` que no toca ninguna fila no dispara el disparador.
+     *
+     *  - Aplicar un bloqueo de toda la empresa, o **levantar cualquier
+     *    bloqueo**, revienta en cuanto hay una sola fila de auditoría de firma.
+     *  - El barrido nocturno revienta en cuanto hay una más vieja que la
+     *    ventana activa, o sea a los dos años de funcionamiento. Y revienta a
+     *    mitad, arrastrando lo que llevara hecho.
+     *
+     * ## Por qué saltárselas no pierde nada
+     *
+     * Toda tabla de esta lista está también en `NEVER_PURGE` —lo comprueba el
+     * guardián— y por eso el invariante se sostiene: una tabla que no se puede
+     * MARCAR tiene que ser una tabla que no se puede BORRAR, o el bloqueo legal
+     * sería una promesa vacía sobre ella. Archivarla era marcarla para una
+     * purga que nunca llega.
+     *
+     * @var list<string>
+     */
+    public const NEVER_UPDATE = [
+        'signature_audit_events',
+    ];
+
     public const NEVER_PURGE = [
         'audit_events',
         'signature_audit_events',
@@ -144,6 +193,18 @@ final class Policy
     public function canPurge(string $table): bool
     {
         return isset(self::ENTITIES[$table]) && ! in_array($table, self::NEVER_PURGE, true);
+    }
+
+    /**
+     * ¿Se puede escribir en esta tabla?
+     *
+     * Archivar y marcar un bloqueo son las dos cosas que el módulo escribe, y
+     * las dos son `update`. Sobre una tabla de `NEVER_UPDATE` no es que no
+     * convenga: es que el disparador aborta la transacción entera.
+     */
+    public static function canMark(string $table): bool
+    {
+        return ! in_array($table, self::NEVER_UPDATE, true);
     }
 
     /**
