@@ -3242,3 +3242,28 @@ que se perdía.
 prueba.** La prueba de característica pide `Panel::DESTINOS['invoicesOverdue']`.
 Si mañana alguien cambia ese destino, la prueba lo sigue; con la ruta escrita a
 mano, la prueba seguiría verde probando una pantalla a la que ya no lleva nadie.
+
+---
+
+## Lote «los avisos que no se cerraban» (`docs/expiry-resolution.md`)
+
+**Simular el paso del tiempo moviendo el dato no es simular el paso del
+tiempo.** Para probar la transición de «por vencer» a «vencido» moví la fecha de
+caducidad del documento al pasado. Con eso la fila vieja se cerraba por la
+comparación de FECHAS, y tres sabotajes distintos pasaron en verde. Lo que hay
+que mover es el reloj: `travel(11)->days()` y no tocar el documento, que es lo
+que ocurre en el calendario.
+
+**Una comparación por caso, y un caso por comparación.** Después de rehacer la
+prueba del reloj seguían faltando dos: la renovación a una fecha CERCANA y el
+estrechamiento del plazo de la empresa. Cada cláusula de una consulta que cierra
+algo merece la pregunta «¿qué escenario deja de cerrarse sin esta línea?» — y si
+no hay respuesta, la línea sobra.
+
+**Dos piezas que cierran lo mismo desde dos sitios dejan un hueco en medio.**
+Una cerraba huérfanos, la otra fechas anteriores. Ninguna de las dos estaba mal;
+lo que faltaba era la regla única de la que las dos son casos particulares.
+
+**Una regla que cierra de más es tan mala como una que cierra de menos.** La
+pantalla existe para saber si el número es cero. Hay una prueba de que el aviso
+vivo sigue vivo, y otra de que dos documentos cuentan dos.

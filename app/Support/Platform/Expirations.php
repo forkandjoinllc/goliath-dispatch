@@ -70,16 +70,53 @@ final class Expirations
     }
 
     /**
-     * Marca como resueltos los vencimientos de documentos que ya no aplican.
+     * Cierra todo aviso que ya no describe el estado de su documento.
      *
-     * Un documento borrado o cuya caducidad se quitó deja avisos huérfanos que
-     * nadie va a cerrar nunca. Se limpia aquí y no en el borrado del documento
-     * porque el borrado puede venir por muchas puertas —la pantalla, la
-     * retención, un arreglo a mano— y ninguna debería tener que acordarse.
+     * ## El defecto que arregla
+     *
+     * Esta función cerraba solo los HUÉRFANOS: documentos borrados o a los que
+     * se les quitó la caducidad. El barrido, por su lado, cerraba los de fecha
+     * ANTERIOR:
+     *
+     * ```php
+     * ->whereDate('expiration_date', '<', $vence)
+     * ```
+     *
+     * Entre las dos quedaron dos agujeros, y los dos suman al mismo contador:
+     *
+     *  1. **La transición.** Cuando un documento pasa de «por vencer» a
+     *     «vencido», la fecha de caducidad es LA MISMA y solo cambia el `kind`.
+     *     La consulta de arriba busca estrictamente anterior, así que no
+     *     encontraba nada: el índice único `(document_id, kind,
+     *     expiration_date)` dejaba entrar la fila nueva y la vieja se quedaba
+     *     sin resolver. Salud de plataforma decía «Por vencer: 1 · Ya vencidos:
+     *     1» sobre UN solo documento.
+     *
+     *  2. **La renovación.** Si alguien renueva el papel, su fecha se va un año
+     *     adelante y el documento deja de entrar en la consulta del barrido
+     *     —que solo mira los que caducan dentro del plazo—, así que
+     *     `materializar()` no vuelve a ejecutarse para él nunca. Sus filas
+     *     viejas se quedaban colgadas PARA SIEMPRE: «Ya vencidos: 12» sobre
+     *     papeles renovados hace meses, mientras el listado del inquilino,
+     *     que recalcula, decía cero.
+     *
+     * ## La regla, que es una sola
+     *
+     * Un aviso materializado se cierra **en cuanto deja de describir el estado
+     * de hoy de su documento**. Eso cubre las dos cosas de arriba y también los
+     * huérfanos, que eran un caso particular: un documento borrado no tiene
+     * estado que describir.
+     *
+     * El estado de hoy se deriva aquí y no se lee de ningún sitio, porque no
+     * está guardado en ninguna parte: un documento con fecha anterior a hoy
+     * está `expired`, uno dentro del plazo de aviso está `warning`, y el resto
+     * no tiene aviso que valga.
      */
-    public static function resolveOrphans(string $tenantId): int
+    public static function resolveStale(string $tenantId, int $diasDeAviso): int
     {
         $ahora = CarbonImmutable::now();
+        $hoy = $ahora->toDateString();
+        $limite = $ahora->addDays($diasDeAviso)->toDateString();
 
         return DB::table('document_expirations')
             ->where('tenant_id', $tenantId)
@@ -88,7 +125,20 @@ final class Expirations
                 ->from('documents')
                 ->whereColumn('documents.id', 'document_expirations.document_id')
                 ->whereNull('documents.deleted_at')
-                ->whereNotNull('documents.expiration_date'))
+                ->whereNotNull('documents.expiration_date')
+                // La MISMA fecha: si el documento se renovó, la fila vieja
+                // habla de un vencimiento que ya no existe.
+                ->whereRaw('date(documents.expiration_date) = date(document_expirations.expiration_date)')
+                // Y dentro del plazo: un papel que caduca dentro de un año no
+                // tiene ningún aviso vivo.
+                ->whereRaw('date(documents.expiration_date) <= ?', [$limite])
+                // Y el MISMO tipo: en la transición de «por vencer» a
+                // «vencido», la fecha no cambia y el tipo sí. Sin esta línea,
+                // el mismo documento se contaba en los dos cubos.
+                ->whereRaw(
+                    "document_expirations.kind = case when date(documents.expiration_date) < ? then 'expired' else 'warning' end",
+                    [$hoy],
+                ))
             ->update(['resolved_at' => $ahora, 'updated_at' => $ahora]);
     }
 }

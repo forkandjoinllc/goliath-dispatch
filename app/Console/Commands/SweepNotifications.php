@@ -137,14 +137,23 @@ final class SweepNotifications extends Command
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
-                // Antes de materializar nada: cerrar los avisos de documentos
-                // que ya no existen o a los que se les quitó la caducidad.
-                // Si no, la lista se llena de avisos que nadie va a cerrar.
-                if (! $dry) {
-                    Expirations::resolveOrphans($tenantId);
-                }
-
                 $totales['documents'] += $this->documentosQueCaducan($tenantId, $dry);
+
+                // DESPUÉS de materializar, no antes: se cierra todo aviso que
+                // ya no describe el estado de hoy de su documento, y el estado
+                // de hoy incluye la fila que se acaba de escribir.
+                //
+                // Antes esto corría primero y solo cerraba huérfanos, y el
+                // barrido cerraba por su cuenta los de fecha ANTERIOR. Entre
+                // las dos quedaban dos agujeros: la transición de «por vencer»
+                // a «vencido» —misma fecha, distinto tipo— dejaba las dos filas
+                // vivas y el mismo documento contaba en los dos cubos; y un
+                // documento renovado dejaba de entrar en el barrido, así que
+                // sus filas viejas no las cerraba nadie nunca. Ver
+                // `docs/expiry-resolution.md`.
+                if (! $dry) {
+                    Expirations::resolveStale($tenantId, TenantPolicy::for($tenantId)->documentWarningDays);
+                }
                 $totales['leads'] += $this->prospectosSinAtender($tenantId, $dry);
                 $totales['signatures'] += $this->firmasQueVencieronSinFirmar($tenantId, $dry);
                 $totales['rates'] += $this->tarifasSinContestar($tenantId, $dry);
@@ -370,10 +379,16 @@ final class SweepNotifications extends Command
      * comprueba antes de insertar porque dos barridos solapados verían los dos
      * que no hay nada.
      *
-     * Y al escribir el de una fecha se RESUELVEN los de fechas anteriores del
-     * mismo documento: renovar un certificado le da una caducidad nueva, y el
-     * aviso de la vieja deja de aplicar en ese instante. Sin esto, la lista de
-     * vencimientos se llenaría de avisos de documentos ya renovados.
+     * Aquí SOLO se inserta. Cerrar los avisos que ya no aplican lo hace
+     * `Expirations::resolveStale()` al terminar de materializar toda la
+     * empresa, con una regla sola: un aviso se cierra en cuanto deja de
+     * describir el estado de hoy de su documento.
+     *
+     * Estuvo aquí, y cerraba los de fecha ANTERIOR. Eso no veía dos casos: la
+     * transición de «por vencer» a «vencido» —donde la fecha es la misma y solo
+     * cambia el tipo, así que el documento contaba en los dos cubos— y el
+     * documento RENOVADO, que deja de entrar en el barrido y por tanto no vuelve
+     * a pasar por aquí nunca. Ver `docs/expiry-resolution.md`.
      */
     private function materializar(string $tenantId, string $documentId, string $vence, bool $caducado, int $diasDeAviso): void
     {
@@ -392,12 +407,12 @@ final class SweepNotifications extends Command
             'updated_at' => $ahora,
         ]);
 
-        DB::table('document_expirations')
-            ->where('tenant_id', $tenantId)
-            ->where('document_id', $documentId)
-            ->whereDate('expiration_date', '<', $vence)
-            ->whereNull('resolved_at')
-            ->update(['resolved_at' => $ahora, 'updated_at' => $ahora]);
+        // Cerrar lo viejo NO se hace aquí: lo hace `Expirations::resolveStale()`
+        // al terminar de materializar, con una sola regla —«un aviso se cierra
+        // en cuanto deja de describir el estado de hoy»— que cubre también los
+        // dos casos que esta consulta no veía. Aquí estaba escrito
+        // `whereDate('expiration_date', '<', $vence)`, y en la transición de
+        // «por vencer» a «vencido» la fecha es la misma.
     }
 
     /**
