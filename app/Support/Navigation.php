@@ -105,6 +105,29 @@ final class Navigation
      * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
      * @return list<array{key: string, labelKey: string, items: list<array{href: string, labelKey: string, ready: bool}>}>
      */
+    /**
+     * Ruta => permisos que la habilitan, para todo el menú.
+     *
+     * Existe para que `App\Support\Links\CrossLink` pueda comprobar que pide
+     * el MISMO permiso que el menú para la misma pantalla. Son la misma
+     * pregunta y dos listas que la contestan por separado acaban contestando
+     * distinto.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function rutasYPermisos(): array
+    {
+        $mapa = [];
+
+        foreach (self::MENU as $entradas) {
+            foreach ($entradas as [$ruta, , $permisos]) {
+                $mapa[$ruta] = $permisos;
+            }
+        }
+
+        return $mapa;
+    }
+
     public static function for(Actor $actor, PermissionChecker $checker, ?array $policy = null): array
     {
         $groups = [];

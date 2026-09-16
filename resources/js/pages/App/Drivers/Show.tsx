@@ -34,6 +34,8 @@ interface Props {
   carriers: {
     id: string
     name: string
+    /** `null` cuando quien mira no puede abrir la ficha del transportista. */
+    href: string | null
     onboardingStatus: string
     isPrimary: boolean
     startDate: string | null
@@ -178,12 +180,18 @@ export default function DriverShow({ driver, carriers, loads, can }: Props) {
               <ul className="flex flex-col divide-y divide-steel-100">
                 {carriers.map((c) => (
                   <li key={c.id} className="flex flex-wrap items-center gap-2 py-2.5 text-sm">
-                    <Link
-                      href={`/carriers/${c.id}`}
-                      className="font-medium text-navy-700 underline-offset-2 hover:underline"
-                    >
-                      {c.name}
-                    </Link>
+                    {/* El conductor abre su propia ficha y no tiene
+                        `carrier:read`. El servidor decide el enlace. */}
+                    {c.href ? (
+                      <Link
+                        href={c.href}
+                        className="font-medium text-navy-700 underline-offset-2 hover:underline"
+                      >
+                        {c.name}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-carbon">{c.name}</span>
+                    )}
                     {c.isPrimary ? (
                       <span className="rounded-full bg-navy-100 px-2 py-0.5 text-[11px] font-medium text-navy-800">
                         {t('drivers.detail.primary')}

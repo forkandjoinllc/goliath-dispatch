@@ -19,6 +19,7 @@ use App\Support\Drivers\Cdl;
 use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
 use App\Support\Security\SensitiveNumber;
 use App\Support\Time\CalendarDates;
@@ -145,7 +146,7 @@ final class DriverController
 
         return Inertia::render('App/Drivers/Show', [
             'driver' => $this->detail($model),
-            'carriers' => $this->carriers($model),
+            'carriers' => $this->carriers($model, $checker, $actor, $policy),
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model)
                 : null,
@@ -216,7 +217,8 @@ final class DriverController
         return Inertia::render('App/Drivers/Form', [
             'driver' => $this->detail($model),
             'carriers' => $this->carrierChoices($actor),
-            'selectedCarriers' => collect($this->carriers($model))->pluck('id')->all(),
+            'selectedCarriers' => collect($this->carriers($model, $checker, $actor, $current->policy()))
+                ->pluck('id')->all(),
             'codes' => self::CODIGOS,
         ]);
     }
@@ -620,7 +622,7 @@ final class DriverController
     /**
      * @return list<array<string, mixed>>
      */
-    private function carriers(Driver $d): array
+    private function carriers(Driver $d, PermissionChecker $checker, Actor $actor, ?array $policy): array
     {
         return DB::table('driver_carrier_relationships as r')
             ->join('carriers as c', 'c.id', '=', 'r.carrier_id')
@@ -632,6 +634,10 @@ final class DriverController
             ->map(fn ($r): array => [
                 'id' => (string) $r->id,
                 'name' => (string) $r->legal_name,
+                // El conductor abre su propia ficha y no tiene `carrier:read`:
+                // el nombre de su transportista era un enlace que le contestaba
+                // «Acceso denegado». Ver `App\Support\Links\CrossLink`.
+                'href' => CrossLink::para($checker, $actor, 'carrier', $r->id, $policy),
                 'onboardingStatus' => (string) $r->onboarding_status,
                 'isPrimary' => (bool) $r->is_primary,
                 'startDate' => $r->start_date,

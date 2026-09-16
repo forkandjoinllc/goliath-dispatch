@@ -121,13 +121,19 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
         >
           {t(`equipment.status.${unit.status}`)}
         </span>
+        {/* El nombre del transportista siempre; el enlace solo si el servidor
+            lo mandó. Ver `App\Support\Links\CrossLink`. */}
         {unit.carrierId ? (
-          <Link
-            href={`/carriers/${String(unit.carrierId)}`}
-            className="text-sm text-navy-700 underline-offset-2 hover:underline"
-          >
-            {s('carrier')}
-          </Link>
+          typeof unit.carrierHref === 'string' ? (
+            <Link
+              href={unit.carrierHref}
+              className="text-sm text-navy-700 underline-offset-2 hover:underline"
+            >
+              {s('carrier')}
+            </Link>
+          ) : (
+            <span className="text-sm text-steel-700">{s('carrier')}</span>
+          )
         ) : null}
         <span className="text-sm text-steel-600">
           {[num('year'), s('make') !== '—' ? s('make') : null, s('model') !== '—' ? s('model') : null]

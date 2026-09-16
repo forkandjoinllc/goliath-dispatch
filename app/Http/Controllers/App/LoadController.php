@@ -26,6 +26,7 @@ use App\Support\Finance\LoadCalculator;
 use App\Support\Finance\MoneyAudience;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
+use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
@@ -226,7 +227,7 @@ final class LoadController
         }
 
         return Inertia::render('App/Loads/Show', [
-            'load' => $this->detail($model, $actor),
+            'load' => $this->detail($model, $actor, $checker, $policy),
             'stops' => $this->stops($model),
             'requirements' => $this->requirements($model),
             'assignments' => $this->assignments($model),
@@ -363,7 +364,7 @@ final class LoadController
 
         return Inertia::render('App/Loads/Form', [
             'load' => [
-                ...$this->detail($model, $actor),
+                ...$this->detail($model, $actor, $checker, $policy),
                 // Los importes solo viajan si se pueden editar. Mandarlos para
                 // enseñarlos desactivados los pondría al alcance de quien abra
                 // las herramientas del navegador, y el permiso de LECTURA del
@@ -1621,7 +1622,7 @@ final class LoadController
     /**
      * @return array<string, mixed>
      */
-    private function detail(Load $l, Actor $actor): array
+    private function detail(Load $l, Actor $actor, PermissionChecker $checker, ?array $policy): array
     {
         $customer = DB::table('customers')->where('id', $l->customer_id)->first(['id', 'company_name']);
         $carrier = $l->carrier_id === null ? null : DB::table('carriers')
@@ -1633,15 +1634,22 @@ final class LoadController
             'status' => $l->status->value,
             'customerReference' => $l->customer_reference,
             'poNumber' => $l->po_number,
+            // El NOMBRE siempre; el enlace, solo si quien mira puede abrir esa
+            // ficha. El transportista y el conductor llegan aquí con
+            // normalidad y ninguno de los dos tiene `customer:read`: pulsaban
+            // el nombre del cliente y aterrizaban en «Acceso denegado». Ver
+            // `App\Support\Links\CrossLink`.
             'customer' => $customer === null ? null : [
                 'id' => (string) $customer->id,
                 'name' => (string) $customer->company_name,
+                'href' => CrossLink::para($checker, $actor, 'customer', $customer->id, $policy),
             ],
             'carrier' => $carrier === null ? null : [
                 'id' => (string) $carrier->id,
                 'name' => (string) $carrier->legal_name,
                 'dotNumber' => (string) $carrier->dot_number,
                 'onboardingStatus' => (string) $carrier->onboarding_status,
+                'href' => CrossLink::para($checker, $actor, 'carrier', $carrier->id, $policy),
             ],
             'commodity' => $l->commodity,
             'weightPounds' => $l->weight_pounds === null ? null : (int) $l->weight_pounds,

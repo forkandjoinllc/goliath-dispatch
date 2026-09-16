@@ -19,6 +19,7 @@ use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Equipment\Verification;
 use App\Support\Geo\Regions;
+use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
 use App\Support\InertiaPage;
@@ -133,7 +134,7 @@ final class EquipmentController
 
         return Inertia::render('App/Equipment/Show', [
             'type' => $type,
-            'unit' => $this->detail($model, $type),
+            'unit' => $this->detail($model, $type, $checker, $actor, $policy),
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model, $type)
                 : null,
@@ -218,7 +219,7 @@ final class EquipmentController
 
         return Inertia::render('App/Equipment/Form', [
             'type' => $type,
-            'unit' => $this->detail($model, $type),
+            'unit' => $this->detail($model, $type, $checker, $actor, $current->policy()),
             'choices' => $this->choices($actor),
         ]);
     }
@@ -770,12 +771,17 @@ final class EquipmentController
     /**
      * @return array<string, mixed>
      */
-    private function detail(Model $u, string $type): array
+    private function detail(Model $u, string $type, PermissionChecker $checker, Actor $actor, ?array $policy): array
     {
         $g = fn (string $c) => $u->getAttribute($c);
 
         $common = [
             ...$this->row($u, $this->carrierNames(collect([$u])), $type),
+            // El nombre del transportista siempre; el enlace, solo si quien
+            // mira puede abrir esa ficha. Un conductor tiene `equipment:read`
+            // de alcance propio y no tiene `carrier:read`. Ver
+            // `App\Support\Links\CrossLink`.
+            'carrierHref' => CrossLink::para($checker, $actor, 'carrier', $g('carrier_id'), $policy),
             'equipmentTypeId' => $g('equipment_type_id'),
             'registrationNumber' => $g('registration_number'),
             'lastInspectionAt' => CalendarDates::dia($g('last_inspection_at')),

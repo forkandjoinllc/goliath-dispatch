@@ -97,8 +97,12 @@ interface Props {
     status: string
     customerReference: string | null
     poNumber: string | null
-    customer: { id: string; name: string } | null
-    carrier: { id: string; name: string; dotNumber: string; onboardingStatus: string } | null
+    /**
+     * El enlace lo decide el SERVIDOR: llega `null` cuando quien mira no puede
+     * abrir esa ficha. Ver `App\Support\Links\CrossLink`.
+     */
+    customer: { id: string; name: string; href: string | null } | null
+    carrier: { id: string; name: string; dotNumber: string; onboardingStatus: string; href: string | null } | null
     commodity: string | null
     weightPounds: number | null
     pieceCount: number | null
@@ -228,13 +232,19 @@ export default function LoadShow({
             {t('loads.detail.overweight')}
           </span>
         ) : null}
+        {/* El nombre siempre; el enlace solo si lo hay. Sin enlace se lee que
+            no lo hay; con uno roto, que la pantalla está mal. */}
         {load.customer ? (
-          <Link
-            href={`/customers/${load.customer.id}`}
-            className="text-sm text-navy-700 underline-offset-2 hover:underline"
-          >
-            {load.customer.name}
-          </Link>
+          load.customer.href ? (
+            <Link
+              href={load.customer.href}
+              className="text-sm text-navy-700 underline-offset-2 hover:underline"
+            >
+              {load.customer.name}
+            </Link>
+          ) : (
+            <span className="text-sm text-steel-700">{load.customer.name}</span>
+          )
         ) : null}
       </div>
 
@@ -429,12 +439,16 @@ export default function LoadShow({
         <div className="flex flex-col gap-6">
           {load.carrier ? (
             <Card title={t('loads.detail.carrier')}>
-              <Link
-                href={`/carriers/${load.carrier.id}`}
-                className="font-medium text-navy-700 underline-offset-2 hover:underline"
-              >
-                {load.carrier.name}
-              </Link>
+              {load.carrier.href ? (
+                <Link
+                  href={load.carrier.href}
+                  className="font-medium text-navy-700 underline-offset-2 hover:underline"
+                >
+                  {load.carrier.name}
+                </Link>
+              ) : (
+                <span className="font-medium text-carbon">{load.carrier.name}</span>
+              )}
               <p className="text-xs text-steel-600">USDOT {load.carrier.dotNumber}</p>
               <div className="mt-2">
                 <StatusBadge family="onboarding" value={load.carrier.onboardingStatus} />

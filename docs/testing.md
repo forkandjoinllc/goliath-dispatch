@@ -3197,3 +3197,25 @@ el huso de la parada equivocada.
 
 **Los ayudantes de Pest, otra vez.** `raizReloj()` chocó con el de
 `StopClockTest`. Cuarta vez. El apellido del lote no es opcional.
+
+---
+
+## Lote «los enlaces cruzados» (`docs/cross-links.md`)
+
+**Dos piezas que hacen bien lo suyo pueden dejar un hueco entre ellas.** El menú
+esconde sus entradas por permiso y los documentos omiten sus enlaces cuando no
+hay pantalla. Los enlaces de ficha a ficha —que son lo mismo— no los miraba
+ninguna de las dos. Cuando dos piezas comparten una regla, conviene preguntarse
+qué superficie no cubre ninguna.
+
+**Un enlace sin lector no se prueba con una prueba inventada.** El del equipo no
+tiene hoy ningún caso vivo, y el sabotaje lo enseñó al salir verde. La salida no
+era fabricar un escenario imposible: era mover esa comprobación al guardián de
+estructura y medir, en su lugar, los dos 403 que justifican que el enlace exista.
+
+**La mitad que se olvida es la que sigue enseñando el dato.** Quitar un enlace es
+fácil; dejar el nombre en su sitio, no tanto. Hay un sabotaje para eso.
+
+**El mensaje de `toContain`, por sexta vez.** Un segundo argumento es una segunda
+aguja. Esta vez lo cacé en el primer rojo porque el mensaje de fallo ya me
+resulta familiar — lo cual dice más del error que de mí.
