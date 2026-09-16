@@ -67,7 +67,7 @@ final class OnboardingController
         $preparacion = (string) $request->query('ready', '');
         $preparacion = in_array($preparacion, self::PREPARACION, true) ? $preparacion : '';
 
-        $transportistas = $this->scoped($actor, $scope)
+        $transportistas = $this->scoped($checker, $actor, $scope)
             ->leftJoin('carrier_onboardings as o', 'o.carrier_id', '=', 'c.id')
             ->orderByRaw(self::ORDEN)
             ->orderBy('c.legal_name')
@@ -223,19 +223,40 @@ final class OnboardingController
         return $salida;
     }
 
-    private function scoped(Actor $actor, Scope $scope): Builder
+    /**
+     * Los transportistas que este actor puede ver en el tablero.
+     *
+     * ## Lo que decía antes
+     *
+     * ```php
+     * Scope::Platform, Scope::Tenant, Scope::Assigned => $consulta,
+     * ```
+     *
+     * El despachador tiene `carrier:onboarding:read` con alcance **Assigned**,
+     * y esa línea le devolvía la empresa entera: el nombre legal, el número
+     * DOT, el estado del alta, qué papeles le faltan y cuándo se revisó su
+     * FMCSA de transportistas que no son suyos. Además el tablero le ofrecía un
+     * botón de movimiento sobre ellos, y la ruta de transición —que sí estrecha
+     * por asignación— contestaba 404. Un botón muerto sobre un dato que no
+     * debería estar ahí.
+     *
+     * La regla existía y estaba aplicada en catorce sitios. Esta pantalla usa
+     * `DB::table()` con alias y join en vez de un modelo, `ScopeFilter::apply()`
+     * pedía un `Builder` de Eloquent, y ante la pieza que no encajaba se
+     * escribió el `match` a mano. Ahora encaja: ver `applyToQuery()`.
+     *
+     * El `tenant_id` se pone aquí y no allí, a propósito: sin modelo no se
+     * puede comprobar que la columna exista. Un guardián exige que esté.
+     */
+    private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
     {
         $consulta = DB::table('carriers as c')
             ->where('c.tenant_id', $actor->tenantId)
             ->whereNull('c.deleted_at');
 
-        return match ($scope) {
-            Scope::Platform, Scope::Tenant, Scope::Assigned => $consulta,
-            Scope::Carrier => $actor->carrierId === null
-                ? $consulta->whereRaw('1 = 0')
-                : $consulta->where('c.id', $actor->carrierId),
-            default => $consulta->whereRaw('1 = 0'),
-        };
+        // En esta tabla el «transportista» del ámbito es la fila misma.
+        return $checker->scopeFilter($actor, $scope)
+            ->applyToQuery($consulta, 'c', ['carrier' => 'id']);
     }
 
     private function esperandoDesde(object $c): ?string

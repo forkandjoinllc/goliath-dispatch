@@ -71,7 +71,7 @@ final class SignatureController
         $estado = (string) $request->query('status', '');
         $estado = in_array($estado, self::ESTADOS, true) ? $estado : '';
 
-        $filas = $this->scoped($actor, $scope)
+        $filas = $this->scoped($checker, $actor, $scope)
             ->leftJoin('signature_templates as t', 't.id', '=', 'r.template_id')
             ->leftJoin('carriers as c', 'c.id', '=', 'r.carrier_id')
             // Por el estado REAL y no por la columna: nada pone `expired` en
@@ -161,7 +161,7 @@ final class SignatureController
 
         $this->usesDictionary($request, ['signature', 'carriers', 'nav', 'common', 'validation']);
 
-        $solicitud = $this->scoped($actor, $scope)
+        $solicitud = $this->scoped($checker, $actor, $scope)
             ->leftJoin('signature_templates as t', 't.id', '=', 'r.template_id')
             ->leftJoin('carriers as c', 'c.id', '=', 'r.carrier_id')
             ->where('r.id', $signatureRequest)
@@ -462,7 +462,7 @@ final class SignatureController
         $policy = $current->policy();
         $scope = $checker->authorize($actor, 'signature:certificate:download', null, $policy);
 
-        $solicitud = $this->scoped($actor, $scope)
+        $solicitud = $this->scoped($checker, $actor, $scope)
             ->where('r.id', $signatureRequest)
             ->first(['r.id']);
 
@@ -500,7 +500,7 @@ final class SignatureController
 
         $datos = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
 
-        $solicitud = $this->scoped($actor, $scope)
+        $solicitud = $this->scoped($checker, $actor, $scope)
             ->where('r.id', $signatureRequest)
             ->first(['r.id', 'r.status']);
 
@@ -568,11 +568,14 @@ final class SignatureController
 
         // El mismo estrechamiento que las FILAS de la pantalla, para que la
         // lista y lo que se ve no puedan decir cosas distintas.
-        if ($scope === Scope::Carrier) {
-            $consulta = $actor->carrierId === null
-                ? $consulta->whereRaw('1 = 0')
-                : $consulta->where('id', $actor->carrierId);
-        }
+        //
+        // Y ahora con la MISMA pieza, no con un `if` que repetía medio `match`:
+        // este estrechamiento cubría `Scope::Carrier` y dejaba pasar
+        // `Scope::Assigned`, igual que el de las filas. El despachador tenía en
+        // el desplegable de «mandar a firmar» transportistas que no son suyos —
+        // y eso ya no es ver de más, es poder mandarle un acuerdo a otro.
+        $consulta = $checker->scopeFilter($actor, $scope)
+            ->applyToQuery($consulta, 'carriers', ['carrier' => 'id']);
 
         return $consulta
             ->orderBy('legal_name')
@@ -585,19 +588,30 @@ final class SignatureController
             ->all();
     }
 
-    private function scoped(Actor $actor, Scope $scope): Builder
+    /**
+     * Las solicitudes que este actor puede ver, y sobre las que puede actuar.
+     *
+     * Decía `Scope::Platform, Scope::Tenant, Scope::Assigned => $consulta`, y
+     * el despachador tiene `signature:request:read` con alcance **Assigned**:
+     * veía todas las solicitudes de la empresa —el correo del firmante
+     * incluido— y podía ABRIR las de transportistas que no son suyos. No es
+     * solo el listado: este mismo estrechamiento es el que decide `show()`, el
+     * certificado y la anulación.
+     *
+     * Ver `ScopeFilter::applyToQuery()` para por qué la regla existía y no
+     * estaba aplicada aquí.
+     */
+    private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
     {
         $consulta = DB::table('signature_requests as r')
             ->where('r.tenant_id', $actor->tenantId)
             ->whereNull('r.deleted_at');
 
-        return match ($scope) {
-            Scope::Platform, Scope::Tenant, Scope::Assigned => $consulta,
-            Scope::Carrier => $actor->carrierId === null
-                ? $consulta->whereRaw('1 = 0')
-                : $consulta->where('r.carrier_id', $actor->carrierId),
-            default => $consulta->whereRaw('1 = 0'),
-        };
+        // Una solicitud sin `carrier_id` no puede demostrar de quién es, así
+        // que con un ámbito estrecho no se ve. Es la dirección correcta en la
+        // que equivocarse.
+        return $checker->scopeFilter($actor, $scope)
+            ->applyToQuery($consulta, 'r', ['carrier' => 'carrier_id']);
     }
 
     /**

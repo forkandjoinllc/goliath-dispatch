@@ -51,11 +51,21 @@ it('la lista de transportistas no viaja a quien no puede pedir una firma', funct
     // viaja.
     assertStringContainsString("\$checker->can(\$actor,'signature:request:create',null,\$policy)->allowed", $fuente);
 
-    // Y con alcance de transportista, solo el suyo. El mismo estrechamiento que
-    // las FILAS de la pantalla, para que la lista y lo que se ve no puedan
-    // decir cosas distintas.
-    assertStringContainsString('if($scope===Scope::Carrier){', $fuente);
-    assertStringContainsString("->where('id',\$actor->carrierId)", $fuente);
+    // Y estrechada por ámbito, con la MISMA pieza que las filas de la pantalla,
+    // para que la lista y lo que se ve no puedan decir cosas distintas.
+    //
+    // Esto exigía `if($scope===Scope::Carrier){`, que era lo que había cuando
+    // se escribió y era medio `match` copiado: cubría al transportista y dejaba
+    // pasar a `Scope::Assigned`. El despachador tenía en el desplegable de
+    // «mandar a firmar» transportistas que no son suyos — y eso ya no es ver de
+    // más, es poder mandarle un acuerdo a otro. La prueba no se relaja: se
+    // corrige a exigir la pieza, que es lo que contesta bien para los cinco
+    // ámbitos.
+    assertStringContainsString(
+        "\$checker->scopeFilter(\$actor,\$scope)->applyToQuery(\$consulta,'carriers',['carrier'=>'id'])",
+        $fuente,
+    );
+    assertStringNotContainsString('if($scope===Scope::Carrier){', $fuente);
 });
 
 it('la cronología pública no lleva identificadores', function (): void {

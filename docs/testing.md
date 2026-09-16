@@ -3394,3 +3394,34 @@ correcta fue quitar el parámetro, no escribir una prueba para código muerto.
 tabla. Volver a escribirlo en el registro nuevo habría creado la segunda lista
 que contesta la misma pregunta, que es literalmente el defecto que el lote
 arregla.
+
+---
+
+## Lote «el despachador que veía la empresa entera» (`docs/assigned-scope.md`)
+
+**Cuando una pieza no encaja, lo que sale no es otra forma de hacerlo: es una
+copia peor.** `ScopeFilter::apply()` pedía un `Builder` de Eloquent y dos
+pantallas usan `DB::table()` con alias. Se escribió el `match` a mano y se
+escribió mal. Ampliar la pieza para que encaje cuesta menos que la copia, y
+muchísimo menos que la fuga.
+
+**Un botón muerto es la punta de una fuga.** El tablero ofrecía un movimiento
+que la ruta contestaba con 404. Cuando la pantalla y la acción contestan
+distinto a «¿esto es tuyo?», una de las dos está mal — y conviene mirar primero
+la que enseña, porque equivocarse ahí se ve y equivocarse en la otra, no.
+
+**Buscar la forma exacta del defecto.** `Scope::Tenant` y `Scope::Assigned` en
+el mismo brazo de un `match` es un patrón buscable en todo `app/`. Un guardián
+sobre la FORMA encuentra la pantalla número diecisiete sin que nadie recuerde
+que existe.
+
+**Un fixture con una asignación no prueba el caso sin ninguna.** Todas las
+pruebas tenían un despachador con un transportista asignado, así que la rama
+«no hay nada que casar» —la que decide si un recién llegado ve cero o ve
+todo— no se medía. Séptima vez que aparece.
+
+**Colisión de ayudantes globales de Pest, séptima vez**, y esta vez teniendo la
+regla escrita aquí y sin aplicarla: `sinAsignaciones()` chocó con
+`AssignmentTest`. `grep -rn "^function <nombre>(" tests/` antes de escribir la
+primera línea. Escribir la regla no es aplicarla — que es, literalmente, el
+defecto que este lote arregla.

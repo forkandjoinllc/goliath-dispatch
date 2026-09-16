@@ -86,6 +86,8 @@ const ACOTAN_SIN_DECIRLO = [
     'SettlementController' => 'Acota por transportista. Su mensaje también está escrito en forma de «no coincide» sin que haya filtros.',
     'MessageController' => 'Acota por participación, no por rol, y su mensaje ya es honesto sobre eso: «No estás en ningún hilo todavía». Es el único de la lista que dice la verdad hoy; se declara para que el guardián no dé por bueno el cableado.',
     'PermitController' => 'Acota por cartera de cargas. La pantalla de permisos no tiene diccionario propio de estado vacío todavía.',
+    'OnboardingController' => 'Entró en la lista al arreglarse la fuga: acotaba mal —le daba la empresa entera al despachador— y ahora acota bien. Su pantalla es un TABLERO por columnas de estado, no el panel de las otras seis, así que no tiene dónde encajar el componente sin rediseñarla. Mientras tanto, un despachador sin transportistas asignados ve un tablero vacío sin saber si es que no hay altas o es que no son suyas.',
+    'SignatureController' => 'Lo mismo y por lo mismo. Su tabla pinta un texto suelto —«signature.index.empty»— que dice «Todavía no hay solicitudes», y con alcance Assigned eso es falso: las hay, no son suyas.',
     'UserController' => 'Acota por transportista para el rol carrier —solo ve a los suyos— y dice «Todavía no hay nadie más». Su estado vacío es un párrafo dentro de dos secciones, no el panel de las otras seis: la pieza no encaja sin rediseñar la pantalla.',
 ];
 
