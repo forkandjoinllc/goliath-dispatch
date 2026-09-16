@@ -14,6 +14,7 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Loads\LoadScope;
 use App\Support\Oversize\Evaluator;
+use App\Support\Oversize\NeedsPapers;
 use App\Support\Documents\Attachment;
 use App\Support\Oversize\Papers;
 use App\Support\Storage\DocumentStore;
@@ -88,9 +89,7 @@ final class PermitController
         $this->usesDictionary($request, ['oversize', 'loads', 'nav', 'common', 'validation']);
 
         $cargas = LoadScope::apply(Load::query(), $checker, $actor, $scope)
-            ->where(function ($q): void {
-                $q->where('loads.is_oversize', 1)->orWhere('loads.is_overweight', 1);
-            })
+            ->tap(static fn ($q) => NeedsPapers::enConsulta($q))
             ->whereNull('loads.deleted_at')
             ->orderByDesc('loads.created_at')
             ->limit(200)
@@ -158,7 +157,18 @@ final class PermitController
                 'isOverweight' => (bool) $carga->is_overweight,
                 'oversizeValidatedAt' => $this->hora($carga->oversize_validated_at),
                 'permitReadyAt' => $this->hora($carga->permit_ready_approved_at),
+                // Si esta carga tiene que pasar por la mesa de alguien. La
+                // pantalla lo necesita porque escribía la frase de bloqueo
+                // sobre cualquier evaluación, incluida la de una carga que no
+                // bloquea nada.
+                'needsPapers' => NeedsPapers::laCarga($carga),
             ],
+            // Si el bloqueo del que habla la pantalla existe en esta empresa.
+            // El ajuste viene APAGADO de fábrica y el texto lo afirmaba igual:
+            // «el despacho permanece bloqueado hasta que un administrador
+            // valide». Con el interruptor apagado eso era falso, y es de las
+            // frases que alguien lee, delega y deja de mirar.
+            'validationRequired' => NeedsPapers::exigeValidacion((string) $actor->tenantId),
             'route' => $ruta === null ? null : [
                 'provider' => (string) $ruta->provider,
                 'calculatedAt' => $this->hora($ruta->calculated_at),

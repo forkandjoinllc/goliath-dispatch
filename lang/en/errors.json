@@ -27,7 +27,7 @@
     "insufficientMedia": "At least {required} equipment photos are required; {provided} provided.",
     "permitMissing": "Required permits for {state} are missing, expired or unapproved.",
     "escortMissing": "Required escorts have not been confirmed.",
-    "oversizeNotValidated": "The oversize evaluation has not been validated by an administrator.",
+    "oversizeNotValidated": "The dimensions-and-weight evaluation has not been validated by an administrator.",
     "duplicateCustomer": "A customer with matching {field} already exists.",
     "duplicateDot": "DOT {dot} is already registered in this organization.",
     "duplicateVin": "VIN {vin} is already registered to another truck or trailer in this organization.",

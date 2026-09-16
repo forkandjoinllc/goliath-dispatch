@@ -165,13 +165,13 @@
         "blocked": "Cannot approve: {n} requirements are still outstanding.",
         "blockedOne": "Cannot approve: 1 requirement is still outstanding.",
         "description": "Admin sign-off that every required permit is issued and unexpired, and every required escort is confirmed.",
-        "needsValidation": "The oversize evaluation has to be validated first. Dispatch of an oversize load is not approved on top of something nobody has signed.",
+        "needsValidation": "The evaluation has to be validated first. The paperwork for a load that needs a permit is not marked complete on top of something nobody has signed.",
         "notApproved": "Not yet approved",
         "permitExpiresBeforeDelivery": "The {state} permit expires before the planned delivery. Renew it or correct the date before marking the paperwork complete.",
         "permitWithoutDocument": "The {state} permit is marked issued and has no document attached. The driver cannot leave without the paper: attach it before marking the paperwork complete.",
         "success": "Load approved as permit-ready.",
         "title": "Permit-ready approval",
-        "escortPending": "The {state} escort is still pending. An oversize load does not leave with an unconfirmed escort.",
+        "escortPending": "The {state} escort is still pending. A load that needs a permit does not leave with an unconfirmed escort.",
         "escortWithoutDocument": "The {state} escort is confirmed and has no document attached. The box says it is there; the driver is not carrying it."
     },
     "restrictions": {
@@ -236,7 +236,10 @@
     },
     "validation": {
         "title": "Admin sign-off",
-        "description": "Dispatch is blocked for an oversize or overweight load until an Administrator validates this evaluation.",
+        "description": "An Administrator reviews the dimensions, weight and route of this evaluation, and records what they decided.",
+        "blocks": "Until they validate it, this load cannot be dispatched.",
+        "advisory": "This company does not require sign-off to dispatch: it is kept as a record. Turn it on in Settings.",
+        "notFlagged": "This load is not flagged oversize or overweight, so sign-off does not hold up its dispatch.",
         "status": {
             "pending": "Pending sign-off",
             "validated": "Validated",

@@ -69,8 +69,8 @@
         "noDriver": "No driver is assigned.",
         "carrierNotApproved": "The carrier's onboarding is not approved.",
         "driverNotCompliant": "A driver's licence or medical card has expired, or the driver is inactive.",
-        "permitNotApproved": "This is an oversize load and its permit has not been approved.",
-        "oversizeNotValidated": "It is oversize and an administrator has not validated its dimensions yet.",
+        "permitNotApproved": "It needs a permit for its dimensions or its weight, and that permit has not been approved.",
+        "oversizeNotValidated": "An administrator has not validated its dimensions and weight yet.",
         "noPodDocument": "No proof of delivery has been uploaded.",
         "missingDocument": "A required document is missing or not approved: {document}."
     },

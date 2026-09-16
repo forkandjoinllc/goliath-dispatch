@@ -165,13 +165,13 @@
         "blocked": "No se puede aprobar: quedan {n} requisitos pendientes.",
         "blockedOne": "No se puede aprobar: queda 1 requisito pendiente.",
         "description": "Aprobación de administrador de que todos los permisos requeridos están emitidos y vigentes, y todas las escoltas requeridas están confirmadas.",
-        "needsValidation": "Primero hay que validar la evaluación de sobredimensión. El despacho de una carga sobredimensionada no se aprueba sobre algo que nadie ha firmado.",
+        "needsValidation": "Primero hay que validar la evaluación. Los papeles de una carga que necesita permiso no se dan por completos sobre algo que nadie ha firmado.",
         "notApproved": "Aún no aprobado",
         "permitExpiresBeforeDelivery": "El permiso de {state} vence antes de la entrega planificada. Renuévelo o corrija la fecha antes de dar los papeles por completos.",
         "permitWithoutDocument": "El permiso de {state} está marcado como emitido y no tiene el documento adjunto. El conductor no puede salir sin el papel: adjúntelo antes de dar los papeles por completos.",
         "success": "Carga aprobada con permisos listos.",
         "title": "Aprobación de permisos listos",
-        "escortPending": "La escolta de {state} sigue pendiente. Una carga sobredimensionada no sale con una escolta sin confirmar.",
+        "escortPending": "La escolta de {state} sigue pendiente. Una carga que necesita permiso no sale con una escolta sin confirmar.",
         "escortWithoutDocument": "La escolta de {state} está confirmada y no tiene el documento adjunto. La casilla dice que está; el conductor no lo lleva."
     },
     "restrictions": {
@@ -236,7 +236,10 @@
     },
     "validation": {
         "title": "Aprobación de administrador",
-        "description": "El despacho permanece bloqueado para una carga sobredimensionada o con sobrepeso hasta que un administrador valide esta evaluación.",
+        "description": "Un administrador revisa las medidas, el peso y la ruta de esta evaluación, y deja constancia de lo que decidió.",
+        "blocks": "Mientras no la valide, esta carga no se puede despachar.",
+        "advisory": "Esta empresa no exige la validación para despachar: queda como constancia. Se activa en Configuración.",
+        "notFlagged": "Esta carga no está marcada con sobredimensión ni con sobrepeso, así que la validación no detiene su despacho.",
         "status": {
             "pending": "Pendiente de aprobación",
             "validated": "Validada",

@@ -85,15 +85,20 @@ it('con el interruptor encendido y la carga validada, pasa', function () {
     expect(Guards::blocking($carga, 'dispatched'))->not->toContain('oversizeNotValidated');
 });
 
-it('a una carga que no es sobredimensionada no le afecta', function () {
-    // El interruptor habla de sobredimensión. Bloquear una carga normal por él
-    // sería un fallo peor que el que arregla: pararía el trabajo de todos los
-    // días de una empresa que encendió una casilla sobre casos raros.
+it('a una carga que no es sobredimensionada ni pesada no le afecta', function () {
+    // El interruptor habla de las cargas que necesitan papeles. Bloquear una
+    // carga normal por él sería un fallo peor que el que arregla: pararía el
+    // trabajo de todos los días de una empresa que encendió una casilla sobre
+    // casos raros.
+    //
+    // `is_overweight` se pone a cero EXPLÍCITAMENTE. Antes se daba por hecho,
+    // y esta prueba pasaba sin controlar la bandera de la que hablaba — que es
+    // la misma distracción que dejó la puerta abierta.
     exigirValidacionAdmin($this->scenario, true);
 
     app(TenantContext::class)->runAs($this->scenario->tenant->id, fn () => DB::table('loads')
         ->where('id', $this->scenario->load->id)
-        ->update(['is_oversize' => 0, 'oversize_validated_at' => null, 'updated_at' => now()]));
+        ->update(['is_oversize' => 0, 'is_overweight' => 0, 'oversize_validated_at' => null, 'updated_at' => now()]));
 
     $carga = $this->scenario->load->fresh();
     $carga->status = LoadStatus::Assigned;

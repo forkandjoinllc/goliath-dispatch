@@ -7,6 +7,7 @@ namespace App\Support\Loads;
 use App\Enums\LoadStatus;
 use App\Models\Load;
 use App\Support\Documents\DocumentTypes;
+use App\Support\Oversize\NeedsPapers;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -125,11 +126,16 @@ final class Guards
             $blocking = [...$blocking, ...self::driverCompliance($driverIds)];
         }
 
-        // Sobredimensión: el permiso tiene que estar aprobado por una persona.
-        // No basta con que exista una fila en `permits` — alguien con el permiso
-        // `permit:approve` tiene que haber dicho que la ruta es transitable con
-        // esas medidas. Es la diferencia entre tener el papel y haberlo leído.
-        if ((bool) $load->is_oversize && $load->permit_ready_approved_at === null) {
+        // Papeles especiales: el permiso tiene que estar aprobado por una
+        // persona. No basta con que exista una fila en `permits` — alguien con
+        // el permiso `permit:approve` tiene que haber dicho que la ruta es
+        // transitable con esas medidas. Es la diferencia entre tener el papel y
+        // haberlo leído.
+        //
+        // QUIÉN pasa por aquí lo decide `NeedsPapers` y no un `if` escrito a
+        // mano, porque el `if` escrito a mano preguntaba solo por `is_oversize`
+        // y el sobrepeso se despachaba sin nada. Ver la cabecera de esa clase.
+        if (NeedsPapers::laCarga($load) && $load->permit_ready_approved_at === null) {
             $blocking[] = 'permitNotApproved';
         }
 
@@ -149,29 +155,13 @@ final class Guards
         //    administrador». El despachador puede EVALUAR (`oversize:evaluate`)
         //    y no puede validar: esa asimetría de la matriz de roles solo tiene
         //    sentido si alguien la usa, y hasta ahora nadie la usaba.
-        if ((bool) $load->is_oversize
+        if (NeedsPapers::laCarga($load)
             && $load->oversize_validated_at === null
-            && self::requiresOversizeValidation((string) $load->tenant_id)) {
+            && NeedsPapers::exigeValidacion((string) $load->tenant_id)) {
             $blocking[] = 'oversizeNotValidated';
         }
 
         return $blocking;
-    }
-
-    /**
-     * ¿Exige esta empresa la validación de un administrador en sobredimensión?
-     *
-     * Falso cuando no hay fila de ajustes, y eso es deliberado: falta de
-     * configuración no es falta de permiso. Una empresa sin ajustes —no debería
-     * pasar, pero pasa— no puede quedarse con todas sus cargas sobredimensionadas
-     * paradas porque una consulta devolvió nulo. La puerta que se cierra sola
-     * por un dato que falta es tan mala como la que no se cierra nunca.
-     */
-    private static function requiresOversizeValidation(string $tenantId): bool
-    {
-        return (bool) DB::table('tenant_settings')
-            ->where('tenant_id', $tenantId)
-            ->value('require_oversize_admin_validation');
     }
 
     /** @return list<string> */

@@ -24,6 +24,7 @@ use App\Support\Finance\CommissionLedger;
 use App\Support\Finance\InvoiceBuilder;
 use App\Support\Finance\PaymentLedger;
 use App\Support\Finance\SettlementBuilder;
+use App\Support\Oversize\DefaultRules;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
@@ -973,7 +974,22 @@ class DemoDataSeeder extends Seeder
                 'length_inches' => $oversize ? 780 : 576,
                 'required_equipment_type_id' => $equipment[$equipType],
                 'is_oversize' => $oversize,
-                'is_overweight' => $weight > 80_000,
+                // EL PESO QUE CUENTA ES EL BRUTO, no el de la carga.
+                //
+                // Esto decía `$weight > 80_000`, y `$weight` es lo que va
+                // encima del remolque. El límite federal de 80.000 libras es
+                // sobre el conjunto —camión, remolque y carga—, que es lo que
+                // `Evaluator` compara: `max_gross_weight_pounds` contra
+                // `gross_vehicle_weight_pounds`. Sembrando por el peso de la
+                // carga, NINGUNA carga de la demostración salía con sobrepeso
+                // salvo las que además eran anchas, así que el caso donde vivía
+                // el defecto de este lote —medidas legales, peso de más— no
+                // existía en la demostración y nadie podía tropezar con él.
+                //
+                // Se deriva del mismo número y con el mismo criterio que la
+                // evaluación: un sembrador que calcula una bandera por su
+                // cuenta enseña estados que la aplicación no produce.
+                'is_overweight' => $weight + 32_000 > DefaultRules::PESO_BRUTO,
                 'gross_vehicle_weight_pounds' => $weight + 32_000,
                 'customer_charge_cents' => $charge,
                 // Cero y no null: la columna es NOT NULL DEFAULT 0. Una carga

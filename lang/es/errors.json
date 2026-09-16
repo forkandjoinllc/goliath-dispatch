@@ -27,7 +27,7 @@
     "insufficientMedia": "Se requieren al menos {required} fotografías del equipo; se proporcionaron {provided}.",
     "permitMissing": "Faltan permisos para {state}, están vencidos o no aprobados.",
     "escortMissing": "No se han confirmado las escoltas requeridas.",
-    "oversizeNotValidated": "La evaluación de sobredimensión no ha sido validada por un administrador.",
+    "oversizeNotValidated": "La evaluación de medidas y peso no ha sido validada por un administrador.",
     "duplicateCustomer": "Ya existe un cliente con {field} coincidente.",
     "duplicateDot": "El DOT {dot} ya está registrado en esta organización.",
     "duplicateVin": "El VIN {vin} ya está registrado en otro camión o remolque de esta organización.",

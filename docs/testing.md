@@ -3321,3 +3321,41 @@ esconda algo por permiso, la pregunta siguiente es de dónde salen sus datos.
 **Buscar la misma frase en el repositorio encuentra los sitios donde no se
 aplicó.** Las tres piezas que dicen «no se manda y se esconde» estaban
 escritas; el defecto estaba en las dos que no citaban a ninguna.
+
+---
+
+## Lote «la puerta que no cerraba para el sobrepeso» (`docs/overweight-gate.md`)
+
+**La pantalla que enseña casi nunca se olvida; la puerta que cierra, sí.** El
+listado de permisos ya preguntaba por las dos banderas y la puerta solo por una.
+Cuando una condición aparece escrita a mano en dos sitios, el que va a quedarse
+atrás es el que nadie ve funcionar — porque cerrar bien no se nota y listar mal
+sí.
+
+**Una lista de banderas con motivo obliga a clasificar la siguiente.** Escribir
+`is_oversize || is_overweight` en un `if` no deja hueco donde poner la tercera.
+Un `const BANDERAS = [clave => por qué]` con un guardián que exige el motivo
+convierte «añadir una bandera» en «decidir si abre la puerta».
+
+**Un sembrador que calcula una bandera por su cuenta esconde estados.** El
+sembrador comparaba el peso de la carga contra un límite que es del conjunto, y
+por eso la demostración no tenía ni una carga con sobrepeso y medidas legales:
+el caso donde vivía el defecto no existía donde se mira. Vale la pena comprobar
+que el sembrador deriva sus banderas del mismo número y con el mismo criterio
+que la aplicación.
+
+**Una frase condicional escrita sin condición es una promesa.** «El despacho
+permanece bloqueado hasta que un administrador valide» dependía de un ajuste
+apagado de fábrica. La descripción de un panel se escribe siempre, así que no
+puede afirmar nada que dependa de datos: lo que depende va en una línea aparte,
+elegida con lo que manda el servidor.
+
+**Una prueba que no controla la bandera de la que habla no la prueba.** «A una
+carga que no es sobredimensionada no le afecta» ponía `is_oversize = 0` y daba
+por hecho el resto. Pasaba igual con el defecto puesto. Sexta vez que aparece la
+misma forma: el fixture de una sola fila —o de un solo campo— no prueba el
+`where`.
+
+**Colisión de ayudantes globales de Pest, sexta vez.** `raizPapeles()` chocó con
+`OversizePapersTest`. La comprobación barata es `grep -rn "^function <nombre>"
+tests/` antes de escribir la primera línea del guardián.

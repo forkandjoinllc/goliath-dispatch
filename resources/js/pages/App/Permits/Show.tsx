@@ -81,7 +81,11 @@ interface Props {
     isOverweight: boolean
     oversizeValidatedAt: string | null
     permitReadyAt: string | null
+    /** Si esta carga tiene que pasar por la mesa de alguien antes de rodar. */
+    needsPapers: boolean
   }
+  /** Si esta empresa exige la validación de un administrador para despachar. */
+  validationRequired: boolean
   route: {
     provider: string
     calculatedAt: string | null
@@ -110,7 +114,7 @@ interface Props {
  * ese aviso sería la forma más cara de equivocarse que tiene este producto.
  */
 export default function PermitsShow({
-  load, route, evaluation, permits, escorts, options, can,
+  load, route, evaluation, permits, escorts, options, can, validationRequired,
 }: Props) {
   const { t } = useI18n()
 
@@ -190,7 +194,13 @@ export default function PermitsShow({
 
               <PorEstado resultados={evaluation.stateResults} />
 
-              <Validacion loadId={load.id} evaluation={evaluation} puede={can.validate} />
+              <Validacion
+                loadId={load.id}
+                evaluation={evaluation}
+                puede={can.validate}
+                bloquea={validationRequired && load.needsPapers}
+                exigida={validationRequired}
+              />
             </>
           )}
         </section>
@@ -364,8 +374,14 @@ function Evaluar({ loadId, yaHay }: { loadId: string; yaHay: boolean }) {
 }
 
 function Validacion({
-  loadId, evaluation, puede,
-}: { loadId: string; evaluation: Evaluacion; puede: boolean }) {
+  loadId, evaluation, puede, bloquea, exigida,
+}: {
+  loadId: string
+  evaluation: Evaluacion
+  puede: boolean
+  bloquea: boolean
+  exigida: boolean
+}) {
   const { t } = useI18n()
   const form = useForm({ status: '', notes: '' })
 
@@ -373,6 +389,13 @@ function Validacion({
     <div className="mt-4 border-t border-steel-100 pt-3">
       <p className="text-sm font-semibold text-carbon">{t('oversize.validation.title')}</p>
       <p className="mt-0.5 text-xs text-steel-600">{t('oversize.validation.description')}</p>
+      <p className={`mt-0.5 text-xs ${bloquea ? 'font-medium text-carbon' : 'text-steel-500'}`}>
+        {bloquea
+          ? t('oversize.validation.blocks')
+          : exigida
+            ? t('oversize.validation.notFlagged')
+            : t('oversize.validation.advisory')}
+      </p>
 
       <div className="mt-2">
         <Marca
