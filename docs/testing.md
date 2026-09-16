@@ -3138,3 +3138,33 @@ el aviso se va solo.
 **Los ayudantes de Pest son globales, otra vez.** `barrer()` chocó con el de
 `SweepTest` y tumbó la suite entera con «Cannot redeclare». Tercera vez en este
 proyecto: los ayudantes llevan apellido de lote.
+
+---
+
+## Lote «las fechas de calendario» (`docs/calendar-dates.md`)
+
+**Un registro de deuda solo caza la forma del defecto que sabe contar.**
+`Time\Pending::SIN_CONVERTIR` lleva treinta y seis sitios declarados y un
+guardián que los cuenta — y cuenta los que sacan una hora EN CRUDO. Once
+columnas salían mal de otra manera: perfectamente formateadas en ISO 8601 y mal
+entendidas. Cuando se escriba un registro de deuda, la pregunta es qué formas del
+defecto NO cuenta.
+
+**Una aguja en negativo puede ponerse roja por el comentario que explica el
+arreglo.** Mi guardián buscaba que la pantalla ya no contuviera `new Date(`, y
+el comentario que puse encima decía «no un `new Date(value)` local». La prueba
+falló por su propia explicación. `Source::compacta()` resuelve esto para PHP con
+`token_get_all()`; para TSX hubo que escribir el equivalente pequeño.
+
+**Dos mitades que solo funcionan juntas necesitan una prueba por mitad y una del
+conjunto.** Mandar el día sin pegar la medianoche local no arregla nada:
+`new Date('2026-10-10')` es medianoche UTC. Hay un sabotaje para cada mitad.
+
+**El sabotaje que importa no es el que rompe: es el que se pasa de listo.**
+Convertir `created_at` a día también —«ya que estamos»— deja la pantalla
+mintiendo en la otra dirección. Un lote que aplana un tipo de dato necesita la
+prueba de que NO aplanó el de al lado.
+
+**Dos funciones con dos nombres valen más que una con un parámetro.** `day()` y
+`date()` estaban copiadas a mano en cada pantalla y la mitad trataba un día como
+una hora. `formatDay()` y `formatInstant()` no se confunden al leerlas.

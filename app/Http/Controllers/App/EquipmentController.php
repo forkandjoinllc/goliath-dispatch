@@ -22,6 +22,7 @@ use App\Support\Geo\Regions;
 use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
 use App\Support\InertiaPage;
+use App\Support\Time\CalendarDates;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -756,8 +757,11 @@ final class EquipmentController
             'plateState' => $g('plate_state'),
             'plateCountry' => $g('plate_country'),
             'status' => EnumValue::of($g('status'), 'pending_verification'),
-            'nextInspectionDueAt' => $this->iso($g('next_inspection_due_at')),
-            'registrationExpiresAt' => $this->iso($g('registration_expires_at')),
+            // Días, no instantes: los teclea una persona en un selector de
+            // fecha y la matrícula de un camión vence un día, no a una hora.
+            // Ver `App\Support\Time\CalendarDates`.
+            'nextInspectionDueAt' => CalendarDates::dia($g('next_inspection_due_at')),
+            'registrationExpiresAt' => CalendarDates::dia($g('registration_expires_at')),
             'expiries' => $this->expiries($u),
             'type' => $type,
         ];
@@ -774,9 +778,9 @@ final class EquipmentController
             ...$this->row($u, $this->carrierNames(collect([$u])), $type),
             'equipmentTypeId' => $g('equipment_type_id'),
             'registrationNumber' => $g('registration_number'),
-            'lastInspectionAt' => $this->iso($g('last_inspection_at')),
-            'lastMaintenanceAt' => $this->iso($g('last_maintenance_at')),
-            'nextMaintenanceDueAt' => $this->iso($g('next_maintenance_due_at')),
+            'lastInspectionAt' => CalendarDates::dia($g('last_inspection_at')),
+            'lastMaintenanceAt' => CalendarDates::dia($g('last_maintenance_at')),
+            'nextMaintenanceDueAt' => CalendarDates::dia($g('next_maintenance_due_at')),
             'coiVerificationStatus' => EnumValue::of($g('coi_verification_status'), 'not_started'),
             'outOfServiceReason' => $g('out_of_service_reason'),
             'notes' => $g('notes'),

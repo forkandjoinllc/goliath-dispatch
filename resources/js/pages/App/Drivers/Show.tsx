@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react'
 import { useState, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { AppLayout } from '@/layouts/AppLayout'
+import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -61,12 +62,9 @@ const VERIFICATION_TONE: Record<string, string> = {
 export default function DriverShow({ driver, carriers, loads, can }: Props) {
   const { t, locale } = useI18n()
 
-  const day = (value: string | null): string =>
-    value
-      ? new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' }).format(
-          new Date(value),
-        )
-      : '—'
+  // Días de calendario. La ficha y el listado tenían el mismo ayudante copiado
+  // y los dos movían la fecha un día. Ver `App\Support\Time\CalendarDates`.
+  const day = (value: string | null): string => formatDay(value, locale)
 
   return (
     <AppLayout

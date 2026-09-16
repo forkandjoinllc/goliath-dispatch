@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { EmptyState } from '@/components/App/EmptyState'
+import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
 interface DriverRow {
@@ -85,12 +86,12 @@ export default function DriversIndex({ drivers, filters, scope, facets, can }: P
   const to = Math.min(meta.currentPage * meta.perPage, meta.total)
   const filtered = filters.search !== '' || filters.status !== '' || filters.expiring !== ''
 
-  const day = (value: string | null): string =>
-    value
-      ? new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' }).format(
-          new Date(value),
-        )
-      : '—'
+  // `formatDay` y no un `new Date(value)` local: la caducidad de una licencia
+  // es un DÍA, y construir una fecha con el instante que manda el servidor la
+  // mueve al huso del navegador. Con el reloj en Chicago, el 1 de junio se
+  // pintaba «31 may» mientras el formulario del mismo conductor decía
+  // «2026-06-01». Ver `App\Support\Time\CalendarDates`.
+  const day = (value: string | null): string => formatDay(value, locale)
 
   return (
     <AppLayout

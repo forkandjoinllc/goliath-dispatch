@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { EmptyState } from '@/components/App/EmptyState'
+import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
 interface Unit {
@@ -77,12 +78,9 @@ export default function EquipmentIndex({ type, units, filters, scope, facets, ca
   const to = Math.min(meta.currentPage * meta.perPage, meta.total)
   const filtered = filters.search !== '' || filters.status !== '' || filters.expiring !== ''
 
-  const day = (value: string | null): string =>
-    value
-      ? new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' }).format(
-          new Date(value),
-        )
-      : '—'
+  // Un DÍA, no un instante: la matrícula y la inspección vencen un día. Ver
+  // `App\Support\Time\CalendarDates`.
+  const day = (value: string | null): string => formatDay(value, locale)
 
   return (
     <AppLayout

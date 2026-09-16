@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react'
 import { useState, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { AppLayout } from '@/layouts/AppLayout'
+import { formatDay, formatInstant } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -70,13 +71,20 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
     return typeof v === 'number' ? v : null
   }
 
+  // Días de calendario: matrícula, inspección y mantenimiento. Ver
+  // `App\Support\Time\CalendarDates`.
   const day = (key: string): string => {
     const v = unit[key]
-    return typeof v === 'string' && v !== ''
-      ? new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', { dateStyle: 'medium' }).format(
-          new Date(v),
-        )
-      : '—'
+
+    return typeof v === 'string' ? formatDay(v, locale) : '—'
+  }
+
+  // Y el alta de la unidad, que SÍ es un instante: cuándo se metió en el
+  // sistema. Dos funciones con dos nombres para que no se vuelvan a confundir.
+  const instante = (key: string): string => {
+    const v = unit[key]
+
+    return typeof v === 'string' ? formatInstant(v, locale) : '—'
   }
 
   const inches = (key: string): string => {
@@ -171,7 +179,7 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
               <Item label={t('equipment.detail.year')}>{s('year')}</Item>
               <Item label={t('equipment.detail.make')}>{s('make')}</Item>
               <Item label={t('equipment.detail.model')}>{s('model')}</Item>
-              <Item label={t('equipment.detail.createdAt')}>{day('createdAt')}</Item>
+              <Item label={t('equipment.detail.createdAt')}>{instante('createdAt')}</Item>
             </Dl>
           </Card>
 

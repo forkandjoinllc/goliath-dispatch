@@ -21,6 +21,7 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Lists\FacetCounts;
 use App\Support\Security\SensitiveNumber;
+use App\Support\Time\CalendarDates;
 use App\Support\Tracking\Consent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -516,19 +517,23 @@ final class DriverController
             'licenseState' => $d->license_state,
             'twicCard' => (bool) $d->twic_card,
             'twicNumberLast4' => $d->twic_number_last4,
-            'twicExpiresAt' => $d->twic_expires_at?->toDateString(),
+            // Los días, por el registro. Dos de estos ya salían con
+            // `toDateString()` y dos con `toIso8601String()`, en el mismo
+            // método: media docena de líneas más abajo la misma clase de dato
+            // se mandaba de dos formas. Ver `App\Support\Time\CalendarDates`.
+            'twicExpiresAt' => CalendarDates::dia($d->twic_expires_at),
             'twicVerifiedAt' => $d->twic_verified_at?->toIso8601String(),
             'workAuthorization' => EnumValue::of($d->work_authorization),
             'workAuthorizationVerifiedAt' => $d->work_authorization_verified_at?->toIso8601String(),
             'recordCleanYears' => $d->record_clean_years,
-            'recordCheckedAt' => $d->record_checked_at?->toDateString(),
+            'recordCheckedAt' => CalendarDates::dia($d->record_checked_at),
             'recordNotes' => $d->record_notes,
             'licenseCountry' => $d->license_country,
             // Solo los últimos cuatro. El número entero no sale de la base de
             // datos ni para el admin.
             'licenseLast4' => $d->license_number_last4,
-            'licenseExpiresAt' => $d->license_expires_at?->toIso8601String(),
-            'medicalCardExpiresAt' => $d->medical_card_expires_at?->toIso8601String(),
+            'licenseExpiresAt' => CalendarDates::dia($d->license_expires_at),
+            'medicalCardExpiresAt' => CalendarDates::dia($d->medical_card_expires_at),
             'expiries' => $this->expiries($d),
         ];
     }
