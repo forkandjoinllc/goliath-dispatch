@@ -120,16 +120,20 @@ final class SignatureController
             // respuesta, y como prop propia — la bolsa `flash` compartida solo
             // lleva `success` y `error`, a propósito.
             'newSigningUrl' => $request->session()->get('signingUrl'),
-            'carriers' => DB::table('carriers')
-                ->where('tenant_id', $actor->tenantId)
-                ->whereNull('deleted_at')
-                ->orderBy('legal_name')
-                ->limit(500)
-                ->get(['id', 'legal_name'])
-                ->map(static fn (object $c): array => [
-                    'id' => (string) $c->id,
-                    'name' => (string) $c->legal_name,
-                ])->all(),
+            // Los transportistas a los que ESTE actor puede pedirle una firma.
+            //
+            // Salía la empresa entera —hasta quinientas razones sociales— a
+            // cualquiera que abriera la pantalla, y el desplegable que las
+            // pinta está detrás de `can.create`. O sea: mandado y escondido,
+            // que es exactamente lo que `LoadController` y `Privacy\Internal`
+            // dicen que no se hace, porque queda al alcance de quien abra las
+            // herramientas del navegador.
+            //
+            // Un transportista tiene `signature:request:read` con alcance
+            // propio: abría la pantalla de firmas de SUS documentos y se
+            // llevaba la lista de sus competidores. Ver
+            // `docs/signature-carriers.md`.
+            'carriers' => $this->transportistasElegibles($actor, $scope, $checker, $policy),
             'templates' => DB::table('signature_templates')
                 ->where('tenant_id', $actor->tenantId)
                 ->where('active', 1)
@@ -540,6 +544,47 @@ final class SignatureController
      * devuelve nada en vez de devolverlo todo, que es la misma regla que aplica
      * `ScopeFilter` en el resto de la aplicación.
      */
+    /**
+     * Los transportistas que este actor puede elegir al pedir una firma.
+     *
+     * Vacío si no puede pedir ninguna: la lista solo existe para el desplegable
+     * del diálogo de envío, y un dato que no alimenta nada no viaja.
+     *
+     * @return list<array<string, string>>
+     */
+    private function transportistasElegibles(
+        Actor $actor,
+        Scope $scope,
+        PermissionChecker $checker,
+        ?array $policy,
+    ): array {
+        if (! $checker->can($actor, 'signature:request:create', null, $policy)->allowed) {
+            return [];
+        }
+
+        $consulta = DB::table('carriers')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at');
+
+        // El mismo estrechamiento que las FILAS de la pantalla, para que la
+        // lista y lo que se ve no puedan decir cosas distintas.
+        if ($scope === Scope::Carrier) {
+            $consulta = $actor->carrierId === null
+                ? $consulta->whereRaw('1 = 0')
+                : $consulta->where('id', $actor->carrierId);
+        }
+
+        return $consulta
+            ->orderBy('legal_name')
+            ->limit(500)
+            ->get(['id', 'legal_name'])
+            ->map(static fn (object $c): array => [
+                'id' => (string) $c->id,
+                'name' => (string) $c->legal_name,
+            ])
+            ->all();
+    }
+
     private function scoped(Actor $actor, Scope $scope): Builder
     {
         $consulta = DB::table('signature_requests as r')

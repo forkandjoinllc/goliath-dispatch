@@ -3304,3 +3304,20 @@ escrita a mano en React—. Se corrigió con el motivo dentro, no se relajó.
 **Recortar y validar son dos preguntas.** La pantalla recibe lo alcanzable; el
 servidor valida contra el catálogo. Juntarlas parece elegante y hace que un
 parámetro escrito a mano se comporte distinto según quién mire.
+
+---
+
+## Lote «mandado y escondido» (`docs/hidden-payload.md`)
+
+**Una aguja de texto sobre el HTML entero da rojo por el motivo equivocado.**
+Buscar `"provider"` en la página pública falla por el diccionario embebido, que
+la nombra veintiuna veces. Cuando lo que se mide es un dato, se mide sobre las
+props; el HTML completo lleva dentro toda la copia de la aplicación.
+
+**«Detrás de un `can`» no es «no se manda».** El desplegable de transportistas
+estaba correctamente escondido y la lista viajaba igual. Cuando una pantalla
+esconda algo por permiso, la pregunta siguiente es de dónde salen sus datos.
+
+**Buscar la misma frase en el repositorio encuentra los sitios donde no se
+aplicó.** Las tres piezas que dicen «no se manda y se esconde» estaban
+escritas; el defecto estaba en las dos que no citaban a ninguna.

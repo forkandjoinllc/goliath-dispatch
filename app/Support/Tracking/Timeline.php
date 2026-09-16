@@ -46,9 +46,26 @@ final class Timeline
      */
     public static function paraCliente(string $tenantId, string $loadId): array
     {
-        return array_values(array_filter(
+        $eventos = array_filter(
             self::paraDespacho($tenantId, $loadId, 50),
             static fn (array $e): bool => ! str_starts_with((string) $e['type'], 'consent_'),
+        );
+
+        // Y fuera el identificador de la parada y el nombre del proveedor.
+        //
+        // `Public\TrackingController` declara su invariante en la cabecera —«NO
+        // viajan al cliente… ni un solo identificador con el que probar otra
+        // dirección»— y su método `stops()` quita el `id` y el
+        // `customer_location_id` a mano. Esta lista se reenviaba tal cual la
+        // arma el despacho, así que los UUID de las paradas y el proveedor de
+        // rastreo iban en el JSON de la página pública: la pantalla no los
+        // pinta, pero están ahí para quien mire el código fuente.
+        //
+        // Mandados y escondidos, que es la forma que este proyecto lleva varios
+        // lotes quitando.
+        return array_values(array_map(
+            static fn (array $e): array => array_diff_key($e, ['stopId' => null, 'provider' => null]),
+            $eventos,
         ));
     }
 
