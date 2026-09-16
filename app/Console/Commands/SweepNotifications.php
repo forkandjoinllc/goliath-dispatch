@@ -20,6 +20,7 @@ use App\Support\Signatures\Outcome;
 use App\Support\Signatures\State;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use App\Support\Tracking\CustomerLink;
 use App\Support\Tracking\TrackingLinks;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
@@ -133,7 +134,7 @@ final class SweepNotifications extends Command
             return $query->pluck('id')->map(static fn ($id): string => (string) $id)->all();
         });
 
-        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0, 'signatures' => 0, 'rates' => 0];
+        $totales = ['documents' => 0, 'carriers' => 0, 'invoices' => 0, 'trials' => 0, 'revalidated' => 0, 'links' => 0, 'leads' => 0, 'tracking' => 0, 'signatures' => 0, 'rates' => 0];
 
         foreach ($empresas as $tenantId) {
             $context->runAs($tenantId, function () use ($tenantId, $dry, &$totales): void {
@@ -155,6 +156,7 @@ final class SweepNotifications extends Command
                     Expirations::resolveStale($tenantId, TenantPolicy::for($tenantId)->documentWarningDays);
                 }
                 $totales['leads'] += $this->prospectosSinAtender($tenantId, $dry);
+                $totales['tracking'] += $this->enlacesVencidosEnLaCarretera($tenantId, $dry);
                 $totales['signatures'] += $this->firmasQueVencieronSinFirmar($tenantId, $dry);
                 $totales['rates'] += $this->tarifasSinContestar($tenantId, $dry);
 
@@ -508,6 +510,70 @@ final class SweepNotifications extends Command
      * Y no se avisa si la empresa apagó los enlaces públicos, que entonces no
      * hay ninguna promesa que cumplir.
      */
+    /**
+     * Enlaces vencidos con la carga todavía en la carretera.
+     *
+     * El sitio público promete «ábralo cuando quiera para ver el estado desde
+     * la recolección hasta la entrega». El enlace vive ahora lo que dura el
+     * viaje —ver `CustomerLink::horasParaEsteViaje()`— y esto es la red de
+     * abajo para lo que se sale de la previsión: una entrega que se retrasa una
+     * semana deja el enlace muerto con el camión todavía rodando.
+     *
+     * Se emite uno NUEVO y se manda, que es lo único que se puede hacer: el
+     * testigo no se guarda en claro en ninguna parte, así que reenviar el viejo
+     * es imposible por construcción.
+     *
+     * `CustomerLink::sendForLoad()` ya comprueba que no haya uno vivo, que el
+     * rastreo esté encendido y que el cliente tenga a quién escribirle; si algo
+     * de eso falla contesta sin mandar nada y aquí no se cuenta.
+     */
+    private function enlacesVencidosEnLaCarretera(string $tenantId, bool $dry): int
+    {
+        if (! TrackingLinks::enabledFor($tenantId)) {
+            return 0;
+        }
+
+        $filas = DB::table('loads')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->whereIn('status', self::EN_LA_CARRETERA)
+            // Tuvo enlace y ya no tiene ninguno vivo. Las dos mitades hacen
+            // falta: sin la primera, esto pisaría el trabajo de
+            // `enlacesQueNoSalieron`, que avisa a la oficina cuando NUNCA salió
+            // ninguno —que es otro problema y se arregla de otra manera.
+            ->whereExists(fn ($q) => $q->selectRaw('1')
+                ->from('public_tracking_links')
+                ->whereColumn('public_tracking_links.load_id', 'loads.id')
+                ->whereNotNull('public_tracking_links.sent_at')
+                ->whereNull('public_tracking_links.deleted_at'))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')
+                ->from('public_tracking_links')
+                ->whereColumn('public_tracking_links.load_id', 'loads.id')
+                ->whereNotNull('public_tracking_links.sent_at')
+                ->whereNull('public_tracking_links.deleted_at')
+                ->whereNull('public_tracking_links.revoked_at')
+                ->where('public_tracking_links.expires_at', '>', CarbonImmutable::now()))
+            ->orderBy('created_at')
+            ->limit(200)
+            ->get(['id']);
+
+        $renovados = 0;
+
+        foreach ($filas as $carga) {
+            if ($dry) {
+                $renovados++;
+
+                continue;
+            }
+
+            if (CustomerLink::sendForLoad($tenantId, (string) $carga->id, null) === 'sent') {
+                $renovados++;
+            }
+        }
+
+        return $renovados;
+    }
+
     private function enlacesQueNoSalieron(string $tenantId, bool $dry): int
     {
         if (! TrackingLinks::enabledFor($tenantId)) {

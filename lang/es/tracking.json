@@ -213,7 +213,7 @@
         "carrierLabel": "Transportista: {carrier}",
         "destinationLabel": "Destino",
         "etaLabel": "Llegada estimada",
-        "expiredBody": "Este enlace de rastreo ha vencido. Pídale a su transportista un nuevo enlace de rastreo.",
+        "expiredBody": "Este enlace de rastreo ha vencido. Escriba a quien le mandó el correo —la empresa de despacho que lleva su carga— y le enviarán uno nuevo.",
         "expiredTitle": "Enlace vencido",
         "lastUpdated": "Última actualización {date}",
         "loadLabel": "Envío {loadNumber}",

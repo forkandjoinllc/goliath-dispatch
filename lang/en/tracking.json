@@ -213,7 +213,7 @@
         "carrierLabel": "Carrier: {carrier}",
         "destinationLabel": "Destination",
         "etaLabel": "Estimated arrival",
-        "expiredBody": "This tracking link has expired. Ask your carrier for a new tracking link.",
+        "expiredBody": "This tracking link has expired. Write to whoever sent you the email — the dispatch company handling your load — and they will send a new one.",
         "expiredTitle": "Link expired",
         "lastUpdated": "Last updated {date}",
         "loadLabel": "Shipment {loadNumber}",

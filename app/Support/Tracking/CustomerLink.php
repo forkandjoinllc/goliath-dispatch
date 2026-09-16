@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support\Tracking;
 
 use App\Support\TenantContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -79,7 +80,7 @@ final class CustomerLink
             return 'disabled';
         }
 
-        if (self::yaSeMando($tenantId, $loadId)) {
+        if (self::hayEnlaceVivo($tenantId, $loadId)) {
             return 'alreadySent';
         }
 
@@ -129,7 +130,9 @@ final class CustomerLink
             loadId: $loadId,
             label: null,
             recipientEmail: $email,
-            ttlHours: null,
+            // El enlace vive lo que dure el viaje, no 72 horas fijas. Ver
+            // `horasParaEsteViaje()`.
+            ttlHours: self::horasParaEsteViaje($tenantId, $loadId),
             createdByUserId: $createdByUserId,
         );
 
@@ -337,14 +340,74 @@ final class CustomerLink
         return (string) ($nombre ?? '');
     }
 
-    /** ¿Ya salió uno para esta carga? */
-    private static function yaSeMando(string $tenantId, string $loadId): bool
+    /**
+     * ¿Hay un enlace VIVO para esta carga?
+     *
+     * Antes preguntaba solo si alguno había salido, sin mirar si seguía
+     * valiendo. Con eso, un enlace vencido bloqueaba para siempre el envío de
+     * otro: el cliente abría el suyo a mitad de viaje, leía «Enlace vencido» y
+     * nadie de la casa se enteraba. Ver `docs/tracking-link-life.md`.
+     */
+    private static function hayEnlaceVivo(string $tenantId, string $loadId): bool
     {
         return DB::table('public_tracking_links')
             ->where('tenant_id', $tenantId)
             ->where('load_id', $loadId)
             ->whereNotNull('sent_at')
             ->whereNull('deleted_at')
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', CarbonImmutable::now())
             ->exists();
+    }
+
+    /**
+     * Cuántas horas tiene que vivir el enlace de ESTA carga.
+     *
+     * ## El defecto
+     *
+     * El sitio público promete, en la página que lee un cliente antes de
+     * contratar:
+     *
+     * > Una vez despachada su carga, recibirá un enlace seguro por correo
+     * > electrónico… **Ábralo cuando quiera** para ver el estado desde la
+     * > recolección hasta la entrega.
+     *
+     * El enlace se emitía con el plazo por omisión de la empresa —**72 horas**—
+     * y se mandaba UNA sola vez: `yaSeMando()` impedía que saliera otro aunque
+     * el primero hubiera caducado. En cualquier viaje de más de tres días, el
+     * cliente abría su enlace a mitad de trayecto y leía «Enlace vencido».
+     *
+     * La promesa entró en `PublicClaims::RESPALDOS` con esta clase de respaldo,
+     * y lo que se comprobó entonces fue la primera mitad: que el correo sale al
+     * despachar. La segunda mitad —«ábralo cuando quiera»— no la comprobó nadie.
+     *
+     * ## La regla
+     *
+     * El enlace vive hasta la **entrega prevista** más el plazo de la empresa, y
+     * nunca menos que ese plazo. El margen de después no es adorno: el
+     * comprobante llega tarde, el cliente mira el estado el lunes siguiente, y
+     * un enlace que muere en el muelle no cumple lo que dice la frase.
+     *
+     * Sin entrega prevista —una carga a la que nadie le puso fecha— se cae al
+     * plazo de la empresa, que es lo que había.
+     */
+    private static function horasParaEsteViaje(string $tenantId, string $loadId): int
+    {
+        $plazo = TrackingLinks::defaultTtlHours($tenantId);
+
+        $entrega = DB::table('loads')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $loadId)
+            ->value('planned_delivery_at');
+
+        if ($entrega === null) {
+            return $plazo;
+        }
+
+        $hastaLaEntrega = (int) ceil(
+            CarbonImmutable::now()->diffInMinutes(CarbonImmutable::parse((string) $entrega), false) / 60,
+        );
+
+        return max($plazo, $hastaLaEntrega + $plazo);
     }
 }

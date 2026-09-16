@@ -3267,3 +3267,22 @@ lo que faltaba era la regla única de la que las dos son casos particulares.
 **Una regla que cierra de más es tan mala como una que cierra de menos.** La
 pantalla existe para saber si el número es cero. Hay una prueba de que el aviso
 vivo sigue vivo, y otra de que dos documentos cuentan dos.
+
+---
+
+## Lote «la vida del enlace de rastreo» (`docs/tracking-link-life.md`)
+
+**Una promesa declarada no es una promesa comprobada.** `forClients.tracking.body`
+llevaba en `PublicClaims::RESPALDOS` desde hacía lotes, con su clase de respaldo.
+Lo que se verificó al meterla fue la primera mitad de la frase. Cuando un
+registro empareja una afirmación con un respaldo, conviene preguntarse **qué
+parte** de la afirmación sostiene ese respaldo — y escribir la otra parte en el
+propio registro si no la sostiene ninguna.
+
+**Segunda vez que una frase arreglada a medias vuelve como lote entero.** Antes
+fue «se le avisará N días antes»; ahora, «ábralo cuando quiera». Las dos veces,
+el lote anterior dejó escrito que la primera mitad estaba bien.
+
+**Un valor por omisión es una decisión escondida.** `ttlHours: null` no se lee
+como «72 horas», se lee como «lo normal». Cuando lo normal depende de cuánto dure
+un viaje, el valor tiene que calcularse y el cálculo tiene que tener nombre.
