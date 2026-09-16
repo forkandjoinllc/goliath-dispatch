@@ -46,13 +46,22 @@ con nada. Tres cosas suyas no están construidas:
    confirmación de tarifa—, así que es trabajo de conectar, no de construir
    desde cero.
 
-### `notification` (104 claves) — diez avisos que el original mandaba
+### `notification` (104 claves) — siete avisos que el original manda y este no
 
-`document.rejected`, `expense.rejected`, `export.ready`, `invoice.sent`,
-`load.assigned`, `load.rate_confirmation_requested`, `onboarding.approved`,
-`onboarding.corrections_required`, `onboarding.rejected`, `signature.requested`.
+`export.ready`, `invoice.sent`, `load.assigned`,
+`load.rate_confirmation_requested`, `onboarding.approved`,
+`onboarding.rejected`, `signature.requested`.
 
-**El más caro es `document.rejected`, y merece mirarse de frente.** Al rechazar
+> **Eran diez.** `document.rejected`, `expense.rejected` y
+> `onboarding.corrections_required` se construyeron en lotes posteriores, y este
+> párrafo —y la entrada del registro— siguieron diciendo diez durante meses. Es
+> el caso que hizo que los repasos dejaran de ser prosa: desde el lote de «los
+> repasos que dejaron de ser ciertos», la lista se recalcula contra
+> `Events::CATALOGO` y construir uno pone la suite en rojo hasta que se encoge.
+> Lo que sigue se conserva porque el argumento vale igual, y porque `Notifier`
+> sigue sin tener vía para avisar a un transportista de lo suyo.
+
+**El más caro era `document.rejected`, y merece leerse de todos modos.** Al rechazar
 un documento, la pantalla EXIGE al revisor un motivo de diez caracteres como
 mínimo, con este argumento escrito en la propia copia:
 
@@ -95,10 +104,17 @@ dice con todas las letras: «las columnas `extracted_vins`, `ocr_provider` y
 ### `driver` (132), `document` (152), `customer` (121), `assignment` (60)
 
 Ya mineados o sin solape. Lo suyo sin construir: el portal del conductor, la
-relación de un conductor con varios transportistas, la revisión de licencia, e
-`invoice` como tipo de documento de la carga. El detalle, en el registro de
-`tests/Unit/I18n/PortedDictionariesTest.php`, que es donde vive y donde un
-guardián lo mantiene honesto.
+relación de un conductor con varios transportistas y la revisión de licencia.
+
+De `document` **no queda ningún tipo por construir**: los veintisiete están en
+`Documents\DocumentTypes`, `invoice` incluido. Este párrafo decía que faltaba,
+y para cuando alguien volvió a leerlo ya se había construido — el segundo de
+los dos repasos que se quedaron obsoletos por haber hecho el trabajo que
+describían. Ahora se recalcula.
+
+El detalle, en el registro de `tests/Unit/I18n/PortedDictionariesTest.php`, que
+es donde vive y donde un guardián lo mantiene honesto — ahora midiendo, no solo
+exigiendo que la frase exista.
 
 ## Por qué esto estaba sin hacer
 

@@ -3495,3 +3495,41 @@ dentro y un estado que sí existe; no se relajó.
 concatenaba con el resto del original, así que el texto seguía siendo largo y el
 guardián callaba con razón. Un sabotaje que no cambia lo que dice medir es una
 comprobación que no se ha hecho.
+
+---
+
+## Lote «los repasos que dejaron de ser ciertos» (`docs/ported-dictionaries.md`)
+
+**Un registro de prosa envejece y el guardián no se entera.**
+`PORTADOS_REPASADOS` exigía que cada repaso existiera y no dijera «pendiente».
+Dos de los nueve habían dejado de ser verdad —uno decía que faltaban diez
+sucesos y quedaban siete; otro que faltaba un tipo de documento y estaban los
+veintisiete— y la suite seguía verde. Cuando una declaración afirma un hecho
+sobre el código, vale la pena preguntarse qué parte de ella se puede recalcular.
+
+**Se quedaron obsoletos por haber hecho el trabajo que describían.** Es la forma
+más traicionera: el repaso no se rompe por descuido, se rompe por avanzar. Y
+quien lo lea después deja de leer el portado, porque el repaso ya está escrito.
+
+**La lección estaba escrita y sin aplicar, otra vez.** `Leads\Arrival` dejó dicho
+hace lotes que «un repaso que se queda a medias parece un repaso hecho», después
+de que ese mismo portado pagara por segunda vez. Escribir la lección donde
+duele no es aplicarla: lo que la aplica es el guardián.
+
+**Una medida barata y uniforme no sustituye a una concreta.** El solape —cuántas
+claves comparten el portado y lo vivo— vale para los nueve y caza que alguien se
+lleve texto sin repasar. Pero dos ficheros pueden no compartir ninguna clave y
+describir lo mismo, así que hace falta además la afirmación concreta recalculada
+contra el símbolo que la decide. El guardián exige que haya al menos dos.
+
+**Un ayudante global de Pest hace que un guardián dependa del orden.**
+`PortedDictionariesTest` usaba `aplanarClaves()`, declarada en `PluralTest`:
+corriendo el fichero solo, error fatal. Un guardián que solo funciona si otro se
+ha cargado antes es un guardián que un día no corre y nadie lo nota. Ahora lleva
+el suyo.
+
+**Y la corrección que importa: casi construyo el lote equivocado.** Propuse
+borrar 3.044 claves «olvidadas» y resultó que eran deuda declarada, con
+registro, guardián y documento propio — media especificación de los dominios que
+faltan. Lo dije antes de tocar nada. Comprobar la premisa antes de construir
+sigue siendo más barato que cualquier otra cosa de este cuaderno.
