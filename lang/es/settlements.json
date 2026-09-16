@@ -11,7 +11,9 @@
     "net": "Neto",
     "empty": "No hay liquidaciones que coincidan.",
     "netTotal": "Neto a transportistas",
-    "feesTotal": "Tarifas de despacho"
+    "feesTotal": "Tarifas de despacho",
+    "clear": "Quitar filtros",
+    "filtered": "Lista filtrada"
   },
   "create": {
     "title": "Nueva liquidación",

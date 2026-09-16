@@ -3219,3 +3219,26 @@ fácil; dejar el nombre en su sitio, no tanto. Hay un sabotaje para eso.
 **El mensaje de `toContain`, por sexta vez.** Un segundo argumento es una segunda
 aguja. Esta vez lo cacé en el primer rojo porque el mensaje de fallo ya me
 resulta familiar — lo cual dice más del error que de mí.
+
+---
+
+## Lote «las listas que se desfiltran» (`docs/list-filters.md`)
+
+**Una pantalla puede contradecirse consigo misma.** El paginador de Facturas
+conservaba `overdue` y los controles no. Cuando dos partes de la misma pantalla
+construyen la misma consulta por caminos distintos, una de las dos está mal y no
+hay forma de saber cuál sin mirar las dos.
+
+**Copiar la solución de la pantalla de al lado no era la respuesta.** Cargas ya
+lo hacía bien; copiar su `navigate()` a otras tres habría dado cuatro copias de
+la misma función, que es exactamente cómo se llegó aquí. La pieza compartida es
+lo que compra el lote.
+
+**Un tipo de TypeScript que no nombra un filtro es un filtro que se olvida.**
+`Props.filters` declaraba dos y el servidor mandaba tres. El que faltaba es el
+que se perdía.
+
+**Entrar por el destino que declara el código, no por una ruta escrita en la
+prueba.** La prueba de característica pide `Panel::DESTINOS['invoicesOverdue']`.
+Si mañana alguien cambia ese destino, la prueba lo sigue; con la ruta escrita a
+mano, la prueba seguiría verde probando una pantalla a la que ya no lleva nadie.

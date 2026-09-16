@@ -48,7 +48,9 @@
         "reject": "Reject",
         "reimburse": "Mark reimbursed",
         "rejectReason": "Why is it rejected? The person who submitted it will read this.",
-        "confirmReject": "Confirm rejection"
+        "confirmReject": "Confirm rejection",
+        "clear": "Clear filters",
+        "filtered": "Filtered list"
     },
     "receipt": {
         "accepted": "PDF or photo, up to 20 MB.",

@@ -48,7 +48,9 @@
         "reject": "Rechazar",
         "reimburse": "Marcar reembolsado",
         "rejectReason": "¿Por qué se rechaza? Lo va a leer quien lo presentó.",
-        "confirmReject": "Confirmar rechazo"
+        "confirmReject": "Confirmar rechazo",
+        "clear": "Quitar filtros",
+        "filtered": "Lista filtrada"
     },
     "receipt": {
         "accepted": "PDF o foto, hasta 20 MB.",

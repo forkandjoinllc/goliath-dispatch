@@ -11,7 +11,9 @@
     "net": "Net",
     "empty": "No settlements match.",
     "netTotal": "Net to carriers",
-    "feesTotal": "Dispatch fees"
+    "feesTotal": "Dispatch fees",
+    "clear": "Clear filters",
+    "filtered": "Filtered list"
   },
   "create": {
     "title": "New settlement",

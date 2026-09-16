@@ -14,7 +14,10 @@
         "balance": "Balance",
         "empty": "No invoices match.",
         "billed": "Billed",
-        "outstanding": "Outstanding"
+        "outstanding": "Outstanding",
+        "overdue": "Overdue only",
+        "clear": "Clear filters",
+        "filtered": "Filtered list"
     },
     "create": {
         "title": "New invoice",

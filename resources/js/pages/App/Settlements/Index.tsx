@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { navegar, hayFiltros } from '@/lib/filters'
 import { formatCents } from '@/lib/format'
 import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
@@ -43,9 +44,7 @@ export default function SettlementsIndex({ settlements, filters, statuses, total
             <span className="text-xs font-medium text-steel-700">{t('settlements.index.status')}</span>
             <select
               value={filters.status}
-              onChange={(e) =>
-                router.get('/settlements', { status: e.target.value }, { preserveState: true, replace: true })
-              }
+              onChange={(e) => navegar('/settlements', filters, { status: e.target.value })}
               className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
             >
               <option value="">{t('settlements.index.anyStatus')}</option>
@@ -56,6 +55,20 @@ export default function SettlementsIndex({ settlements, filters, statuses, total
               ))}
             </select>
           </label>
+
+          {/* Esta pantalla NO tiene caja de búsqueda y el servidor sí sabe
+              buscar por número de liquidación: un `?search=` que llegara de
+              fuera se perdía al tocar el estado. Ahora se conserva, y si hay
+              algún filtro puesto se puede quitar. */}
+          {hayFiltros(filters) ? (
+            <button
+              type="button"
+              onClick={() => router.get('/settlements', {}, { preserveScroll: true, replace: true })}
+              className="rounded border border-steel-300 px-3 py-2 text-sm text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('settlements.index.clear')}
+            </button>
+          ) : null}
 
           {can.manage ? (
             <Link

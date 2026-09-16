@@ -14,7 +14,10 @@
         "balance": "Saldo",
         "empty": "No hay facturas que coincidan.",
         "billed": "Facturado",
-        "outstanding": "Pendiente de cobro"
+        "outstanding": "Pendiente de cobro",
+        "overdue": "Solo vencidas",
+        "clear": "Quitar filtros",
+        "filtered": "Lista filtrada"
     },
     "create": {
         "title": "Nueva factura",

@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { navegar, hayFiltros } from '@/lib/filters'
 import { formatCents } from '@/lib/format'
 import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
@@ -23,7 +24,13 @@ interface Props {
     data: InvoiceRow[]
     meta: PageMeta
   }
-  filters: { search: string; status: string }
+  /**
+   * TODOS los filtros que aplicó el servidor, `overdue` incluido.
+   *
+   * Faltaba, y por eso se perdía: cada control reconstruía la consulta con la
+   * lista de filtros que tenía delante. Ver `resources/js/lib/filters.ts`.
+   */
+  filters: { search: string; status: string; overdue: string }
   statuses: string[]
   totals: { totalCents: number; outstandingCents: number }
   can: { create: boolean }
@@ -41,9 +48,7 @@ export default function InvoicesIndex({ invoices, filters, statuses, totals, can
       return
     }
 
-    const id = setTimeout(() => {
-      router.get('/invoices', { search, status: filters.status }, { preserveState: true, replace: true })
-    }, 300)
+    const id = setTimeout(() => navegar('/invoices', filters, { search }), 300)
 
     return () => clearTimeout(id)
   }, [search, filters.status])
@@ -77,9 +82,7 @@ export default function InvoicesIndex({ invoices, filters, statuses, totals, can
             <span className="text-xs font-medium text-steel-700">{t('invoices.index.status')}</span>
             <select
               value={filters.status}
-              onChange={(e) =>
-                router.get('/invoices', { search, status: e.target.value }, { preserveState: true, replace: true })
-              }
+              onChange={(e) => navegar('/invoices', filters, { status: e.target.value })}
               className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
             >
               <option value="">{t('invoices.index.anyStatus')}</option>
@@ -90,6 +93,30 @@ export default function InvoicesIndex({ invoices, filters, statuses, totals, can
               ))}
             </select>
           </label>
+
+          {/* El filtro que no tiene control propio: se llega a él desde la
+              tarjeta «Facturas vencidas» del panel. Sin decirlo, quien aterriza
+              aquí ve una lista corta con dos sumas de dinero encima y no sabe
+              que está recortada. Es el mismo chip que el listado de cargas ya
+              pinta para `uninvoiced`. */}
+          {filters.overdue === '1' ? (
+            <span className="rounded border border-navy-300 bg-navy-50 px-3 py-2 text-sm text-navy-800">
+              {t('invoices.index.overdue')}
+            </span>
+          ) : null}
+
+          {hayFiltros(filters) ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('')
+                router.get('/invoices', {}, { preserveScroll: true, replace: true })
+              }}
+              className="rounded border border-steel-300 px-3 py-2 text-sm text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('invoices.index.clear')}
+            </button>
+          ) : null}
 
           {can.create ? (
             <Link

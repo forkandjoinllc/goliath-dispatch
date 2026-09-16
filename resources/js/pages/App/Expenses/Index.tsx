@@ -1,6 +1,7 @@
 import { Link, router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
+import { navegar, hayFiltros } from '@/lib/filters'
 import { formatCents } from '@/lib/format'
 import { Pager, type PageMeta } from '@/components/App/Pager'
 import { useI18n } from '@/lib/i18n'
@@ -55,9 +56,7 @@ export default function ExpensesIndex({ expenses, filters, statuses, totals, can
             <span className="text-xs font-medium text-steel-700">{t('expenses.index.status')}</span>
             <select
               value={filters.status}
-              onChange={(e) =>
-                router.get('/expenses', { status: e.target.value, load: filters.load }, { preserveState: true, replace: true })
-              }
+              onChange={(e) => navegar('/expenses', filters, { status: e.target.value })}
               className="rounded border border-steel-300 bg-white px-3 py-2 text-sm outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-200"
             >
               <option value="">{t('expenses.index.anyStatus')}</option>
@@ -68,6 +67,25 @@ export default function ExpensesIndex({ expenses, filters, statuses, totals, can
               ))}
             </select>
           </label>
+
+          {/* `load` llega por la dirección y no tiene control propio. Se
+              arrastraba a ciegas y no había forma de quitarlo: una lista
+              recortada, sin decirlo, con dos sumas de dinero encima. */}
+          {filters.load !== '' ? (
+            <span className="rounded border border-navy-300 bg-navy-50 px-3 py-2 text-sm text-navy-800">
+              {t('expenses.index.filtered')}
+            </span>
+          ) : null}
+
+          {hayFiltros(filters) ? (
+            <button
+              type="button"
+              onClick={() => router.get('/expenses', {}, { preserveScroll: true, replace: true })}
+              className="rounded border border-steel-300 px-3 py-2 text-sm text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('expenses.index.clear')}
+            </button>
+          ) : null}
 
           {can.submit ? (
             <Link
