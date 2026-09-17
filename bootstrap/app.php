@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\AuthorizationException;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\EnsureTenantActive;
 use App\Http\Middleware\ResolveTenant;
@@ -24,6 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // sessions.active_tenant_id y necesita la sesión ya arrancada. Inertia al
         // final, porque su share() manda al cliente el idioma y la empresa ya
         // resueltos por los dos anteriores.
+        $middleware->web(prepend: [
+            // EL PRIMERO. Cualquier cosa que pase después puede escribir en la
+            // bitácora, y todo eso pertenece al mismo acto. Ver
+            // `Auditing\Correlation` para por qué el identificador se genera
+            // aquí dentro y no se lee de la cabecera que manda el cliente.
+            AssignRequestId::class,
+        ]);
+
         $middleware->web(append: [
             SetLocale::class,
             ResolveTenant::class,

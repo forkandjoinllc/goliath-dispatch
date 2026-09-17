@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Authorization\Actor;
 use App\Enums\AuditAction;
+use App\Support\Auditing\Correlation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -65,7 +66,12 @@ final class Audit
             'reason' => $reason,
             'ip_address' => $request?->ip(),
             'user_agent' => Str::limit((string) $request?->userAgent(), 500),
-            'request_id' => $request?->header('X-Request-Id'),
+            // Generado DENTRO, no leído de la cabecera que manda el cliente.
+            // Leerla significaba dos cosas: que la columna salía nula siempre
+            // —nadie la pone— y que, si alguien la pusiera, quien hace la
+            // petición elegiría cómo se agrupan sus eventos en una tabla que no
+            // admite correcciones. Ver `Auditing\Correlation`.
+            'request_id' => Correlation::actual(),
             'occurred_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),

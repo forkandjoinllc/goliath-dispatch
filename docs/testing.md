@@ -3533,3 +3533,56 @@ borrar 3.044 claves «olvidadas» y resultó que eran deuda declarada, con
 registro, guardián y documento propio — media especificación de los dominios que
 faltan. Lo dije antes de tocar nada. Comprobar la premisa antes de construir
 sigue siendo más barato que cualquier otra cosa de este cuaderno.
+
+---
+
+## Lote «la bitácora que prometía agrupar por petición» (`docs/audit-correlation.md`)
+
+**Una columna que siempre es nula no rompe ninguna prueba.** `request_id` se
+leía de una cabecera que nadie ponía: el `orWhere` del buscador no casaba nunca,
+el bloque de hermanos de la ficha salía vacío siempre y un índice de la base de
+datos indexaba solo nulos. Con 2.165 pruebas en verde. Nada falla cuando el
+resultado de agrupar por una columna vacía es «no hay nada»: sale exactamente lo
+mismo que cuando de verdad no hay nada. **Un valor por omisión silencioso se
+parece demasiado a una respuesta.**
+
+**Vale la pena preguntarle a los datos qué proporción de una columna está
+vacía.** Aquí bastó contar: 27 de 27 eventos sin agrupador. Ninguna prueba
+unitaria iba a decir eso, porque cada una escribía su evento y miraba otra cosa.
+Una consulta de una línea sobre la demostración encontró en un segundo lo que la
+suite llevaba meses sin ver.
+
+**Rellenar el hueco de la forma obvia habría sido peor que el hueco.** Lo obvio
+era poner la cabecera en el proxy. Pero entonces quien hace la petición elige
+cómo se agrupan sus propios eventos, en una tabla cuyo disparador prohíbe
+corregir nada. Cuando un dato llega vacío, antes de rellenarlo conviene mirar de
+dónde venía a llenarse: **un dato de fuera no puede decidir la forma de un
+registro que no se puede arreglar.** El guardián que importa de este lote no es
+el que exige que haya identificador, es el que exige que NO se lea el del
+cliente.
+
+**Una constante puede nombrar lo que se descarta.** `CABECERA_DEL_CLIENTE`
+existe para que el guardián compruebe que sigue sin leerse. La ausencia de una
+línea no se puede comprobar sin decir qué línea es la que no debe estar.
+
+**Que el sitio de un middleware en la pila sea un guardián.** Va en `prepend`
+porque todo lo que ocurre después puede escribir en la bitácora. Moverlo a
+`append` no rompe nada visible —las pantallas siguen funcionando— y parte en dos
+los eventos de cualquier petición que escriba antes de llegar a él. El sabotaje
+que lo saca del `prepend` muere; sin ese guardián habría sido un cambio
+inofensivo a la vista.
+
+**El navegador no deja leer la cabecera de una redirección.** El paseo hacía
+`fetch` con `redirect: 'manual'` para leer la cabecera de la petición que
+escribía los eventos, y la respuesta salía opaca: `status 0`, cabeceras nulas.
+Con `redirect: 'follow'` se lee la de la página siguiente, que es otra petición
+y otro identificador. Se resolvió por fuera del documento: `page.on('response')`
+ve todas las respuestas, redirecciones incluidas, así que el paseo se queda con
+la primera respuesta nueva a un POST. **Cuando la página no puede ver algo, el
+que conduce el navegador sí.**
+
+**Un acto de demostración necesita un estado que no se haya gastado.** Abrir el
+hilo de una carga escribe dos eventos solo si la carga no tenía hilo; repetir el
+paseo sobre la misma carga habría escrito uno o ninguno y el paseo habría
+«fallado» sin que nada estuviera mal. Los paseos que dependen de crear algo
+tienen que elegir su fila consultándola, no fijándola.
