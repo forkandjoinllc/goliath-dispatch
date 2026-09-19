@@ -92,6 +92,11 @@ final class PaymentController
                 ],
             ],
             'filters' => $filters,
+            // El alcance, para que el estado vacío pueda decir la verdad. Con
+            // `invoice:read` a nivel de transportista la lista sale acotada a
+            // sus propias facturas, y sin esto la pantalla decía «Ningún cobro
+            // coincide» — culpando a un filtro que no hay puesto.
+            'scope' => $scope->value,
             'statuses' => Reachable::valores('payments.status'),
             'methods' => PaymentMethod::values(),
             // La MISMA consulta que la lista, filtros incluidos. Antes se

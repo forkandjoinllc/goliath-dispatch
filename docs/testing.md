@@ -3586,3 +3586,86 @@ hilo de una carga escribe dos eventos solo si la carga no tenía hilo; repetir e
 paseo sobre la misma carga habría escrito uno o ninguno y el paseo habría
 «fallado» sin que nada estuviera mal. Los paseos que dependen de crear algo
 tienen que elegir su fila consultándola, no fijándola.
+
+---
+
+## Lote «el guardián que solo cazaba su propia forma» (`docs/scoped-empty-states.md`)
+
+**Un detector escrito con las formas que ya existían solo caza lo que ya
+existía.** El guardián de los estados vacíos reconocía «este listado acota»
+buscando cuatro expresiones —`scopeFilter(`, `LoadScope::apply`,
+`DocumentScope::`, `MessageScope::`— y «se lo dice a la vista» buscando una
+cadena. Cobros acota con un `whereExists` escrito a mano, por una razón buena
+que está comentada ahí mismo, y el guardián reportó verde sobre exactamente el
+defecto para el que se escribió. **Su docblock decía «es lo que impide que entre
+el séptimo» y el séptimo ya estaba dentro cuando se escribió la frase.**
+
+**Y fallaba por los dos lados.** Dos listados sí dicen el alcance, con otro
+nombre (`onlyMine`); el día que el detector los hubiera visto acotar los habría
+contado como deuda que no tienen. Un detector que solo reconoce su propia
+ortografía se equivoca en las dos direcciones, y la dirección de los falsos
+positivos es la que hace que alguien afloje el guardián.
+
+**La pregunta no era cómo está escrita la consulta, era quién mira.** El hecho
+vivía en `RoleMatrix`: un listado puede venir recortado si algún rol tiene
+alguno de los permisos que ese controlador autoriza con alcance por debajo de
+empresa. Eso no depende de la forma del `where`, cambia cuando cambian los
+permisos, y no hay que mantenerlo. **Cuando un guardián necesite reconocer un
+hecho sobre el código, vale la pena buscar dónde está declarado ese hecho antes
+de escribir una expresión regular que lo adivine.**
+
+**Un detector que diga que sí a todo también reporta verde.** Por eso el
+guardián nuevo comprueba las dos direcciones con ejemplos fijos: que ve acotado
+a cobros, que ve igual de acotadas las facturas (mismo permiso, otra consulta) y
+que NO ve acotada la bitácora. Sin la tercera, cambiar el detector por
+`return ['x']` habría pasado.
+
+**Buscar una cadena en un fichero entero da por bueno tirarla.** Dos guardianes
+de este lote nacieron débiles y un sabotaje lo enseñó: `onlyMine` sigue
+apareciendo en `interface Props` y en el desestructurado aunque la pantalla deje
+de usarla, y `'user_id', $actor->userId` sigue apareciendo en el contador de la
+campana aunque la consulta de la lista deje de acotar. **Un guardián sobre texto
+tiene que mirar el trozo donde el hecho vive** — el cuerpo del componente, el
+cuerpo del método— y no el fichero.
+
+**Un sabotaje contra el guardián no prueba nada.** Siete de los once primeros
+sabotajes de este lote editaban la propia prueba —quitar una aserción y ver que
+la prueba pasa— y por supuesto pasaban. El sabotaje tiene que romper el CÓDIGO y
+el guardián tiene que gritar. Reescritos así, los once mueren.
+
+**Y otra vez el sabotaje mal apuntado.** El que quitaba el acotado por usuario
+de la bandeja de avisos daba en `unreadCount()`, donde las dos líneas van
+seguidas, en vez de en `scoped()`, donde hay un comentario en medio. El guardián
+callaba con razón: la lista seguía acotando. Un sabotaje que no toca lo que dice
+tocar es una comprobación que no se ha hecho — tercera vez en este cuaderno.
+
+**Octava colisión de ayudante global de Pest — y el guardián que no podía
+cazarla.** `cuerpoDe()` ya existía en `LiveChecklistTest` y `fuenteDe()` en
+`ReachableOptionsTest`: error fatal en toda la suite, con los ficheros nuevos en
+verde por separado. Y resulta que el guardián ya estaba escrito:
+`Unit/Suite/HelperCollisionTest` cuenta exactamente eso. **No puede correr
+cuando pasa.** Pest carga todos los ficheros antes de ejecutar ninguna prueba,
+así que el `Cannot redeclare` mata la suite mientras el guardián aún no ha
+arrancado: solo puede fallar cuando no hace falta. La comprobación se movió
+además al arranque (`tests/Pest.php`), donde solo lee los ficheros como texto y
+convierte el fatal en un mensaje con el nombre y los dos ficheros.
+
+**Que un guardián exista no quiere decir que pueda dispararse.** Vale la pena
+preguntarse, al escribir uno, qué pasa en el momento exacto del defecto: si el
+defecto impide que el guardián corra, el guardián es documentación.
+
+**Un paseo puede necesitar deshacer lo que enseña.** Las cuatro ramas del estado
+vacío no salen todas de la demostración sembrada: el transportista tiene un
+cobro suyo. Se movió su factura al otro transportista para ver la rama acotada,
+se escondieron los dos cobros para ver la rama vacía, y se restauró todo con la
+comprobación de que volvían a verse dos. Un paseo que deja la demostración
+distinta de como la encontró es un paseo que miente al siguiente.
+
+**Ordenar por una hora con empates deja el orden al azar.** Las pruebas de
+correlación del lote anterior tomaban «el último evento» de una consulta
+ordenada por `occurred_at`, y dos eventos del mismo acto caen en la misma
+milésima —que es exactamente lo que esas pruebas comprueban—. Con la suite
+entera corriendo, una empezó a fallar sin que nada estuviera mal. Ahora cada
+prueba toma el identificador de SU respuesta y busca por él, o busca por la
+entidad que escribió: **cuando un fichero de pruebas demuestra que dos filas
+pueden ser simultáneas, ese mismo fichero no puede ordenarlas por la hora.**

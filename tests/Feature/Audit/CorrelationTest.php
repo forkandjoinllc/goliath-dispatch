@@ -35,9 +35,15 @@ afterEach(function (): void {
 /** Los eventos de auditoría que hay ahora, con su agrupador. */
 function eventosDeAuditoria(): Illuminate\Support\Collection
 {
+    // `occurred_at` y `id`: dos eventos del mismo acto caen en el mismo
+    // milisegundo con facilidad —es justo lo que este fichero comprueba— y
+    // ordenar solo por la hora deja el empate al azar del motor. Con la suite
+    // entera corriendo, `last()` devolvía a veces la fila anterior y una
+    // prueba fallaba sin que nada estuviera mal.
     return app(TenantContext::class)->withoutTenant(fn () => DB::table('audit_events')
         ->orderBy('occurred_at')
-        ->get(['id', 'action', 'request_id']));
+        ->orderBy('id')
+        ->get(['id', 'action', 'request_id', 'entity_id']));
 }
 
 /* ── Que exista ──────────────────────────────────────────────────────────── */
@@ -73,18 +79,24 @@ it('los eventos de UNA petición comparten agrupador', function (): void {
 it('dos peticiones distintas no se mezclan', function (): void {
     signIn($this->scenario, Role::Admin);
 
-    $this->post("/loads/{$this->scenario->load->id}/messages")->assertRedirect();
-    $primera = eventosDeAuditoria()->last()->request_id;
+    // El identificador de cada petición se toma de SU respuesta, no de la
+    // última fila de la tabla: dos eventos del mismo acto caen en la misma
+    // milésima y «el último» no está definido.
+    $primera = $this->post("/loads/{$this->scenario->load->id}/messages")
+        ->assertRedirect()
+        ->headers->get('X-Request-Id');
 
-    $this->post('/retention/holds', [
+    $segunda = $this->post('/retention/holds', [
         'name' => 'Citación',
         'reason' => 'Citación amplia, todavía no se sabe qué piden.',
         'scope_type' => 'tenant',
-    ])->assertRedirect();
-
-    $segunda = eventosDeAuditoria()->last()->request_id;
+    ])->assertRedirect()->headers->get('X-Request-Id');
 
     expect($segunda)->not->toBe($primera);
+
+    // Y que las dos escribieran de verdad bajo el suyo.
+    expect(eventosDeAuditoria()->where('request_id', $primera))->not->toBeEmpty();
+    expect(eventosDeAuditoria()->where('request_id', $segunda))->not->toBeEmpty();
 });
 
 /* ── Que no lo elija quien llama ─────────────────────────────────────────── */
@@ -107,18 +119,20 @@ it('dos peticiones con la MISMA cabecera del cliente siguen separadas', function
     // La otra mitad: no basta con ignorar el valor, hay que no dejar que junte.
     signIn($this->scenario, Role::Admin);
 
-    $this->withHeaders(['X-Request-Id' => 'misma'])
-        ->post("/loads/{$this->scenario->load->id}/messages")->assertRedirect();
-    $primera = eventosDeAuditoria()->last()->request_id;
+    $primera = $this->withHeaders(['X-Request-Id' => 'misma'])
+        ->post("/loads/{$this->scenario->load->id}/messages")
+        ->assertRedirect()
+        ->headers->get('X-Request-Id');
 
-    $this->withHeaders(['X-Request-Id' => 'misma'])
+    $segunda = $this->withHeaders(['X-Request-Id' => 'misma'])
         ->post('/retention/holds', [
             'name' => 'Citación',
             'reason' => 'Citación amplia, todavía no se sabe qué piden.',
             'scope_type' => 'tenant',
-        ])->assertRedirect();
+        ])->assertRedirect()->headers->get('X-Request-Id');
 
-    expect(eventosDeAuditoria()->last()->request_id)->not->toBe($primera);
+    expect($segunda)->not->toBe($primera);
+    expect(eventosDeAuditoria()->pluck('request_id'))->not->toContain('misma');
 });
 
 it('el identificador vuelve en la respuesta', function (): void {
@@ -131,7 +145,10 @@ it('el identificador vuelve en la respuesta', function (): void {
     $delEncabezado = $r->headers->get('X-Request-Id');
 
     expect($delEncabezado)->not->toBeNull();
-    expect(eventosDeAuditoria()->last()->request_id)->toBe($delEncabezado);
+
+    // Lo que hace útil la cabecera: con ese número se llega a los eventos que
+    // escribió ESA petición.
+    expect(eventosDeAuditoria()->where('request_id', $delEncabezado))->not->toBeEmpty();
 });
 
 /* ── La pantalla que existe por esto ─────────────────────────────────────── */
@@ -153,9 +170,9 @@ it('la ficha de auditoría enseña por fin los hermanos', function (): void {
 it('el buscador por identificador de petición encuentra algo', function (): void {
     signIn($this->scenario, Role::Admin);
 
-    $this->post("/loads/{$this->scenario->load->id}/messages")->assertRedirect();
-
-    $id = (string) eventosDeAuditoria()->last()->request_id;
+    $id = (string) $this->post("/loads/{$this->scenario->load->id}/messages")
+        ->assertRedirect()
+        ->headers->get('X-Request-Id');
 
     $this->get('/audit?q='.$id)->assertInertia(fn ($page) => $page
         ->where('events.data', fn ($filas) => collect($filas)->isNotEmpty()));
@@ -195,12 +212,17 @@ it('otra ejecución de consola no se mezcla con la anterior', function (): void 
 
     app(TenantContext::class)->set((string) $this->scenario->tenant->id);
 
+    // Por entidad y no por posición: ordenar no distingue dos filas de la
+    // misma milésima, y lo que se compara aquí es precisamente eso.
     Audit::record($actor, AuditAction::RetentionArchived, entityType: 'tenant', entityId: 'a');
-    $primera = eventosDeAuditoria()->last()->request_id;
 
     Correlation::forget();
 
     Audit::record($actor, AuditAction::RetentionArchived, entityType: 'tenant', entityId: 'b');
 
-    expect(eventosDeAuditoria()->last()->request_id)->not->toBe($primera);
+    $eventos = eventosDeAuditoria();
+    $primera = $eventos->firstWhere('entity_id', 'a')->request_id;
+    $segunda = $eventos->firstWhere('entity_id', 'b')->request_id;
+
+    expect($segunda)->not->toBe($primera);
 });

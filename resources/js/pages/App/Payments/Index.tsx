@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
 import { Pager, type PageMeta } from '@/components/App/Pager'
+import { EmptyState } from '@/components/App/EmptyState'
 import { useI18n } from '@/lib/i18n'
 
 interface Row {
@@ -26,11 +27,18 @@ interface Props {
   statuses: string[]
   methods: string[]
   totals: { settledCents: number; pendingCents: number; disputedCents: number }
+  /** El alcance del que mira, tal como lo manda el servidor. */
+  scope: string
   can: { refund: boolean }
 }
 
-export default function PaymentsIndex({ payments, filters, statuses, methods, totals, can }: Props) {
+export default function PaymentsIndex({ payments, filters, statuses, methods, totals, scope, can }: Props) {
   const { t, locale } = useI18n()
+
+  // Las tres claves, una a una, y NO Object.values(filters): el día que aquí
+  // viaje el orden, la forma genérica diría «hay filtros puestos» para
+  // siempre y las otras tres ramas no se alcanzarían nunca.
+  const filtered = filters.status !== '' || filters.method !== '' || filters.invoice !== ''
 
   const filtrar = (patch: Partial<Props['filters']>) =>
     router.get('/payments', { ...filters, ...patch }, { preserveState: true, replace: true })
@@ -90,9 +98,7 @@ export default function PaymentsIndex({ payments, filters, statuses, methods, to
 
         <div className="flex flex-col gap-3">
           {payments.data.length === 0 ? (
-            <p className="rounded border border-steel-200 bg-white p-8 text-center text-sm text-steel-600">
-              {t('payments.index.empty')}
-            </p>
+            <EmptyState ns="payments" filtered={filtered} scope={scope} canCreate={false} createdElsewhere />
           ) : null}
 
           {payments.data.map((p) => (

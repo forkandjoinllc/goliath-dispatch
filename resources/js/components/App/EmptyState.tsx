@@ -52,6 +52,7 @@ export function EmptyState({
   filtered,
   scope,
   canCreate,
+  createdElsewhere = false,
 }: {
   /** El espacio del diccionario de esta pantalla: `documents`, `loads`… */
   ns: string
@@ -60,6 +61,22 @@ export function EmptyState({
   scope: string
   /** Si esta persona puede crear en esta pantalla. */
   canCreate: boolean
+  /**
+   * Que estas filas no nazcan en ESTA pantalla.
+   *
+   * La cuarta rama pregunta «¿puede usted crear?» y responde, cuando no, que
+   * su empresa no ha dado de alta ninguno y se lo pida a un administrador. En
+   * cobros eso es falso dos veces: un cobro no se da de alta, aparece cuando
+   * el cliente paga o cuando alguien lo anota contra la factura — en la
+   * pantalla de la factura, no en esta—, y pedírselo a un administrador no
+   * hace que aparezca.
+   *
+   * Con esto la cuarta rama usa la pista del propio dominio, que es la única
+   * que sabe de dónde vienen sus filas. Sin esto, la única forma de no mentir
+   * sería no usar el componente, y entonces la pantalla volvería a escribir su
+   * panel a mano — que es exactamente como el defecto vuelve.
+   */
+  createdElsewhere?: boolean
 }) {
   const { t } = useI18n()
 
@@ -76,7 +93,7 @@ export function EmptyState({
 
     return [
       `${ns}.index.empty`,
-      canCreate ? `${ns}.index.emptyHint` : 'common.states.emptyNoPermission',
+      canCreate || createdElsewhere ? `${ns}.index.emptyHint` : 'common.states.emptyNoPermission',
     ]
   })()
 
