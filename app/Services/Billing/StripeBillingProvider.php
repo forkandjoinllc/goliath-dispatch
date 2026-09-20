@@ -108,6 +108,7 @@ final class StripeBillingProvider implements BillingProvider
                 'checkout.session.completed', 'invoice.paid', 'invoice.payment_succeeded' => BillingEvent::PAID,
                 'invoice.payment_failed' => BillingEvent::PAYMENT_FAILED,
                 'customer.subscription.deleted' => BillingEvent::CANCELLED,
+                'customer.subscription.updated' => self::bajaProgramada($suceso, $objeto),
                 default => BillingEvent::IGNORED,
             },
             providerType: $tipoStripe,
@@ -203,5 +204,38 @@ final class StripeBillingProvider implements BillingProvider
         }
 
         return false;
+    }
+
+    /**
+     * Qué cuenta un `customer.subscription.updated`.
+     *
+     * Es el suceso que Stripe manda cuando el cliente programa la baja desde
+     * el portal —y el único que lo cuenta: `customer.subscription.deleted` no
+     * llega hasta que el periodo termina, semanas después—. Antes caía en
+     * `default` y se anotaba como ignorado, así que la aplicación se quedaba
+     * diciendo «Al día» mientras la empresa se estaba yendo.
+     *
+     * Pero ese mismo suceso salta por MUCHAS cosas: cambiar de plan, cambiar
+     * de método de pago, cualquier retoque. Tratarlo entero como «se retira la
+     * baja» escribiría un falso «vuelve a renovarse» cada vez que alguien toca
+     * cualquier cosa, y lo peor: lo anotaría en el libro de sucesos como un
+     * hecho que no ha pasado.
+     *
+     * Por eso la retirada se reconoce por `previous_attributes`, que es donde
+     * Stripe dice QUÉ cambió: solo cuenta si la bandera estaba puesta antes.
+     * El resto sigue siendo ignorado, a propósito.
+     *
+     * @param  array<string, mixed>  $suceso
+     * @param  array<string, mixed>  $objeto
+     */
+    private static function bajaProgramada(array $suceso, array $objeto): string
+    {
+        if (($objeto['cancel_at_period_end'] ?? false) === true) {
+            return BillingEvent::CANCEL_SCHEDULED;
+        }
+
+        $antes = $suceso['data']['previous_attributes']['cancel_at_period_end'] ?? null;
+
+        return $antes === true ? BillingEvent::CANCEL_REVERSED : BillingEvent::IGNORED;
     }
 }

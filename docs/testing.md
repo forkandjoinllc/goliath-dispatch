@@ -3713,3 +3713,51 @@ fixture sin el estado interesante deja pasar lo que debía medir.
 texto son el arreglo aparente.** El guardián exige que el rótulo del
 transportista NO diga lo mismo que el de la casa, en los dos idiomas. Sin eso,
 copiar la frase de al lado pasa por hecho.
+
+---
+
+## Lote «la baja programada de la que nadie se enteraba» (`docs/scheduled-cancel.md`)
+
+**Una columna leída y nunca escrita no rompe nada.** `cancel_at_period_end`
+aparecía cuatro veces en la aplicación: el modelo y tres lecturas. Ninguna
+prueba falla por eso, ningún error se lanza: la pantalla enseña el valor por
+omisión como si fuera un dato, y `false` se lee igual que «comprobado que no».
+**Vale la pena preguntarle a cada columna que una pantalla lee quién la
+escribe**, porque la respuesta «nadie» es invisible desde cualquier otro sitio.
+
+**El hueco de arriba lo explicaba un hueco de abajo.** Nadie escribía la columna
+porque el vocabulario de sucesos no tenía cómo contar el hecho: tres tipos, y el
+suceso que lo cuenta cayendo en `default => IGNORED`. **Cuando un dato no se
+escribe nunca, conviene mirar si lo que falta es el verbo, no la asignación.**
+
+**Un tipo nuevo sin rama se anota como aplicado sin aplicar nada.** Por eso hay
+un guardián que recorre `BillingEvent::TYPES` y exige una rama para cada uno:
+`default => 'ignorado'` es un sumidero silencioso, y el defecto de este lote
+vivió tres lotes dentro de él.
+
+**Un guardián con falsos positivos es un guardián que alguien afloja.** El
+detector de escritores buscaba `'columna' => valor` y aquí se escribe también
+`$cambios['columna'] = valor` cuando el cambio es condicional: con la primera
+forma sola, cuatro columnas sanas salían huérfanas. Antes de celebrar que un
+guardián nuevo encuentra cosas, conviene mirar cuántas de las que encuentra son
+de verdad.
+
+**Estar en `$fillable` no es que nadie te escriba.** El modelo declaraba la
+columna y eso daba sensación de que estaba cableada. La lista de rellenables
+dice qué se PUEDE escribir en masa, no qué se escribe.
+
+**Un ayudante de otro fichero de pruebas funciona hasta que corres el tuyo
+solo.** Reusé `suscripcionEn()` y `entregarSuceso()` de `BillingTest`: verde con
+la suite entera, error fatal con el fichero suelto. Es la misma lección del lote
+de los diccionarios portados, y la novena colisión de este cuaderno con los
+ayudantes globales de Pest. Los propios, aunque se dupliquen diez líneas.
+
+**Una prueba no debe esquivar la verificación de firma para llegar al trozo que
+le interesa.** Las dos pruebas del adaptador de Stripe firman como firma Stripe
+—`t=<hora>,v1=<hmac>`— en vez de pasar por un camino sin secreto: medir la
+traducción saltándose la puerta es medir un camino que en producción no existe.
+
+**Y un límite que el propio diseño impone, dicho en voz alta:** el libro de
+sucesos es de solo añadir por disparador, así que la fila que escribió el paseo
+por la demostración NO se puede borrar. La demostración quedó como estaba salvo
+esa fila, y decirlo es más honesto que dejarla sin mencionar.

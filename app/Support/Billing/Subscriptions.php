@@ -63,6 +63,8 @@ final class Subscriptions
             BillingEvent::PAID => self::markPaid($suscripcion, $evento),
             BillingEvent::PAYMENT_FAILED => self::markFailed($suscripcion, $evento),
             BillingEvent::CANCELLED => self::markCancelled($suscripcion),
+            BillingEvent::CANCEL_SCHEDULED => self::markCancelScheduled($suscripcion, $evento),
+            BillingEvent::CANCEL_REVERSED => self::markCancelReversed($suscripcion),
             default => 'ignorado',
         };
     }
@@ -129,11 +131,57 @@ final class Subscriptions
         return 'impago';
     }
 
+    /**
+     * La baja queda programada para el final del periodo pagado.
+     *
+     * El estado NO cambia: la empresa sigue activa y pagada hasta la fecha de
+     * renovación. Lo único que cambia es que ese día no se renovará, y eso es
+     * justo lo que las pantallas querían enseñar y no podían — nadie escribía
+     * esta columna.
+     *
+     * Se guarda también la fecha de fin si el suceso la trae: sin ella el
+     * aviso dice que la baja llegará «al acabar el periodo» sin decir cuándo
+     * es eso, que es la mitad de la información.
+     */
+    private static function markCancelScheduled(object $s, BillingEvent $e): string
+    {
+        $cambios = [
+            'cancel_at_period_end' => 1,
+            'updated_at' => now(),
+        ];
+
+        if ($e->periodEnd !== null) {
+            $cambios['current_period_end'] = CarbonImmutable::createFromTimestamp($e->periodEnd);
+        }
+
+        DB::table('tenant_subscriptions')->where('id', $s->id)->update($cambios);
+
+        // `tenants.status` no se toca a propósito: sigue activa. Suspenderla
+        // hoy por una baja de dentro de tres semanas sería cobrarle un periodo
+        // y no dárselo.
+        return 'baja programada';
+    }
+
+    /** Se retira la baja programada: vuelve a renovarse. */
+    private static function markCancelReversed(object $s): string
+    {
+        DB::table('tenant_subscriptions')->where('id', $s->id)->update([
+            'cancel_at_period_end' => 0,
+            'updated_at' => now(),
+        ]);
+
+        return 'baja retirada';
+    }
+
     private static function markCancelled(object $s): string
     {
         DB::table('tenant_subscriptions')->where('id', $s->id)->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
+            // La baja ya no está PROGRAMADA: está hecha. Dejar la bandera
+            // puesta haría que la pantalla dijera a la vez «dada de baja» y
+            // «se dará de baja al acabar el periodo».
+            'cancel_at_period_end' => 0,
             'updated_at' => now(),
         ]);
 

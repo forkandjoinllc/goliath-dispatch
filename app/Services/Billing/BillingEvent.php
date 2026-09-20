@@ -25,9 +25,30 @@ final readonly class BillingEvent
 
     public const CANCELLED = 'cancelled';
 
+    /**
+     * La baja queda PROGRAMADA para el final del periodo pagado.
+     *
+     * No es una baja: el servicio sigue dado hasta la fecha de renovación y
+     * entonces no se renueva. El vocabulario no lo tenía, y esa es la razón de
+     * que `tenant_subscriptions.cancel_at_period_end` no la escribiera nadie:
+     * no había suceso que la contara. Las dos pantallas que la leen enseñaban
+     * un aviso que no podía aparecer nunca.
+     */
+    public const CANCEL_SCHEDULED = 'cancel_scheduled';
+
+    /** Se retira una baja programada: la suscripción vuelve a renovarse. */
+    public const CANCEL_REVERSED = 'cancel_reversed';
+
     public const IGNORED = 'ignored';
 
-    public const TYPES = [self::PAID, self::PAYMENT_FAILED, self::CANCELLED, self::IGNORED];
+    public const TYPES = [
+        self::PAID,
+        self::PAYMENT_FAILED,
+        self::CANCELLED,
+        self::CANCEL_SCHEDULED,
+        self::CANCEL_REVERSED,
+        self::IGNORED,
+    ];
 
     /**
      * @param  array<string, mixed>  $payload
