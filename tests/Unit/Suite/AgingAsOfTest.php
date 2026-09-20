@@ -116,10 +116,15 @@ it('la pantalla dice a qué fecha está la foto', function (): void {
         'La fecha va en el contador «Pendiente de cobro» y en el título de la antigüedad.',
     );
 
+    // El título de esa sección ya no es una clave fija: se elige por audiencia
+    // —para la casa es cartera y para el transportista es lo que debe— y la
+    // aguja se ajusta a la NUEVA forma sin aflojar lo que exige. Sigue pidiendo
+    // que la fecha vaya pegada al título, y de paso ahora también que el título
+    // pase por la elección: pinchado con la clave de la casa suelta, falla.
     test()->assertStringContainsString(
-        "reports.aging.title')} · \${t('reports.aging.asOf'",
+        "'reports.aging.titleOwed'))} · \${t('reports.aging.asOf'",
         $pantalla,
-        'El título de la antigüedad lleva su fecha al lado.',
+        'El título de la antigüedad lleva su fecha al lado, y se elige según quién mire.',
     );
 
     foreach (['es', 'en'] as $idioma) {

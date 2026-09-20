@@ -3669,3 +3669,47 @@ entera corriendo, una empezó a fallar sin que nada estuviera mal. Ahora cada
 prueba toma el identificador de SU respuesta y busca por él, o busca por la
 entidad que escribió: **cuando un fichero de pruebas demuestra que dos filas
 pueden ser simultáneas, ese mismo fichero no puede ordenarlas por la hora.**
+
+---
+
+## Lote «pendiente de cobro al que lo debe» (`docs/report-audience.md`)
+
+**Lo que se esconde y lo que se renombra son dos trabajos distintos, y solo se
+hizo uno.** `MoneyAudience` ya le quitaba al transportista el margen y lo
+cobrado al cliente en esta misma pantalla, y el diccionario ya tenía un descargo
+escrito para él que decía «la tarifa de despacho QUE SE LE COBRA». Con todo eso
+pensado, el contador más grande seguía diciéndole «Pendiente de cobro» sobre lo
+que él paga. **Una frontera de audiencia tiene dos preguntas —¿lo puede ver? y
+¿se llama igual para él?— y contestar la primera se parece mucho a haber
+terminado.**
+
+**Una ausencia sirve para esconder, no para elegir.** La pantalla deducía la
+audiencia de que faltara `marginCents`, y con eso solo decidía enseñar un
+descargo. El día que se esconda otra cifra más, la deducción sigue dando lo
+mismo. Preguntar —mandar la audiencia— cuesta una línea y no envejece; deducirla
+funciona hasta que cambia otra cosa. Es el mismo movimiento que el lote
+anterior: **mandar el hecho en vez de inferirlo de un efecto secundario.**
+
+**La lista que faltaba era la de «esta no cambia».** La cifra defectuosa no
+estaba mal clasificada: no estaba clasificada. Con dos listas —se esconde / no
+se esconde— no hay hueco donde escribir «esta se le manda, pero con otro
+nombre», y sin ese hueco el guardián no tiene nada que exigir. **Una
+clasificación binaria no puede cazar un tercer caso, y el tercer caso entra en
+silencio.**
+
+**Un registro que solo mira una de sus tres puertas mide lo que le apetece.** El
+ayudante que lee las cifras del informe miraba solo `ReportController::summary()`,
+y `filtraInforme()` se llama además dos veces en `PeriodReport`. Resultado: una
+cifra salía «sin clasificar» y otra «declarada de más», las dos falsas. Ahora
+lee los tres sitios y **cuenta las puertas**, para que una cuarta no pase
+inadvertida.
+
+**Comparar dos cosas vacías no compara nada.** La prueba de que la cifra es la
+misma para los dos lados necesita una factura ABIERTA: con cero pendiente,
+«iguales» y «las dos mal» se ven idénticos. Novena vez en este cuaderno que un
+fixture sin el estado interesante deja pasar lo que debía medir.
+
+**Y una regla de traducción que no estaba escrita: dos claves con el mismo
+texto son el arreglo aparente.** El guardián exige que el rótulo del
+transportista NO diga lo mismo que el de la casa, en los dos idiomas. Sin eso,
+copiar la frase de al lado pasa por hecho.

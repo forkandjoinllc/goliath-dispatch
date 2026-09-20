@@ -41,6 +41,8 @@ interface CommissionRow {
 interface Props {
   period: { from: string; to: string }
   summary: { feeCents: number; loads: number; outstandingCents: number; marginCents?: number }
+  /** De qué lado de la mesa mira quien abre la pantalla: `casa` o `transportista`. */
+  audience: string
   byCarrier: CarrierRow[]
   byCustomer: CustomerRow[]
   aging: Record<string, { amountCents: number; count: number }>
@@ -56,7 +58,7 @@ const TRAMOS = ['current', 'd1_30', 'd31_60', 'd61_90', 'd90plus']
 
 export default function ReportsIndex({
   period, summary, byCarrier, byCustomer, aging, agingAsOf,
-  expensesByTreatment, commissionsByDispatcher, loadsByStatus, can,
+  expensesByTreatment, commissionsByDispatcher, loadsByStatus, audience, can,
 }: Props) {
   const { t, locale } = useI18n()
 
@@ -65,6 +67,12 @@ export default function ReportsIndex({
   // primera fila a la que preguntarle, y una cabecera que sobra deja la tabla
   // descuadrada. Ver `App\Support\Finance\MoneyAudience`.
   const verMargen = summary.marginCents !== undefined
+
+  // Lo pendiente es la MISMA fila de `invoices` para los dos, y significa lo
+  // contrario: la casa lo cobra, el transportista lo paga. El número no
+  // cambia; cambia cómo se llama. Ver `Finance\MoneyAudience`.
+  const debeEl = audience !== 'casa'
+  const clave = (casa: string, transportista: string): string => (debeEl ? transportista : casa)
 
   // Una fecha suelta en ISO no la lee nadie de un vistazo, y en un informe que
   // se enseña a un cliente menos.
@@ -84,7 +92,7 @@ export default function ReportsIndex({
   return (
     <AppLayout
       title={t('reports.index.title')}
-      description={t('reports.index.subtitle')}
+      description={t(clave('reports.index.subtitle', 'reports.index.subtitleCarrier'))}
       crumbs={[{ label: t('reports.index.title') }]}
     >
       <div className="flex flex-col gap-6">
@@ -121,7 +129,7 @@ export default function ReportsIndex({
           ) : null}
           <Tile label={t('reports.summary.loads')} value={String(summary.loads)} />
           <Tile
-            label={t('reports.summary.outstanding')}
+            label={t(clave('reports.summary.outstanding', 'reports.summary.owed'))}
             value={formatCents(summary.outstandingCents, locale)}
             nota={t('reports.aging.asOf', { date: fecha(agingAsOf) })}
           />
@@ -131,8 +139,8 @@ export default function ReportsIndex({
             fecha obliga a suponerla, y la suposición natural —hoy— es falsa en
             cuanto alguien pide un mes cerrado. */}
         <Seccion
-          titulo={`${t('reports.aging.title')} · ${t('reports.aging.asOf', { date: fecha(agingAsOf) })}`}
-          nota={t('reports.aging.note')}
+          titulo={`${t(clave('reports.aging.title', 'reports.aging.titleOwed'))} · ${t('reports.aging.asOf', { date: fecha(agingAsOf) })}`}
+          nota={t(clave('reports.aging.note', 'reports.aging.noteOwed'))}
         >
           <div className="grid gap-3 sm:grid-cols-5">
             {TRAMOS.map((k) => (

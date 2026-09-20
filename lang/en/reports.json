@@ -2,6 +2,7 @@
   "index": {
     "title": "Reports",
     "subtitle": "What was billed, what it earned, and what is still owed to you.",
+    "subtitleCarrier": "What you were billed, what was settled to you, and what you still owe.",
     "basis": "These figures come from invoiced work and the frozen snapshot each invoice used — never from a recalculation. A closed period always says the same thing, and a load that has been delivered but not invoiced does not appear here yet.",
     "basisCarrier": "This report shows what is yours: your gross, the dispatch fee you are charged, and what is settled to you. The dispatch company’s own result is not part of it.",
     "from": "From",
@@ -13,11 +14,14 @@
     "fee": "Dispatch fees billed",
     "margin": "Gross margin",
     "loads": "Loads billed",
-    "outstanding": "Still owed to you"
+    "outstanding": "Still owed to you",
+    "owed": "Still owed by you"
   },
   "aging": {
     "title": "Receivables ageing",
+    "titleOwed": "Ageing of what you owe",
     "note": "Invoices still open on the period date, by how long they had been due. Balances are rebuilt from the payments recorded against each invoice: money received in January and refunded in March was in hand in January.",
+    "noteOwed": "Your invoices still open on the period date, by how long they had been due. Balances are rebuilt from the payments recorded against each invoice: a payment you made in January and got back in March counted as paid in January.",
     "current": "Not due yet",
     "d1_30": "1–30 days",
     "d31_60": "31–60 days",

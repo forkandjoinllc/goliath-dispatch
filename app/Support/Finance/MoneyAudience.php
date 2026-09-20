@@ -134,6 +134,56 @@ final class MoneyAudience
     ];
 
     /**
+     * Cifras del informe cuyo NOMBRE cambia según de qué lado se mire.
+     *
+     * ## El defecto que las trajo
+     *
+     * `/informes` le decía a un transportista «Pendiente de cobro — qué le
+     * siguen debiendo». Esa cifra sale de `invoices`, y en esta aplicación
+     * `invoices.carrier_id` es **a quién se le cobra**: la factura de la tarifa
+     * de despacho, que el transportista PAGA. Con alcance de transportista,
+     * `PeriodReport` estrecha por esa columna, así que el número más grande de
+     * la pantalla salía con el signo cambiado, y con él los cinco tramos de
+     * antigüedad.
+     *
+     * No era un descuido de quien no pensó en esta audiencia: `filtraInforme()`
+     * ya le esconde a ese mismo espectador el margen y lo cobrado al cliente, y
+     * el diccionario ya tiene un `basisCarrier` que dice «la tarifa de despacho
+     * QUE SE LE COBRA». Estaba pensado y quedó a medias — se arregló lo que
+     * había que esconder y no lo que había que renombrar.
+     *
+     * ## Por qué renombrar y no esconder
+     *
+     * Porque el dato es suyo y le sirve: lo que debe, y desde cuándo. Esconderlo
+     * dejaría la pantalla más pobre y además contradiría `basisCarrier`, que le
+     * promete «lo suyo». Lo que no puede es llamarse igual para los dos lados.
+     *
+     * @var array<string, string>
+     */
+    public const INFORME_CAMBIA_DE_LADO = [
+        'outstandingCents' => 'La casa lo cobra y el transportista lo paga: la misma factura es cartera para una y deuda para el otro.',
+    ];
+
+    /**
+     * Cifras del informe que dicen lo mismo para los dos lados.
+     *
+     * Se declaran, aunque no haya nada que hacer con ellas, porque el guardián
+     * exige que TODA cifra del informe esté clasificada: escondida, cambiada de
+     * lado o igual. Sin esta tercera lista, una cifra nueva no estaría en
+     * ninguna y el guardián callaría — que es como entró la de arriba.
+     *
+     * @var array<string, string>
+     */
+    public const INFORME_IGUAL_PARA_LOS_DOS = [
+        'id' => 'De quién es la fila. No es una cifra.',
+        'name' => 'Cómo se llama esa empresa. No es una cifra.',
+        'feeCents' => 'La tarifa de despacho facturada. Facturada es facturada: la emite una y la recibe el otro, y el rótulo no afirma dirección.',
+        'loads' => 'Cuántas cargas se facturaron. Un recuento no tiene lado.',
+        'grossCents' => 'La tarifa bruta pactada con el transportista. Es la misma cifra y el mismo nombre para quien la paga y para quien la cobra.',
+        'netCents' => 'Lo que se le liquida al transportista después de la tarifa de despacho. Se llama igual mirándolo desde cualquiera de los dos lados.',
+    ];
+
+    /**
      * Tratamientos de gasto cuyo total solo es de la casa.
      *
      * Los otros tres mueven la liquidación del transportista; este sale del
@@ -207,6 +257,29 @@ final class MoneyAudience
      * @param  array<string, mixed>  $fila
      * @return array<string, mixed>
      */
+    /**
+     * Cómo se clasifica cada cifra del informe.
+     *
+     * Devuelve `esconder`, `cambia` o `igual` para una cifra conocida, y null
+     * para una que nadie ha clasificado — que es lo que el guardián busca.
+     */
+    public static function claseDeInforme(string $cifra): ?string
+    {
+        if (array_key_exists($cifra, self::INFORME_SOLO_LA_CASA)) {
+            return 'esconder';
+        }
+
+        if (array_key_exists($cifra, self::INFORME_CAMBIA_DE_LADO)) {
+            return 'cambia';
+        }
+
+        if (array_key_exists($cifra, self::INFORME_IGUAL_PARA_LOS_DOS)) {
+            return 'igual';
+        }
+
+        return null;
+    }
+
     public static function filtraInforme(array $fila, Actor $actor): array
     {
         if (self::de($actor) === self::CASA) {

@@ -62,6 +62,12 @@ final class ReportController
         return Inertia::render('App/Reports/Index', [
             'period' => ['from' => $desde->toDateString(), 'to' => $hasta->toDateString()],
             'summary' => $this->summary($porTransportista, $cartera, $actor),
+            // De qué lado de la mesa mira quien abre la pantalla. Hasta ahora
+            // se DEDUCÍA de que faltara `marginCents`, y con eso solo se
+            // decidía enseñar un descargo. Las cifras que cambian de lado
+            // —lo pendiente es cartera para la casa y deuda para el
+            // transportista— necesitan la pregunta hecha, no adivinada.
+            'audience' => MoneyAudience::de($actor),
             'byCarrier' => $porTransportista,
             'byCustomer' => $informe->byCustomer(),
             'aging' => $cartera,

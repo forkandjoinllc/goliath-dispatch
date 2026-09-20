@@ -239,3 +239,178 @@ it('el informe le dice al de fuera de qué informe se trata', function (): void 
         expect($d['index']['basisCarrier'] ?? null)->toBeString("falta la nota en {$idioma}");
     }
 });
+
+/* ── Lo pendiente cambia de lado, y eso también estaba a medias ──────────── */
+
+/**
+ * Todas las claves que pasan por `filtraInforme()`, vengan de donde vengan.
+ *
+ * Son TRES sitios y no uno: el resumen de arriba, la tabla por transportista y
+ * la tabla por cliente. Leer solo el resumen —que es lo primero que escribí—
+ * daba por no clasificada una cifra que sí lo está y por declarada de más otra
+ * que vive en otro fichero. Un registro que solo mira una de sus tres puertas
+ * mide lo que le apetece.
+ *
+ * @return list<string>
+ */
+function cifrasDelInforme(): array
+{
+    $ficheros = [
+        raizDinero().'/app/Http/Controllers/App/ReportController.php',
+        raizDinero().'/app/Support/Reports/PeriodReport.php',
+    ];
+
+    $cifras = [];
+    $puertas = 0;
+
+    foreach ($ficheros as $fichero) {
+        $fuente = Source::sinComentarios($fichero);
+        $desde = 0;
+
+        while (($ini = strpos($fuente, 'MoneyAudience::filtraInforme([', $desde)) !== false) {
+            $fin = strpos($fuente, '], $', $ini);
+            $puertas++;
+
+            preg_match_all(
+                "/'([a-zA-Z]+)' =>/",
+                substr($fuente, $ini, (int) $fin - $ini),
+                $coincidencias,
+            );
+
+            $cifras = [...$cifras, ...$coincidencias[1]];
+            $desde = (int) $fin;
+        }
+    }
+
+    // Si mañana hay una cuarta puerta, esta cuenta lo dice en vez de dejar sus
+    // cifras sin clasificar en silencio.
+    expect($puertas)->toBe(3, 'Cambió el número de sitios que filtran cifras del informe: revisa este ayudante.');
+
+    return array_values(array_unique($cifras));
+}
+
+it('cada cifra del informe está clasificada, y en un solo sitio', function (): void {
+    // ESTE ES EL FALLO. `outstandingCents` no estaba en ninguna lista: no se
+    // escondía —y hace bien, el dato es suyo— pero tampoco se declaraba que
+    // significa lo contrario para quien lo mira desde fuera. Sin una tercera
+    // clase para «esta dice lo mismo para los dos», no había dónde notarlo.
+    foreach (cifrasDelInforme() as $cifra) {
+        expect(MoneyAudience::claseDeInforme($cifra))->not->toBeNull(
+            "{$cifra} no está clasificada: decide si se esconde, si cambia de lado o si dice lo mismo para los dos.",
+        );
+    }
+});
+
+it('ninguna cifra está clasificada dos veces', function (): void {
+    $todas = [
+        ...array_keys(MoneyAudience::INFORME_SOLO_LA_CASA),
+        ...array_keys(MoneyAudience::INFORME_CAMBIA_DE_LADO),
+        ...array_keys(MoneyAudience::INFORME_IGUAL_PARA_LOS_DOS),
+    ];
+
+    expect(array_unique($todas))->toHaveCount(
+        count($todas),
+        'Una cifra en dos listas: el orden de las comprobaciones decidiría qué pasa con ella.',
+    );
+});
+
+it('la clasificación no cuenta cifras que el informe ya no manda', function (): void {
+    // Al revés que la de arriba: una lista que reclama algo que no existe se
+    // lee como que ese caso está cubierto.
+    $mandadas = cifrasDelInforme();
+
+    foreach (['INFORME_SOLO_LA_CASA', 'INFORME_CAMBIA_DE_LADO', 'INFORME_IGUAL_PARA_LOS_DOS'] as $lista) {
+        /** @var array<string, string> $entradas */
+        $entradas = constant(MoneyAudience::class.'::'.$lista);
+
+        foreach (array_keys($entradas) as $cifra) {
+            test()->assertContains(
+                $cifra,
+                $mandadas,
+                "{$lista} declara {$cifra} y el resumen del informe ya no la manda.",
+            );
+        }
+    }
+});
+
+it('cada cifra que cambia de lado dice por qué', function (): void {
+    foreach (MoneyAudience::INFORME_CAMBIA_DE_LADO as $cifra => $motivo) {
+        expect(strlen($motivo))->toBeGreaterThan(
+            50,
+            "{$cifra}: el motivo tiene que decir qué es para cada lado.",
+        );
+    }
+});
+
+it('el informe pregunta de qué lado se mira en vez de deducirlo', function (): void {
+    // Se deducía de que faltara `marginCents`, y con eso solo se decidía
+    // enseñar un descargo. Una ausencia no puede elegir un rótulo: si mañana
+    // se esconde otra cifra más, la deducción sigue dando lo mismo y el rótulo
+    // se queda como estaba.
+    $controlador = Source::sinComentarios(raizDinero().'/app/Http/Controllers/App/ReportController.php');
+
+    test()->assertStringContainsString(
+        "'audience' => MoneyAudience::de(\$actor)",
+        $controlador,
+        'El informe no le dice a la pantalla de qué lado mira quien la abre.',
+    );
+
+    $pantalla = (string) file_get_contents(raizDinero().'/resources/js/pages/App/Reports/Index.tsx');
+
+    test()->assertStringContainsString(
+        "audience !== 'casa'",
+        $pantalla,
+        'La pantalla no usa la audiencia que el servidor le manda.',
+    );
+});
+
+it('las cifras que cambian de lado tienen sus dos rótulos en los dos idiomas', function (): void {
+    // Una clave que falta no revienta: el traductor devuelve la clave cruda y
+    // la pantalla enseña «reports.summary.owed» donde iba una cantidad.
+    $parejas = [
+        ['summary', 'outstanding', 'owed'],
+        ['index', 'subtitle', 'subtitleCarrier'],
+        ['aging', 'title', 'titleOwed'],
+        ['aging', 'note', 'noteOwed'],
+    ];
+
+    foreach (['es', 'en'] as $idioma) {
+        $d = json_decode(
+            (string) file_get_contents(raizDinero()."/lang/{$idioma}/reports.json"),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        foreach ($parejas as [$seccion, $casa, $transportista]) {
+            expect($d[$seccion][$casa] ?? null)->toBeString("falta reports.{$seccion}.{$casa} en {$idioma}");
+            expect($d[$seccion][$transportista] ?? null)->toBeString("falta reports.{$seccion}.{$transportista} en {$idioma}");
+
+            // Y que no sean la misma frase: dos claves con el mismo texto es
+            // el arreglo aparente — se ve hecho y sigue diciendo lo mismo.
+            expect($d[$seccion][$transportista])->not->toBe(
+                $d[$seccion][$casa],
+                "reports.{$seccion}.{$transportista} dice lo mismo que la de la casa en {$idioma}.",
+            );
+        }
+    }
+});
+
+it('la pantalla elige los cuatro rótulos, no solo el del total', function (): void {
+    // El total era el más visible, pero debajo hay cinco tramos bajo un título
+    // que también dice «cobro», y el subtítulo de la página lo repite.
+    $pantalla = (string) file_get_contents(raizDinero().'/resources/js/pages/App/Reports/Index.tsx');
+
+    foreach ([
+        "clave('reports.summary.outstanding', 'reports.summary.owed')",
+        "clave('reports.index.subtitle', 'reports.index.subtitleCarrier')",
+        "clave('reports.aging.title', 'reports.aging.titleOwed')",
+        "clave('reports.aging.note', 'reports.aging.noteOwed')",
+    ] as $eleccion) {
+        test()->assertStringContainsString(
+            $eleccion,
+            $pantalla,
+            "Este rótulo no se elige por audiencia: {$eleccion}",
+        );
+    }
+});
