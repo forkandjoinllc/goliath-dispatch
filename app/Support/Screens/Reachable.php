@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support\Screens;
 
+use App\Enums\DocumentReviewStatus;
 use App\Enums\ExpenseStatus;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentStatus;
@@ -71,6 +72,13 @@ final class Reachable
             'paid' => 'App\Support\Finance\PaymentLedger',
             'overdue' => 'App\Support\Finance\PaymentLedger',
             'disputed' => 'App\Support\Finance\PaymentLedger',
+        ],
+
+        'documents.reviewStatus' => [
+            'pending' => 'App\\Support\\Documents\\Attachment',
+            'in_review' => 'App\\Http\\Controllers\\App\\DocumentController',
+            'approved' => 'App\\Http\\Controllers\\App\\DocumentController',
+            'rejected' => 'App\\Http\\Controllers\\App\\DocumentController',
         ],
 
         'payments.status' => [
@@ -160,6 +168,11 @@ final class Reachable
             'uncollectable' => 'Nada marca una factura como incobrable. El valor se LEE en dos sitios —`PaymentLedger::SIN_SALDO` y la consulta de cartera— y no se escribe en ninguno: dar una deuda por perdida es una decisión contable que el producto todavía no ofrece.',
         ],
 
+        'documents.reviewStatus' => [
+            'expired' => 'Vencido es una FECHA, no una decisión de revisión: lo dice `expiration_date` y lo calcula `ExpiryWindow`. `DocumentController::review()` admite `approved`, `rejected` e `in_review` y nada más, y ningún otro sitio escribe esta columna. El filtro lo ofrecía y devolvía exactamente una fila: la que sembraba la demostración, que es la única razón de que la opción pareciera viva.',
+            'superseded' => 'Subir una versión nueva crea otra fila en `document_versions` y deja el documento en `pending` para que alguien la revise; no marca la anterior. El valor está en el enum y no lo escribe nadie.',
+        ],
+
         'payments.status' => [
             'processing' => 'El formulario de anotar un cobro admite `pending` y `succeeded`, y ninguna otra ruta escribe `processing`. Es un estado de pasarela para un cobro que todavía no está atado a una.',
             'cancelled' => 'Nada cancela un cobro anotado: se reembolsa, que es otra cosa y tiene su propio estado. (`Billing\Subscriptions` sí escribe `cancelled`, pero en la suscripción del SaaS, que es otra tabla.)',
@@ -209,6 +222,7 @@ final class Reachable
         'invoices.status' => InvoiceStatus::class,
         'payments.status' => PaymentStatus::class,
         'expenses.status' => ExpenseStatus::class,
+        'documents.reviewStatus' => DocumentReviewStatus::class,
     ];
 
     /**
@@ -243,6 +257,7 @@ final class Reachable
         'settlements.status' => ['carrier_settlements', 'status'],
         'leads.status' => ['leads', 'status'],
         'signatures.status' => ['signature_requests', 'status'],
+        'documents.reviewStatus' => ['documents', 'review_status'],
     ];
 
     /**

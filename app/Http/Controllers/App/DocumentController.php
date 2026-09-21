@@ -24,6 +24,7 @@ use App\Support\InertiaPage;
 use App\Support\Lists\FacetCounts;
 use App\Support\Notifications\Events;
 use App\Support\Notifications\Notifier;
+use App\Support\Screens\Reachable;
 use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -78,7 +80,14 @@ final class DocumentController
         $filters = [
             'search' => trim((string) $request->query('search', '')),
             'owner' => (string) $request->query('owner', ''),
-            'status' => (string) $request->query('status', ''),
+            // Normalizado contra el registro, como los demás listados. Sin
+            // esto, `?status=expired` volvía a la pantalla tal cual: el filtro
+            // decía «Vencido» y la lista salía entera, porque abajo ese valor
+            // ya no entra en el `where`. Es el defecto que este mismo método
+            // describe doce líneas más abajo sobre el filtro de dueño.
+            'status' => Reachable::admite('documents.reviewStatus', $request->query('status'))
+                ? (string) $request->query('status')
+                : '',
             'expiring' => $request->query('expiring') === '1' ? '1' : '',
         ];
 
@@ -439,7 +448,14 @@ final class DocumentController
         $checker->authorize($actor, 'document:review', $this->context($model), $policy);
 
         $data = $request->validate([
-            'decision' => ['required', 'in:approved,rejected,in_review'],
+            // Las tres DECISIONES, nombradas una a una. Iban en una sola
+            // cadena `in:approved,rejected,in_review`, y así el registro de
+            // alcanzables no podía comprobar que quien dice producir estos
+            // valores los escriba de verdad: en el fichero no aparecía ninguno
+            // entre comillas. No se valida contra `Reachable::valores()`
+            // entero porque ahí está además `pending`, que es de donde se
+            // viene y no una decisión que alguien pueda tomar.
+            'decision' => ['required', Rule::in(['approved', 'rejected', 'in_review'])],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -708,7 +724,12 @@ final class DocumentController
             $query->where('owner_type', $filters['owner']);
         }
 
-        if (in_array($filters['status'], ['pending', 'in_review', 'approved', 'rejected', 'expired', 'superseded'], true)) {
+        // El valor ya viene normalizado contra `Screens\Reachable` desde la
+        // entrada, y las facetas construyen el suyo del mismo registro. Aquí
+        // se aplica y ya: preguntar por segunda vez sería el segundo sitio
+        // contestando lo mismo, y este proyecto lleva media docena de lotes
+        // arreglando justo eso.
+        if ($filters['status'] !== '') {
             $query->where('review_status', $filters['status']);
         }
 
@@ -738,7 +759,7 @@ final class DocumentController
             $filters,
             ['status', 'expiring'],
             'review_status',
-            ['pending', 'in_review', 'approved', 'rejected', 'expired'],
+            Reachable::valores('documents.reviewStatus'),
             ['expiring' => ['expiring' => '1']],
         );
     }

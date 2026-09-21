@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Role;
+use Illuminate\Support\Collection;
 use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -73,6 +74,35 @@ it('pedir un estado imposible por la URL no filtra a escondidas', function (): v
 
     $this->get('/commissions?status=approved')->assertInertia(fn ($page) => $page
         ->where('filters.status', 'accrued'));
+});
+
+it('los documentos tampoco ofrecen los suyos', function (): void {
+    // `expired` y `superseded` están en el enum y no los escribe nadie:
+    // vencido es una fecha, no una decisión de revisión. La demostración
+    // sembraba uno y por eso la opción muerta devolvía una fila.
+    signIn($this->scenario, Role::Admin);
+
+    // Las claves EXACTAS y no «no contiene»: al cerrar con un closure, Inertia
+    // entrega una Collection, y `(array)` sobre ella devuelve sus propiedades
+    // internas —nunca las claves de las facetas—, así que la comprobación
+    // pasaba siempre. Un sabotaje lo enseñó: se puede escribir un guardián que
+    // no puede fallar.
+    $this->get('/documents')->assertInertia(fn ($page) => $page
+        ->where('facets', fn (Collection $f): bool => $f->keys()->all() === [
+            'all', 'pending', 'in_review', 'approved', 'rejected', 'expiring',
+        ]));
+});
+
+it('pedir un documento «vencido» por la URL no deja el filtro mintiendo', function (): void {
+    // Lo que NO debe pasar: que la pantalla diga «Vencido» en el filtro y
+    // enseñe la lista entera porque ese valor ya no entra en el `where`.
+    signIn($this->scenario, Role::Admin);
+
+    $this->get('/documents?status=expired')->assertInertia(fn ($page) => $page
+        ->where('filters.status', ''));
+
+    $this->get('/documents?status=rejected')->assertInertia(fn ($page) => $page
+        ->where('filters.status', 'rejected'));
 });
 
 it('pagar comisiones «aprobadas» ya no se acepta', function (): void {

@@ -3761,3 +3761,59 @@ traducción saltándose la puerta es medir un camino que en producción no exist
 sucesos es de solo añadir por disparador, así que la fila que escribió el paseo
 por la demostración NO se puede borrar. La demostración quedó como estaba salvo
 esa fila, y decirlo es más honesto que dejarla sin mencionar.
+
+---
+
+## Lote «la demostración enseñaba lo que la aplicación prohíbe» (`docs/demo-invariants.md`)
+
+**Un sembrador que escribe con `DB::table()->insert()` no pasa por ninguna
+regla.** Eso es lo que lo hace rápido y lo que lo hace peligroso: puede escribir
+combinaciones que ninguna ruta puede producir, y nadie se entera porque no hay
+nada que las compare con nada. **Vale la pena preguntarle a los datos sembrados
+si la aplicación podría haberlos producido** — es una pregunta distinta de «¿se
+ven bien?» y la respuesta era que no en cinco sitios.
+
+**Una demostración mala no rompe una prueba: enseña un producto que no
+existe.** Y hace algo peor que mentir a quien la mira: le quita al que programa
+la rama donde vive el defecto. El gate del recibo obligatorio no se ejecutó ni
+una vez en la demostración, porque no había ningún gasto pendiente al que
+aplicárselo.
+
+**El caso que lo resume: la demostración hacía que una opción muerta pareciera
+viva.** El filtro de documentos ofrecía «Vencido», valor que no escribe ningún
+código, y debería haber devuelto cero filas siempre — la señal que levanta la
+pregunta. Devolvía una, la sembrada. **Cuando un registro pregunta «¿puede la
+aplicación producir esto?», el sembrador cuenta como productor y hay que
+contarlo.**
+
+**La lección estaba escrita en el mismo método, veinte líneas más abajo.** El
+sembrador ya tenía un comentario largo explicando por qué el análisis de virus
+se siembra como `unavailable` y no como `clean` —«un estado que producción no
+puede alcanzar»— y el estado de revisión de al lado seguía siendo uno que
+producción no puede alcanzar. Y en `loadCrew()`, la consulta del conductor dice
+«coger uno cualquiera sembraría justo la incoherencia que esto viene a
+arreglar» y cuarenta líneas más abajo había un respaldo que cogía uno
+cualquiera. **Escribir la lección al lado del código no la aplica.**
+
+**Un invariante que sobrevive a su regla es cobertura falsa.** Cada uno declara
+el fichero donde la aplicación lo exige y un trozo de esa exigencia que tiene
+que seguir estando: sin eso, el día que alguien quite la comprobación del
+recibo la prueba sigue verde exigiendo algo que ya no exige nadie.
+
+**Y otra vez: no repetir la regla en el guardián.** Quién necesita papeles se lo
+pregunta el guardián a `NeedsPapers::enConsulta()`, que es la pieza de la
+aplicación. Escribir `where('is_oversize', 1)` en la prueba habría devuelto el
+defecto que esa clase vino a cerrar, esta vez desde el lado de las pruebas.
+
+**Se puede escribir un guardián que NO PUEDE fallar.** El de las facetas decía
+`array_keys((array) $f)` y, al cerrar con un closure, Inertia entrega una
+`Collection`: el `(array)` devuelve sus propiedades internas y nunca las claves
+de las facetas, así que la comprobación pasaba siempre. Lo enseñó un sabotaje
+que salió verde. **Un sabotaje que sale verde no siempre significa que falte un
+guardián: a veces significa que el que hay no mira nada.**
+
+**Un sabotaje puede ser nulo porque el arreglo lo dejó sin efecto.** El que
+devolvía el respaldo de «cualquier conductor» no cambiaba nada: con Bluewater ya
+teniendo conductor propio, esa línea no llega a ejecutarse. Se reapuntó al sitio
+donde la decisión se toma de verdad. Cuarta vez en este cuaderno que un sabotaje
+mal apuntado parece una comprobación hecha.

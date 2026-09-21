@@ -510,7 +510,16 @@ class DemoDataSeeder extends Seeder
             ['northline', DocumentType::CertificateOfAuthority, 'FMCSA operating authority — Northline Rigging', null, 'approved'],
             ['sierra', DocumentType::CertificateOfAuthority, 'Autoridad operativa FMCSA — Sierra Madre', null, 'approved'],
             ['sierra', DocumentType::CertificateOfInsurance, 'Certificado de seguro — Sierra Madre', 47, 'rejected'],
-            ['bluewater', DocumentType::CertificateOfInsurance, 'Certificate of insurance — Bluewater Drayage', -34, 'expired'],
+            // Vencido es una FECHA, no un estado de revisión.
+            //
+            // Salía con `review_status = 'expired'`, y ese valor no lo escribe
+            // nadie en toda la aplicación: `review()` solo admite `approved`,
+            // `rejected` e `in_review`. El seguro de Bluewater está aprobado y
+            // caducado hace 34 días, que es lo que de verdad le pasa — y es el
+            // estado que bloquea a su transportista. Es el mismo error que ya
+            // se corrigió unas líneas más abajo con el análisis de virus:
+            // sembrar un estado que producción no puede alcanzar.
+            ['bluewater', DocumentType::CertificateOfInsurance, 'Certificate of insurance — Bluewater Drayage', -34, 'approved'],
             ['bluewater', DocumentType::CarrierAgreement, 'Signed carrier agreement — Bluewater Drayage', null, 'approved'],
         ];
 
@@ -589,6 +598,31 @@ class DemoDataSeeder extends Seeder
             // filas que el barrido no reconoce y que nadie resolvería jamás:
             //
             //     php artisan notifications:sweep
+
+            // Y la REVISIÓN que dejó ese estado.
+            //
+            // Antes no se sembraba ninguna: doce documentos decididos y cero
+            // filas en `document_reviews`, así que la ficha enseñaba
+            // «Aprobado» sin quién ni cuándo. `DocumentController::review()`
+            // escribe una fila por decisión, siempre, y apuntando a la versión
+            // CONCRETA que se revisó — un documento decidido sin ella es un
+            // estado que ninguna ruta puede dejar.
+            if (in_array($review, ['approved', 'rejected', 'in_review'], true)) {
+                $this->upsert('document_reviews', [
+                    'document_id' => $documentId,
+                    'document_version_id' => $versionId,
+                ], [
+                    'reviewer_user_id' => $this->users['admin@demo.test'] ?? null,
+                    'status' => $review,
+                    'notes' => $review === 'rejected'
+                        ? 'La póliza no nombra a la casa de despacho como certificate holder.'
+                        : null,
+                    'rejection_reason' => $review === 'rejected'
+                        ? 'La póliza no nombra a la casa de despacho como certificate holder.'
+                        : null,
+                    'reviewed_at' => $now->copy()->subDays(random_int(2, 30)),
+                ]);
+            }
         }
     }
 
@@ -606,6 +640,12 @@ class DemoDataSeeder extends Seeder
             ['cordillera', 'C-07', '3AKJHHDR9NSNJ3107', 2023, 'Peterbilt', '389', 'sleeper', 'TX', EquipmentStatus::Active, 340],
             ['cordillera', 'C-12', '1FUJHHDR2KLKJ2112', 2019, 'Freightliner', 'Coronado', 'day_cab', 'TX', EquipmentStatus::OutOfService, 18],
             ['northline', 'NR-3', '1XPXD49X1MD771003', 2021, 'Peterbilt', '567', 'day_cab', 'IN', EquipmentStatus::PendingVerification, 150],
+            // Bluewater tiene equipo porque LLEVÓ una carga antes de que se le
+            // suspendiera. Sin camión ni conductor suyos, su carga facturada
+            // salía sin ninguna asignación de camión — un estado que
+            // `Guards::forDispatch()` bloquea con `noTruck`, así que esa carga
+            // no pudo haber rodado nunca.
+            ['bluewater', 'BW-2', '1FUJGLD59KLKK2002', 2018, 'Freightliner', 'Cascadia', 'day_cab', 'TX', EquipmentStatus::Active, 75],
         ];
 
         foreach ($trucks as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $regDays]) {
@@ -636,6 +676,7 @@ class DemoDataSeeder extends Seeder
             ['cordillera', 'R-14', '1DW1A5321NS141414', 2022, 'Fontaine', 'Magnitude 55L', 'lowboy', 'TX', EquipmentStatus::Active, 624, 102, 20],
             ['cordillera', 'R-21', '1UYFS2486LU212121', 2019, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 60],
             ['northline', 'NT-9', '1L01A5325MM090909', 2021, 'Landoll', '440B', 'double_drop', 'IN', EquipmentStatus::PendingVerification, 636, 102, 26],
+            ['bluewater', 'BW-T4', '1UYFS2482KU040404', 2018, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 58],
         ];
 
         foreach ($trailers as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $len, $wid, $deck]) {
@@ -679,6 +720,12 @@ class DemoDataSeeder extends Seeder
             ['key' => 'quiroga', 'endorsements' => ['H', 'T'], 'restrictions' => [], 'first' => 'Javier', 'last' => 'Quiroga', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 800, 'medicalDays' => 300, 'verification' => VerificationStatus::Verified],
             ['key' => 'delatorre', 'endorsements' => [], 'restrictions' => ['L', 'V'], 'first' => 'Ana Lucía', 'last' => 'De la Torre', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OffDuty, 'licenseDays' => 130, 'medicalDays' => -6, 'verification' => VerificationStatus::Pending],
             ['key' => 'okafor', 'endorsements' => ['N'], 'restrictions' => [], 'first' => 'Chidi', 'last' => 'Okafor', 'locale' => 'en', 'carrier' => 'northline', 'state' => 'IN', 'class' => 'A', 'status' => DriverStatus::Inactive, 'licenseDays' => 410, 'medicalDays' => 200, 'verification' => VerificationStatus::NotStarted],
+            // El de Bluewater. Su transportista está suspendido HOY, y la carga
+            // que llevó es de antes: sin un conductor suyo, el sembrador caía
+            // en el respaldo de «cualquier conductor» y ataba a la carga uno de
+            // otra empresa — que es exactamente lo que `checkResource()` rechaza
+            // con `driverWrongCarrier`.
+            ['key' => 'mensah', 'endorsements' => ['T'], 'restrictions' => [], 'first' => 'Kwabena', 'last' => 'Mensah', 'locale' => 'en', 'carrier' => 'bluewater', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 300, 'medicalDays' => 120, 'verification' => VerificationStatus::Verified],
         ];
 
         $ids = [];
@@ -1195,15 +1242,21 @@ class DemoDataSeeder extends Seeder
             }
         }
 
-        // Sin conductor apto de ese transportista, se coge cualquiera al día:
-        // el esquema de demostración no siempre ata conductores a transportistas.
-        $driver ??= DB::table('drivers')
-            ->where('tenant_id', $this->tenantId)
-            ->whereNull('deleted_at')
-            ->where('status', '!=', 'inactive')
-            ->whereDate('license_expires_at', '>', Carbon::now())
-            ->whereDate('medical_card_expires_at', '>', Carbon::now())
-            ->value('id');
+        // Y si no hay conductor apto de ese transportista, NINGUNO.
+        //
+        // Aquí había un respaldo que cogía «cualquiera al día», y hacía justo
+        // lo que la consulta de arriba dice doce líneas antes que no hay que
+        // hacer: ataba a la carga un conductor de otra empresa.
+        // `LoadAssignmentController::checkResource()` rechaza eso con
+        // `driverWrongCarrier`, así que era un estado que ninguna ruta puede
+        // producir — y el único que lo tenía era la carga del transportista
+        // suspendido, donde menos se mira.
+        //
+        // Dejarla sin conductor tampoco vale para una carga que rodó
+        // —`Guards::forDispatch()` devuelve `noDriver`—, y por eso el arreglo
+        // de verdad está arriba: Bluewater tiene ahora su conductor y su
+        // camión. Esta rama se queda vacía a propósito, para que si mañana
+        // falta un conductor el hueco se vea en vez de taparse con uno ajeno.
 
         if ($truck !== null) {
             $this->upsert('load_assignments', ['load_id' => $loadId, 'resource_type' => 'truck'], [
@@ -1421,6 +1474,11 @@ class DemoDataSeeder extends Seeder
             // ya cerradas no pueden cambiar de importe.
             $exigeRecibo = (bool) $categories[$code]->requires_receipt;
 
+            // El primero de los que exigen recibo se queda sin él a propósito,
+            // para que la demostración enseñe los dos estados: el gasto con su
+            // papel y el que lo está pidiendo.
+            $pendiente = $exigeRecibo && ! $conRecibo;
+
             $gastoId = $this->upsert('expenses', [
                 'load_id' => $load->id,
                 'category_id' => $categories[$code]->id,
@@ -1435,10 +1493,22 @@ class DemoDataSeeder extends Seeder
                 'amount_cents' => $cents,
                 'description' => $description,
                 'incurred_on' => Carbon::now()->subDays(random_int(3, 20)),
-                'status' => 'approved',
+                // El que se queda sin recibo se queda SIN APROBAR.
+                //
+                // Antes salía `approved` sin el papel, y ese estado no lo puede
+                // escribir nadie: `ExpenseController` rechaza aprobar un gasto
+                // con recibo exigido y sin recibo, y `ExpenseTransitions` no
+                // tiene camino de vuelta a `submitted` para repararlo. La
+                // demostración enseñaba 3.400 $ sin justificante, pintados
+                // igual que el resto.
+                //
+                // Pendiente dice lo mismo y es cierto: es el gasto que está
+                // pidiendo su papel. Y de paso la demostración enseña por fin
+                // la cola de revisión, que con los once aprobados no se veía.
+                'status' => $pendiente ? 'submitted' : 'approved',
                 'submitted_by_user_id' => $admin,
-                'reviewed_by_user_id' => $admin,
-                'reviewed_at' => Carbon::now()->subDays(2),
+                'reviewed_by_user_id' => $pendiente ? null : $admin,
+                'reviewed_at' => $pendiente ? null : Carbon::now()->subDays(2),
             ]);
 
             /*
