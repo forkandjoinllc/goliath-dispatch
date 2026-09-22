@@ -137,7 +137,14 @@
         "notes": "Internal notes",
         "save": "Add unit",
         "saveChanges": "Save changes",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "carrierSearchPlaceholder": "Type to find a carrier…",
+        "noCarrierMatches": "No carrier matches that.",
+        "vinLooking": "Reading the VIN…",
+        "vinChecksum": "That VIN does not add up — its check digit is wrong. Check it against the plate; nothing was filled in.",
+        "vinFilledLive": "Filled in from the VIN and the NHTSA database: {fields}. Nothing you had typed was touched.",
+        "vinFilledOffline": "Filled in from the VIN itself: {fields}. The model is not in the number, so type it yourself. Nothing you had typed was touched.",
+        "vinUndo": "Undo"
     },
     "flash": {
         "created": "Unit {unit} was added.",

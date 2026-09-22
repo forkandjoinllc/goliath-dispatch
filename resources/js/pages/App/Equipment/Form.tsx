@@ -1,7 +1,8 @@
 import { Link, useForm } from '@inertiajs/react'
-import type { ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
+import { SearchableSelect } from '@/components/Form/SearchableSelect'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
@@ -57,6 +58,111 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
     is_extendable: Boolean(unit?.isExtendable),
   })
 
+  const elegido = choices.carriers.find((c) => c.id === form.data.carrier_id) ?? null
+
+  /*
+   * El VIN rellena marca, modelo y año — SOLO lo que esté en blanco.
+   *
+   * Lo que la persona ya escribió no se toca nunca: en equipos viejos el dato
+   * del fabricante y el de la placa no siempre coinciden, y quien corrigió uno
+   * a mano tenía una razón. Debajo del campo se dice qué se rellenó y de
+   * dónde salió, con un enlace para deshacerlo.
+   *
+   * El año y la marca los lee el servidor del propio número; el modelo solo
+   * aparece si la instalación tiene encendida la consulta a la NHTSA, porque
+   * el modelo no está en el VIN de forma legible.
+   */
+  const [vinEstado, setVinEstado] = useState<
+    { estado: 'consultando' } | { estado: 'listo'; campos: string[]; live: boolean } | { estado: 'sinSuma' } | null
+  >(null)
+  const antesDelVin = useRef<{ make: string; model: string; year: number | null } | null>(null)
+  const pedido = useRef(0)
+
+  const consultarVin = async (vin: string) => {
+    const limpio = vin.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
+
+    // Solo con el número completo. Consultar a cada tecla sería una llamada
+    // por carácter y diecisiete respuestas que no sirven.
+    if (limpio.length !== 17) {
+      setVinEstado(null)
+
+      return
+    }
+
+    const mio = ++pedido.current
+    setVinEstado({ estado: 'consultando' })
+
+    try {
+      const r = await fetch(`/equipment/${type}/vin/${limpio}`, {
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      })
+
+      // Una respuesta vieja que llega tarde no puede pisar a una nueva: se
+      // escribe deprisa y el orden de vuelta no está garantizado.
+      if (mio !== pedido.current) return
+
+      if (! r.ok) {
+        setVinEstado(null)
+
+        return
+      }
+
+      const datos = await r.json()
+
+      if (mio !== pedido.current) return
+
+      if (datos.wellFormed === true && datos.checksumOk === false) {
+        setVinEstado({ estado: 'sinSuma' })
+
+        return
+      }
+
+      const d = datos.decoded
+
+      if (d === null || d === undefined) {
+        setVinEstado(null)
+
+        return
+      }
+
+      antesDelVin.current = { make: form.data.make, model: form.data.model, year: form.data.year }
+
+      const rellenados: string[] = []
+
+      if (form.data.make === '' && typeof d.make === 'string' && d.make !== '') {
+        form.setData('make', d.make)
+        rellenados.push(t('equipment.form.make'))
+      }
+
+      if (form.data.model === '' && typeof d.model === 'string' && d.model !== '') {
+        form.setData('model', d.model)
+        rellenados.push(t('equipment.form.model'))
+      }
+
+      if (form.data.year === null && typeof d.year === 'number') {
+        form.setData('year', d.year)
+        rellenados.push(t('equipment.form.year'))
+      }
+
+      setVinEstado(rellenados.length === 0 ? null : { estado: 'listo', campos: rellenados, live: datos.live === true })
+    } catch {
+      // Sin red, o el servidor contestando cualquier cosa: el formulario sigue
+      // siendo un formulario y la persona escribe los campos.
+      if (mio === pedido.current) setVinEstado(null)
+    }
+  }
+
+  const deshacerVin = () => {
+    const antes = antesDelVin.current
+
+    if (antes === null) return
+
+    form.setData('make', antes.make)
+    form.setData('model', antes.model)
+    form.setData('year', antes.year)
+    setVinEstado(null)
+  }
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (editing) form.patch(`/equipment/${type}/${String(unit?.id)}`)
@@ -83,15 +189,21 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
       <form onSubmit={submit} className="flex max-w-3xl flex-col gap-6">
         <Section title={t('equipment.form.identity')}>
           <div className="sm:col-span-2">
-            <SelectField
+            {/* Se busca escribiendo. Un desplegable deja de servir alrededor de
+                los treinta transportistas y es hostil a los doscientos: quien
+                da de alta un camión no quiere recorrer la lista, quiere
+                escribir tres letras. Mismo componente que el alta de
+                conductores, para que los dos se comporten igual. */}
+            <SearchableSelect
               label={t('equipment.form.carrier')}
               required
-              value={form.data.carrier_id}
-              onChange={(e) => form.setData('carrier_id', e.target.value)}
-              options={[
-                { value: '', label: t('equipment.form.chooseCarrier') },
-                ...choices.carriers.map((c) => ({ value: c.id, label: c.name })),
-              ]}
+              choices={choices.carriers.map((c) => ({ id: c.id, name: c.name }))}
+              selected={elegido}
+              onPick={(id) => form.setData('carrier_id', id)}
+              onClear={() => form.setData('carrier_id', '')}
+              placeholder={t('equipment.form.carrierSearchPlaceholder')}
+              emptyText={t('equipment.form.noCarrierMatches')}
+              changeText={t('common.actions.change')}
               error={form.errors.carrier_id}
             />
           </div>
@@ -105,14 +217,46 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
             onChange={(e) => form.setData('unit_number', e.target.value)}
             error={form.errors.unit_number}
           />
-          <TextField
-            label={t('equipment.form.vin')}
-            hint={t('equipment.form.vinHint')}
-            maxLength={32}
-            value={form.data.vin}
-            onChange={(e) => form.setData('vin', e.target.value.toUpperCase())}
-            error={form.errors.vin}
-          />
+          <div>
+            <TextField
+              label={t('equipment.form.vin')}
+              hint={t('equipment.form.vinHint')}
+              maxLength={32}
+              value={form.data.vin}
+              onChange={(e) => {
+                const v = e.target.value.toUpperCase()
+                form.setData('vin', v)
+                void consultarVin(v)
+              }}
+              error={form.errors.vin}
+            />
+
+            {vinEstado?.estado === 'consultando' ? (
+              <p className="mt-1 text-xs text-steel-600">{t('equipment.form.vinLooking')}</p>
+            ) : null}
+
+            {vinEstado?.estado === 'sinSuma' ? (
+              // Ni se consulta ni se rellena nada: es casi siempre una errata
+              // al copiar el número, y rellenar marca y año de otro vehículo
+              // sería peor que no rellenar.
+              <p className="mt-1 text-xs text-warning-700">{t('equipment.form.vinChecksum')}</p>
+            ) : null}
+
+            {vinEstado?.estado === 'listo' ? (
+              <p className="mt-1 text-xs text-steel-700">
+                {t(vinEstado.live ? 'equipment.form.vinFilledLive' : 'equipment.form.vinFilledOffline', {
+                  fields: vinEstado.campos.join(', '),
+                })}{' '}
+                <button
+                  type="button"
+                  onClick={deshacerVin}
+                  className="font-medium text-navy-700 underline transition hover:text-navy-900"
+                >
+                  {t('equipment.form.vinUndo')}
+                </button>
+              </p>
+            ) : null}
+          </div>
           <TextField
             label={t('equipment.form.year')}
             type="number"

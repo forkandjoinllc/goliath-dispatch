@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Equipment\Vin;
 use App\Support\Oversize\NeedsPapers;
 use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
@@ -103,6 +104,34 @@ function invariantesDeLaDemostracion(string $tenantId): array
             },
             'app/Http/Controllers/App/DocumentController.php',
             "DB::table('document_reviews')->insert([",
+        ],
+
+        'los VIN sembrados son VIN' => [
+            // Inventados, pero BIEN FORMADOS: diecisiete caracteres, sin I, O
+            // ni Q, y con el dígito de control cuadrado. Cuando no lo eran, la
+            // demostración escondía la pantalla entera que decodifica el VIN —
+            // ninguno pasaba la comprobación, así que el formulario no
+            // rellenaba nunca marca ni año.
+            function () use ($tenantId): int {
+                $malos = 0;
+
+                foreach (['trucks', 'trailers'] as $tabla) {
+                    $vins = DB::table($tabla)
+                        ->where('tenant_id', $tenantId)
+                        ->whereNotNull('vin')
+                        ->pluck('vin');
+
+                    foreach ($vins as $vin) {
+                        if (! Vin::sumaBien((string) $vin)) {
+                            $malos++;
+                        }
+                    }
+                }
+
+                return $malos;
+            },
+            'app/Support/Equipment/Vin.php',
+            'public static function sumaBien(string $vin): bool',
         ],
 
         'una carga que ya rodó tiene camión' => [

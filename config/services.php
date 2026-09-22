@@ -42,6 +42,24 @@ return [
     ],
 
     /*
+    | NHTSA vPIC — decodificar un VIN.
+    |
+    | Es la base oficial de vehículos de EE. UU. y NO pide credenciales: lo
+    | único que hace falta es que el servidor tenga salida a ese dominio. Por
+    | eso se enciende con una bandera y no con una clave.
+    |
+    | Apagada, el formulario sigue rellenando AÑO y MARCA —los lee del propio
+    | VIN— y deja el MODELO para que lo escriba la persona, porque el modelo no
+    | está en el número: vive en las posiciones 4-8, que define cada
+    | fabricante. Encendida, la NHTSA contesta también el modelo.
+    */
+    'nhtsa' => [
+        'vin_enabled' => (bool) env('NHTSA_VIN_ENABLED', false),
+        'vin_base_url' => env('NHTSA_VIN_BASE_URL', 'https://vpic.nhtsa.dot.gov/api/vehicles'),
+        'vin_timeout' => (int) env('NHTSA_VIN_TIMEOUT', 4),
+    ],
+
+    /*
     | Stripe — el cobro de la suscripción.
     |
     | Hacen falta LAS DOS. Con solo `STRIPE_SECRET` el adaptador real cobraría y

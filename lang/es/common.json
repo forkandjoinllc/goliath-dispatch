@@ -46,7 +46,8 @@
         "copied": "Copiado",
         "showMore": "Ver más",
         "showLess": "Ver menos",
-        "signOut": "Cerrar sesión"
+        "signOut": "Cerrar sesión",
+        "change": "Cambiar"
     },
     "states": {
         "loading": "Cargando…",

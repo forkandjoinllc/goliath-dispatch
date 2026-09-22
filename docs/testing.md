@@ -3817,3 +3817,46 @@ devolvía el respaldo de «cualquier conductor» no cambiaba nada: con Bluewater
 teniendo conductor propio, esa línea no llega a ejecutarse. Se reapuntó al sitio
 donde la decisión se toma de verdad. Cuarta vez en este cuaderno que un sabotaje
 mal apuntado parece una comprobación hecha.
+
+---
+
+## Lote «el VIN rellena el alta» (`docs/vin-decode.md`)
+
+**Una función nueva llega con su demostración ciega.** Los doce VIN sembrados
+no pasaban el dígito de control, así que el formulario no rellenaba nunca nada
+en la demostración: la pantalla entera del trabajo era invisible desde el
+primer minuto. Se arregló la siembra y entró como invariante. **Al construir
+algo que depende de la forma de un dato, la primera pregunta es si la
+demostración tiene datos con esa forma.**
+
+**Probar aritmética con datos inventados demuestra lo contrario de lo que se
+quiere.** El dígito de control se comprueba con VIN reales conocidos —el ejemplo
+canónico del estándar, cuyo dígito es una `X`, y uno de otro fabricante—: un VIN
+inventado casi nunca cuadra, y una prueba que lo diera por bueno estaría
+midiendo el fallo.
+
+**Cuando un dato no se puede saber, el campo se deja vacío.** El modelo vive en
+las posiciones 4-8 del VIN, que cada fabricante define a su manera. La tabla de
+fabricantes es corta a propósito por lo mismo: **rellenar «Marca» con un
+fabricante equivocado es peor que no rellenarla**, porque quien lo lee da por
+hecho que lo comprobó alguien. Lo mismo vale para las pruebas: hay una que
+exige que la tabla CALLE ante un WMI que no conoce.
+
+**Un sabotaje puede ser nulo porque otra pieza lo tapa.** Hacer que el
+adaptador de la NHTSA tomara por buena una respuesta vacía no cambiaba ningún
+valor: la cadena rellenaba lo mismo desde el respaldo. Lo que sí cambiaba era
+**de quién se decía que venía el dato**, y eso se ve en pantalla. La prueba pasó
+a comprobar la atribución, no solo los valores. Quinta vez que un sabotaje verde
+enseña que faltaba medir otra cosa, no que sobrara el sabotaje.
+
+**`getJson()` no es lo que hace el navegador.** El cliente de pruebas prepara
+las cookies de otra manera para esas llamadas y la sesión no llega: la petición
+entraba sin empresa y el permiso denegaba, con un 403 que parecía un defecto de
+autorización y no lo era. Con `get($url, ['Accept' => 'application/json'])` —que
+es literalmente lo que manda el `fetch` de la pantalla— pasa. **Media hora
+persiguiendo un 403 que solo existía en el cliente de pruebas**: cuando un fallo
+solo aparece por un camino que el producto no usa, sospechar del camino.
+
+**Y el paseo por el navegador fue lo que lo zanjó.** La misma consulta desde la
+pantalla de verdad, en los dos idiomas, rellenando Marca y Año y diciendo por
+qué el Modelo se queda en blanco.

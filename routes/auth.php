@@ -611,6 +611,11 @@ Route::middleware(['auth'])->group(function (): void {
         ->group(function (): void {
             Route::get('/', [EquipmentController::class, 'index'])->name('equipment.index');
             Route::get('create', [EquipmentController::class, 'create'])->name('equipment.create');
+            // Antes que `{unit}`: si no, «vin» se tomaría por el id de una
+            // unidad y contestaría 404.
+            Route::get('vin/{vin}', [EquipmentController::class, 'decodeVin'])
+                ->whereAlphaNumeric('vin')
+                ->name('equipment.vin');
             Route::post('/', [EquipmentController::class, 'store'])->name('equipment.store');
             Route::get('{unit}', [EquipmentController::class, 'show'])->name('equipment.show');
             Route::get('{unit}/edit', [EquipmentController::class, 'edit'])->name('equipment.edit');

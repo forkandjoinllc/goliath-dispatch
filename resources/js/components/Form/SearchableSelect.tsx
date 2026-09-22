@@ -14,9 +14,24 @@ interface Props {
   placeholder?: string
   hint?: string
   emptyText: string
+  /** Qué dice el botón que deshace la elección. Del diccionario, no fijo aquí. */
+  changeText?: string
   /** Ids que ya están elegidos: salen fuera de la lista. */
   exclude?: string[]
   disabled?: boolean
+  /**
+   * Lo elegido, cuando el campo es de UNO.
+   *
+   * Con esto el componente sirve también para un campo de un solo valor —el
+   * transportista de un camión— y no solo para ir añadiendo a una lista: en
+   * vez del buscador enseña lo elegido, con un botón para cambiarlo. Sin esto
+   * había que escribir dos veces el mismo combobox, y el segundo acabaría
+   * comportándose distinto del primero.
+   */
+  selected?: Choice | null
+  onClear?: () => void
+  required?: boolean
+  error?: string
 }
 
 /**
@@ -40,8 +55,13 @@ export function SearchableSelect({
   placeholder,
   hint,
   emptyText,
+  changeText = '',
   exclude = [],
   disabled = false,
+  selected = null,
+  onClear,
+  required = false,
+  error,
 }: Props) {
   const [query, setQuery] = useState('')
   const [abierto, setAbierto] = useState(false)
@@ -75,8 +95,29 @@ export function SearchableSelect({
         if (! contenedor.current?.contains(e.relatedTarget as Node | null)) setAbierto(false)
       }}
     >
-      <span className="text-sm font-medium text-carbon">{label}</span>
+      <span className="text-sm font-medium text-carbon">
+        {label}
+        {required ? <span className="ml-0.5 text-danger-600">*</span> : null}
+      </span>
 
+      {selected !== null ? (
+        <div className="flex items-center justify-between gap-3 rounded border border-steel-300 bg-white px-3 py-2">
+          <span className="text-sm text-carbon">
+            {selected.name}
+            {selected.hint ? <span className="block text-xs text-steel-600">{selected.hint}</span> : null}
+          </span>
+          {onClear ? (
+            <button
+              type="button"
+              onClick={onClear}
+              disabled={disabled}
+              className="shrink-0 text-xs font-medium text-navy-700 underline transition hover:text-navy-900"
+            >
+              {changeText}
+            </button>
+          ) : null}
+        </div>
+      ) : (
       <div className="relative">
         <input
           type="text"
@@ -127,8 +168,10 @@ export function SearchableSelect({
           </ul>
         ) : null}
       </div>
+      )}
 
       {hint ? <p className="text-xs text-steel-600">{hint}</p> : null}
+      {error ? <p role="alert" className="text-xs text-danger-700">{error}</p> : null}
     </div>
   )
 }

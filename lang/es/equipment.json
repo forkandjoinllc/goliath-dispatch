@@ -137,7 +137,14 @@
         "notes": "Notas internas",
         "save": "Agregar unidad",
         "saveChanges": "Guardar cambios",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "carrierSearchPlaceholder": "Escriba para buscar un transportista…",
+        "noCarrierMatches": "Ningún transportista coincide.",
+        "vinLooking": "Leyendo el VIN…",
+        "vinChecksum": "Ese VIN no cuadra: su dígito de control está mal. Compruébelo contra la placa; no se rellenó nada.",
+        "vinFilledLive": "Rellenado a partir del VIN y de la base de la NHTSA: {fields}. No se tocó nada de lo que usted había escrito.",
+        "vinFilledOffline": "Rellenado a partir del propio VIN: {fields}. El modelo no viene en el número, así que escríbalo usted. No se tocó nada de lo que usted había escrito.",
+        "vinUndo": "Deshacer"
     },
     "flash": {
         "created": "Se agregó la unidad {unit}.",

@@ -12,30 +12,33 @@ use App\Enums\Scope;
 use App\Models\Trailer;
 use App\Models\Truck;
 use App\Rules\SubdivisionOfCountry;
+use App\Services\Vin\VinDecoder;
 use App\Support\Compliance\ExpiryWindow;
 use App\Support\EnumValue;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Equipment\Verification;
+use App\Support\Equipment\Vin;
 use App\Support\Geo\Regions;
+use App\Support\InertiaPage;
 use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
 use App\Support\Storage\DocumentStore;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Support\InertiaPage;
 use App\Support\Time\CalendarDates;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Camiones y remolques.
@@ -181,6 +184,55 @@ final class EquipmentController
             'type' => $type,
             'unit' => null,
             'choices' => $this->choices($actor),
+        ]);
+    }
+
+    /**
+     * Lo que un VIN dice de sí mismo, para el formulario.
+     *
+     * Lo pide la pantalla en cuanto el número está completo, y devuelve marca,
+     * modelo y año — los que se sepan. Tres cosas que este método hace a
+     * propósito:
+     *
+     *  - **Exige el permiso de dar de alta o editar.** Es una consulta barata,
+     *    pero es una consulta a un servicio de fuera hecha con el servidor de
+     *    la empresa: sin permiso, cualquiera con una sesión podría usarla de
+     *    pasarela.
+     *  - **No guarda nada.** Contesta y ya. Lo que se guarde lo decide la
+     *    persona al enviar el formulario, no esta llamada.
+     *  - **Nunca falla con error.** Un VIN que no se puede decodificar es una
+     *    respuesta normal —`decoded: null`— y no un 422: el alta tiene que
+     *    poder seguir escribiendo los campos a mano.
+     */
+    public function decodeVin(
+        Request $request,
+        string $type,
+        string $vin,
+        CurrentActor $current,
+        PermissionChecker $checker,
+        VinDecoder $decoder,
+    ): JsonResponse {
+        $this->assertType($type);
+
+        $actor = $current->require();
+        $policy = $current->policy();
+
+        $puede = $checker->can($actor, 'equipment:create', null, $policy)->allowed
+            || $checker->can($actor, 'equipment:update', null, $policy)->allowed;
+
+        abort_unless($puede, 403);
+
+        $normalizado = Vin::normalizar($vin);
+
+        return response()->json([
+            'vin' => $normalizado,
+            'wellFormed' => Vin::tieneForma($normalizado),
+            // El dígito de control se dice aparte: un VIN con la forma buena y
+            // el dígito malo es casi siempre una errata al copiarlo, y merece
+            // un aviso distinto de «esto no es un VIN».
+            'checksumOk' => Vin::sumaBien($normalizado),
+            'live' => $decoder->isLive(),
+            'decoded' => $decoder->decode($normalizado)?->toArray(),
         ]);
     }
 
@@ -781,7 +833,7 @@ final class EquipmentController
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Model>  $rows
+     * @param  Collection<int, Model>  $rows
      * @return array<string, string>
      */
     private function carrierNames($rows): array

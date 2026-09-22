@@ -634,18 +634,29 @@ class DemoDataSeeder extends Seeder
     {
         $now = Carbon::now();
 
+        // Los VIN son VIN de verdad en la forma: diecisiete caracteres, sin I,
+        // O ni Q, con su dígito de control cuadrado, con el WMI del fabricante
+        // que dice cada fila y con el código de año de su año. Inventados, pero
+        // BIEN FORMADOS.
+        //
+        // Antes no lo eran, y eso escondía la pantalla entera del lote que
+        // decodifica el VIN: ninguno pasaba el dígito de control, así que en la
+        // demostración el formulario no rellenaba nunca marca ni año. Dos
+        // remolques conservan un WMI que la tabla corta de `Wmi` no conoce —
+        // Trail King y Landoll— a propósito, para que se vea también el caso de
+        // «esto no lo sé decir sin salir a internet».
         $trucks = [
-            ['atlas', '101', '1FUJGLDR8LLBA1101', 2021, 'Freightliner', 'Cascadia', 'sleeper', 'TX', EquipmentStatus::Active, 92],
-            ['atlas', '104', '1XKYDP9X4MJ421104', 2022, 'Kenworth', 'W990', 'sleeper', 'TX', EquipmentStatus::Active, 210],
-            ['cordillera', 'C-07', '3AKJHHDR9NSNJ3107', 2023, 'Peterbilt', '389', 'sleeper', 'TX', EquipmentStatus::Active, 340],
-            ['cordillera', 'C-12', '1FUJHHDR2KLKJ2112', 2019, 'Freightliner', 'Coronado', 'day_cab', 'TX', EquipmentStatus::OutOfService, 18],
-            ['northline', 'NR-3', '1XPXD49X1MD771003', 2021, 'Peterbilt', '567', 'day_cab', 'IN', EquipmentStatus::PendingVerification, 150],
+            ['atlas', '101', '1FUJGLDR8MLBA1101', 2021, 'Freightliner', 'Cascadia', 'sleeper', 'TX', EquipmentStatus::Active, 92],
+            ['atlas', '104', '1XKYDPHX1NJ421104', 2022, 'Kenworth', 'W990', 'sleeper', 'TX', EquipmentStatus::Active, 210],
+            ['cordillera', 'C-07', '1XPJHHDR4PSNJ3107', 2023, 'Peterbilt', '389', 'sleeper', 'TX', EquipmentStatus::Active, 340],
+            ['cordillera', 'C-12', '1FUJHHDR8KLKJ2112', 2019, 'Freightliner', 'Coronado', 'day_cab', 'TX', EquipmentStatus::OutOfService, 18],
+            ['northline', 'NR-3', '1XPXD4HX0MD771003', 2021, 'Peterbilt', '567', 'day_cab', 'IN', EquipmentStatus::PendingVerification, 150],
             // Bluewater tiene equipo porque LLEVÓ una carga antes de que se le
             // suspendiera. Sin camión ni conductor suyos, su carga facturada
             // salía sin ninguna asignación de camión — un estado que
             // `Guards::forDispatch()` bloquea con `noTruck`, así que esa carga
             // no pudo haber rodado nunca.
-            ['bluewater', 'BW-2', '1FUJGLD59KLKK2002', 2018, 'Freightliner', 'Cascadia', 'day_cab', 'TX', EquipmentStatus::Active, 75],
+            ['bluewater', 'BW-2', '1FUJGLD55JLKK2002', 2018, 'Freightliner', 'Cascadia', 'day_cab', 'TX', EquipmentStatus::Active, 75],
         ];
 
         foreach ($trucks as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $regDays]) {
@@ -671,12 +682,12 @@ class DemoDataSeeder extends Seeder
         }
 
         $trailers = [
-            ['atlas', 'T-220', '1JJV532W1LL220220', 2020, 'Wabash', 'Step deck', 'step_deck', 'TX', EquipmentStatus::Active, 636, 102, 39],
-            ['atlas', 'T-310', '5JYD532B6MP310310', 2021, 'Trail King', 'RGN 55T', 'rgn', 'TX', EquipmentStatus::Active, 636, 102, 22],
-            ['cordillera', 'R-14', '1DW1A5321NS141414', 2022, 'Fontaine', 'Magnitude 55L', 'lowboy', 'TX', EquipmentStatus::Active, 624, 102, 20],
-            ['cordillera', 'R-21', '1UYFS2486LU212121', 2019, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 60],
-            ['northline', 'NT-9', '1L01A5325MM090909', 2021, 'Landoll', '440B', 'double_drop', 'IN', EquipmentStatus::PendingVerification, 636, 102, 26],
-            ['bluewater', 'BW-T4', '1UYFS2482KU040404', 2018, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 58],
+            ['atlas', 'T-220', '1JJV53HW0LL220220', 2020, 'Wabash', 'Step deck', 'step_deck', 'TX', EquipmentStatus::Active, 636, 102, 39],
+            ['atlas', 'T-310', '5JYD53HB6MP310310', 2021, 'Trail King', 'RGN 55T', 'rgn', 'TX', EquipmentStatus::Active, 636, 102, 22],
+            ['cordillera', 'R-14', '1DW1A5H23NS141414', 2022, 'Fontaine', 'Magnitude 55L', 'lowboy', 'TX', EquipmentStatus::Active, 624, 102, 20],
+            ['cordillera', 'R-21', '1UYFS2H88KU212121', 2019, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 60],
+            ['northline', 'NT-9', '1L01A5H21MM090909', 2021, 'Landoll', '440B', 'double_drop', 'IN', EquipmentStatus::PendingVerification, 636, 102, 26],
+            ['bluewater', 'BW-T4', '1UYFS2H85JU040404', 2018, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 58],
         ];
 
         foreach ($trailers as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $len, $wid, $deck]) {

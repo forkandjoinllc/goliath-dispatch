@@ -22,6 +22,10 @@ use App\Services\Payments\InvoicePaymentProvider;
 use App\Services\Payments\MockInvoicePaymentProvider;
 use App\Services\Tracking\StopDerivedTrackingProvider;
 use App\Services\Tracking\TrackingProvider;
+use App\Services\Vin\ChainVinDecoder;
+use App\Services\Vin\NhtsaVinDecoder;
+use App\Services\Vin\OfflineVinDecoder;
+use App\Services\Vin\VinDecoder;
 use App\Support\Database\MillisecondGrammar;
 use App\Support\Routing\RouteProvider;
 use App\Support\Routing\StopDerivedRouteProvider;
@@ -135,6 +139,34 @@ class AppServiceProvider extends ServiceProvider
                 $clave,
                 (string) config('services.fmcsa.base_url', 'https://mobile.fmcsa.dot.gov/qc/services'),
             );
+        });
+
+        /*
+         * Decodificar un VIN.
+         *
+         * Siempre encadenado, y siempre con el de respaldo al final: el año y
+         * la marca salen del propio número, así que el formulario ayuda aunque
+         * no haya salida a internet o la NHTSA no conteste. El vivo va primero
+         * porque es el único que sabe el MODELO.
+         *
+         * Se enciende con una bandera y no con una clave porque vPIC es
+         * público: lo que hace falta no es credencial, es salida al dominio.
+         */
+        $this->app->singleton(VinDecoder::class, function ($app): VinDecoder {
+            $respaldo = new OfflineVinDecoder;
+
+            if (! config('services.nhtsa.vin_enabled', false)) {
+                return $respaldo;
+            }
+
+            return new ChainVinDecoder([
+                new NhtsaVinDecoder(
+                    $app->make(HttpFactory::class),
+                    (string) config('services.nhtsa.vin_base_url', 'https://vpic.nhtsa.dot.gov/api/vehicles'),
+                    (int) config('services.nhtsa.vin_timeout', 4),
+                ),
+                $respaldo,
+            ]);
         });
 
         /*
