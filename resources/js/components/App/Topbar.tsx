@@ -369,26 +369,49 @@ function NotificationBell({ shell }: { shell: Shell }) {
 export function Topbar({
   shell,
   crumbs,
-  onOpenNav,
+  navOpen,
+  onToggleNav,
 }: {
   shell: Shell
   crumbs: Crumb[]
-  onOpenNav: () => void
+  navOpen: boolean
+  onToggleNav: () => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-steel-200 bg-white px-4 sm:px-6">
+    <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-3 border-b border-steel-200 bg-white px-4 sm:px-6">
+      {/*
+        El botón del menú va DELANTE del logo, y en todos los tamaños: el menú
+        está recogido siempre y este es el único camino para abrirlo. `z-50` en
+        la barra y no `z-20` porque el cajón se desliza por debajo de ella, y una
+        barra que quedara detrás dejaría el botón tapado por lo que abre.
+      */}
       <button
         type="button"
-        onClick={onOpenNav}
-        aria-label={t('nav.openMenu')}
-        className="-ml-1 rounded p-2 text-navy-700 transition hover:bg-navy-50 lg:hidden"
+        onClick={onToggleNav}
+        aria-label={t(navOpen ? 'nav.closeMenu' : 'nav.openMenu')}
+        aria-expanded={navOpen}
+        aria-controls="app-nav"
+        className="-ml-1 rounded p-2 text-navy-700 transition hover:bg-navy-50"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className="h-5 w-5">
           <path d="M3 6h18M3 12h18M3 18h18" strokeLinecap="round" />
         </svg>
       </button>
+
+      {/* El logo se mudó aquí desde el cajón: con el menú recogido, el logo se
+          iba con él y la aplicación se quedaba sin nombre en pantalla. */}
+      <Link href={`/${locale}`} className="hidden shrink-0 sm:block">
+        <img
+          src="/brand/logo-primary.png"
+          srcSet="/brand/logo-primary.png 1x, /brand/logo-primary@2x.png 2x"
+          alt="Goliath Dispatch"
+          width={168}
+          height={40}
+          className="h-8 w-auto"
+        />
+      </Link>
 
       <Breadcrumbs crumbs={crumbs} />
 

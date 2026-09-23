@@ -3968,3 +3968,24 @@ la pestaña de las asignadas decía «sin conductor» —tres filas por carga en
 `load_assignments`, una por recurso, y el código se quedaba con la primera— y
 que la letra de dentro del PIN no se leía al tamaño que le toca a la columna del
 medio.
+
+## Lote 37 — el menú recogido y el tablero a sangre
+
+**Una animación necesita un estado del que salir.** El cajón del menú se montaba
+al abrir, así que aparecía de golpe: no hay transición posible entre «no existe»
+y «está aquí». Ahora se pinta siempre y lo que cambia es dónde está. La
+contrapartida es que un menú que siempre está pintado se puede tabular aunque no
+se vea, y eso atrapa a quien navega con teclado en veinte enlaces invisibles —
+por eso cerrado va con `invisible` y no con `opacity-0`. Los dos sabotajes están
+escritos: montarlo al abrir, y cambiar `invisible` por `opacity-0`.
+
+**El botón que abre no puede esconderse.** Era `lg:hidden` cuando el menú estaba
+fijo en escritorio. Recogido el menú, esa clase deja la aplicación sin ninguna
+manera de abrirlo en pantalla ancha — un fallo que no se ve en el móvil, que es
+donde se prueban estas cosas. El guardián mira el trozo de código alrededor del
+botón, no el fichero entero: `lg:hidden` aparece en otros sitios legítimos.
+
+**Y el logo se fue con el menú.** Vivía dentro del cajón. Al recogerlo, la
+aplicación se quedó sin nombre en pantalla hasta que alguien abriera el menú.
+Está en la barra, y un guardián comprueba que no vuelva a estar en los dos sitios
+— porque al abrir se pintaría dos veces.

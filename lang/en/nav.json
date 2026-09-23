@@ -221,5 +221,6 @@
         "America/Anchorage": "Alaska — Anchorage",
         "Pacific/Honolulu": "Hawaii — Honolulu",
         "America/Puerto_Rico": "Atlantic — Puerto Rico"
-    }
+    },
+    "closeMenu": "Close the menu"
 }

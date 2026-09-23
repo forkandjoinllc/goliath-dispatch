@@ -130,7 +130,7 @@ function MapaLiso({ stops, units }: { stops: Parada[]; units: Unidad[] }) {
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded bg-steel-100">
+    <div className="relative h-full w-full overflow-hidden bg-steel-100">
       <svg
         viewBox={`0 0 ${String(ANCHO)} ${String(ALTO)}`}
         className="h-full w-full"
@@ -339,7 +339,7 @@ function MapaConTeselas({ mapa }: { mapa: MapaDelTablero }) {
 
   if (fallo) return <MapaLiso stops={mapa.stops} units={mapa.units} />
 
-  return <div ref={lienzo} className="h-full w-full rounded bg-steel-100" />
+  return <div ref={lienzo} className="h-full w-full bg-steel-100" />
 }
 
 /* ── La pieza que elige ──────────────────────────────────────────────────── */
@@ -349,10 +349,11 @@ export function BoardMap({ mapa }: { mapa: MapaDelTablero }) {
   const vacio = mapa.stops.length === 0 && mapa.units.length === 0
 
   return (
-    <div className="flex h-full flex-col gap-3">
+    <div className="flex h-full flex-col">
+      {/* De línea a línea: todo lo que hay entre las dos columnas es mapa. */}
       <div className="min-h-[24rem] flex-1">
         {vacio ? (
-          <div className="flex h-full items-center justify-center rounded bg-steel-100 p-6 text-center text-sm text-steel-700">
+          <div className="flex h-full items-center justify-center bg-steel-100 p-6 text-center text-sm text-steel-700">
             {t('board.map.empty')}
           </div>
         ) : mapa.live ? (
@@ -371,7 +372,7 @@ function Leyenda({ mapa }: { mapa: MapaDelTablero }) {
   const { t } = useI18n()
 
   return (
-    <div className="flex flex-col gap-2 text-xs text-steel-700">
+    <div className="flex flex-col gap-2 border-t border-steel-200 p-4 text-xs text-steel-700">
       <div className="flex flex-wrap items-center gap-4">
         <span className="inline-flex items-center gap-1.5">
           <span

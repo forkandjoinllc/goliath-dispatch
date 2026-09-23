@@ -8,6 +8,31 @@ Tres columnas que contestan la misma pregunta por tres caminos: qué hay que
 mover, dónde está, y quién puede moverlo. Están juntas porque la respuesta a una
 lleva a la siguiente.
 
+Las cargas van pegadas al borde izquierdo y los conductores al derecho,
+separadas del mapa por una **línea** y no por aire: en una pantalla que se mira
+de reojo todo el día, el borde es lo que dice dónde acaba una cosa y empieza
+otra. Todo lo que queda entre las dos columnas es mapa, de línea a línea. Cada
+columna se desplaza sola — si la lista de cargas arrastrara la página, el mapa
+se iría hacia arriba al bajar por las cargas, en la pantalla donde se mira el
+mapa MIENTRAS se lee la lista.
+
+## El menú está recogido
+
+No es el patrón de móvil aplicado a todo: es que el ancho de la pantalla se lo
+lleva el trabajo, y aquí las dieciséis rem que ocupaba el menú fijo son
+dieciséis rem de mapa. Se abre con el botón de la barra superior, **delante del
+logo**, y entra deslizándose de izquierda a derecha por debajo de la barra.
+
+Tres cosas que no se ven y tienen que seguir siendo ciertas: el cajón se **pinta
+siempre** aunque esté cerrado —una animación necesita un estado del que salir—,
+cerrado queda **fuera del recorrido del tabulador** —un menú escondido por el
+que se puede tabular atrapa a quien navega con teclado en veinte enlaces que no
+ve— y el botón **no se esconde** en pantalla ancha, porque es el único camino
+para abrirlo. `ShellChromeTest` las vigila.
+
+El logo se mudó del cajón a la barra: con el menú recogido, el logo se iba con
+él y la aplicación se quedaba sin nombre en pantalla.
+
 ## 1. Las cargas, en tres pestañas
 
 **Sin asignar** no es un estado de la carga: es la **ausencia de conductor** en

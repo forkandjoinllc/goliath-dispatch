@@ -21,6 +21,7 @@ export function AppLayout({
   description,
   crumbs = [],
   actions,
+  bleed = false,
   children,
 }: {
   title: string
@@ -30,6 +31,14 @@ export function AppLayout({
   crumbs?: Crumb[]
   /** Botones de la cabecera de página: crear, exportar, etc. */
   actions?: ReactNode
+  /**
+   * La página ocupa el ancho entero, sin la caja centrada ni sus márgenes.
+   *
+   * Para las pantallas que SON el espacio: el tablero de despacho pega sus
+   * columnas a los dos bordes y pone el mapa en medio. El encabezado sigue
+   * dentro de su margen, porque un título pegado al canto no se lee.
+   */
+  bleed?: boolean
   children: ReactNode
 }) {
   const { t } = useI18n()
@@ -68,31 +77,50 @@ export function AppLayout({
         {t('nav.skipToContent')}
       </a>
 
-      <div className="flex min-h-dvh bg-navy-50">
-        {/* Columna fija en escritorio */}
-        <div className="hidden w-64 shrink-0 lg:block">
-          <div className="fixed inset-y-0 left-0 w-64">
-            <Sidebar groups={shell.nav} />
-          </div>
+      <div className="flex min-h-dvh flex-col bg-navy-50">
+        {/*
+          El menú está recogido SIEMPRE, y se abre con el botón de la barra
+          superior. No es el patrón de móvil aplicado a todo: es que el ancho de
+          la pantalla se lo lleva el trabajo, y en el tablero de despacho eso son
+          dieciséis rem de mapa.
+
+          Se pinta siempre —no se monta al abrir— porque una animación necesita
+          un estado del que salir. Cerrado se va fuera por la izquierda y se
+          apaga con `invisible`, que además lo saca del recorrido del tabulador:
+          un menú escondido por el que se puede tabular es un menú que atrapa a
+          quien navega con teclado.
+        */}
+        <div
+          className={`fixed inset-x-0 bottom-0 top-16 z-40 transition-opacity duration-200 ${
+            navOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+          }`}
+        >
+          <button
+            type="button"
+            tabIndex={navOpen ? 0 : -1}
+            aria-label={t('common.a11y.closeDialog')}
+            onClick={() => setNavOpen(false)}
+            className="absolute inset-0 bg-carbon/50"
+          />
         </div>
 
-        {/* Cajón en móvil */}
-        {navOpen ? (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <button
-              type="button"
-              aria-label={t('common.a11y.closeDialog')}
-              onClick={() => setNavOpen(false)}
-              className="absolute inset-0 bg-carbon/50"
-            />
-            <div className="absolute inset-y-0 left-0 w-64">
-              <Sidebar groups={shell.nav} />
-            </div>
-          </div>
-        ) : null}
+        <div
+          id="app-nav"
+          aria-hidden={!navOpen}
+          className={`fixed bottom-0 left-0 top-16 z-40 w-64 transition-transform duration-200 ease-out ${
+            navOpen ? 'translate-x-0 visible' : 'invisible -translate-x-full'
+          }`}
+        >
+          <Sidebar groups={shell.nav} />
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar shell={shell} crumbs={crumbs} onOpenNav={() => setNavOpen(true)} />
+          <Topbar
+            shell={shell}
+            crumbs={crumbs}
+            navOpen={navOpen}
+            onToggleNav={() => setNavOpen((abierto) => !abierto)}
+          />
 
           {shell.actor.impersonating ? (
             // Franja permanente, no un aviso que se cierra. Quien suplanta debe
@@ -112,9 +140,9 @@ export function AppLayout({
             </p>
           ) : null}
 
-          <main id="main" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl">
-              <div className="flex flex-wrap items-end justify-between gap-4">
+          <main id="main" className={`flex-1 ${bleed ? 'flex flex-col py-0' : 'px-4 py-6 sm:px-6 lg:px-8'}`}>
+            <div className={bleed ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto max-w-7xl'}>
+              <div className={`flex flex-wrap items-end justify-between gap-4 ${bleed ? 'px-4 pt-6 sm:px-6 lg:px-8' : ''}`}>
                 <div className="min-w-0">
                   <h1 className="font-display text-2xl font-bold text-navy-700 sm:text-3xl">
                     {heading ?? title}
@@ -145,7 +173,7 @@ export function AppLayout({
                 </p>
               ) : null}
 
-              <div className="mt-6">{children}</div>
+              <div className={bleed ? 'mt-4 flex min-h-0 flex-1 flex-col' : 'mt-6'}>{children}</div>
             </div>
           </main>
         </div>

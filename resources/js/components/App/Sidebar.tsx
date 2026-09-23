@@ -74,7 +74,7 @@ function Item({ item, current }: { item: NavItem; current: string }) {
 }
 
 export function Sidebar({ groups }: { groups: NavGroup[] }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const { url } = usePage<SharedProps>()
 
   // `url` de Inertia trae la query. Para decidir la entrada activa sobra.
@@ -82,19 +82,6 @@ export function Sidebar({ groups }: { groups: NavGroup[] }) {
 
   return (
     <nav aria-label={t('nav.mainNav')} className="flex h-full flex-col bg-navy-900 text-white">
-      <div className="flex h-16 shrink-0 items-center border-b border-navy-800 px-5">
-        <Link href={`/${locale}`} className="block">
-          <img
-            src="/brand/logo-reversed.png"
-            srcSet="/brand/logo-reversed.png 1x, /brand/logo-reversed@2x.png 2x"
-            alt="Goliath Dispatch"
-            width={168}
-            height={40}
-            className="h-8 w-auto"
-          />
-        </Link>
-      </div>
-
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="flex flex-col gap-1">
           <Item
