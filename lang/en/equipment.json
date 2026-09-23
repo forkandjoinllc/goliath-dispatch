@@ -82,7 +82,6 @@
         "axleConfiguration": "Axle configuration",
         "removableGooseneck": "Removable gooseneck",
         "extendable": "Extendable",
-        "inches": "{value} in",
         "pounds": "{value} lb",
         "expired": "Overdue",
         "expiringSoon": "Due soon",
@@ -92,7 +91,15 @@
         "released": "released",
         "edit": "Edit unit",
         "back": "Back",
-        "createdAt": "Added"
+        "createdAt": "Added",
+        "ownership": "Ownership",
+        "lessorName": "Lessor",
+        "leaseEndsOn": "Lease ends",
+        "height": "Height",
+        "axleSpacings": "Distance between axles",
+        "axleSpacingsTotal": "first axle to last",
+        "noAxleSpacings": "Not measured.",
+        "dimensionsTruck": "Dimensions and axles"
     },
     "form": {
         "createTruckTitle": "Add truck",
@@ -124,10 +131,10 @@
         "registrationExpires": "Registration expires",
         "lastInspection": "Last inspection",
         "nextInspection": "Next inspection due",
-        "length": "Length (in)",
-        "width": "Width (in)",
-        "deckHeight": "Deck height (in)",
-        "wellLength": "Well length (in)",
+        "length": "Length",
+        "width": "Width",
+        "deckHeight": "Deck height",
+        "wellLength": "Well length",
         "capacity": "Capacity (lb)",
         "axles": "Axle count",
         "axleConfiguration": "Axle configuration",
@@ -144,7 +151,24 @@
         "vinChecksum": "That VIN does not add up — its check digit is wrong. Check it against the plate; nothing was filled in.",
         "vinFilledLive": "Filled in from the VIN and the NHTSA database: {fields}. Nothing you had typed was touched.",
         "vinFilledOffline": "Filled in from the VIN itself: {fields}. The model is not in the number, so type it yourself. Nothing you had typed was touched.",
-        "vinUndo": "Undo"
+        "vinUndo": "Undo",
+        "dimensionsTruck": "Dimensions and axles",
+        "ownershipSection": "Ownership",
+        "ownership": "Ownership",
+        "lessorName": "Lessor",
+        "lessorHint": "Who the unit is leased from, as it appears on the lease.",
+        "leaseEndsOn": "Lease ends",
+        "ownershipOwnedHint": "A unit you own has no lessor and no end date, so those two are cleared when you save.",
+        "height": "Height",
+        "feet": "ft",
+        "inches": "in",
+        "axleSpacings": "Distance between axles",
+        "axleSpacingsHint": "Front to back, one gap at a time. Leave them all blank if nobody has measured them yet.",
+        "axleSpacingsNeedCount": "Set the axle count first: the gaps are one fewer than the axles.",
+        "axleSpacingPair": "Axle {from} to axle {to}",
+        "axleSpacingsMismatch": "With {axles} axles you need {n} gaps, and they are not all filled in. Fill them all in, or leave them all blank.",
+        "axleSpacingZero": "A gap cannot be zero. Leave both boxes blank if it has not been measured.",
+        "axleSpacingsMismatchOne": "With {axles} axles you need {n} gap, and it is missing. Fill it in, or leave it blank."
     },
     "flash": {
         "created": "Unit {unit} was added.",
@@ -205,5 +229,10 @@
         },
         "fileMissing": "That photo is no longer in the store. The row names it and the file is not there, so there is nowhere to get it from: upload that angle again.",
         "view": "View the photo"
+    },
+    "ownership": {
+        "owned": "Owned",
+        "leased": "Leased",
+        "lease_to_own": "Lease to own"
     }
 }

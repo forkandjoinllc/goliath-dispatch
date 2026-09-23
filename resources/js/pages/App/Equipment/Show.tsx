@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatDay, formatInstant } from '@/lib/format'
+import { formatInches } from '@/lib/measure'
 import { useI18n } from '@/lib/i18n'
 
 interface Props {
@@ -89,10 +90,18 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
     return typeof v === 'string' ? formatInstant(v, locale) : '—'
   }
 
-  const inches = (key: string): string => {
-    const v = num(key)
-    return v === null ? '—' : t('equipment.detail.inches', { value: v.toLocaleString() })
-  }
+  /*
+   * Las medidas se enseñan como se toman: 13′ 6″ y no 162 pulgadas. La base
+   * guarda una sola cifra en pulgadas —ver `App\Support\Equipment\Measure`— y
+   * partirla es cosa de la pantalla, con la misma función que usa el
+   * formulario, para que la ficha y la edición no digan dos cosas distintas.
+   */
+  const medida = (key: string): string => formatInches(num(key)) ?? '—'
+
+  const propiedad = String(unit.ownership ?? 'owned')
+
+  /** Las distancias entre ejes, en orden, tal como vinieron del servidor. */
+  const huecos: number[] = Array.isArray(unit.axleSpacings) ? (unit.axleSpacings as number[]) : []
 
   return (
     <AppLayout
@@ -187,6 +196,18 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
               <Item label={t('equipment.detail.year')}>{s('year')}</Item>
               <Item label={t('equipment.detail.make')}>{s('make')}</Item>
               <Item label={t('equipment.detail.model')}>{s('model')}</Item>
+              <Item label={t('equipment.detail.ownership')}>
+                {t(`equipment.ownership.${propiedad}`)}
+              </Item>
+              {/* Solo si está arrendada. En una unidad propia no hay
+                  arrendador ni vencimiento, y un guion en su sitio se lee
+                  como un dato que falta y no como uno que no existe. */}
+              {propiedad === 'owned' ? null : (
+                <Item label={t('equipment.detail.lessorName')}>{s('lessorName')}</Item>
+              )}
+              {propiedad === 'owned' ? null : (
+                <Item label={t('equipment.detail.leaseEndsOn')}>{day('leaseEndsOn')}</Item>
+              )}
               <Item label={t('equipment.detail.createdAt')}>{instante('createdAt')}</Item>
             </Dl>
           </Card>
@@ -213,13 +234,23 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
             </Dl>
           </Card>
 
-          {type === 'trailers' ? (
-            <Card title={t('equipment.detail.dimensions')}>
-              <Dl>
-                <Item label={t('equipment.detail.length')}>{inches('lengthInches')}</Item>
-                <Item label={t('equipment.detail.width')}>{inches('widthInches')}</Item>
-                <Item label={t('equipment.detail.deckHeight')}>{inches('deckHeightInches')}</Item>
-                <Item label={t('equipment.detail.wellLength')}>{inches('wellLengthInches')}</Item>
+          <Card
+            title={t(
+              type === 'trailers' ? 'equipment.detail.dimensions' : 'equipment.detail.dimensionsTruck',
+            )}
+          >
+            <Dl>
+              <Item label={t('equipment.detail.length')}>{medida('lengthInches')}</Item>
+              <Item label={t('equipment.detail.width')}>{medida('widthInches')}</Item>
+              {type === 'trailers' ? (
+                <Item label={t('equipment.detail.deckHeight')}>{medida('deckHeightInches')}</Item>
+              ) : (
+                <Item label={t('equipment.detail.height')}>{medida('heightInches')}</Item>
+              )}
+              {type === 'trailers' ? (
+                <Item label={t('equipment.detail.wellLength')}>{medida('wellLengthInches')}</Item>
+              ) : null}
+              {type === 'trailers' ? (
                 <Item label={t('equipment.detail.capacity')}>
                   {num('capacityPounds') === null
                     ? '—'
@@ -227,16 +258,45 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
                         value: (num('capacityPounds') as number).toLocaleString(),
                       })}
                 </Item>
-                <Item label={t('equipment.detail.axles')}>{s('axleCount')}</Item>
+              ) : null}
+              <Item label={t('equipment.detail.axles')}>{s('axleCount')}</Item>
+              <Item label={t('equipment.detail.axleConfiguration')}>{s('axleConfiguration')}</Item>
+              {type === 'trailers' ? (
                 <Item label={t('equipment.detail.removableGooseneck')}>
                   {unit.removableGooseneck ? t('common.labels.yes') : t('common.labels.no')}
                 </Item>
+              ) : null}
+              {type === 'trailers' ? (
                 <Item label={t('equipment.detail.extendable')}>
                   {unit.isExtendable ? t('common.labels.yes') : t('common.labels.no')}
                 </Item>
-              </Dl>
-            </Card>
-          ) : null}
+              ) : null}
+            </Dl>
+
+            {/* Las distancias, de delante atrás. Y la suma, porque es la que
+                pide la fórmula federal del puente y nadie debería tener que
+                sumarla a mano mirando la pantalla. */}
+            <div className="mt-4 border-t border-steel-100 pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-steel-600">
+                {t('equipment.detail.axleSpacings')}
+              </p>
+              {huecos.length === 0 ? (
+                <p className="mt-1 text-sm text-steel-700">
+                  {t('equipment.detail.noAxleSpacings')}
+                </p>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm tabular-nums text-carbon">
+                    {huecos.map((v) => formatInches(v)).join(' · ')}
+                  </p>
+                  <p className="mt-0.5 text-xs tabular-nums text-steel-600">
+                    {formatInches(huecos.reduce((a, b) => a + b, 0))} ·{' '}
+                    {t('equipment.detail.axleSpacingsTotal')}
+                  </p>
+                </>
+              )}
+            </div>
+          </Card>
 
           {loads ? (
             <Card title={t('equipment.detail.loads')}>

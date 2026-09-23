@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\EquipmentOwnership;
 use App\Enums\EquipmentStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Concerns\BelongsToTenant;
@@ -31,6 +32,14 @@ final class Truck extends BaseModel
         'year',
         'make',
         'model',
+        'ownership',
+        'lessor_name',
+        'lease_ends_on',
+        'length_inches',
+        'width_inches',
+        'height_inches',
+        'axle_count',
+        'axle_configuration',
         'equipment_type_id',
         'plate_number',
         'plate_state',
@@ -59,6 +68,12 @@ final class Truck extends BaseModel
     {
         return [
             'year' => 'integer',
+            'length_inches' => 'integer',
+            'width_inches' => 'integer',
+            'height_inches' => 'integer',
+            'axle_count' => 'integer',
+            'ownership' => EquipmentOwnership::class,
+            'lease_ends_on' => 'immutable_date',
             'status' => EquipmentStatus::class,
             'vin_decoded_at' => 'immutable_datetime',
             'registration_expires_at' => 'immutable_datetime',

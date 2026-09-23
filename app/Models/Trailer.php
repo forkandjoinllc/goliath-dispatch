@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\EquipmentOwnership;
 use App\Enums\EquipmentStatus;
 use App\Enums\VerificationStatus;
 use App\Models\Concerns\BelongsToTenant;
@@ -31,6 +32,9 @@ final class Trailer extends BaseModel
         'year',
         'make',
         'model',
+        'ownership',
+        'lessor_name',
+        'lease_ends_on',
         'equipment_type_id',
         'plate_number',
         'plate_state',
@@ -72,6 +76,8 @@ final class Trailer extends BaseModel
             'well_length_inches' => 'integer',
             'capacity_pounds' => 'integer',
             'axle_count' => 'integer',
+            'ownership' => EquipmentOwnership::class,
+            'lease_ends_on' => 'immutable_date',
             'removable_gooseneck' => 'boolean',
             'is_extendable' => 'boolean',
             'status' => EquipmentStatus::class,

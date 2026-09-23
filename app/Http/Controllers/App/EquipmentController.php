@@ -8,6 +8,7 @@ use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
+use App\Enums\EquipmentOwnership;
 use App\Enums\Scope;
 use App\Models\Trailer;
 use App\Models\Truck;
@@ -15,7 +16,9 @@ use App\Rules\SubdivisionOfCountry;
 use App\Services\Vin\VinDecoder;
 use App\Support\Compliance\ExpiryWindow;
 use App\Support\EnumValue;
+use App\Support\Equipment\AxleSpacings;
 use App\Support\Equipment\Eligibility;
+use App\Support\Equipment\Measure;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
 use App\Support\Equipment\Verification;
@@ -24,6 +27,7 @@ use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Links\CrossLink;
 use App\Support\Lists\FacetCounts;
+use App\Support\Plural;
 use App\Support\Storage\DocumentStore;
 use App\Support\Time\CalendarDates;
 use Carbon\CarbonImmutable;
@@ -183,7 +187,7 @@ final class EquipmentController
         return Inertia::render('App/Equipment/Form', [
             'type' => $type,
             'unit' => null,
-            'choices' => $this->choices($actor),
+            'choices' => $this->choices($actor, $type),
         ]);
     }
 
@@ -255,6 +259,8 @@ final class EquipmentController
         $model->status = $data['status'] ?? 'pending_verification';
         $model->save();
 
+        $this->guardarEjes($type, (string) $actor->tenantId, (string) $model->id, $data);
+
         return redirect()->route('equipment.show', [$type, $model->id])
             ->with('success', __('equipment.flash.created', ['unit' => $model->unit_number]));
     }
@@ -273,7 +279,7 @@ final class EquipmentController
         return Inertia::render('App/Equipment/Form', [
             'type' => $type,
             'unit' => $this->detail($model, $type, $checker, $actor, $current->policy()),
-            'choices' => $this->choices($actor),
+            'choices' => $this->choices($actor, $type),
         ]);
     }
 
@@ -292,8 +298,71 @@ final class EquipmentController
         $model->fill($this->columns($data, $type));
         $model->save();
 
+        $this->guardarEjes($type, (string) $actor->tenantId, (string) $model->id, $data);
+
         return redirect()->route('equipment.show', [$type, $model->id])
             ->with('success', __('equipment.flash.updated', ['unit' => $model->unit_number]));
+    }
+
+    /**
+     * Las distancias tal y como llegaron, con los huecos en blanco como nulos.
+     *
+     * Un mismo sitio para leerlas, porque la validación y el guardado tienen
+     * que estar mirando exactamente la misma lista: si una contara los blancos
+     * y la otra no, la comprobación aprobaría un conjunto que después se
+     * guarda a medias.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int|null>
+     */
+    private static function distanciasDe(array $data): array
+    {
+        $salida = [];
+
+        /** @var array<int, array<string, mixed>> $crudas */
+        $crudas = $data['axle_spacings'] ?? [];
+
+        foreach ($crudas as $fila) {
+            $salida[] = Measure::aPulgadas(
+                self::cifra($fila['feet'] ?? null),
+                self::cifra($fila['inches'] ?? null),
+            );
+        }
+
+        return $salida;
+    }
+
+    /** Una casilla en blanco es nula, no cero. */
+    private static function cifra(mixed $valor): ?int
+    {
+        return $valor === null || $valor === '' ? null : (int) $valor;
+    }
+
+    /**
+     * Guarda las distancias entre ejes, o no guarda ninguna.
+     *
+     * Enteras o nada: un conjunto con tres huecos de cuatro rellenos no sirve
+     * para calcular nada, y dejarlo a medias es peor que dejarlo vacío porque
+     * parece un dato. La validación de forma ya obligó a que sean enteros; lo
+     * que se comprueba aquí es la relación con el número de ejes, que la
+     * validación de un campo suelto no puede ver.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function guardarEjes(string $type, string $tenantId, string $id, array $data): void
+    {
+        /** @var list<int> $distancias */
+        $distancias = array_values(array_filter(
+            self::distanciasDe($data),
+            static fn (?int $v): bool => $v !== null,
+        ));
+
+        AxleSpacings::guardar(
+            $tenantId,
+            $type === 'trucks' ? AxleSpacings::CAMION : AxleSpacings::REMOLQUE,
+            $id,
+            $distancias,
+        );
     }
 
     /**
@@ -919,12 +988,33 @@ final class EquipmentController
             'createdAt' => $this->iso($g('created_at')),
         ];
 
+        $propiedad = [
+            'ownership' => EnumValue::of($g('ownership'), EquipmentOwnership::Owned->value),
+            'lessorName' => $g('lessor_name'),
+            'leaseEndsOn' => CalendarDates::dia($g('lease_ends_on')),
+            // Las distancias entre ejes, en orden y en pulgadas. La pantalla
+            // las parte en pies y pulgadas; la base guarda una sola cifra.
+            'axleSpacings' => AxleSpacings::de(
+                $type === 'trucks' ? AxleSpacings::CAMION : AxleSpacings::REMOLQUE,
+                (string) $u->getAttribute('id'),
+            ),
+        ];
+
         if ($type === 'trucks') {
-            return $common;
+            return [
+                ...$common,
+                ...$propiedad,
+                'lengthInches' => $g('length_inches') === null ? null : (int) $g('length_inches'),
+                'widthInches' => $g('width_inches') === null ? null : (int) $g('width_inches'),
+                'heightInches' => $g('height_inches') === null ? null : (int) $g('height_inches'),
+                'axleCount' => $g('axle_count') === null ? null : (int) $g('axle_count'),
+                'axleConfiguration' => $g('axle_configuration'),
+            ];
         }
 
         return [
             ...$common,
+            ...$propiedad,
             'lengthInches' => $g('length_inches') === null ? null : (int) $g('length_inches'),
             'widthInches' => $g('width_inches') === null ? null : (int) $g('width_inches'),
             'deckHeightInches' => $g('deck_height_inches') === null ? null : (int) $g('deck_height_inches'),
@@ -977,21 +1067,50 @@ final class EquipmentController
     /**
      * @return array<string, list<array<string, mixed>>>
      */
-    private function choices(Actor $actor): array
+    /**
+     * @param  'trucks'|'trailers'|null  $type  Null solo para comprobar el
+     *                                          transportista, donde el tipo de
+     *                                          equipo no pinta nada.
+     * @return array<string, mixed>
+     */
+    /**
+     * Los transportistas para los que quien mira puede dar de alta equipo.
+     *
+     * Aparte de `choices()` porque la validación lo necesita SIN saber de qué
+     * clase es la unidad, y mientras eso era un argumento opcional de
+     * `choices()` la lista de tipos podía salir sin filtrar por categoría con
+     * solo olvidarse de pasarlo.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    private function carrierOptions(Actor $actor): array
+    {
+        return DB::table('carriers')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->when($actor->carrierId !== null, fn ($q) => $q->where('id', $actor->carrierId))
+            ->orderBy('legal_name')
+            ->get(['id', 'legal_name as name'])
+            ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+            ->all();
+    }
+
+    private function choices(Actor $actor, string $type): array
     {
         return [
-            'carriers' => DB::table('carriers')
-                ->where('tenant_id', $actor->tenantId)
-                ->whereNull('deleted_at')
-                ->when($actor->carrierId !== null, fn ($q) => $q->where('id', $actor->carrierId))
-                ->orderBy('legal_name')
-                ->get(['id', 'legal_name as name'])
-                ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
-                ->all(),
+            'carriers' => $this->carrierOptions($actor),
 
+            // Los tipos de ESTA clase de unidad, no todos.
+            //
+            // El formulario recibía los nueve y el de un tractor ofrecía
+            // «Lowboy» y «Step deck», que son remolques. La columna `category`
+            // existía desde el principio y nadie la miraba: elegir un tipo
+            // imposible guardaba una ficha que después no cuadra con nada — y
+            // la pantalla de sobredimensión mira el tipo del REMOLQUE.
             'equipmentTypes' => DB::table('equipment_types')
                 ->where('tenant_id', $actor->tenantId)
                 ->whereNull('deleted_at')
+                ->where('category', $type === 'trucks' ? 'truck' : 'trailer')
                 ->orderBy('sort_order')
                 ->get(['id', 'code', 'label_en', 'label_es'])
                 ->map(fn ($r): array => [
@@ -1005,11 +1124,34 @@ final class EquipmentController
     }
 
     /**
+     * Qué medidas tiene cada clase de unidad.
+     *
+     * En un solo sitio: la validación, el formulario y el guardián preguntan
+     * aquí. Escrita tres veces, el día que se añada una medida se añadiría en
+     * dos — y la tercera la dejaría pasar sin validar.
+     *
+     * @return list<string>
+     */
+    public static function medidasDe(string $type): array
+    {
+        return $type === 'trucks'
+            ? ['length', 'width', 'height']
+            : ['length', 'width', 'deck_height', 'well_length'];
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function columns(array $data, string $type): array
     {
+        // Una sola lectura de la propiedad, porque la columna y las dos que
+        // dependen de ella tienen que estar mirando el MISMO valor. Leerla tres
+        // veces con tres valores por omisión distintos guardaba «propia» con
+        // arrendador puesto cuando el campo no venía.
+        $propiedad = $data['ownership'] ?? EquipmentOwnership::Owned->value;
+        $esPropia = $propiedad === EquipmentOwnership::Owned->value;
+
         $columns = [
             'carrier_id' => $data['carrier_id'],
             'unit_number' => $data['unit_number'],
@@ -1027,14 +1169,33 @@ final class EquipmentController
             'last_inspection_at' => $data['last_inspection_at'] ?? null,
             'next_inspection_due_at' => $data['next_inspection_due_at'] ?? null,
             'notes' => $data['notes'] ?? null,
+            'ownership' => $propiedad,
+            // Solo si de verdad está arrendada. Guardar el nombre del
+            // arrendador de una unidad propia deja un dato que contradice al
+            // de al lado, y quien lo lea después no sabrá cuál vale.
+            'lessor_name' => $esPropia ? null : ($data['lessor_name'] ?? null),
+            'lease_ends_on' => $esPropia ? null : ($data['lease_ends_on'] ?? null),
         ];
+
+        if ($type === 'trucks') {
+            $columns += [
+                'length_inches' => Measure::aPulgadas($data['length_feet'] ?? null, $data['length_inches'] ?? null),
+                'width_inches' => Measure::aPulgadas($data['width_feet'] ?? null, $data['width_inches'] ?? null),
+                'height_inches' => Measure::aPulgadas($data['height_feet'] ?? null, $data['height_inches'] ?? null),
+                'axle_count' => $data['axle_count'] ?? null,
+                'axle_configuration' => $data['axle_configuration'] ?? null,
+            ];
+        }
 
         if ($type === 'trailers') {
             $columns += [
-                'length_inches' => $data['length_inches'] ?? null,
-                'width_inches' => $data['width_inches'] ?? null,
-                'deck_height_inches' => $data['deck_height_inches'] ?? null,
-                'well_length_inches' => $data['well_length_inches'] ?? null,
+                // Igual que en los tractores: la pantalla las pide en pies y
+                // pulgadas y aquí se juntan en una sola cifra. Ver
+                // `Equipment\Measure` para por qué no son dos columnas.
+                'length_inches' => Measure::aPulgadas($data['length_feet'] ?? null, $data['length_inches'] ?? null),
+                'width_inches' => Measure::aPulgadas($data['width_feet'] ?? null, $data['width_inches'] ?? null),
+                'deck_height_inches' => Measure::aPulgadas($data['deck_height_feet'] ?? null, $data['deck_height_inches'] ?? null),
+                'well_length_inches' => Measure::aPulgadas($data['well_length_feet'] ?? null, $data['well_length_inches'] ?? null),
                 'capacity_pounds' => $data['capacity_pounds'] ?? null,
                 'axle_count' => $data['axle_count'] ?? null,
                 'axle_configuration' => $data['axle_configuration'] ?? null,
@@ -1068,17 +1229,33 @@ final class EquipmentController
             'next_inspection_due_at' => ['nullable', 'date'],
             'status' => ['nullable', 'in:pending_verification,active,out_of_service,archived'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'ownership' => ['nullable', Rule::in(EquipmentOwnership::values())],
+            'lessor_name' => ['nullable', 'string', 'max:160'],
+            'lease_ends_on' => ['nullable', 'date'],
+            'axle_count' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'axle_configuration' => ['nullable', 'string', 'max:60'],
+            // Las distancias entre ejes, en orden y cada una en pies y
+            // pulgadas como el resto de las medidas. El tope de 19 es el de
+            // `axle_count` menos uno.
+            'axle_spacings' => ['nullable', 'array', 'max:19'],
+            'axle_spacings.*' => ['array'],
+            // Las dos casillas en blanco son un hueco sin medir, y caben: una
+            // ficha vieja tiene ejes y no tiene distancias.
+            'axle_spacings.*.feet' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'axle_spacings.*.inches' => ['nullable', 'integer', 'min:0', 'max:'.(Measure::PULGADAS_POR_PIE - 1)],
         ];
+
+        // Los pies van aparte de las pulgadas en TODAS las medidas, y se juntan
+        // en `columns()`. Las pulgadas se limitan a once: doce pulgadas son un
+        // pie, y admitirlas dejaría dos formas de escribir la misma medida.
+        foreach (self::medidasDe($type) as $medida) {
+            $rules[$medida.'_feet'] = ['nullable', 'integer', 'min:0', 'max:200'];
+            $rules[$medida.'_inches'] = ['nullable', 'integer', 'min:0', 'max:'.(Measure::PULGADAS_POR_PIE - 1)];
+        }
 
         if ($type === 'trailers') {
             $rules += [
-                'length_inches' => ['nullable', 'integer', 'min:0', 'max:2000'],
-                'width_inches' => ['nullable', 'integer', 'min:0', 'max:400'],
-                'deck_height_inches' => ['nullable', 'integer', 'min:0', 'max:200'],
-                'well_length_inches' => ['nullable', 'integer', 'min:0', 'max:2000'],
                 'capacity_pounds' => ['nullable', 'integer', 'min:0', 'max:500000'],
-                'axle_count' => ['nullable', 'integer', 'min:1', 'max:20'],
-                'axle_configuration' => ['nullable', 'string', 'max:60'],
                 'removable_gooseneck' => ['boolean'],
                 'is_extendable' => ['boolean'],
             ];
@@ -1086,10 +1263,43 @@ final class EquipmentController
 
         $data = $request->validate($rules);
 
+        // Las distancias tienen que ser n-1 para n ejes. Es una relación entre
+        // DOS campos, y por eso no cabe en la regla de ninguno de los dos.
+        $ejes = $data['axle_count'] ?? null;
+        $distancias = self::distanciasDe($data);
+
+        // Un hueco de cero pulgadas no existe. Se escribe cuando alguien pone
+        // un cero en las dos casillas creyendo que así lo deja en blanco, y
+        // guardarlo daría una distancia que ninguna fórmula puede usar.
+        foreach ($distancias as $i => $pulgadas) {
+            if ($pulgadas !== null && $pulgadas < 1) {
+                throw ValidationException::withMessages([
+                    'axle_spacings.'.$i.'.inches' => __('equipment.form.axleSpacingZero'),
+                ]);
+            }
+        }
+
+        if (! AxleSpacings::cuadran($ejes === null ? null : (int) $ejes, $distancias)) {
+            $esperadas = max(0, (int) ($ejes ?? 0) - 1);
+
+            // Sin ejes suficientes no hay ningún hueco que pedir, y el mensaje
+            // que toca no es «faltan 0 distancias» sino el que dice por dónde
+            // se empieza. Y con uno solo, la frase va en singular: durante seis
+            // lotes esta aplicación decía «1 facturas». Ver `Support\Plural`.
+            throw ValidationException::withMessages([
+                'axle_spacings' => $esperadas === 0
+                    ? __('equipment.form.axleSpacingsNeedCount')
+                    : __(Plural::key('equipment.form.axleSpacingsMismatch', $esperadas), [
+                        'axles' => (string) ($ejes ?? 0),
+                        'n' => (string) $esperadas,
+                    ]),
+            ]);
+        }
+
         // El transportista tiene que ser de esta empresa, y si quien edita es un
         // usuario transportista, tiene que ser el suyo. La validación de formato
         // no lo garantiza.
-        $allowed = collect($this->choices($actor)['carriers'])->pluck('id');
+        $allowed = collect($this->carrierOptions($actor))->pluck('id');
 
         if (! $allowed->contains($data['carrier_id'])) {
             throw ValidationException::withMessages([

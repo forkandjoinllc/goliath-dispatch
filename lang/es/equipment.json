@@ -82,7 +82,6 @@
         "axleConfiguration": "Configuración de ejes",
         "removableGooseneck": "Cuello desmontable",
         "extendable": "Extensible",
-        "inches": "{value} pulg",
         "pounds": "{value} lb",
         "expired": "Vencida",
         "expiringSoon": "Vence pronto",
@@ -92,7 +91,15 @@
         "released": "retirada",
         "edit": "Editar unidad",
         "back": "Volver",
-        "createdAt": "Alta"
+        "createdAt": "Alta",
+        "ownership": "Propiedad",
+        "lessorName": "Arrendador",
+        "leaseEndsOn": "El arrendamiento vence",
+        "height": "Alto",
+        "axleSpacings": "Distancia entre ejes",
+        "axleSpacingsTotal": "del primer eje al último",
+        "noAxleSpacings": "Sin medir.",
+        "dimensionsTruck": "Medidas y ejes"
     },
     "form": {
         "createTruckTitle": "Agregar camión",
@@ -124,10 +131,10 @@
         "registrationExpires": "La matrícula vence",
         "lastInspection": "Última inspección",
         "nextInspection": "Próxima inspección",
-        "length": "Largo (pulg)",
-        "width": "Ancho (pulg)",
-        "deckHeight": "Altura de plataforma (pulg)",
-        "wellLength": "Largo del pozo (pulg)",
+        "length": "Largo",
+        "width": "Ancho",
+        "deckHeight": "Altura de plataforma",
+        "wellLength": "Largo del pozo",
         "capacity": "Capacidad (lb)",
         "axles": "Número de ejes",
         "axleConfiguration": "Configuración de ejes",
@@ -144,7 +151,24 @@
         "vinChecksum": "Ese VIN no cuadra: su dígito de control está mal. Compruébelo contra la placa; no se rellenó nada.",
         "vinFilledLive": "Rellenado a partir del VIN y de la base de la NHTSA: {fields}. No se tocó nada de lo que usted había escrito.",
         "vinFilledOffline": "Rellenado a partir del propio VIN: {fields}. El modelo no viene en el número, así que escríbalo usted. No se tocó nada de lo que usted había escrito.",
-        "vinUndo": "Deshacer"
+        "vinUndo": "Deshacer",
+        "dimensionsTruck": "Medidas y ejes",
+        "ownershipSection": "Propiedad",
+        "ownership": "Propiedad",
+        "lessorName": "Arrendador",
+        "lessorHint": "De quién se arrienda la unidad, tal como figura en el contrato.",
+        "leaseEndsOn": "El arrendamiento vence",
+        "ownershipOwnedHint": "Una unidad propia no tiene arrendador ni fecha de vencimiento: al guardar, esos dos se borran.",
+        "height": "Alto",
+        "feet": "pies",
+        "inches": "pulg",
+        "axleSpacings": "Distancia entre ejes",
+        "axleSpacingsHint": "De delante atrás, hueco por hueco. Déjelos todos en blanco si nadie las ha medido todavía.",
+        "axleSpacingsNeedCount": "Ponga primero el número de ejes: los huecos son uno menos que los ejes.",
+        "axleSpacingPair": "Del eje {from} al eje {to}",
+        "axleSpacingsMismatch": "Con {axles} ejes hacen falta {n} distancias, y no están todas. Rellénelas todas o déjelas todas en blanco.",
+        "axleSpacingZero": "Un hueco no puede ser cero. Deje las dos casillas en blanco si no se ha medido.",
+        "axleSpacingsMismatchOne": "Con {axles} ejes hace falta {n} distancia, y no está puesta. Rellénela o déjela en blanco."
     },
     "flash": {
         "created": "Se agregó la unidad {unit}.",
@@ -205,5 +229,10 @@
         },
         "fileMissing": "Esa foto ya no está en el almacén. La fila la nombra y el fichero no está, así que no hay de dónde sacarla: vuelva a subir ese lado.",
         "view": "Ver la foto"
+    },
+    "ownership": {
+        "owned": "Propia",
+        "leased": "Arrendada",
+        "lease_to_own": "Arrendamiento con opción a compra"
     }
 }

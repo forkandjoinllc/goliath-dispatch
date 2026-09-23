@@ -2,9 +2,14 @@ import { Link, useForm } from '@inertiajs/react'
 import { useRef, useState, type ReactNode } from 'react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/Form/Field'
+import { FeetInchesField } from '@/components/Form/FeetInchesField'
 import { SearchableSelect } from '@/components/Form/SearchableSelect'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
+import { splitInches, type FeetInches } from '@/lib/measure'
+
+/** Los tres nombres de la propiedad, en el orden en que se ofrecen. */
+const PROPIEDADES = ['owned', 'leased', 'lease_to_own'] as const
 
 interface Props {
   type: 'trucks' | 'trailers'
@@ -30,6 +35,18 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
   }
   const date = (key: string): string => String(unit?.[key] ?? '').slice(0, 10)
 
+  /*
+   * Lo guardado viene en pulgadas —una cifra— y las casillas son dos. Se parte
+   * UNA vez, al montar: a partir de ahí las dos casillas guardan lo que se
+   * escribió en ellas, y es el servidor quien vuelve a sumarlas. Ver
+   * `lib/measure.ts`.
+   */
+  const medida = (key: string): FeetInches => splitInches(n(key))
+
+  const huecosGuardados: FeetInches[] = Array.isArray(unit?.axleSpacings)
+    ? (unit.axleSpacings as number[]).map((v) => splitInches(v))
+    : []
+
   const form = useForm({
     carrier_id: g('carrierId'),
     unit_number: g('unitNumber'),
@@ -47,16 +64,83 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
     next_inspection_due_at: date('nextInspectionDueAt'),
     status: g('status') || 'pending_verification',
     notes: g('notes'),
-    length_inches: n('lengthInches'),
-    width_inches: n('widthInches'),
-    deck_height_inches: n('deckHeightInches'),
-    well_length_inches: n('wellLengthInches'),
+    ownership: g('ownership') || 'owned',
+    lessor_name: g('lessorName'),
+    lease_ends_on: date('leaseEndsOn'),
+    // Las cinco medidas van en el estado aunque cada clase de unidad enseñe
+    // solo las suyas. El servidor valida las de SU tipo y descarta el resto:
+    // `EquipmentController::medidasDe()` es quien decide cuáles son.
+    length_feet: medida('lengthInches').feet,
+    length_inches: medida('lengthInches').inches,
+    width_feet: medida('widthInches').feet,
+    width_inches: medida('widthInches').inches,
+    height_feet: medida('heightInches').feet,
+    height_inches: medida('heightInches').inches,
+    deck_height_feet: medida('deckHeightInches').feet,
+    deck_height_inches: medida('deckHeightInches').inches,
+    well_length_feet: medida('wellLengthInches').feet,
+    well_length_inches: medida('wellLengthInches').inches,
     capacity_pounds: n('capacityPounds'),
     axle_count: n('axleCount'),
     axle_configuration: g('axleConfiguration'),
+    axle_spacings: huecosGuardados,
     removable_gooseneck: Boolean(unit?.removableGooseneck),
     is_extendable: Boolean(unit?.isExtendable),
   })
+
+  const arrendada = form.data.ownership !== 'owned'
+  const huecos = Math.max(0, (form.data.axle_count ?? 0) - 1)
+
+  /*
+   * El número de ejes manda sobre cuántos huecos hay: con cinco ejes, cuatro
+   * distancias. Bajar el número BORRA las de más, aquí y al guardar, porque un
+   * hueco número cuatro de una unidad que ya solo tiene tres ejes no es un dato
+   * que se pueda conservar por si acaso: es basura que después se enseña.
+   */
+  const ponerEjes = (v: number | null) => {
+    const cuantos = Math.max(0, (v ?? 0) - 1)
+
+    form.setData((d) => ({
+      ...d,
+      axle_count: v,
+      axle_spacings: Array.from(
+        { length: cuantos },
+        (_, i) => d.axle_spacings[i] ?? { feet: null, inches: null },
+      ),
+    }))
+  }
+
+  const campoMedida = (
+    clave: 'length' | 'width' | 'height' | 'deck_height' | 'well_length',
+    label: string,
+  ) => (
+    <FeetInchesField
+      label={label}
+      feet={form.data[`${clave}_feet`]}
+      inches={form.data[`${clave}_inches`]}
+      onChange={(v) => {
+        form.setData((d) => ({ ...d, [`${clave}_feet`]: v.feet, [`${clave}_inches`]: v.inches }))
+      }}
+      feetLabel={t('equipment.form.feet')}
+      inchesLabel={t('equipment.form.inches')}
+      error={form.errors[`${clave}_feet`] ?? form.errors[`${clave}_inches`]}
+    />
+  )
+
+  /*
+   * El error de un hueco llega con la clave anidada que puso el servidor
+   * —`axle_spacings.2.inches`—, y el tipo de errores de Inertia solo conoce
+   * los campos de primer nivel. La conversión es solo para leerlo.
+   */
+  const errorDeHueco = (i: number): string | undefined =>
+    (form.errors as Record<string, string | undefined>)[`axle_spacings.${String(i)}.inches`]
+
+  const ponerHueco = (i: number, v: FeetInches) => {
+    form.setData((d) => ({
+      ...d,
+      axle_spacings: d.axle_spacings.map((h, j) => (j === i ? v : h)),
+    }))
+  }
 
   const elegido = choices.carriers.find((c) => c.id === form.data.carrier_id) ?? null
 
@@ -336,38 +420,107 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
           />
         </Section>
 
-        {isTrailer ? (
-          <Section title={t('equipment.form.dimensions')}>
-            <NumberField
-              label={t('equipment.form.length')}
-              value={form.data.length_inches}
-              onChange={(v) => form.setData('length_inches', v)}
+        <Section title={t('equipment.form.ownershipSection')}>
+          <SelectField
+            label={t('equipment.form.ownership')}
+            value={form.data.ownership}
+            onChange={(e) => form.setData('ownership', e.target.value)}
+            options={PROPIEDADES.map((v) => ({
+              value: v,
+              label: t(`equipment.ownership.${v}`),
+            }))}
+            error={form.errors.ownership}
+          />
+          {arrendada ? (
+            <TextField
+              label={t('equipment.form.lessorName')}
+              hint={t('equipment.form.lessorHint')}
+              maxLength={160}
+              value={form.data.lessor_name}
+              onChange={(e) => form.setData('lessor_name', e.target.value)}
+              error={form.errors.lessor_name}
             />
-            <NumberField
-              label={t('equipment.form.width')}
-              value={form.data.width_inches}
-              onChange={(v) => form.setData('width_inches', v)}
+          ) : (
+            /* Y se dice, porque al guardar se borran: quien pasa una unidad
+               arrendada a propia no tiene por qué adivinar que el nombre del
+               arrendador y la fecha se van con el cambio. */
+            <p className="self-center text-xs text-steel-600">
+              {t('equipment.form.ownershipOwnedHint')}
+            </p>
+          )}
+          {arrendada ? (
+            <TextField
+              label={t('equipment.form.leaseEndsOn')}
+              type="date"
+              value={form.data.lease_ends_on}
+              onChange={(e) => form.setData('lease_ends_on', e.target.value)}
+              error={form.errors.lease_ends_on}
             />
-            <NumberField
-              label={t('equipment.form.deckHeight')}
-              value={form.data.deck_height_inches}
-              onChange={(v) => form.setData('deck_height_inches', v)}
-            />
-            <NumberField
-              label={t('equipment.form.wellLength')}
-              value={form.data.well_length_inches}
-              onChange={(v) => form.setData('well_length_inches', v)}
-            />
+          ) : null}
+        </Section>
+
+        <Section title={t(isTrailer ? 'equipment.form.dimensions' : 'equipment.form.dimensionsTruck')}>
+          {campoMedida('length', t('equipment.form.length'))}
+          {campoMedida('width', t('equipment.form.width'))}
+          {isTrailer ? campoMedida('deck_height', t('equipment.form.deckHeight')) : null}
+          {isTrailer ? campoMedida('well_length', t('equipment.form.wellLength')) : null}
+          {isTrailer ? null : campoMedida('height', t('equipment.form.height'))}
+          {isTrailer ? (
             <NumberField
               label={t('equipment.form.capacity')}
               value={form.data.capacity_pounds}
               onChange={(v) => form.setData('capacity_pounds', v)}
             />
-            <NumberField
-              label={t('equipment.form.axles')}
-              value={form.data.axle_count}
-              onChange={(v) => form.setData('axle_count', v)}
-            />
+          ) : null}
+          <NumberField
+            label={t('equipment.form.axles')}
+            value={form.data.axle_count}
+            onChange={ponerEjes}
+          />
+          <TextField
+            label={t('equipment.form.axleConfiguration')}
+            maxLength={60}
+            value={form.data.axle_configuration}
+            onChange={(e) => form.setData('axle_configuration', e.target.value)}
+            error={form.errors.axle_configuration}
+          />
+          <div className="sm:col-span-2">
+            <p className="text-sm font-medium text-carbon">{t('equipment.form.axleSpacings')}</p>
+            {huecos === 0 ? (
+              <p className="mt-1 text-xs text-steel-600">
+                {t('equipment.form.axleSpacingsNeedCount')}
+              </p>
+            ) : (
+              <>
+                <p className="mt-1 text-xs text-steel-600">
+                  {t('equipment.form.axleSpacingsHint')}
+                </p>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  {Array.from({ length: huecos }, (_, i) => (
+                    <FeetInchesField
+                      key={i}
+                      label={t('equipment.form.axleSpacingPair', {
+                        from: String(i + 1),
+                        to: String(i + 2),
+                      })}
+                      feet={form.data.axle_spacings[i]?.feet ?? null}
+                      inches={form.data.axle_spacings[i]?.inches ?? null}
+                      onChange={(v) => { ponerHueco(i, v) }}
+                      feetLabel={t('equipment.form.feet')}
+                      inchesLabel={t('equipment.form.inches')}
+                      error={errorDeHueco(i)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+            {form.errors.axle_spacings ? (
+              <p role="alert" className="mt-2 text-xs font-medium text-safety-700">
+                {form.errors.axle_spacings}
+              </p>
+            ) : null}
+          </div>
+          {isTrailer ? (
             <div className="self-end">
               <CheckboxField
                 label={t('equipment.form.removableGooseneck')}
@@ -375,6 +528,8 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
                 onChange={(e) => form.setData('removable_gooseneck', e.target.checked)}
               />
             </div>
+          ) : null}
+          {isTrailer ? (
             <div className="self-end">
               <CheckboxField
                 label={t('equipment.form.extendable')}
@@ -382,8 +537,8 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
                 onChange={(e) => form.setData('is_extendable', e.target.checked)}
               />
             </div>
-          </Section>
-        ) : null}
+          ) : null}
+        </Section>
 
         <Section title={t('equipment.form.notesSection')}>
           <div className="sm:col-span-2">

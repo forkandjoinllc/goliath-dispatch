@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Enums\EquipmentOwnership;
+use App\Support\Equipment\AxleSpacings;
 use App\Support\Equipment\Vin;
 use App\Support\Oversize\NeedsPapers;
 use App\Support\Screens\Reachable;
@@ -132,6 +134,82 @@ function invariantesDeLaDemostracion(string $tenantId): array
             },
             'app/Support/Equipment/Vin.php',
             'public static function sumaBien(string $vin): bool',
+        ],
+
+        'las distancias entre ejes cuadran con el número de ejes' => [
+            // Con cinco ejes hay cuatro huecos. Ni tres ni seis: la fórmula
+            // federal del puente se calcula sobre esas distancias, y un
+            // conjunto a medias no sirve para calcular nada mientras parece un
+            // dato. `EquipmentController::validated()` rechaza guardarlo, así
+            // que sembrarlo sería sembrar lo que la aplicación no deja hacer.
+            function () use ($tenantId): int {
+                $malas = 0;
+
+                foreach ([['trucks', AxleSpacings::CAMION], ['trailers', AxleSpacings::REMOLQUE]] as [$tabla, $tipo]) {
+                    $unidades = DB::table($tabla)
+                        ->where('tenant_id', $tenantId)
+                        ->get(['id', 'axle_count']);
+
+                    $todas = AxleSpacings::deVarias($tipo, $unidades->pluck('id')->map(fn ($v): string => (string) $v)->all());
+
+                    foreach ($unidades as $u) {
+                        $huecos = $todas[(string) $u->id] ?? [];
+
+                        if ($huecos !== [] && ! AxleSpacings::cuadran(
+                            $u->axle_count === null ? null : (int) $u->axle_count,
+                            $huecos,
+                        )) {
+                            $malas++;
+                        }
+                    }
+                }
+
+                return $malas;
+            },
+            'app/Support/Equipment/AxleSpacings.php',
+            'public static function cuadran(?int $ejes, array $pulgadas): bool',
+        ],
+
+        'un camión lleva un tipo de camión' => [
+            // El formulario ya solo ofrece los de su categoría. Sembrar un
+            // tractor con tipo «Lowboy» dejaría en la demostración la ficha
+            // exacta que el alta impide crear.
+            function () use ($tenantId): int {
+                $malas = 0;
+
+                foreach ([['trucks', 'truck'], ['trailers', 'trailer']] as [$tabla, $categoria]) {
+                    $malas += DB::table($tabla.' as u')
+                        ->join('equipment_types as t', 't.id', '=', 'u.equipment_type_id')
+                        ->where('u.tenant_id', $tenantId)
+                        ->where('t.category', '!=', $categoria)
+                        ->count();
+                }
+
+                return $malas;
+            },
+            'app/Http/Controllers/App/EquipmentController.php',
+            "->where('category', \$type === 'trucks' ? 'truck' : 'trailer')",
+        ],
+
+        'la demostración enseña las tres propiedades' => [
+            // Propia, arrendada y en arrendamiento con opción a compra. Si
+            // todo fuera propio, el arrendador y la fecha de vencimiento no se
+            // verían en ninguna ficha, y la primera vez que alguien los mirara
+            // sería en producción.
+            function () use ($tenantId): int {
+                $vistas = collect(['trucks', 'trailers'])
+                    ->flatMap(fn (string $t): array => DB::table($t)
+                        ->where('tenant_id', $tenantId)
+                        ->pluck('ownership')
+                        ->all())
+                    ->unique();
+
+                return collect(EquipmentOwnership::values())
+                    ->reject(fn (string $v): bool => $vistas->contains($v))
+                    ->count();
+            },
+            'app/Enums/EquipmentOwnership.php',
+            'case LeaseToOwn',
         ],
 
         'una carga que ya rodó tiene camión' => [

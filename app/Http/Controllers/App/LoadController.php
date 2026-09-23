@@ -878,9 +878,16 @@ final class LoadController
                 ])
                 ->all(),
 
+            // El «equipo requerido» de una carga es el REMOLQUE que hace falta,
+            // y por eso se filtra por categoría: toda carga necesita un
+            // tractor, así que ofrecer «Tractocamión con dormitorio» como
+            // requisito no dice nada y además guarda un requisito que después
+            // no se puede cumplir con ningún remolque. Misma regla que en el
+            // alta de una unidad — ver `EquipmentController::choices()`.
             'equipmentTypes' => DB::table('equipment_types')
                 ->where('tenant_id', $actor->tenantId)
                 ->whereNull('deleted_at')
+                ->where('category', 'trailer')
                 ->orderBy('sort_order')
                 ->get(['id', 'code', 'label_en', 'label_es'])
                 ->map(fn ($r): array => [

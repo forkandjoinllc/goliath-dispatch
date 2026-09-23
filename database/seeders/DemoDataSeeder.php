@@ -19,6 +19,7 @@ use App\Services\Malware\ScanVerdict;
 use App\Services\Malware\UnavailableFileScanner;
 use App\Support\Customers\NameKey;
 use App\Support\Documents\Scanning;
+use App\Support\Equipment\AxleSpacings;
 use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionLedger;
 use App\Support\Finance\InvoiceBuilder;
@@ -645,22 +646,38 @@ class DemoDataSeeder extends Seeder
         // remolques conservan un WMI que la tabla corta de `Wmi` no conoce —
         // Trail King y Landoll— a propósito, para que se vea también el caso de
         // «esto no lo sé decir sin salir a internet».
+        //
+        // La propiedad va repartida a propósito: propias, arrendadas y en
+        // arrendamiento con opción a compra. Las tres, porque una demostración
+        // en la que todo es propio no enseña el campo del arrendador ni la
+        // fecha de vencimiento, y el día que alguien los mire por primera vez
+        // será en producción. Los arrendadores son inventados.
+        //
+        // Las distancias entre ejes son las de un tractor de verdad: un hueco
+        // largo del eje direccional al primero de tracción y uno corto entre
+        // los dos de tracción. `distancias = ejes - 1`, que es la invariante
+        // que `AxleSpacings` sostiene.
+        // El vencimiento del contrato se calcula al armar la fila y no dentro
+        // del bucle: así la columna recibe la fecha o un nulo, sin una
+        // comparación por medio.
+        $vence = fn (int $dias): string => $now->copy()->addDays($dias)->toDateString();
+
         $trucks = [
-            ['atlas', '101', '1FUJGLDR8MLBA1101', 2021, 'Freightliner', 'Cascadia', 'sleeper', 'TX', EquipmentStatus::Active, 92],
-            ['atlas', '104', '1XKYDPHX1NJ421104', 2022, 'Kenworth', 'W990', 'sleeper', 'TX', EquipmentStatus::Active, 210],
-            ['cordillera', 'C-07', '1XPJHHDR4PSNJ3107', 2023, 'Peterbilt', '389', 'sleeper', 'TX', EquipmentStatus::Active, 340],
-            ['cordillera', 'C-12', '1FUJHHDR8KLKJ2112', 2019, 'Freightliner', 'Coronado', 'day_cab', 'TX', EquipmentStatus::OutOfService, 18],
-            ['northline', 'NR-3', '1XPXD4HX0MD771003', 2021, 'Peterbilt', '567', 'day_cab', 'IN', EquipmentStatus::PendingVerification, 150],
+            ['atlas', '101', '1FUJGLDR8MLBA1101', 2021, 'Freightliner', 'Cascadia', 'sleeper', 'TX', EquipmentStatus::Active, 92, 'owned', null, null, 306, 102, 158, 3, '6x4', [232, 54]],
+            ['atlas', '104', '1XKYDPHX1NJ421104', 2022, 'Kenworth', 'W990', 'sleeper', 'TX', EquipmentStatus::Active, 210, 'leased', 'Bravo Fleet Leasing, LLC', $vence(430), 312, 102, 160, 3, '6x4', [238, 54]],
+            ['cordillera', 'C-07', '1XPJHHDR4PSNJ3107', 2023, 'Peterbilt', '389', 'sleeper', 'TX', EquipmentStatus::Active, 340, 'lease_to_own', 'Arrendadora Norte de Equipos, S. de R.L.', $vence(980), 318, 102, 162, 3, '6x4', [244, 54]],
+            ['cordillera', 'C-12', '1FUJHHDR8KLKJ2112', 2019, 'Freightliner', 'Coronado', 'day_cab', 'TX', EquipmentStatus::OutOfService, 18, 'owned', null, null, 240, 102, 156, 3, '6x4', [186, 54]],
+            ['northline', 'NR-3', '1XPXD4HX0MD771003', 2021, 'Peterbilt', '567', 'day_cab', 'IN', EquipmentStatus::PendingVerification, 150, 'leased', 'Bravo Fleet Leasing, LLC', $vence(215), 246, 102, 155, 3, '6x4', [190, 54]],
             // Bluewater tiene equipo porque LLEVÓ una carga antes de que se le
             // suspendiera. Sin camión ni conductor suyos, su carga facturada
             // salía sin ninguna asignación de camión — un estado que
             // `Guards::forDispatch()` bloquea con `noTruck`, así que esa carga
             // no pudo haber rodado nunca.
-            ['bluewater', 'BW-2', '1FUJGLD55JLKK2002', 2018, 'Freightliner', 'Cascadia', 'day_cab', 'TX', EquipmentStatus::Active, 75],
+            ['bluewater', 'BW-2', '1FUJGLD55JLKK2002', 2018, 'Freightliner', 'Cascadia', 'day_cab', 'TX', EquipmentStatus::Active, 75, 'owned', null, null, 244, 102, 154, 3, '6x4', [188, 54]],
         ];
 
-        foreach ($trucks as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $regDays]) {
-            $this->upsert('trucks', ['vin_normalized' => $vin], [
+        foreach ($trucks as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $regDays, $propiedad, $arrendador, $vencimiento, $largo, $ancho, $alto, $ejes, $config, $huecos]) {
+            $id = $this->upsert('trucks', ['vin_normalized' => $vin], [
                 'carrier_id' => $carriers[$carrier],
                 'unit_number' => $unit,
                 'vin' => $vin,
@@ -678,20 +695,31 @@ class DemoDataSeeder extends Seeder
                 'out_of_service_reason' => $status === EquipmentStatus::OutOfService
                     ? 'Falla en el sistema de frenos; en taller.'
                     : null,
+                'ownership' => $propiedad,
+                'lessor_name' => $arrendador,
+                'lease_ends_on' => $vencimiento,
+                'length_inches' => $largo,
+                'width_inches' => $ancho,
+                'height_inches' => $alto,
+                'axle_count' => $ejes,
+                'axle_configuration' => $config,
             ]);
+
+            AxleSpacings::guardar($this->tenantId, AxleSpacings::CAMION, $id, $huecos);
         }
 
+        // Los remolques de cinco ejes llevan sus cuatro huecos; los de dos, uno.
         $trailers = [
-            ['atlas', 'T-220', '1JJV53HW0LL220220', 2020, 'Wabash', 'Step deck', 'step_deck', 'TX', EquipmentStatus::Active, 636, 102, 39],
-            ['atlas', 'T-310', '5JYD53HB6MP310310', 2021, 'Trail King', 'RGN 55T', 'rgn', 'TX', EquipmentStatus::Active, 636, 102, 22],
-            ['cordillera', 'R-14', '1DW1A5H23NS141414', 2022, 'Fontaine', 'Magnitude 55L', 'lowboy', 'TX', EquipmentStatus::Active, 624, 102, 20],
-            ['cordillera', 'R-21', '1UYFS2H88KU212121', 2019, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 60],
-            ['northline', 'NT-9', '1L01A5H21MM090909', 2021, 'Landoll', '440B', 'double_drop', 'IN', EquipmentStatus::PendingVerification, 636, 102, 26],
-            ['bluewater', 'BW-T4', '1UYFS2H85JU040404', 2018, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 58],
+            ['atlas', 'T-220', '1JJV53HW0LL220220', 2020, 'Wabash', 'Step deck', 'step_deck', 'TX', EquipmentStatus::Active, 636, 102, 39, 'owned', null, null, 'spread', [121]],
+            ['atlas', 'T-310', '5JYD53HB6MP310310', 2021, 'Trail King', 'RGN 55T', 'rgn', 'TX', EquipmentStatus::Active, 636, 102, 22, 'lease_to_own', 'Arrendadora Norte de Equipos, S. de R.L.', $vence(720), 'quad + jeep', [61, 61, 61, 61]],
+            ['cordillera', 'R-14', '1DW1A5H23NS141414', 2022, 'Fontaine', 'Magnitude 55L', 'lowboy', 'TX', EquipmentStatus::Active, 624, 102, 20, 'owned', null, null, 'quad', [59, 59, 59, 59]],
+            ['cordillera', 'R-21', '1UYFS2H88KU212121', 2019, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 60, 'leased', 'Bravo Fleet Leasing, LLC', $vence(300), 'tandem', [49]],
+            ['northline', 'NT-9', '1L01A5H21MM090909', 2021, 'Landoll', '440B', 'double_drop', 'IN', EquipmentStatus::PendingVerification, 636, 102, 26, 'owned', null, null, 'tandem', [49]],
+            ['bluewater', 'BW-T4', '1UYFS2H85JU040404', 2018, 'Utility', 'Flatbed 48', 'flatbed', 'TX', EquipmentStatus::Active, 576, 102, 58, 'owned', null, null, 'tandem', [49]],
         ];
 
-        foreach ($trailers as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $len, $wid, $deck]) {
-            $this->upsert('trailers', ['vin_normalized' => $vin], [
+        foreach ($trailers as [$carrier, $unit, $vin, $year, $make, $model, $type, $state, $status, $len, $wid, $deck, $propiedad, $arrendador, $vencimiento, $config, $huecos]) {
+            $id = $this->upsert('trailers', ['vin_normalized' => $vin], [
                 'carrier_id' => $carriers[$carrier],
                 'unit_number' => $unit,
                 'vin' => $vin,
@@ -705,7 +733,14 @@ class DemoDataSeeder extends Seeder
                 'width_inches' => $wid,
                 'deck_height_inches' => $deck,
                 'capacity_pounds' => in_array($type, ['rgn', 'lowboy'], true) ? 110_000 : 48_000,
-                'axle_count' => in_array($type, ['rgn', 'lowboy'], true) ? 5 : 2,
+                // Los huecos mandan: con cuatro distancias hay cinco ejes.
+                // Escribirlo así y no con una segunda lista de casos evita que
+                // un día digan cosas distintas.
+                'axle_count' => count($huecos) + 1,
+                'axle_configuration' => $config,
+                'ownership' => $propiedad,
+                'lessor_name' => $arrendador,
+                'lease_ends_on' => $vencimiento,
                 'removable_gooseneck' => $type === 'rgn',
                 'is_extendable' => in_array($type, ['rgn', 'double_drop'], true),
                 'status' => $status->value,
@@ -714,6 +749,8 @@ class DemoDataSeeder extends Seeder
                 'next_inspection_due_at' => $now->copy()->addDays(random_int(20, 300)),
                 'coi_verification_status' => $status === EquipmentStatus::Active ? 'verified' : 'pending',
             ]);
+
+            AxleSpacings::guardar($this->tenantId, AxleSpacings::REMOLQUE, $id, $huecos);
         }
     }
 

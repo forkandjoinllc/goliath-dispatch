@@ -3860,3 +3860,57 @@ solo aparece por un camino que el producto no usa, sospechar del camino.
 **Y el paseo por el navegador fue lo que lo zanjó.** La misma consulta desde la
 pantalla de verdad, en los dos idiomas, rellenando Marca y Año y diciendo por
 qué el Modelo se queda en blanco.
+
+## Lote 35 — la ficha de la unidad
+
+**El defecto ya diagnosticado, una pantalla más allá.** Filtrar los tipos de
+equipo por categoría en el alta de una unidad era una línea. Lo que costó fue
+preguntarse **quién más ofrece esa lista**: el alta de una carga ofrecía los dos
+tipos de tractor como «equipo requerido». Tercera vez en cinco lotes que la
+corrección correcta estaba incompleta por no haber buscado el segundo sitio. El
+registro con las dos direcciones es lo que convierte el hallazgo en una
+pregunta que se le hace sola al tercero.
+
+**Un argumento opcional es una forma de olvidarse.** `choices($actor, ?string
+$type = null)` devolvía los nueve tipos cuando nadie pasaba la clase, sin que
+nada fallara. Hacerlo obligatorio —y sacar a su propio método lo que de verdad
+no necesitaba la clase— no arregla un defecto: **quita el sitio donde el defecto
+puede volver**. Vale más que el guardián que lo vigilaría.
+
+**El mismo dato leído tres veces con tres valores por omisión.** `columns()`
+leía `ownership` tres veces: una con `?? 'owned'` y dos con `?? ''`. Una
+petición sin el campo guardaba «propia» con el arrendador puesto. No lo encontró
+una prueba: lo encontró escribir la prueba, que obligó a decir en voz alta qué
+tenía que pasar en ese caso.
+
+**Una aserción que no podía fallar, otra vez.** Escribí
+`assertStringContainsString($aguja, $js . $php . $aguja)` — la aguja concatenada
+a lo buscado. Pasaba siempre. La cacé releyendo antes de correr el sabotaje, no
+después; el sabotaje la habría cazado igual, que es el motivo de que haya uno
+por guardián.
+
+**Un sabotaje nulo porque otra fila decía lo mismo.** Poner «propia» en un
+tractor arrendado no rompía la invariante de que la demostración enseñe las tres
+propiedades: quedaban otras dos filas arrendadas. Lo que sí la rompe es quitar
+el único valor que aparece dos veces. **Sexta vez que un sabotaje verde enseña
+que hay que apuntar a lo que de verdad sostiene la afirmación**, y no a lo
+primero que la toca.
+
+**El plural, otra vez, en un mensaje con tres números.** «Con 3 ejes hay 2
+huecos, y se dieron 1». `Plural::key` resuelve UNA cantidad por clave, así que
+el mensaje se partió en dos: cuando no hay ejes suficientes, el texto que toca
+no es «faltan 0 distancias» sino el que dice por dónde se empieza; y el resto va
+con su hermana singular. La regla general: **si una frase necesita concordar dos
+números, la frase está mal escrita, no falta mecanismo**.
+
+**Lo dejaría sin poder guardar.** `cuadran()` exigía exactamente n-1 distancias
+para n ejes, y las fichas que ya existen tienen ejes y no tienen distancias: la
+tabla acaba de nacer. La regla correcta son tres respuestas y no dos —ninguna,
+todas, algunas—, y la de «ninguna» es la que deja entrar al producto que ya
+está en marcha. Al añadir una exigencia nueva, mirar siempre qué pasa con lo que
+ya hay guardado.
+
+**Y el paseo por el navegador enseñó dos cosas que ninguna prueba vio:** que el
+total de las distancias se pegaba al listado sin separador visible, y que el
+formulario de la demostración chocaba con un VIN ya sembrado — lo segundo era
+culpa del paseo, no del producto, pero lo primero solo se ve mirando.
