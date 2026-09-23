@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\App;
 
+use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
@@ -13,6 +14,7 @@ use App\Support\Audit;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
+use App\Support\Fleet\StandingAssignment;
 use App\Support\Loads\DriverEligibility;
 use App\Support\Loads\DriverFacts;
 use Carbon\CarbonImmutable;
@@ -188,7 +190,89 @@ final class LoadAssignmentController
             ]);
         });
 
+        // Poner al conductor trae SU equipo habitual, si la carga no tenía ya
+        // camión o remolque. Es lo que hace a mano quien despacha, cada vez, y
+        // el día que se equivoca pone el camión de otro.
+        $traido = $data['resource_type'] === 'driver'
+            ? $this->prerrellenaConSuEquipo($model, (string) $data['resource_id'], $actor)
+            : [];
+
+        if ($traido !== []) {
+            return back()->with('success', __('loads.assign.driverDoneWithEquipment', [
+                'equipment' => implode(' · ', $traido),
+            ]));
+        }
+
         return back()->with('success', __("loads.assign.{$data['resource_type']}Done"));
+    }
+
+    /**
+     * El camión y el remolque habituales del conductor, si caben.
+     *
+     * **Si caben** quiere decir tres cosas, y las tres importan:
+     *
+     *  - La carga NO tiene ya ese recurso puesto. Prerrellenar es rellenar lo
+     *    vacío; pisar lo que alguien eligió a mano sería otra cosa.
+     *  - La unidad pasa la MISMA puerta que pasaría puesta a mano
+     *    (`checkResource`): del transportista de la carga, verificada, en
+     *    servicio. Un atajo que se salta la puerta es un atajo que mete en la
+     *    carga lo que la puerta existe para dejar fuera.
+     *  - Y si no cabe, no se dice que se trajo. El aviso nombra lo que de
+     *    verdad entró, y cuando no entró nada es el aviso de siempre.
+     *
+     * Devuelve los números de unidad que entraron, para poder decirlo.
+     *
+     * @return list<string>
+     */
+    private function prerrellenaConSuEquipo(Load $model, string $driverId, Actor $actor): array
+    {
+        $fija = StandingAssignment::deConductor((string) $model->tenant_id, $driverId);
+
+        if ($fija === null) {
+            return [];
+        }
+
+        $traido = [];
+
+        foreach ([['truck', $fija['truckId']], ['trailer', $fija['trailerId']]] as [$tipo, $id]) {
+            if ($id === null) {
+                continue;
+            }
+
+            $ocupado = DB::table('load_assignments')
+                ->where('load_id', $model->id)
+                ->where('resource_type', $tipo)
+                ->whereNull('unassigned_at')
+                ->whereNull('deleted_at')
+                ->exists();
+
+            if ($ocupado || $this->checkResource($model, $tipo, $id) !== null) {
+                continue;
+            }
+
+            DB::table('load_assignments')->insert([
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $model->tenant_id,
+                'load_id' => $model->id,
+                'resource_type' => $tipo,
+                $tipo.'_id' => $id,
+                'is_primary' => true,
+                'assigned_by_user_id' => $actor->auditUserId(),
+                'compliance_snapshot' => json_encode($this->snapshot($model, $tipo, $id)),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $numero = DB::table($tipo === 'truck' ? 'trucks' : 'trailers')
+                ->where('id', $id)
+                ->value('unit_number');
+
+            if ($numero !== null) {
+                $traido[] = (string) $numero;
+            }
+        }
+
+        return $traido;
     }
 
     public function unassign(

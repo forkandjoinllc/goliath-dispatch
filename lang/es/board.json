@@ -1,0 +1,56 @@
+{
+    "title": "Despacho",
+    "subtitle": "Lo que está pasando ahora mismo: las cargas, dónde están y quién puede llevarlas.",
+    "tabs": {
+        "unassigned": "Sin asignar",
+        "assigned": "Asignadas",
+        "done": "Completadas"
+    },
+    "loads": {
+        "title": "Cargas",
+        "emptyUnassigned": "Ninguna carga espera conductor.",
+        "emptyAssigned": "Ninguna carga en curso.",
+        "emptyDone": "Ninguna carga entregada todavía.",
+        "noDriver": "Sin conductor",
+        "noEquipment": "Sin equipo",
+        "noCustomer": "Sin cliente",
+        "noStop": "Sin parada programada",
+        "noDate": "Sin fecha",
+        "open": "Abrir la carga",
+        "denied": "Su rol no alcanza las cargas."
+    },
+    "stop": {
+        "pickup": "Recogida",
+        "delivery": "Entrega"
+    },
+    "map": {
+        "title": "En el mapa",
+        "empty": "Ninguna carga en curso que situar.",
+        "noTiles": "Sin mapa debajo.",
+        "noTilesHint": "Los puntos están en su sitio y el zoom funciona; lo que falta es la carretera. Se enciende poniendo la clave de Google Maps en el servidor.",
+        "withoutSignal": "{n} cargas en curso sin posición recibida.",
+        "withoutSignalOne": "{n} carga en curso sin posición recibida.",
+        "withoutSignalHint": "Las posiciones entran por carga, desde el proveedor de rastreo. Sin sesión abierta, o sin nada recibido en las últimas horas, no hay punto que pintar — y colocar el camión donde estuvo ayer sería peor.",
+        "zoomIn": "Acercar",
+        "zoomOut": "Alejar",
+        "recenter": "Centrar",
+        "legendPickup": "Recogida",
+        "legendDelivery": "Entrega",
+        "legendUnit": "Camión",
+        "reportedBy": "Según {provider}",
+        "manualSource": "una persona de despacho",
+        "at": "a las {time}"
+    },
+    "drivers": {
+        "title": "Conductores",
+        "empty": "Ningún conductor a la vista.",
+        "noEquipment": "Sin equipo asignado",
+        "noPhone": "Sin teléfono",
+        "call": "Llamar a {name}",
+        "denied": "Su rol no alcanza los conductores."
+    },
+    "refreshed": {
+        "label": "Actualizado {time}",
+        "auto": "Se refresca solo cada minuto."
+    }
+}

@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\AssignmentController;
 use App\Http\Controllers\App\AuditController;
+use App\Http\Controllers\App\BillingController;
+use App\Http\Controllers\App\BoardController;
 use App\Http\Controllers\App\CarrierController;
 use App\Http\Controllers\App\CarrierOnboardingController;
 use App\Http\Controllers\App\CommissionController;
 use App\Http\Controllers\App\CustomerController;
+use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DocumentController;
+use App\Http\Controllers\App\DocumentFileController;
 use App\Http\Controllers\App\DriverController;
+use App\Http\Controllers\App\DriverEquipmentController;
 use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\ExpenseController;
 use App\Http\Controllers\App\FactoringController;
@@ -18,20 +22,16 @@ use App\Http\Controllers\App\InvoiceController;
 use App\Http\Controllers\App\LeadController;
 use App\Http\Controllers\App\LoadAssignmentController;
 use App\Http\Controllers\App\LoadController;
+use App\Http\Controllers\App\LoadDocumentController;
 use App\Http\Controllers\App\LocaleController;
+use App\Http\Controllers\App\MessageController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\OnboardingController;
 use App\Http\Controllers\App\PaymentController;
 use App\Http\Controllers\App\PermitController;
-use App\Http\Controllers\Platform\HealthController;
-use App\Http\Controllers\Platform\PlanController;
-use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
-use App\Http\Controllers\App\BillingController;
-use App\Http\Controllers\App\LoadDocumentController;
-use App\Http\Controllers\App\MessageController;
-use App\Http\Controllers\App\RetentionController;
 use App\Http\Controllers\App\RateConfirmationController;
 use App\Http\Controllers\App\ReportController;
+use App\Http\Controllers\App\RetentionController;
 use App\Http\Controllers\App\SettlementController;
 use App\Http\Controllers\App\SignatureController;
 use App\Http\Controllers\App\TenantSettingController;
@@ -40,6 +40,9 @@ use App\Http\Controllers\App\TrackingController;
 use App\Http\Controllers\App\UserController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\SignupController;
+use App\Http\Controllers\Platform\HealthController;
+use App\Http\Controllers\Platform\PlanController;
+use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -97,7 +100,13 @@ Route::middleware('throttle:10,60')->group(function (): void {
 */
 
 Route::middleware(['auth'])->group(function (): void {
-    Route::get('home', DashboardController::class)->name('home');
+    // La raíz es el TABLERO de despacho: las cargas, el mapa y los
+    // conductores. Es lo que se mira todo el día, así que es lo que se abre.
+    Route::get('home', BoardController::class)->name('home');
+
+    // Y el panel de siempre —lo pendiente y lo que el rol alcanza— pasa a
+    // Análisis, que es donde se mira de vez en cuando.
+    Route::get('insight/dashboard', DashboardController::class)->name('insight.dashboard');
     Route::post('switch-tenant', [DashboardController::class, 'switchTenant'])->name('tenant.switch');
     Route::post('locale', LocaleController::class)->name('locale.update');
 
@@ -187,6 +196,13 @@ Route::middleware(['auth'])->group(function (): void {
         ->name('drivers.verify');
     // El consentimiento de rastreo. Ámbito propio: solo el conductor sobre su
     // propia ficha. Ver App\Support\Tracking\Consent.
+    // El equipo HABITUAL de un conductor. Prerrellena la asignación de la
+    // carga; `load_assignments` sigue mandando en lo que de verdad se despacha.
+    Route::post('drivers/{driver}/equipment', [DriverEquipmentController::class, 'store'])
+        ->name('drivers.equipment.store');
+    Route::post('drivers/{driver}/equipment/{assignment}/end', [DriverEquipmentController::class, 'end'])
+        ->name('drivers.equipment.end');
+
     Route::post('drivers/{driver}/tracking-consent', [DriverController::class, 'consent'])
         ->name('drivers.trackingConsent');
 
@@ -651,6 +667,6 @@ Route::middleware(['auth'])->group(function (): void {
 | dentro de la firma, así que cambiarla invalida la firma entera.
 |
 */
-Route::get('documents/file/{key}', [App\Http\Controllers\App\DocumentFileController::class, '__invoke'])
+Route::get('documents/file/{key}', [DocumentFileController::class, '__invoke'])
     ->middleware('signed')
     ->name('documents.file');

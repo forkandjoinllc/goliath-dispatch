@@ -107,7 +107,7 @@ it('cada entrada declara si su pantalla existe', function () {
 
     expect($apagadas)->toBe([], implode("\n", [
         'Entradas del menú sin pantalla: '.implode(', ', $apagadas),
-        'O se construye, o se añade a Navigation::BUILT, o se cambia esta prueba con el motivo.',
+        'O se construye, o se añade a Navigation::construidas(), o se cambia esta prueba con el motivo.',
     ]));
 });
 

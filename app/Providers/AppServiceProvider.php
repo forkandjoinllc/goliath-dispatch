@@ -18,6 +18,9 @@ use App\Services\Fmcsa\MockFmcsaVerifier;
 use App\Services\Fmcsa\QcMobileDirectory;
 use App\Services\Malware\FileScanner;
 use App\Services\Malware\UnavailableFileScanner;
+use App\Services\Map\GoogleMapProvider;
+use App\Services\Map\MapProvider;
+use App\Services\Map\PlainMapProvider;
 use App\Services\Payments\InvoicePaymentProvider;
 use App\Services\Payments\MockInvoicePaymentProvider;
 use App\Services\Tracking\StopDerivedTrackingProvider;
@@ -81,6 +84,27 @@ class AppServiceProvider extends ServiceProvider
         // hay ninguna que mirar todavía: no existe el adaptador real. Cuando
         // exista, este `singleton` se parecerá a los otros dos.
         $this->app->singleton(TrackingProvider::class, StopDerivedTrackingProvider::class);
+
+        /*
+         * El fondo del mapa del tablero.
+         *
+         * Sin clave se ata el de fondo liso, que hace de verdad lo que hay que
+         * hacer —cada punto en su sitio y el zoom— y solo le falta la
+         * carretera. Un tablero que no se puede abrir sin cuenta de Google
+         * sería un tablero que no se puede probar.
+         */
+        $this->app->singleton(MapProvider::class, function ($app): MapProvider {
+            $clave = (string) ($app['config']->get('services.google_maps.key') ?? '');
+
+            if ($clave === '') {
+                return new PlainMapProvider;
+            }
+
+            return new GoogleMapProvider(
+                $clave,
+                $app['config']->get('services.google_maps.map_id'),
+            );
+        });
 
         // Quién mira los ficheros que se suben. Hoy nadie: el adaptador atado no
         // analiza y lo dice —devuelve `unavailable`, nunca `clean`—, y la

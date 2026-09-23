@@ -59,6 +59,11 @@ final class Navigation
             ['factoring', 'factoring', ['factoring:read']],
         ],
         'insight' => [
+            // El panel de siempre —lo pendiente y lo que el rol alcanza— vive
+            // aquí, no en la raíz: la raíz es el tablero de despacho, que es lo
+            // que se mira TODO el día. Sin permisos que declarar, porque no hay
+            // usuario al que negárselo: enseña lo que ese usuario ya puede ver.
+            ['insight/dashboard', 'dashboard', []],
             ['reports', 'reports', ['report:read']],
         ],
         'administration' => [
@@ -85,7 +90,21 @@ final class Navigation
      * responde «¿está terminada?», que es lo que le importa a quien mira el menú,
      * y se amplía a mano al cerrar cada dominio.
      */
-    private const BUILT = ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages', 'retention', 'billing'];
+    /**
+     * Rutas cuya pantalla existe de verdad. El resto se pinta apagada.
+     *
+     * Un método y no una constante: hoy están TODAS, y con una constante el
+     * análisis estático demuestra que `ready` sale siempre verdadero y lo
+     * señala como comparación inútil. No lo es. Lo que vigila es la entrada que
+     * alguien añada mañana sin pantalla detrás, y `NavigationTest` falla
+     * nombrándola.
+     *
+     * @return list<string>
+     */
+    private static function construidas(): array
+    {
+        return ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages', 'retention', 'billing', 'insight/dashboard'];
+    }
 
     /**
      * Entradas que solo tienen sentido con alcance de empresa.
@@ -101,10 +120,6 @@ final class Navigation
      */
     private const TENANT_ONLY = ['factoring'];
 
-    /**
-     * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
-     * @return list<array{key: string, labelKey: string, items: list<array{href: string, labelKey: string, ready: bool}>}>
-     */
     /**
      * Ruta => permisos que la habilitan, para todo el menú.
      *
@@ -128,6 +143,12 @@ final class Navigation
         return $mapa;
     }
 
+    /**
+     * El menú de este actor, por grupos.
+     *
+     * @param  array{allow_dispatcher_resource_assignment?: bool}|null  $policy
+     * @return list<array{key: string, labelKey: string, items: list<array{href: string, labelKey: string, ready: bool}>}>
+     */
     public static function for(Actor $actor, PermissionChecker $checker, ?array $policy = null): array
     {
         $groups = [];
@@ -136,7 +157,10 @@ final class Navigation
             $items = [];
 
             foreach ($entries as [$route, $label, $permissions]) {
-                if (! $checker->canAny($actor, $permissions, $policy)) {
+                // Sin permisos declarados quiere decir «para todos». No es un
+                // agujero: son las pantallas que no enseñan más que lo que
+                // quien mira ya tiene derecho a ver.
+                if ($permissions !== [] && ! $checker->canAny($actor, $permissions, $policy)) {
                     continue;
                 }
 
@@ -151,7 +175,7 @@ final class Navigation
                     // `ready` distingue lo construido de lo que todavía no.
                     // Enseñar la entrada en gris es más honesto que ocultarla:
                     // dice que el permiso existe y que la pantalla está por venir.
-                    'ready' => in_array($route, self::BUILT, true),
+                    'ready' => in_array($route, self::construidas(), true),
                 ];
             }
 

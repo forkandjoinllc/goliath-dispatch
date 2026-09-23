@@ -76,6 +76,24 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    /*
+    | Google Maps — el fondo del tablero de despacho.
+    |
+    | Sin clave el tablero sigue funcionando: los PIN de recogida y entrega y
+    | los conductores se dibujan sobre fondo liso, con su zoom, y la pantalla
+    | dice que no hay teselas. Con clave, debajo aparece la carretera.
+    |
+    | Esta clave VIAJA AL NAVEGADOR y es pública por diseño —la API de mapas
+    | corre ahí—. Lo que la protege es restringirla por dominio en la consola de
+    | Google, que es donde hay que hacerlo; esconderla no se puede. Aun así
+    | entra por el `.env` del servidor, porque una clave sin restringir se puede
+    | gastar.
+    */
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_KEY'),
+        'map_id' => env('GOOGLE_MAPS_MAP_ID'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

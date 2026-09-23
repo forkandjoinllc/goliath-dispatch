@@ -1,0 +1,56 @@
+{
+    "title": "Dispatch board",
+    "subtitle": "What is happening right now: the loads, where they are, and who can run them.",
+    "tabs": {
+        "unassigned": "Unassigned",
+        "assigned": "Assigned",
+        "done": "Completed"
+    },
+    "loads": {
+        "title": "Loads",
+        "emptyUnassigned": "No load is waiting for a driver.",
+        "emptyAssigned": "No load is running.",
+        "emptyDone": "No load delivered yet.",
+        "noDriver": "No driver",
+        "noEquipment": "No equipment",
+        "noCustomer": "No customer",
+        "noStop": "No stop scheduled",
+        "noDate": "No date",
+        "open": "Open the load",
+        "denied": "Your role does not reach loads."
+    },
+    "stop": {
+        "pickup": "Pickup",
+        "delivery": "Delivery"
+    },
+    "map": {
+        "title": "On the map",
+        "empty": "No running load to place.",
+        "noTiles": "No map underneath.",
+        "noTilesHint": "The points are where they belong and the zoom works; what is missing is the road. Turn it on by putting the Google Maps key on the server.",
+        "withoutSignal": "{n} running loads with no position received.",
+        "withoutSignalOne": "{n} running load with no position received.",
+        "withoutSignalHint": "Positions come in per load, from the tracking provider. With no session open, or nothing received in the last few hours, there is no point to draw — and putting the truck where it was yesterday would be worse.",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "recenter": "Recenter",
+        "legendPickup": "Pickup",
+        "legendDelivery": "Delivery",
+        "legendUnit": "Truck",
+        "reportedBy": "Per {provider}",
+        "manualSource": "somebody in dispatch",
+        "at": "at {time}"
+    },
+    "drivers": {
+        "title": "Drivers",
+        "empty": "No driver in sight.",
+        "noEquipment": "No equipment assigned",
+        "noPhone": "No phone",
+        "call": "Call {name}",
+        "denied": "Your role does not reach drivers."
+    },
+    "refreshed": {
+        "label": "Updated {time}",
+        "auto": "Refreshes itself every minute."
+    }
+}

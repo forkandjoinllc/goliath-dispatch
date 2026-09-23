@@ -186,5 +186,33 @@
     "O": "Sin tractocamión con remolque",
     "M": "Sin autobús Clase A",
     "V": "Se requiere documentación de exención médica"
+  },
+  "standing": {
+    "title": "Equipo habitual",
+    "hint": "Con qué anda normalmente. Prerrellena la asignación de la carga y ahí se puede cambiar: lo que de verdad se despachó lo guarda la carga.",
+    "truck": "Camión",
+    "trailer": "Remolque",
+    "trailerOptional": "Sin remolque fijo",
+    "startsOn": "Desde",
+    "endsOn": "Hasta",
+    "endsOnHint": "En blanco mientras siga vigente.",
+    "notes": "Nota",
+    "save": "Asignar",
+    "end": "Terminar",
+    "current": "Vigente",
+    "none": "Este conductor no tiene equipo asignado.",
+    "since": "Desde {date}",
+    "until": "hasta {date}",
+    "open": "sin fecha de fin",
+    "history": "Antes",
+    "chooseTruck": "Elija un camión",
+    "noTruckMatches": "Ningún camión coincide.",
+    "chooseTrailer": "Elija un remolque",
+    "noTrailerMatches": "Ningún remolque coincide.",
+    "driverBusy": "Este conductor ya tiene equipo asignado en esas fechas. Termine la asignación anterior antes de poner otra.",
+    "truckBusy": "Ese camión ya está asignado a otro conductor en esas fechas. Un camión no puede estar con dos conductores a la vez.",
+    "notYours": "Esa unidad no es de su empresa.",
+    "saved": "Equipo asignado.",
+    "ended": "Asignación terminada."
   }
 }

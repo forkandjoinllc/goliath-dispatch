@@ -98,7 +98,7 @@ export function Sidebar({ groups }: { groups: NavGroup[] }) {
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="flex flex-col gap-1">
           <Item
-            item={{ href: '/home', labelKey: 'nav.primary.dashboard', ready: true }}
+            item={{ href: '/home', labelKey: 'nav.primary.board', ready: true }}
             current={current}
           />
         </ul>

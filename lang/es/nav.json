@@ -1,6 +1,7 @@
 {
     "primary": {
         "dashboard": "Panel",
+        "board": "Despacho",
         "loads": "Cargas",
         "carriers": "Transportistas",
         "customers": "Clientes",

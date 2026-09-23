@@ -18,11 +18,18 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * un 404 en producción. Las pruebas del módulo no lo vieron porque llamaban a
  * las rutas por su URL, y en el entorno donde se escribieron sí estaban.
  *
- * `Navigation::BUILT` es la lista que dice «esta pantalla existe de verdad».
- * Es la afirmación que hay que poder respaldar.
+ * `Navigation::construidas()` es la lista que dice «esta pantalla existe de
+ * verdad». Es la afirmación que hay que poder respaldar. Era una constante
+ * hasta que todas las entradas quedaron construidas y el análisis estático
+ * demostró que `ready` ya no podía salir falso; pasó a método para que no lo dé
+ * por decidido, y lo que dice sigue siendo lo mismo.
  */
 it('toda entrada del menú marcada como terminada resuelve a una ruta', function () {
-    $rutas = (new ReflectionClass(Navigation::class))->getConstant('BUILT');
+    $metodo = (new ReflectionClass(Navigation::class))->getMethod('construidas');
+    $metodo->setAccessible(true);
+
+    /** @var list<string> $rutas */
+    $rutas = $metodo->invoke(null);
 
     expect($rutas)->toBeArray()->not->toBeEmpty();
 

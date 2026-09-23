@@ -74,7 +74,7 @@ function filasDelDestino(string $href): int
 function tarjetasDelDestino(): array
 {
     $props = json_decode((string) json_encode(
-        test()->get('/home')->assertOk()->viewData('page')['props'] ?? []
+        test()->get('/insight/dashboard')->assertOk()->viewData('page')['props'] ?? []
     ), true);
 
     $salida = [];

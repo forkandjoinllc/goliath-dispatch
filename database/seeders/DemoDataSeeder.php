@@ -17,6 +17,7 @@ use App\Enums\VerificationStatus;
 use App\Models\Load;
 use App\Services\Malware\ScanVerdict;
 use App\Services\Malware\UnavailableFileScanner;
+use App\Services\Tracking\PositionReport;
 use App\Support\Customers\NameKey;
 use App\Support\Documents\Scanning;
 use App\Support\Equipment\AxleSpacings;
@@ -28,6 +29,7 @@ use App\Support\Finance\SettlementBuilder;
 use App\Support\Oversize\DefaultRules;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use App\Support\Tracking\Ingestion;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -120,7 +122,12 @@ class DemoDataSeeder extends Seeder
                 // saber cuál para darle cargas. Al revés, la cuenta de
                 // conductor entraba con sus quince permisos y una lista vacía.
                 $this->linkDemoUsers($carriers, $drivers);
+                // El equipo habitual va ANTES que las cargas: asignar un
+                // conductor a una carga trae su camión, y si la asignación fija
+                // no existiera todavía no traería nada.
+                $this->equipoHabitual($drivers);
                 $this->loads($carriers, $customers, $drivers, $equipment);
+                $this->posiciones();
                 $this->expenses();
                 // El dinero va DESPUÉS de los gastos a propósito: la
                 // instantánea que congela cada factura tiene que incluirlos, y
@@ -755,6 +762,159 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
+     * Con qué anda cada conductor: su camión y su remolque de siempre.
+     *
+     * Uno por conductor y uno por camión, que es la regla que sostiene
+     * `Support\Fleet\StandingAssignment`. Dos casos van a propósito:
+     *
+     *  - **Mensah no tiene remolque fijo.** En una flota los remolques se
+     *    sueltan y se recogen, y un tablero donde todos tienen remolque no
+     *    enseña nunca el hueco.
+     *  - **De la Torre lleva el C-12, que está EN EL TALLER.** Su camión de
+     *    siempre sigue siendo el suyo mientras lo arreglan, y al asignarla a una
+     *    carga el prerrellenado no se lo pone —la unidad no pasa la puerta—,
+     *    que es justo lo que hay que poder ver antes de que pase en serio.
+     *
+     * @param  array<string, string>  $drivers
+     */
+    /**
+     * Dónde está cada carga que está rodando.
+     *
+     * ## Por la puerta de la aplicación, no por la de atrás
+     *
+     * Se escriben con `Ingestion::manual()`, que es la misma puerta que usa el
+     * despachador cuando cuelga el teléfono y anota dónde va el camión. Un
+     * `insert` a mano podría escribir una posición que ninguna ruta puede
+     * producir —sin sesión, con un proveedor que la base rechaza, o de un
+     * conductor que no consintió—, y la demostración enseñaría un estado que el
+     * producto no sabe alcanzar.
+     *
+     * ## Y por qué `manual` y no un proveedor
+     *
+     * Porque rastrear a una PERSONA exige su consentimiento, y en la
+     * demostración solo una cuenta de conductor está atada a un conductor. Un
+     * parte escrito por despacho no es seguimiento de una persona —lo dice
+     * `Ingestion::manual()` con esas palabras— y por eso no lo exige. El
+     * tablero lo enseña con su procedencia: «según una persona de despacho», no
+     * «según el GPS».
+     *
+     * ## Una carga viva se queda SIN posición, a propósito
+     *
+     * El tablero cuenta las que no tienen y dice por qué. Si todas tuvieran,
+     * ese aviso no se vería nunca hasta llegar a producción sin proveedor
+     * atado.
+     */
+    private function posiciones(): void
+    {
+        $rodando = [
+            LoadStatus::Dispatched->value,
+            LoadStatus::EnRouteToPickup->value,
+            LoadStatus::AtPickup->value,
+            LoadStatus::InTransit->value,
+            LoadStatus::AtDelivery->value,
+        ];
+
+        // Cuánto del camino lleva hecho, según en qué va. No es un cálculo de
+        // ruta: es dónde ponerlo para que el mapa se entienda.
+        $avance = [
+            LoadStatus::Dispatched->value => 0.05,
+            LoadStatus::EnRouteToPickup->value => 0.1,
+            LoadStatus::AtPickup->value => 0.0,
+            LoadStatus::InTransit->value => 0.55,
+            LoadStatus::AtDelivery->value => 1.0,
+        ];
+
+        $cargas = DB::table('loads')
+            ->where('tenant_id', $this->tenantId)
+            ->whereIn('status', $rodando)
+            ->whereNull('deleted_at')
+            ->orderBy('load_number')
+            ->get(['id', 'load_number', 'status']);
+
+        $ahora = CarbonImmutable::now();
+        $saltada = false;
+
+        foreach ($cargas as $carga) {
+            // La primera se queda sin posición: es la que enseña el aviso.
+            if (! $saltada) {
+                $saltada = true;
+
+                continue;
+            }
+
+            $extremos = DB::table('load_stops as s')
+                ->join('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+                ->where('s.load_id', $carga->id)
+                ->whereNull('s.deleted_at')
+                ->orderBy('s.sequence')
+                ->get(['s.stop_type', 'cl.latitude', 'cl.longitude', 'cl.city', 'cl.state']);
+
+            if ($extremos->count() < 2) {
+                continue;
+            }
+
+            $origen = $extremos->first();
+            $destino = $extremos->last();
+            $t = $avance[(string) $carga->status] ?? 0.5;
+
+            $lat = (float) $origen->latitude + ((float) $destino->latitude - (float) $origen->latitude) * $t;
+            $lng = (float) $origen->longitude + ((float) $destino->longitude - (float) $origen->longitude) * $t;
+
+            Ingestion::manual($this->tenantId, (string) $carga->id, new PositionReport(
+                eventType: 'location_update',
+                occurredAt: $ahora->subMinutes(random_int(8, 40)),
+                reference: 'demo-'.$carga->load_number,
+                locationLabel: $t >= 0.98
+                    ? $destino->city.', '.$destino->state
+                    : 'En ruta a '.$destino->city.', '.$destino->state,
+                latitude: (string) round($lat, 5),
+                longitude: (string) round($lng, 5),
+            ));
+        }
+    }
+
+    private function equipoHabitual(array $drivers): void
+    {
+        $desde = Carbon::now()->subMonths(8)->toDateString();
+
+        $pares = [
+            ['salas', '101', 'T-220'],
+            ['brennan', '104', 'T-310'],
+            ['quiroga', 'C-07', 'R-14'],
+            ['delatorre', 'C-12', 'R-21'],
+            ['okafor', 'NR-3', 'NT-9'],
+            ['mensah', 'BW-2', null],
+        ];
+
+        foreach ($pares as [$conductor, $camion, $remolque]) {
+            if (! isset($drivers[$conductor])) {
+                continue;
+            }
+
+            $truckId = DB::table('trucks')
+                ->where('tenant_id', $this->tenantId)
+                ->where('unit_number', $camion)
+                ->value('id');
+
+            if ($truckId === null) {
+                continue;
+            }
+
+            $trailerId = $remolque === null ? null : DB::table('trailers')
+                ->where('tenant_id', $this->tenantId)
+                ->where('unit_number', $remolque)
+                ->value('id');
+
+            $this->upsert('driver_equipment_assignments', ['driver_id' => $drivers[$conductor]], [
+                'truck_id' => (string) $truckId,
+                'trailer_id' => $trailerId === null ? null : (string) $trailerId,
+                'starts_on' => $desde,
+                'ends_on' => null,
+            ]);
+        }
+    }
+
+    /**
      * @param  array<string, string>  $carriers
      * @return array<string, string>
      */
@@ -853,8 +1013,8 @@ class DemoDataSeeder extends Seeder
                     ['Alan', 'Petrov', 'ap@permianequip.test', 'billing', 'en'],
                 ],
                 'locations' => [
-                    ['yard', 'Midland Yard', '5900 West Industrial Avenue', 'Midland', 'TX', '79706'],
-                    ['plant', 'Odessa Fabrication Plant', '1400 North Grandview Avenue', 'Odessa', 'TX', '79761'],
+                    ['yard', 'Midland Yard', '5900 West Industrial Avenue', 'Midland', 'TX', '79706', 31.9973, -102.0779],
+                    ['plant', 'Odessa Fabrication Plant', '1400 North Grandview Avenue', 'Odessa', 'TX', '79761', 31.8457, -102.3676],
                 ],
             ],
             [
@@ -868,8 +1028,8 @@ class DemoDataSeeder extends Seeder
                     ['Kimberly', 'Reed', 'cuentas@acerosdelgado.test', 'billing', 'en'],
                 ],
                 'locations' => [
-                    ['bodega', 'Bodega Laredo', '8100 San Dario Avenue', 'Laredo', 'TX', '78041'],
-                    ['patio', 'Patio San Antonio', '4700 Rittiman Road', 'San Antonio', 'TX', '78218'],
+                    ['bodega', 'Bodega Laredo', '8100 San Dario Avenue', 'Laredo', 'TX', '78041', 27.5064, -99.5075],
+                    ['patio', 'Patio San Antonio', '4700 Rittiman Road', 'San Antonio', 'TX', '78218', 29.4241, -98.4936],
                 ],
             ],
             [
@@ -882,8 +1042,8 @@ class DemoDataSeeder extends Seeder
                     ['Ana', 'Beltrán', 'ana.beltran@harborworks.test', 'dock', 'es'],
                 ],
                 'locations' => [
-                    ['dock', 'Savannah Dock 4', '2200 President Street', 'Savannah', 'GA', '31404'],
-                    ['yard', 'Brunswick Lay-Down Yard', '1900 Newcastle Street', 'Brunswick', 'GA', '31520'],
+                    ['dock', 'Savannah Dock 4', '2200 President Street', 'Savannah', 'GA', '31404', 32.0809, -81.0912],
+                    ['yard', 'Brunswick Lay-Down Yard', '1900 Newcastle Street', 'Brunswick', 'GA', '31520', 31.1499, -81.4915],
                 ],
             ],
             [
@@ -897,8 +1057,8 @@ class DemoDataSeeder extends Seeder
                     ['Grace', 'Okafor', 'accounts@glwindcomp.test', 'billing', 'en'],
                 ],
                 'locations' => [
-                    ['plant', 'Gary Component Plant', '6100 Industrial Highway', 'Gary', 'IN', '46403'],
-                    ['staging', 'Peoria Staging Field', '3300 West Farmington Road', 'Peoria', 'IL', '61604'],
+                    ['plant', 'Gary Component Plant', '6100 Industrial Highway', 'Gary', 'IN', '46403', 41.5934, -87.3464],
+                    ['staging', 'Peoria Staging Field', '3300 West Farmington Road', 'Peoria', 'IL', '61604', 40.6936, -89.5890],
                 ],
             ],
         ];
@@ -956,7 +1116,12 @@ class DemoDataSeeder extends Seeder
 
             $locations = [];
 
-            foreach ($r['locations'] as $i => [$slug, $name, $line1, $city, $state, $zip]) {
+            // Las coordenadas son el CENTRO DEL MUNICIPIO, no la dirección
+            // inventada de al lado: un municipio existe y su centro es un dato
+            // público; el número de la calle no. Sin ellas el mapa del tablero
+            // no tenía un solo PIN que pintar, y la mitad del tablero era un
+            // rectángulo gris.
+            foreach ($r['locations'] as $i => [$slug, $name, $line1, $city, $state, $zip, $lat, $lng]) {
                 $locations[$slug] = $this->upsert('customer_locations', [
                     'customer_id' => $customerId,
                     'name' => $name,
@@ -966,6 +1131,8 @@ class DemoDataSeeder extends Seeder
                     'state' => $state,
                     'postal_code' => $zip,
                     'country' => 'US',
+                    'latitude' => (string) $lat,
+                    'longitude' => (string) $lng,
                     'timezone' => in_array($state, ['GA'], true) ? 'America/New_York' : 'America/Chicago',
                     'is_primary' => $i === 0,
                 ]);
@@ -1978,7 +2145,7 @@ class DemoDataSeeder extends Seeder
         $tablas = [
             'carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents',
             'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'customer_contacts', 'customer_contact_locations',
-            'loads', 'load_stops',
+            'loads', 'load_stops', 'driver_equipment_assignments', 'tracking_sessions', 'tracking_events',
             // La mitad del dinero. Sin estas filas la demostración enseñaba
             // facturas, cobros y comisiones vacías, y los informes a cero.
             'expenses', 'financial_snapshots', 'invoices', 'invoice_line_items',

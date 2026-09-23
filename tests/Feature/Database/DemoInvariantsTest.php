@@ -212,6 +212,64 @@ function invariantesDeLaDemostracion(string $tenantId): array
             'case LeaseToOwn',
         ],
 
+        'el equipo habitual no se solapa' => [
+            // Un conductor con dos equipos a la vez deja «¿cuál es su camión?»
+            // con dos respuestas; un camión con dos conductores es un estado
+            // que no existe en la calle. La regla no la puede sostener MySQL
+            // —no hay restricción de exclusión— así que se comprueba sobre la
+            // base sembrada.
+            function () use ($tenantId): int {
+                $filas = DB::table('driver_equipment_assignments')
+                    ->where('tenant_id', $tenantId)
+                    ->whereNull('deleted_at')
+                    ->get(['driver_id', 'truck_id', 'starts_on', 'ends_on']);
+
+                $malas = 0;
+
+                foreach ($filas as $a) {
+                    foreach ($filas as $b) {
+                        if ($a === $b) {
+                            continue;
+                        }
+
+                        $mismo = $a->driver_id === $b->driver_id || $a->truck_id === $b->truck_id;
+
+                        if (! $mismo) {
+                            continue;
+                        }
+
+                        $solapan = ($a->ends_on === null || $a->ends_on >= $b->starts_on)
+                            && ($b->ends_on === null || $b->ends_on >= $a->starts_on);
+
+                        if ($solapan) {
+                            $malas++;
+                        }
+                    }
+                }
+
+                return $malas;
+            },
+            'app/Support/Fleet/StandingAssignment.php',
+            'public static function choques(',
+        ],
+
+        'las paradas sembradas se pueden poner en el mapa' => [
+            // Sin coordenadas el mapa del tablero no tiene un solo PIN que
+            // pintar, y la columna del medio de la pantalla que se mira todo el
+            // día es un rectángulo gris.
+            function () use ($tenantId): int {
+                return DB::table('load_stops as s')
+                    ->leftJoin('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+                    ->where('s.tenant_id', $tenantId)
+                    ->whereNull('s.deleted_at')
+                    ->whereNull('s.latitude')
+                    ->whereNull('cl.latitude')
+                    ->count();
+            },
+            'app/Http/Controllers/App/BoardController.php',
+            'private function paradasEnElMapa(',
+        ],
+
         'una carga que ya rodó tiene camión' => [
             function () use ($tenantId): int {
                 return DB::table('loads')

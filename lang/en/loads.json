@@ -57,7 +57,8 @@
         "scheduleConflict": "Already on {n} loads that overlap this window: {loads}. This does not stop the assignment; it is your call.",
         "scheduleConflictShort": "overlaps {n}",
         "scheduleConflictOne": "Already on load {loads}, which overlaps this window. This does not stop the assignment; it is your call.",
-        "scheduleConflictShortOne": "overlaps another"
+        "scheduleConflictShortOne": "overlaps another",
+        "driverDoneWithEquipment": "Driver assigned, and their usual equipment came with them: {equipment}."
     },
     "blocking": {
         "noPickup": "It has no pickup stop.",

@@ -1,6 +1,8 @@
 import { Link, useForm } from '@inertiajs/react'
 import { useState, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
+import { SearchableSelect } from '@/components/Form/SearchableSelect'
+import { TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
@@ -48,7 +50,27 @@ interface Props {
     commodity: string | null
     plannedPickupAt: string | null
   }[] | null
+  standing: {
+    current: Asignacion | null
+    past: Asignacion[]
+  }
+  /** Nulo cuando quien mira no puede cambiar el equipo: no viaja la flota. */
+  equipmentChoices: {
+    trucks: { id: string; name: string }[]
+    trailers: { id: string; name: string }[]
+  } | null
   can: { update: boolean; approve: boolean; consent: boolean }
+}
+
+interface Asignacion {
+  id: string
+  truckId: string
+  truck: string | null
+  trailerId: string | null
+  trailer: string | null
+  startsOn: string
+  endsOn: string | null
+  notes: string | null
 }
 
 const VERIFICATION_TONE: Record<string, string> = {
@@ -61,7 +83,7 @@ const VERIFICATION_TONE: Record<string, string> = {
   expired: 'bg-danger-50 text-danger-700 ring-danger-500/40',
 }
 
-export default function DriverShow({ driver, carriers, loads, can }: Props) {
+export default function DriverShow({ driver, carriers, loads, standing, equipmentChoices, can }: Props) {
   const { t, locale } = useI18n()
 
   // Días de calendario. La ficha y el listado tenían el mismo ayudante copiado
@@ -172,6 +194,13 @@ export default function DriverShow({ driver, carriers, loads, can }: Props) {
               {t('drivers.detail.licenceHidden')}
             </p>
           </Card>
+
+          <EquipoHabitual
+            driverId={driver.id}
+            standing={standing}
+            choices={equipmentChoices}
+            puedeEditar={can.update}
+          />
 
           <Card title={t('drivers.detail.carriers')}>
             {carriers.length === 0 ? (
@@ -394,6 +423,198 @@ function Expiry({ label, date, flag }: { label: string; date: string; flag: stri
         ) : null}
       </dd>
     </div>
+  )
+}
+
+/**
+ * El equipo habitual: con qué anda este conductor.
+ *
+ * Lo vigente arriba, lo de antes debajo, y el formulario solo si quien mira
+ * puede cambiarlo. El historial no se borra: una carga de marzo se mira con el
+ * camión que se llevó en marzo.
+ */
+function EquipoHabitual({
+  driverId,
+  standing,
+  choices,
+  puedeEditar,
+}: {
+  driverId: string
+  standing: { current: Asignacion | null; past: Asignacion[] }
+  choices: { trucks: { id: string; name: string }[]; trailers: { id: string; name: string }[] } | null
+  puedeEditar: boolean
+}) {
+  const { t, locale } = useI18n()
+  const [abierto, setAbierto] = useState(false)
+
+  const form = useForm({
+    truck_id: '',
+    trailer_id: '',
+    // En blanco y obligatoria: la persona la pone. Rellenarla con «hoy»
+    // exigía construir una fecha en el navegador, y «hoy» en UTC es mañana
+    // para media América — el guardián `CalendarDatesTest` lo vigila.
+    starts_on: '',
+    ends_on: '',
+    notes: '',
+  })
+
+  const fin = useForm({})
+
+  const camion = choices?.trucks.find((c) => c.id === form.data.truck_id) ?? null
+  const remolque = choices?.trailers.find((c) => c.id === form.data.trailer_id) ?? null
+
+  const tramo = (a: Asignacion): string => {
+    const desde = t('drivers.standing.since', { date: formatDay(a.startsOn, locale) })
+
+    return a.endsOn === null
+      ? `${desde} · ${t('drivers.standing.open')}`
+      : `${desde} ${t('drivers.standing.until', { date: formatDay(a.endsOn, locale) })}`
+  }
+
+  return (
+    <Card title={t('drivers.standing.title')}>
+      <p className="text-xs text-steel-600">{t('drivers.standing.hint')}</p>
+
+      {standing.current === null ? (
+        <p className="mt-3 text-sm text-steel-700">{t('drivers.standing.none')}</p>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded border border-steel-200 bg-steel-50 p-3">
+          <span className="rounded bg-success-50 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-success-700">
+            {t('drivers.standing.current')}
+          </span>
+          <span className="text-sm font-medium tabular-nums text-carbon">
+            {standing.current.truck ?? '—'}
+            {standing.current.trailer === null ? '' : ` · ${standing.current.trailer}`}
+          </span>
+          <span className="text-xs text-steel-600">{tramo(standing.current)}</span>
+          {puedeEditar ? (
+            <button
+              type="button"
+              disabled={fin.processing}
+              onClick={() => {
+                fin.post(`/drivers/${driverId}/equipment/${standing.current?.id ?? ""}/end`, {
+                  preserveScroll: true,
+                })
+              }}
+              className="ml-auto rounded border border-steel-300 px-2.5 py-1 text-xs font-medium text-navy-700 transition hover:bg-navy-50 disabled:opacity-50"
+            >
+              {t('drivers.standing.end')}
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      {standing.past.length === 0 ? null : (
+        <div className="mt-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-steel-500">
+            {t('drivers.standing.history')}
+          </p>
+          <ul className="mt-1 flex flex-col divide-y divide-steel-100">
+            {standing.past.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 py-1.5 text-xs">
+                <span className="font-medium tabular-nums text-navy-800">
+                  {a.truck ?? "—"}
+                  {a.trailer === null ? "" : ` · ${a.trailer}`}
+                </span>
+                <span className="text-steel-600">{tramo(a)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {puedeEditar && choices !== null ? (
+        <div className="mt-4 border-t border-steel-100 pt-4">
+          {abierto ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                form.post(`/drivers/${driverId}/equipment`, {
+                  preserveScroll: true,
+                  onSuccess: () => {
+                    setAbierto(false)
+                    form.reset()
+                  },
+                })
+              }}
+              className="flex flex-col gap-4"
+            >
+              <SearchableSelect
+                label={t('drivers.standing.truck')}
+                required
+                choices={choices.trucks}
+                selected={camion}
+                onPick={(id) => form.setData('truck_id', id)}
+                onClear={() => form.setData('truck_id', '')}
+                placeholder={t('drivers.standing.chooseTruck')}
+                emptyText={t('drivers.standing.noTruckMatches')}
+                changeText={t('common.actions.change')}
+                error={form.errors.truck_id}
+              />
+
+              {/* El remolque es opcional a propósito: en una flota donde los
+                  remolques se sueltan y se recogen, exigirlo obligaría a
+                  inventar uno. */}
+              <SearchableSelect
+                label={t('drivers.standing.trailer')}
+                choices={choices.trailers}
+                selected={remolque}
+                onPick={(id) => form.setData('trailer_id', id)}
+                onClear={() => form.setData('trailer_id', '')}
+                placeholder={t('drivers.standing.chooseTrailer')}
+                emptyText={t('drivers.standing.noTrailerMatches')}
+                changeText={t('common.actions.change')}
+                error={form.errors.trailer_id}
+              />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  label={t('drivers.standing.startsOn')}
+                  type="date"
+                  required
+                  value={form.data.starts_on}
+                  onChange={(e) => form.setData('starts_on', e.target.value)}
+                  error={form.errors.starts_on}
+                />
+                <TextField
+                  label={t('drivers.standing.endsOn')}
+                  hint={t('drivers.standing.endsOnHint')}
+                  type="date"
+                  value={form.data.ends_on}
+                  onChange={(e) => form.setData('ends_on', e.target.value)}
+                  error={form.errors.ends_on}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={form.processing}
+                  className="rounded bg-safety-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
+                >
+                  {t('drivers.standing.save')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAbierto(false) }}
+                  className="rounded border border-steel-300 px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+                >
+                  {t('common.actions.cancel')}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => { setAbierto(true) }}
+              className="rounded border border-steel-300 px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+            >
+              {t('drivers.standing.save')}
+            </button>
+          )}
+        </div>
+      ) : null}
+    </Card>
   )
 }
 

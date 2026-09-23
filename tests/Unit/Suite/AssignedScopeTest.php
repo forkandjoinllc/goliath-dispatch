@@ -65,7 +65,7 @@ const ESTRECHAN_A_MANO = [
 ];
 
 /** Las piezas que sí saben contestar por los cinco ámbitos. */
-const PIEZAS_DE_AMBITO = ['scopeFilter(', 'LoadScope::apply', 'DocumentScope::', 'MessageScope::'];
+const PIEZAS_DE_AMBITO = ['scopeFilter(', 'LoadScope::apply', 'DocumentScope::', 'MessageScope::', 'DriverScope::apply'];
 
 it('ningún `match` mete Assigned en el cajón de Tenant', function (): void {
     // ESTE ES EL FALLO, en su forma exacta y buscable.

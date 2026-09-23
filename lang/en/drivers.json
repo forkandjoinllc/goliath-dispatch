@@ -186,5 +186,33 @@
     "O": "No tractor-trailer",
     "M": "No Class A bus",
     "V": "Medical variance documentation required"
+  },
+  "standing": {
+    "title": "Usual equipment",
+    "hint": "What they normally run. It prefills the load assignment and can be changed there: what actually went out is kept on the load.",
+    "truck": "Truck",
+    "trailer": "Trailer",
+    "trailerOptional": "No standing trailer",
+    "startsOn": "From",
+    "endsOn": "Until",
+    "endsOnHint": "Leave it blank while it still stands.",
+    "notes": "Note",
+    "save": "Assign",
+    "end": "End",
+    "current": "In force",
+    "none": "This driver has no equipment assigned.",
+    "since": "From {date}",
+    "until": "until {date}",
+    "open": "no end date",
+    "history": "Before",
+    "chooseTruck": "Choose a truck",
+    "noTruckMatches": "No truck matches that.",
+    "chooseTrailer": "Choose a trailer",
+    "noTrailerMatches": "No trailer matches that.",
+    "driverBusy": "This driver already has equipment assigned on those dates. End the previous assignment before adding another.",
+    "truckBusy": "That truck is already assigned to another driver on those dates. A truck cannot be with two drivers at once.",
+    "notYours": "That unit does not belong to your company.",
+    "saved": "Equipment assigned.",
+    "ended": "Assignment ended."
   }
 }

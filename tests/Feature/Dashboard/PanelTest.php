@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Role;
+use App\Support\Finance\DefaultExpenseCategories;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ function tarjetasDelPanel(): array
 {
     $salida = [];
 
-    test()->get('/home')->assertOk()->assertInertia(function (Assert $page) use (&$salida) {
+    test()->get('/insight/dashboard')->assertOk()->assertInertia(function (Assert $page) use (&$salida) {
         foreach ($page->toArray()['props']['cards'] as $tarjeta) {
             $salida[$tarjeta['key']] = $tarjeta;
         }
@@ -205,7 +206,7 @@ it('cuenta los gastos presentados', function () {
     // El gasto se da de alta por la RUTA, no metiendo una fila: así la
     // categoría, el tratamiento congelado y el estado inicial son los que pone
     // la aplicación, no los que yo suponga.
-    \App\Support\Finance\DefaultExpenseCategories::ensureFor($this->scenario->tenant->id);
+    DefaultExpenseCategories::ensureFor($this->scenario->tenant->id);
 
     $categoria = DB::table('expense_categories')
         ->where('tenant_id', $this->scenario->tenant->id)
@@ -341,7 +342,7 @@ it('el despachador ve sus comisiones y no las de sus compañeros', function () {
 it('sigue enseñando la matriz de permisos', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->get('/home')->assertInertia(function (Assert $page) {
+    $this->get('/insight/dashboard')->assertInertia(function (Assert $page) {
         $props = $page->toArray()['props'];
 
         expect($props['permissions'])->not->toBeEmpty();

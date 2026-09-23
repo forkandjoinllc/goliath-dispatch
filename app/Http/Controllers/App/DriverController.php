@@ -16,6 +16,7 @@ use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
 use App\Support\Compliance\ExpiryWindow;
 use App\Support\Drivers\Cdl;
+use App\Support\Drivers\DriverScope;
 use App\Support\EnumValue;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
@@ -24,6 +25,7 @@ use App\Support\Lists\FacetCounts;
 use App\Support\Security\SensitiveNumber;
 use App\Support\Time\CalendarDates;
 use App\Support\Tracking\Consent;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -144,14 +146,22 @@ final class DriverController
         // pantalla del conductor, y el consentimiento es suyo.
         $this->usesDictionary($request, ['drivers', 'tracking', 'nav', 'common']);
 
+        $puedeEditar = $this->mayEdit($checker, $actor, $model, $policy);
+
         return Inertia::render('App/Drivers/Show', [
             'driver' => $this->detail($model),
             'carriers' => $this->carriers($model, $checker, $actor, $policy),
+            // El equipo habitual: la vigente y las de antes. Las unidades para
+            // elegir solo viajan si esta persona puede cambiarlo — una lista de
+            // la flota entera en la carga de una pantalla de solo lectura es
+            // un dato que nadie pidió.
+            'standing' => $this->equipoHabitual($model),
+            'equipmentChoices' => $puedeEditar ? $this->unidadesParaElegir($model) : null,
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model)
                 : null,
             'can' => [
-                'update' => $this->mayEdit($checker, $actor, $model, $policy),
+                'update' => $puedeEditar,
                 'approve' => $checker->can($actor, 'driver:approve', $context, $policy)->allowed,
                 // Otorgar o retirar el consentimiento: el permiso es de ámbito
                 // propio y ADEMÁS se exige que esta ficha sea la suya. Un
@@ -364,38 +374,100 @@ final class DriverController
     /**
      * @return Builder<Driver>
      */
+    /**
+     * El equipo habitual de este conductor: la asignación vigente y el historial.
+     *
+     * El historial se enseña entero y no se borra nunca: una carga de marzo se
+     * mira con el camión que se llevó en marzo, y una fila borrada dejaría esa
+     * carga sin explicación.
+     *
+     * @return array{current: array<string, mixed>|null, past: list<array<string, mixed>>}
+     */
+    private function equipoHabitual(Driver $conductor): array
+    {
+        $hoy = CarbonImmutable::now()->toDateString();
+
+        $filas = DB::table('driver_equipment_assignments as a')
+            ->leftJoin('trucks as t', 't.id', '=', 'a.truck_id')
+            ->leftJoin('trailers as r', 'r.id', '=', 'a.trailer_id')
+            ->where('a.tenant_id', $conductor->tenant_id)
+            ->where('a.driver_id', $conductor->id)
+            ->whereNull('a.deleted_at')
+            ->orderByDesc('a.starts_on')
+            ->limit(20)
+            ->get([
+                'a.id', 'a.truck_id', 'a.trailer_id', 'a.starts_on', 'a.ends_on', 'a.notes',
+                't.unit_number as truck_unit', 'r.unit_number as trailer_unit',
+            ]);
+
+        $vigente = null;
+        $antes = [];
+
+        foreach ($filas as $fila) {
+            $inicio = substr((string) $fila->starts_on, 0, 10);
+            $fin = $fila->ends_on === null ? null : substr((string) $fila->ends_on, 0, 10);
+
+            $fila_ = [
+                'id' => (string) $fila->id,
+                'truckId' => (string) $fila->truck_id,
+                'truck' => $fila->truck_unit === null ? null : (string) $fila->truck_unit,
+                'trailerId' => $fila->trailer_id === null ? null : (string) $fila->trailer_id,
+                'trailer' => $fila->trailer_unit === null ? null : (string) $fila->trailer_unit,
+                'startsOn' => $inicio,
+                'endsOn' => $fin,
+                'notes' => $fila->notes,
+            ];
+
+            // Vigente es la que abarca HOY. La más reciente que lo cumpla, que
+            // es la primera que se lee: vienen ordenadas de nueva a vieja.
+            $abarca = $inicio <= $hoy && ($fin === null || $fin >= $hoy);
+
+            if ($abarca && $vigente === null) {
+                $vigente = $fila_;
+
+                continue;
+            }
+
+            $antes[] = $fila_;
+        }
+
+        return ['current' => $vigente, 'past' => $antes];
+    }
+
+    /**
+     * Los camiones y remolques de la empresa, para elegir.
+     *
+     * Los de la empresa y no los del transportista del conductor: un conductor
+     * puede trabajar para más de uno —`driver_carrier_relationships` es una
+     * relación de varios— y recortar por el primero escondería la mitad de la
+     * flota sin decirlo. Que el camión sea de un transportista que no es el
+     * suyo es una decisión de despacho, no un error de datos.
+     *
+     * @return array{trucks: list<array<string, string>>, trailers: list<array<string, string>>}
+     */
+    private function unidadesParaElegir(Driver $conductor): array
+    {
+        $leer = fn (string $tabla): array => DB::table($tabla)
+            ->where('tenant_id', $conductor->tenant_id)
+            ->whereNull('deleted_at')
+            ->orderBy('unit_number')
+            ->limit(500)
+            ->get(['id', 'unit_number', 'make', 'model'])
+            ->map(fn ($r): array => [
+                'id' => (string) $r->id,
+                'name' => trim((string) $r->unit_number.' '.trim((string) $r->make.' '.(string) $r->model)),
+            ])
+            ->all();
+
+        return ['trucks' => $leer('trucks'), 'trailers' => $leer('trailers')];
+    }
+
     private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
     {
-        $query = Driver::query();
-
-        // Un conductor no tiene columna de transportista: la relación vive en
-        // `driver_carrier_relationships`. Igual que las cargas con el conductor,
-        // esto es un EXISTS y no un WHERE, así que ScopeFilter no sabe
-        // expresarlo y hay que tenderle el puente.
-        if (in_array($scope, [Scope::Carrier, Scope::Assigned], true)) {
-            $carrierIds = $scope === Scope::Carrier
-                ? array_filter([$actor->carrierId])
-                : $actor->assignments->carrierIds;
-
-            return $query
-                ->where('drivers.tenant_id', $actor->tenantId)
-                ->whereExists(function ($q) use ($carrierIds): void {
-                    $q->select(DB::raw(1))
-                        ->from('driver_carrier_relationships as r')
-                        ->whereColumn('r.driver_id', 'drivers.id')
-                        ->whereIn('r.carrier_id', $carrierIds)
-                        ->whereNull('r.deleted_at');
-                });
-        }
-
-        if ($scope === Scope::Own) {
-            // Su propia ficha y nada más.
-            return $query
-                ->where('drivers.tenant_id', $actor->tenantId)
-                ->whereKey($actor->driverId ?? '-');
-        }
-
-        return $checker->scopeFilter($actor, $scope)->apply($query);
+        // El alcance vive en `Support\Drivers\DriverScope`, compartido con el
+        // tablero de despacho: dos pantallas que enseñan conductores tienen que
+        // alcanzar a los MISMOS.
+        return DriverScope::apply(Driver::query(), $checker, $actor, $scope);
     }
 
     /**
@@ -462,24 +534,10 @@ final class DriverController
 
     private function context(Driver $driver): ResourceContext
     {
-        // El transportista del conductor sale de la relación. Se coge la vigente:
-        // un conductor que trabajó para otro transportista hace dos años no debe
-        // dar acceso a aquel transportista.
-        $carrierId = DB::table('driver_carrier_relationships')
-            ->where('driver_id', $driver->id)
-            ->whereNull('deleted_at')
-            ->where(function ($q): void {
-                $q->whereNull('end_date')->orWhereDate('end_date', '>=', now()->toDateString());
-            })
-            ->orderByDesc('is_primary')
-            ->value('carrier_id');
-
-        return new ResourceContext(
-            tenantId: $driver->tenant_id,
-            carrierId: $carrierId,
-            driverId: $driver->id,
-            ownerUserId: $driver->user_id,
-        );
+        // Compartido con la asignación de equipo, en `Drivers\DriverScope`:
+        // dos sitios que piden permiso sobre el mismo conductor tienen que
+        // pedirlo con el mismo contexto.
+        return DriverScope::contexto($driver);
     }
 
     /**

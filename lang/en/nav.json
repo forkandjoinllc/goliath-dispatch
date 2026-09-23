@@ -1,6 +1,7 @@
 {
     "primary": {
         "dashboard": "Dashboard",
+        "board": "Dispatch board",
         "loads": "Loads",
         "carriers": "Carriers",
         "customers": "Customers",

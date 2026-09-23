@@ -37,6 +37,10 @@ const OFRECEN_TIPOS_DE_EQUIPO = [
     // Todas las cargas necesitan un tractor, así que pedir uno como requisito
     // no dice nada.
     'app/Http/Controllers/App/LoadController.php' => "'trailer'",
+
+    // El tablero de despacho: el icono del punto del mapa sale del TIPO de
+    // remolque, y un tractor no tiene silueta de remolque que dibujar.
+    'app/Http/Controllers/App/BoardController.php' => "'trailer'",
 ];
 
 /** Los ficheros de `app/` que consultan la tabla. */

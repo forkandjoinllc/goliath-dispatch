@@ -3914,3 +3914,57 @@ ya hay guardado.
 total de las distancias se pegaba al listado sin separador visible, y que el
 formulario de la demostración chocaba con un VIN ya sembrado — lo segundo era
 culpa del paseo, no del producto, pero lo primero solo se ve mirando.
+
+## Lote 36 — el tablero de despacho
+
+**El guardián que ya existía y no corrí.** `BrandColorsTest` lleva lotes
+vigilando que ninguna clase de color pida un escalón que la marca no define —se
+escribió porque cuatro botones destructivos salieron sin fondo—. Puse
+`bg-success-600` y `bg-info-600` en los puntos de estado, y los vi sin color en
+el paseo por el navegador, no en la suite: **no había corrido la suite desde que
+escribí la pantalla**. La lección no es del guardián: es que un guardián solo
+sirve si se corre mientras se escribe, no al final.
+
+**Cuatro identificadores del mismo tipo, en otro orden.** `ResourceContext`
+recibe `tenantId`, `carrierId`, `driverId`, `ownerUserId`, todos cadenas.
+Construirlo con los argumentos cambiados de sitio no falla: devuelve un contexto
+que parece correcto y el permiso deniega por «fuera de alcance» sin decir por
+qué. Media hora. Ahora hay UNA función que lo construye —`DriverScope::contexto`—
+y un guardián que exige que las dos pantallas la usen. **Cuando una firma toma
+varios parámetros del mismo tipo, la firma es el defecto.**
+
+**Una función global de Pest declarada en otro fichero no existe.** Escribí las
+ayudas de flota en `BoardTest.php` y las llamé desde `StandingPrefillTest.php`:
+la suite entera pasaba y el fichero suelto fallaba con «función no definida».
+Ahora viven en `Tests\Support\FleetFixtures`, que es una clase. Es el mismo
+problema de las colisiones de nombres visto por el otro lado.
+
+**Tres sabotajes en verde, tres guardianes que medían de menos.** El del mapa
+contaba el nombre del dibujo y el import ya sumaba dos, así que cambiar la figura
+del marcador de Google no lo movía. El de la hora del muelle comprobaba que
+`LoadClock::previsto` apareciera «alguna vez», y hay DOS sitios que mandan horas
+de parada. Y el de «sin asignar» lo medía con una carga sin ninguna asignación,
+que no distingue «sin conductor» de «sin nada»: la prueba ahora pone un camión y
+ningún conductor. **Séptima vez: un sabotaje verde no sobra, señala lo que el
+guardián no estaba mirando.**
+
+**El análisis estático encontró un mecanismo que ya no podía fallar.** Al añadir
+la última entrada al menú, `in_array($route, self::BUILT, true)` pasó a ser
+siempre cierto y phpstan lo dijo. No sobraba: vigila la entrada que alguien
+añada mañana sin pantalla detrás. Pasó de constante a método para que el análisis
+no lo dé por decidido, con el motivo escrito al lado. **Una comparación que hoy
+siempre da lo mismo no siempre es código muerto — pero hay que decir por qué no
+lo es.**
+
+**El sembrador escribe por la puerta de la aplicación.** Las posiciones del mapa
+entran con `Ingestion::manual()`, la misma que usa el despachador que cuelga el
+teléfono y anota dónde va el camión. Un `insert` a mano habría podido escribir
+una posición que ninguna ruta puede producir. Y una carga viva se queda **sin**
+posición a propósito: si todas tuvieran, el aviso de «sin señal» no se vería
+nunca hasta llegar a producción sin proveedor atado.
+
+**Y el paseo por el navegador volvió a enseñar lo que ninguna prueba vio:** que
+la pestaña de las asignadas decía «sin conductor» —tres filas por carga en
+`load_assignments`, una por recurso, y el código se quedaba con la primera— y
+que la letra de dentro del PIN no se leía al tamaño que le toca a la columna del
+medio.
