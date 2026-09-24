@@ -16,6 +16,7 @@ use App\Http\Controllers\App\DocumentFileController;
 use App\Http\Controllers\App\DriverController;
 use App\Http\Controllers\App\DriverEmploymentController;
 use App\Http\Controllers\App\DriverEquipmentController;
+use App\Http\Controllers\App\ComboSpacingController;
 use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\ExpenseController;
 use App\Http\Controllers\App\FactoringController;
@@ -207,8 +208,17 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::post('drivers/{driver}/equipment', [DriverEquipmentController::class, 'store'])
         ->name('drivers.equipment.store');
+    // Corregir una asignación existente. Sin esto, quien se equivocaba de
+    // remolque tenía que terminarla y crear otra, y la ficha quedaba con dos
+    // tramos donde solo hubo uno.
+    Route::patch('drivers/{driver}/equipment/{assignment}', [DriverEquipmentController::class, 'update'])
+        ->name('drivers.equipment.update');
     Route::post('drivers/{driver}/equipment/{assignment}/end', [DriverEquipmentController::class, 'end'])
         ->name('drivers.equipment.end');
+    // Cancelar no es terminar: lo que todavía no ha empezado no deja historia
+    // que conservar, y terminarlo escribiría un tramo de un día en el futuro.
+    Route::post('drivers/{driver}/equipment/{assignment}/cancel', [DriverEquipmentController::class, 'cancel'])
+        ->name('drivers.equipment.cancel');
 
     Route::post('drivers/{driver}/tracking-consent', [DriverController::class, 'consent'])
         ->name('drivers.trackingConsent');
@@ -654,6 +664,18 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('documents/{document}/review', [DocumentController::class, 'review'])->name('documents.review');
     Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+
+    /*
+    | Los conjuntos: qué mide un camión CON un remolque.
+    |
+    | Fuera del grupo `equipment/{type}` y no dentro: un conjunto no es un
+    | tipo de unidad. El grupo de abajo solo admite `trucks` y `trailers`, así
+    | que «combos» nunca se confunde con uno de ellos.
+    */
+    Route::get('equipment/combos', [ComboSpacingController::class, 'index'])->name('equipment.combos.index');
+    Route::post('equipment/combos', [ComboSpacingController::class, 'store'])->name('equipment.combos.store');
+    Route::delete('equipment/combos/{truck}/{trailer}', [ComboSpacingController::class, 'destroy'])
+        ->name('equipment.combos.destroy');
 
     Route::prefix('equipment/{type}')
         ->whereIn('type', ['trucks', 'trailers'])

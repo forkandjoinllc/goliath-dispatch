@@ -163,3 +163,11 @@ tiene ficha. Ver **`docs/vendors.md`**.
 | La ficha y las acciones | `app/Http/Controllers/App/EquipmentController.php` |
 | Pantalla | `resources/js/pages/App/Equipment/Show.tsx` |
 | Pruebas | `tests/Feature/Fleet/UnitEligibilityTest.php`, `tests/Unit/Suite/EquipmentBlockingTest.php` |
+
+## Lo que mide un camión CON un remolque
+
+Las distancias de esta página son **de la unidad**. La que pide un permiso va
+del primer eje del tractor al último del remolque, y le falta el tramo de en
+medio —de la última tracción al primer eje del remolque—, que no es de ninguna
+de las dos fichas. Vive en [combo-spacings.md](combo-spacings.md), pestaña
+**Conjuntos**.

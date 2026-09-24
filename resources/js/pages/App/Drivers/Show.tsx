@@ -57,6 +57,7 @@ interface Props {
   }[] | null
   standing: {
     current: Asignacion | null
+    upcoming: Asignacion[]
     past: Asignacion[]
   }
   /** Nulo cuando quien mira no puede cambiar el equipo: no viaja la flota. */
@@ -620,9 +621,18 @@ function SituacionLaboral({
 /**
  * El equipo habitual: con qué anda este conductor.
  *
- * Lo vigente arriba, lo de antes debajo, y el formulario solo si quien mira
- * puede cambiarlo. El historial no se borra: una carga de marzo se mira con el
- * camión que se llevó en marzo.
+ * Tres montones y no dos. Lo vigente arriba, lo que empieza más adelante en
+ * medio, y lo de antes debajo. Una asignación que empieza el lunes que viene
+ * caía bajo el título «Antes», y lo que no ha empezado no es historia.
+ *
+ * Cada montón tiene el botón que le corresponde: lo vigente se TERMINA —queda
+ * escrito, porque una carga de marzo se mira con el camión que se llevó en
+ * marzo—, y lo que todavía no ha empezado se CANCELA, porque no hay nada que
+ * conservar de un día que no ha llegado.
+ *
+ * Y cualquiera de las tres se puede corregir. Antes no: quien se equivocaba de
+ * remolque la terminaba y creaba otra, y la ficha quedaba con dos tramos donde
+ * solo hubo uno.
  */
 function EquipoHabitual({
   driverId,
@@ -631,12 +641,20 @@ function EquipoHabitual({
   puedeEditar,
 }: {
   driverId: string
-  standing: { current: Asignacion | null; past: Asignacion[] }
+  standing: { current: Asignacion | null; upcoming: Asignacion[]; past: Asignacion[] }
   choices: { trucks: { id: string; name: string }[]; trailers: { id: string; name: string }[] } | null
   puedeEditar: boolean
 }) {
   const { t, locale } = useI18n()
-  const [abierto, setAbierto] = useState(false)
+
+  /**
+   * Qué hay abierto: nada, el alta, o la fila que se está corrigiendo.
+   *
+   * Un solo estado y no un booleano más un identificador, porque con dos
+   * estados existe la combinación «cerrado pero editando la fila X», que no
+   * significa nada y que alguien acabaría escribiendo.
+   */
+  const [abierto, setAbierto] = useState<{ modo: 'nueva' } | { modo: 'editar'; a: Asignacion } | null>(null)
 
   const form = useForm({
     truck_id: '',
@@ -649,10 +667,50 @@ function EquipoHabitual({
     notes: '',
   })
 
-  const fin = useForm({})
+  const accion = useForm({})
 
   const camion = choices?.trucks.find((c) => c.id === form.data.truck_id) ?? null
   const remolque = choices?.trailers.find((c) => c.id === form.data.trailer_id) ?? null
+
+  const abrirNueva = () => {
+    form.setData({ truck_id: '', trailer_id: '', starts_on: '', ends_on: '', notes: '' })
+    form.clearErrors()
+    setAbierto({ modo: 'nueva' })
+  }
+
+  const abrirEdicion = (a: Asignacion) => {
+    form.setData({
+      truck_id: a.truckId,
+      trailer_id: a.trailerId ?? '',
+      starts_on: a.startsOn,
+      ends_on: a.endsOn ?? '',
+      notes: a.notes ?? '',
+    })
+    form.clearErrors()
+    setAbierto({ modo: 'editar', a })
+  }
+
+  const cerrar = () => {
+    setAbierto(null)
+    form.reset()
+    form.clearErrors()
+  }
+
+  const enviar = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (abierto === null) return
+
+    const opciones = { preserveScroll: true, onSuccess: () => { cerrar() } }
+
+    if (abierto.modo === 'editar') {
+      form.patch(`/drivers/${driverId}/equipment/${abierto.a.id}`, opciones)
+
+      return
+    }
+
+    form.post(`/drivers/${driverId}/equipment`, opciones)
+  }
 
   const tramo = (a: Asignacion): string => {
     const desde = t('drivers.standing.since', { date: formatDay(a.startsOn, locale) })
@@ -661,6 +719,18 @@ function EquipoHabitual({
       ? `${desde} · ${t('drivers.standing.open')}`
       : `${desde} ${t('drivers.standing.until', { date: formatDay(a.endsOn, locale) })}`
   }
+
+  /** El botón de corregir, igual en los tres montones. */
+  const Corregir = ({ a }: { a: Asignacion }) =>
+    puedeEditar && choices !== null ? (
+      <button
+        type="button"
+        onClick={() => { abrirEdicion(a) }}
+        className="rounded border border-steel-300 px-2.5 py-1 text-xs font-medium text-navy-700 transition hover:bg-navy-50"
+      >
+        {t('drivers.standing.edit')}
+      </button>
+    ) : null
 
   return (
     <Card title={t('drivers.standing.title')}>
@@ -678,20 +748,62 @@ function EquipoHabitual({
             {standing.current.trailer === null ? '' : ` · ${standing.current.trailer}`}
           </span>
           <span className="text-xs text-steel-600">{tramo(standing.current)}</span>
+          {standing.current.notes === null || standing.current.notes === '' ? null : (
+            <span className="w-full text-xs text-steel-600">{standing.current.notes}</span>
+          )}
           {puedeEditar ? (
-            <button
-              type="button"
-              disabled={fin.processing}
-              onClick={() => {
-                fin.post(`/drivers/${driverId}/equipment/${standing.current?.id ?? ""}/end`, {
-                  preserveScroll: true,
-                })
-              }}
-              className="ml-auto rounded border border-steel-300 px-2.5 py-1 text-xs font-medium text-navy-700 transition hover:bg-navy-50 disabled:opacity-50"
-            >
-              {t('drivers.standing.end')}
-            </button>
+            <span className="ml-auto flex items-center gap-2">
+              <Corregir a={standing.current} />
+              <button
+                type="button"
+                disabled={accion.processing}
+                onClick={() => {
+                  accion.post(`/drivers/${driverId}/equipment/${standing.current?.id ?? ''}/end`, {
+                    preserveScroll: true,
+                  })
+                }}
+                className="rounded border border-steel-300 px-2.5 py-1 text-xs font-medium text-navy-700 transition hover:bg-navy-50 disabled:opacity-50"
+              >
+                {t('drivers.standing.end')}
+              </button>
+            </span>
           ) : null}
+        </div>
+      )}
+
+      {standing.upcoming.length === 0 ? null : (
+        <div className="mt-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-steel-500">
+            {t('drivers.standing.upcoming')}
+          </p>
+          <ul className="mt-1 flex flex-col divide-y divide-steel-100">
+            {standing.upcoming.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 text-xs">
+                <span className="font-medium tabular-nums text-navy-800">
+                  {a.truck ?? '—'}
+                  {a.trailer === null ? '' : ` · ${a.trailer}`}
+                </span>
+                <span className="text-steel-600">{tramo(a)}</span>
+                {puedeEditar ? (
+                  <span className="ml-auto flex items-center gap-2">
+                    <Corregir a={a} />
+                    <button
+                      type="button"
+                      disabled={accion.processing}
+                      onClick={() => {
+                        accion.post(`/drivers/${driverId}/equipment/${a.id}/cancel`, {
+                          preserveScroll: true,
+                        })
+                      }}
+                      className="rounded border border-steel-300 px-2.5 py-1 text-xs font-medium text-navy-700 transition hover:bg-navy-50 disabled:opacity-50"
+                    >
+                      {t('drivers.standing.cancel')}
+                    </button>
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -702,12 +814,17 @@ function EquipoHabitual({
           </p>
           <ul className="mt-1 flex flex-col divide-y divide-steel-100">
             {standing.past.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 py-1.5 text-xs">
+              <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 text-xs">
                 <span className="font-medium tabular-nums text-navy-800">
-                  {a.truck ?? "—"}
-                  {a.trailer === null ? "" : ` · ${a.trailer}`}
+                  {a.truck ?? '—'}
+                  {a.trailer === null ? '' : ` · ${a.trailer}`}
                 </span>
                 <span className="text-steel-600">{tramo(a)}</span>
+                {puedeEditar ? (
+                  <span className="ml-auto">
+                    <Corregir a={a} />
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -716,20 +833,12 @@ function EquipoHabitual({
 
       {puedeEditar && choices !== null ? (
         <div className="mt-4 border-t border-steel-100 pt-4">
-          {abierto ? (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                form.post(`/drivers/${driverId}/equipment`, {
-                  preserveScroll: true,
-                  onSuccess: () => {
-                    setAbierto(false)
-                    form.reset()
-                  },
-                })
-              }}
-              className="flex flex-col gap-4"
-            >
+          {abierto !== null ? (
+            <form onSubmit={enviar} className="flex flex-col gap-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-steel-500">
+                {t(abierto.modo === 'editar' ? 'drivers.standing.editTitle' : 'drivers.standing.newTitle')}
+              </p>
+
               <SearchableSelect
                 label={t('drivers.standing.truck')}
                 required
@@ -777,17 +886,28 @@ function EquipoHabitual({
                 />
               </div>
 
+              {/* La nota. Viajaba en el formulario, el servidor la guardaba y
+                  la ficha la devolvía, y no había casilla donde escribirla ni
+                  sitio donde leerla: una columna que nadie podía usar. */}
+              <TextField
+                label={t('drivers.standing.notes')}
+                hint={t('drivers.standing.notesHint')}
+                value={form.data.notes}
+                onChange={(e) => form.setData('notes', e.target.value)}
+                error={form.errors.notes}
+              />
+
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
                   disabled={form.processing}
                   className="rounded bg-safety-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
                 >
-                  {t('drivers.standing.save')}
+                  {t(abierto.modo === 'editar' ? 'drivers.standing.saveChanges' : 'drivers.standing.save')}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setAbierto(false) }}
+                  onClick={cerrar}
                   className="rounded border border-steel-300 px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
                 >
                   {t('common.actions.cancel')}
@@ -797,7 +917,7 @@ function EquipoHabitual({
           ) : (
             <button
               type="button"
-              onClick={() => { setAbierto(true) }}
+              onClick={abrirNueva}
               className="rounded border border-steel-300 px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
             >
               {t('drivers.standing.save')}

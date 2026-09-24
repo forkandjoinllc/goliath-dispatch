@@ -61,6 +61,23 @@ function raizBorrado(): string
  *
  * @var array<string, string>
  */
+/**
+ * Lo que tiene un `destroy()` y NO borra una ficha.
+ *
+ * Era una lista de dos nombres sueltos con un comentario encima. Con motivo
+ * por nombre, como `BORRADOS_DE_FICHA`, porque un nombre suelto en una lista
+ * de excepciones es una puerta: el siguiente que la cruce solo tiene que
+ * escribir su nombre, y nadie sabrá después por qué está ahí.
+ *
+ * El motivo tiene que decir QUÉ se descuelga y de qué fila viva, y lo exige
+ * una prueba de aquí abajo.
+ */
+const NO_SON_FICHAS = [
+    'UserController' => 'Retira una invitación pendiente: no borra una ficha, borra una pertenencia que nadie llegó a aceptar.',
+    'LoadDocumentController' => 'Descuelga un enlace de rastreo de una carga que sigue viva; la carga y el documento se quedan donde estaban.',
+    'ComboSpacingController' => 'Quita la MEDIDA de una pareja de camión y remolque, en blando. Las dos unidades siguen vivas y nada cuelga de la medida — ni una carga, ni un gasto, ni un permiso —, así que no hay trabajo abierto que preguntar antes.',
+];
+
 const BORRADOS_DE_FICHA = [
     'CarrierController' => 'OpenWork::forCarrier — cargas sin cerrar, liquidaciones sin pagar y facturas con saldo.',
     'CustomerController' => 'OpenWork::forCustomer — cargas sin cerrar. No tiene liquidaciones y sus facturas cuelgan de la carga.',
@@ -244,10 +261,7 @@ it('todo borrado de ficha comprueba sus dependencias y está declarado', functio
             continue;
         }
 
-        // UserController::destroy retira una invitación pendiente: no borra una
-        // ficha, borra una pertenencia sin aceptar. LoadDocumentController
-        // descuelga un enlace de rastreo.
-        if (in_array($nombre, ['UserController', 'LoadDocumentController'], true)) {
+        if (array_key_exists($nombre, NO_SON_FICHAS)) {
             continue;
         }
 
@@ -283,6 +297,26 @@ it('cada declarado comprueba de verdad algo antes de borrar', function (): void 
 
         expect($comprueba)->toBeTrue(
             "{$nombre} borra sin comprobar dependencias, y su motivo declarado dice que sí lo hace.",
+        );
+    }
+});
+
+it('cada excepción dice qué descuelga, y no está en los dos sitios', function (): void {
+    foreach (NO_SON_FICHAS as $nombre => $motivo) {
+        test()->assertFileExists(
+            raizBorrado()."/app/Http/Controllers/App/{$nombre}.php",
+            "{$nombre} ya no existe: quítalo de NO_SON_FICHAS.",
+        );
+
+        expect(strlen($motivo))->toBeGreaterThan(
+            50,
+            "{$nombre}: el motivo tiene que decir QUÉ se descuelga y de qué fila viva.",
+        );
+
+        // Estar en los dos sitios dejaría el borrado sin vigilancia: la lista
+        // de excepciones se lee primero y se saltaría la comprobación.
+        expect(array_key_exists($nombre, BORRADOS_DE_FICHA))->toBeFalse(
+            "{$nombre} está declarado como ficha Y como excepción: la excepción gana y el borrado deja de comprobarse.",
         );
     }
 });

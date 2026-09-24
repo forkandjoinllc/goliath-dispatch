@@ -223,7 +223,17 @@
     "truckBusy": "That truck is already assigned to another driver on those dates. A truck cannot be with two drivers at once.",
     "notYours": "That unit does not belong to your company.",
     "saved": "Equipment assigned.",
-    "ended": "Assignment ended."
+    "ended": "Assignment ended. The truck is free from today.",
+    "newTitle": "New assignment",
+    "editTitle": "Correct this assignment",
+    "edit": "Correct",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel it",
+    "upcoming": "Starts later",
+    "notesHint": "Anything worth knowing about this pairing. It shows on the record.",
+    "updated": "Assignment corrected.",
+    "cancelled": "Assignment cancelled. It never started, so nothing is kept.",
+    "endedToday": "Assignment ended. It started today, so it holds for the rest of the day and the truck is free tomorrow."
   },
   "employment": {
     "title": "Employment",

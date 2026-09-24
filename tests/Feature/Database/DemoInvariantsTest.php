@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\EquipmentOwnership;
 use App\Support\Drivers\Employment;
 use App\Support\Equipment\AxleSpacings;
+use App\Support\Equipment\ComboSpacing;
 use App\Support\Equipment\Vin;
 use App\Support\Fleet\StandingAssignment;
 use App\Support\Oversize\NeedsPapers;
@@ -170,6 +171,45 @@ function invariantesDeLaDemostracion(string $tenantId): array
             },
             'app/Support/Equipment/AxleSpacings.php',
             'public static function cuadran(?int $ejes, array $pulgadas): bool',
+        ],
+
+        'ningún conjunto cabe peor que su propia cadena de ejes' => [
+            // El parachoques delantero y el trasero no pueden estar más cerca
+            // que el primer eje y el último: los dos voladizos van por fuera
+            // de los ejes.
+            //
+            // La primera versión de este sembrado tomó las cifras de una hoja
+            // real y las pegó a otro conjunto: 68'5" de parachoques a
+            // parachoques en una combinación cuya cadena mide 69'5". La
+            // pantalla lo enseñó sin quejarse, y un permiso pedido con ese par
+            // se cae en la ventanilla.
+            function () use ($tenantId): int {
+                $malas = 0;
+
+                $filas = DB::table('equipment_combo_spacings')
+                    ->where('tenant_id', $tenantId)
+                    ->whereNull('deleted_at')
+                    ->whereNotNull('bumper_to_bumper_inches')
+                    ->get();
+
+                foreach ($filas as $fila) {
+                    $total = ComboSpacing::total(ComboSpacing::cadena(
+                        (int) DB::table('trucks')->where('id', $fila->truck_id)->value('axle_count'),
+                        AxleSpacings::de(AxleSpacings::CAMION, (string) $fila->truck_id),
+                        (int) $fila->drive_to_trailer_inches,
+                        (int) DB::table('trailers')->where('id', $fila->trailer_id)->value('axle_count'),
+                        AxleSpacings::de(AxleSpacings::REMOLQUE, (string) $fila->trailer_id),
+                    ));
+
+                    if ($total !== null && (int) $fila->bumper_to_bumper_inches < $total) {
+                        $malas++;
+                    }
+                }
+
+                return $malas;
+            },
+            'app/Http/Controllers/App/ComboSpacingController.php',
+            'private function exigeQueQuepaEnSiMismo(',
         ],
 
         'un camión lleva un tipo de camión' => [

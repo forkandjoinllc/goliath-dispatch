@@ -158,7 +158,7 @@ final class DriverController
             // la flota entera en la carga de una pantalla de solo lectura es
             // un dato que nadie pidió.
             'standing' => $this->equipoHabitual($model),
-            'equipmentChoices' => $puedeEditar ? $this->unidadesParaElegir($actor) : null,
+            'equipmentChoices' => $puedeEditar ? $this->unidadesParaElegir($actor, (string) $model->id) : null,
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model)
                 : null,
@@ -417,13 +417,20 @@ final class DriverController
     }
 
     /**
-     * El equipo habitual de este conductor: la asignación vigente y el historial.
+     * El equipo habitual de este conductor: lo vigente, lo que viene y lo de antes.
      *
      * El historial se enseña entero y no se borra nunca: una carga de marzo se
      * mira con el camión que se llevó en marzo, y una fila borrada dejaría esa
      * carga sin explicación.
      *
-     * @return array{current: array<string, mixed>|null, past: list<array<string, mixed>>}
+     * ## Tres montones y no dos
+     *
+     * Había dos —vigente y «antes»— y una asignación que empieza el lunes que
+     * viene caía en «antes», debajo de un título que dice que ya pasó. Lo que
+     * no ha empezado no es historia, y la diferencia se nota en el botón: lo
+     * vigente se termina, lo que viene se cancela.
+     *
+     * @return array{current: array<string, mixed>|null, upcoming: list<array<string, mixed>>, past: list<array<string, mixed>>}
      */
     private function equipoHabitual(Driver $conductor): array
     {
@@ -443,6 +450,7 @@ final class DriverController
             ]);
 
         $vigente = null;
+        $vienen = [];
         $antes = [];
 
         foreach ($filas as $fila) {
@@ -470,10 +478,20 @@ final class DriverController
                 continue;
             }
 
+            if ($inicio > $hoy) {
+                $vienen[] = $fila_;
+
+                continue;
+            }
+
             $antes[] = $fila_;
         }
 
-        return ['current' => $vigente, 'past' => $antes];
+        // Las que vienen, de la más próxima a la más lejana: la consulta las
+        // trae de nueva a vieja, que para lo que aún no ha pasado es del revés.
+        $vienen = array_reverse($vienen);
+
+        return ['current' => $vigente, 'upcoming' => $vienen, 'past' => $antes];
     }
 
     /**
@@ -485,22 +503,30 @@ final class DriverController
      * de la flota sin decirlo. Cada unidad viaja con SU transportista para que
      * la pantalla ofrezca las del que se acaba de marcar.
      *
-     * **Los camiones que ya lleva otro conductor no se ofrecen.** La regla de
+     * **Los camiones que ya lleva OTRO conductor no se ofrecen.** La regla de
      * «un camión, un conductor a la vez» los rechazaría al guardar, y ofrecer
      * algo que se va a rechazar es hacer perder el viaje. Se dice cuántos hay
      * escondidos, porque un camión que falta de la lista sin explicación se
      * busca durante un rato.
+     *
+     * **Otro, y no cualquiera.** Escondía también el camión de ESTE conductor,
+     * y hasta que se pudo corregir una asignación daba igual: en un alta el
+     * suyo no es ninguno. Al abrir el formulario de corregir, la casilla del
+     * camión nacía vacía —el valor estaba puesto y la lista no lo contenía— y
+     * el campo es obligatorio: quien fuera a cambiar la nota tenía que volver
+     * a elegir el camión, y el que le ofrecía la lista no era el suyo.
      *
      * Los remolques se ofrecen todos: en una flota se sueltan y se recogen, y
      * el mismo remolque pasa por varias manos sin que nadie mienta.
      *
      * @return array{trucks: list<array<string, string>>, trailers: list<array<string, string>>, takenTrucks: int}
      */
-    private function unidadesParaElegir(Actor $actor): array
+    private function unidadesParaElegir(Actor $actor, ?string $driverId = null): array
     {
         $ocupados = DB::table('driver_equipment_assignments')
             ->where('tenant_id', $actor->tenantId)
             ->whereNull('deleted_at')
+            ->when($driverId !== null, fn ($q) => $q->where('driver_id', '!=', $driverId))
             ->whereDate('starts_on', '<=', CarbonImmutable::now()->toDateString())
             ->where(fn ($q) => $q->whereNull('ends_on')
                 ->orWhereDate('ends_on', '>=', CarbonImmutable::now()->toDateString()))

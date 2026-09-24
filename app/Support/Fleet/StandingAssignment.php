@@ -162,35 +162,163 @@ final class StandingAssignment
     }
 
     /**
-     * Termina UNA asignación, hoy.
+     * Termina UNA asignación: la deja de valer HOY MISMO.
      *
-     * Devuelve falso si esa fila no es de ese conductor de esa empresa: la
-     * comprobación va aquí y no en el controlador porque aquí es donde se
-     * escribe.
+     * ## Por qué la fecha de fin es AYER
+     *
+     * `ends_on` es el último día en que la asignación VALE. Ponerla a hoy la
+     * deja vigente hoy: la ficha sigue diciendo «en vigor», el camión sigue
+     * ocupado y el relevo no lo puede coger hasta mañana. El botón decía
+     * «Terminar», el aviso decía «asignación terminada», y las dos pantallas
+     * que leen la tabla seguían enseñando lo mismo que antes de pulsarlo.
+     *
+     * `terminarVigentes()`, cuatro métodos más abajo, ya lo hacía bien y lo
+     * explicaba en su propio comentario. Dos maneras de terminar lo mismo en
+     * la misma clase, y solo una cierta.
+     *
+     * ## El suelo
+     *
+     * Lo único que no se puede es terminarla antes de empezar —la restricción
+     * `chk_standing_dates` lo rechaza—, así que una que empezó hoy dura hoy.
+     * Por eso se devuelve el día de verdad en vez de un sí: quien pulsó tiene
+     * derecho a leer hasta cuándo, y una de cada tantas veces no es ayer.
+     *
+     * ## Lo que no termina
+     *
+     * Una que ya terminó antes de hoy. Sin esto, pulsar «Terminar» sobre una
+     * asignación de marzo le movería el fin a ayer y la resucitaría: cinco
+     * meses de historia cambiados por un clic que parecía no hacer nada.
+     *
+     * Y una que aún no ha empezado, porque ahí no hay nada que terminar. Esa
+     * se cancela: ver `cancelar()`.
+     *
+     * Devuelve el último día en que vale, o nada si esa fila no se puede
+     * terminar. La comprobación de a quién pertenece va aquí y no en el
+     * controlador porque aquí es donde se escribe.
      */
-    public static function terminar(string $tenantId, string $driverId, string $id, ?CarbonImmutable $dia = null): bool
+    public static function terminar(string $tenantId, string $driverId, string $id, ?CarbonImmutable $dia = null): ?string
     {
-        $fila = DB::table('driver_equipment_assignments')
+        $fila = self::fila($tenantId, $driverId, $id);
+
+        if ($fila === null) {
+            return null;
+        }
+
+        $hoy = self::dia($dia);
+        $inicio = substr((string) $fila->starts_on, 0, 10);
+        $fin = $fila->ends_on === null ? null : substr((string) $fila->ends_on, 0, 10);
+
+        // Ya terminó, o todavía no empieza: en ninguno de los dos casos hay
+        // una asignación en vigor que quitar de en medio.
+        if (($fin !== null && $fin < $hoy) || $inicio > $hoy) {
+            return null;
+        }
+
+        $ayer = ($dia ?? CarbonImmutable::now())->subDay()->toDateString();
+        $ultimo = max($ayer, $inicio);
+
+        DB::table('driver_equipment_assignments')
+            ->where('id', $fila->id)
+            ->update(['ends_on' => $ultimo, 'updated_at' => now()]);
+
+        return $ultimo;
+    }
+
+    /**
+     * Cancela una asignación que todavía no ha empezado.
+     *
+     * Se borra en blando y no se termina, y la diferencia no es de forma: una
+     * asignación que empieza el lunes que viene no tiene nada que contar de
+     * marzo. Terminarla la dejaría escrita como un tramo de un día en el
+     * futuro —un camión ocupado el lunes por un conductor que nunca lo
+     * cogió—, y esa es justo la clase de fila que luego nadie sabe explicar.
+     *
+     * Lo que ya empezó no se cancela nunca: ahí sí hay historia, y una carga
+     * de marzo se mira con el camión que se llevó en marzo.
+     */
+    public static function cancelar(string $tenantId, string $driverId, string $id, ?CarbonImmutable $dia = null): bool
+    {
+        $fila = self::fila($tenantId, $driverId, $id);
+
+        if ($fila === null || substr((string) $fila->starts_on, 0, 10) <= self::dia($dia)) {
+            return false;
+        }
+
+        DB::table('driver_equipment_assignments')
+            ->where('id', $fila->id)
+            ->update(['deleted_at' => now(), 'updated_at' => now()]);
+
+        return true;
+    }
+
+    /**
+     * Cambia una asignación que ya existe.
+     *
+     * ## Por qué hacía falta
+     *
+     * Porque hasta ahora solo se podía crear y terminar. Quien se equivocaba
+     * de remolque —o escribía mal el día de comienzo— no tenía arreglo: la
+     * terminaba y creaba otra, y la ficha quedaba con dos tramos donde solo
+     * hubo uno. Corregir un dato no es un cambio de equipo.
+     *
+     * ## El choque se mide sin contarse a sí misma
+     *
+     * `choques()` ya sabía excluir una fila —el parámetro `$exceptoId` lleva
+     * escrito desde que nació— y nadie lo usaba nunca. Sin él, cambiarle la
+     * nota a una asignación chocaría consigo misma y diría que ese camión ya
+     * está ocupado: por ella.
+     *
+     * Devuelve las claves de `drivers.standing.*` que explican el choque, una
+     * lista vacía si se guardó, o nada si esa fila no es de ese conductor de
+     * esa empresa.
+     *
+     * @return list<string>|null
+     */
+    public static function actualizar(
+        string $tenantId,
+        string $driverId,
+        string $id,
+        string $truckId,
+        ?string $trailerId,
+        string $startsOn,
+        ?string $endsOn = null,
+        ?string $nota = null,
+    ): ?array {
+        $fila = self::fila($tenantId, $driverId, $id);
+
+        if ($fila === null) {
+            return null;
+        }
+
+        $choques = self::choques($tenantId, $driverId, $truckId, $startsOn, $endsOn, (string) $fila->id);
+
+        if ($choques !== []) {
+            return $choques;
+        }
+
+        DB::table('driver_equipment_assignments')
+            ->where('id', $fila->id)
+            ->update([
+                'truck_id' => $truckId,
+                'trailer_id' => $trailerId,
+                'starts_on' => $startsOn,
+                'ends_on' => $endsOn,
+                'notes' => $nota,
+                'updated_at' => now(),
+            ]);
+
+        return [];
+    }
+
+    /** Una fila viva de ese conductor de esa empresa, o nada. */
+    private static function fila(string $tenantId, string $driverId, string $id): ?object
+    {
+        return DB::table('driver_equipment_assignments')
             ->where('tenant_id', $tenantId)
             ->where('driver_id', $driverId)
             ->where('id', $id)
             ->whereNull('deleted_at')
-            ->first(['id', 'starts_on']);
-
-        if ($fila === null) {
-            return false;
-        }
-
-        // Nunca antes de su comienzo: una asignación que empieza mañana se
-        // termina mañana, y la restricción de la base rechaza lo contrario.
-        $hoy = self::dia($dia);
-        $inicio = substr((string) $fila->starts_on, 0, 10);
-
-        DB::table('driver_equipment_assignments')
-            ->where('id', $fila->id)
-            ->update(['ends_on' => max($hoy, $inicio), 'updated_at' => now()]);
-
-        return true;
+            ->first(['id', 'starts_on', 'ends_on']);
     }
 
     /**

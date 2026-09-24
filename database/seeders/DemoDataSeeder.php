@@ -22,6 +22,7 @@ use App\Support\Customers\NameKey;
 use App\Support\Documents\Scanning;
 use App\Support\Drivers\Employment;
 use App\Support\Equipment\AxleSpacings;
+use App\Support\Equipment\ComboSpacing;
 use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionLedger;
 use App\Support\Finance\InvoiceBuilder;
@@ -1109,6 +1110,81 @@ class DemoDataSeeder extends Seeder
                 'starts_on' => $desde,
                 'ends_on' => $terminaEn === null ? null : Carbon::now()->addDays($terminaEn)->toDateString(),
             ]);
+        }
+
+        $this->conjuntos();
+    }
+
+    /**
+     * Lo que mide cada pareja de camión y remolque.
+     *
+     * ## Tres medidos y dos sin medir, a propósito
+     *
+     * Una demostración en la que todos los conjuntos están medidos no enseña
+     * nunca lo que la pantalla tiene que decir cuando falta la medida — que es
+     * el estado en el que está una flota el día que la instala. Un sembrado
+     * que solo produce el caso fácil garantiza que nadie vea el difícil hasta
+     * que lo vea un cliente.
+     *
+     * ## Y uno con nota, porque el remolque se estira
+     *
+     * El T-310 es un RGN extensible: el hueco de la tracción al primer eje del
+     * remolque cambia de una carga a otra. La ficha guarda la medida NOMINAL y
+     * la nota dice por qué no siempre vale. Sin ese caso, la pantalla parece
+     * prometer que una cifra sirve para todo el año.
+     *
+     * Las cifras son las de un conjunto pesado de verdad: de treinta y cinco a
+     * cuarenta y tres pies de la última tracción al primer eje del remolque.
+     */
+    private function conjuntos(): void
+    {
+        $unidad = function (string $tabla, string $numero): ?string {
+            $id = DB::table($tabla)
+                ->where('tenant_id', $this->tenantId)
+                ->where('unit_number', $numero)
+                ->value('id');
+
+            return $id === null ? null : (string) $id;
+        };
+
+        $medido = Carbon::now()->subDays(60)->toDateString();
+
+        $filas = [
+            // camión, remolque, enganche, parachoques, kingpin al final, kingpin a ejes, nota
+            //
+            // El parachoques a parachoques tiene que ser MAYOR que la cadena
+            // de ejes: los dos voladizos están por fuera del primer eje y del
+            // último. La primera versión de esto sembró 68'5" en un conjunto
+            // cuya cadena mide 69'5", y la pantalla enseñó tan tranquila un
+            // camión que era más corto que su propia distancia entre ejes.
+            ['101', 'T-220', 426, 905, 600, 508, null],
+            ['104', 'T-310', 519, 1085, 615, null, 'RGN extensible: medido cerrado. Con la cama extendida hay que volver a medir para el permiso.'],
+            // Sin las medidas del margen: no toda oficina las pide y no todo
+            // el mundo las ha tomado.
+            ['C-07', 'R-14', 444, null, null, null, null],
+            // C-12/R-21 y NR-3/NT-9 se quedan SIN medir a propósito.
+        ];
+
+        foreach ($filas as [$camion, $remolque, $enganche, $parachoques, $kingpin, $kingpinAEjes, $nota]) {
+            $truckId = $unidad('trucks', $camion);
+            $trailerId = $unidad('trailers', $remolque);
+
+            if ($truckId === null || $trailerId === null) {
+                continue;
+            }
+
+            ComboSpacing::guardar(
+                $this->tenantId,
+                $truckId,
+                $trailerId,
+                $enganche,
+                $parachoques,
+                $kingpin,
+                $kingpinAEjes,
+                $medido,
+                null,
+                $nota,
+            );
         }
     }
 
@@ -2361,7 +2437,7 @@ class DemoDataSeeder extends Seeder
         $tablas = [
             'carriers', 'carrier_onboardings', 'fmcsa_verifications', 'documents',
             'trucks', 'trailers', 'drivers', 'customers', 'customer_locations', 'customer_contacts', 'customer_contact_locations',
-            'loads', 'load_stops', 'driver_equipment_assignments', 'tracking_sessions', 'tracking_events',
+            'loads', 'load_stops', 'driver_equipment_assignments', 'equipment_combo_spacings', 'tracking_sessions', 'tracking_events',
             // La mitad del dinero. Sin estas filas la demostración enseñaba
             // facturas, cobros y comisiones vacías, y los informes a cero.
             'expenses', 'financial_snapshots', 'invoices', 'invoice_line_items',

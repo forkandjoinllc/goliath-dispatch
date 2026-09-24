@@ -4227,3 +4227,74 @@ guardián mide el fichero entero cuando quería medir un trozo.
 unidad con el arrendador escrito a mano y sin ficha, a propósito: es el estado
 en el que está cualquier flota el día que estrena esta pantalla. Sin esa fila,
 la única forma de ver ese camino sería que se lo encontrara un cliente.
+
+---
+
+## Lote 42 — ejes del conjunto, y el END de la asignación
+
+**Un guardián que copia la línea en vez de medir la propiedad sujeta el defecto
+con la misma fuerza que sujetaría el arreglo.** `StandingAssignmentTest`
+comprobaba literalmente `'ends_on' => max($hoy, $inicio)` y pasaba en verde. Esa
+línea ERA el defecto: `ends_on` es el último día en que la asignación vale, así
+que terminarla «hoy» la dejaba vigente hoy. El botón decía «Terminar», el aviso
+decía «terminada», la ficha seguía diciendo «en vigor» y el camión no se le
+podía dar al relevo hasta el día siguiente. El guardián no fallaba porque estaba
+escrito contra el código, no contra la promesa.
+
+**Cuando dos métodos de la misma clase hacen lo mismo y solo uno lo explica, el
+que lo explica suele ser el correcto.** `terminarVigentes()` estaba cuatro
+métodos más abajo, contaba desde AYER, y su comentario decía exactamente por
+qué hoy estaba mal — un informe de defecto sobre el método de arriba, escrito
+meses antes, en el mismo fichero. Leer los comentarios de los vecinos antes de
+escribir uno nuevo.
+
+**Un parámetro que nadie usa es una capacidad prometida y no entregada.**
+`choques(..., ?string $exceptoId = null)` llevaba escrito desde que nació sin
+una sola llamada que lo pasara. Estaba ahí porque quien lo escribió vio venir
+que algún día habría que corregir una asignación — y hasta que eso se construyó,
+lo único que hacía era dar a entender que ya se podía.
+
+**El recorrido por el navegador encontró dos cosas que ninguna prueba veía.**
+Una: el formulario de corregir nacía con el camión EN BLANCO, porque la lista
+esconde los camiones ocupados y escondía también el propio. Las pruebas de
+funcionalidad mandaban `truck_id` a mano, así que nunca tocaron la casilla. Dos:
+el aviso de terminar metía una fecha en bruto (`2026-09-23`) dentro de una frase
+traducida, tres centímetros por encima de la misma fecha bien escrita («23 sept
+2026»). Ninguna aserción mira cómo se lee una frase.
+
+**Un sembrado puede producir un estado imposible aunque cada dato sea
+plausible.** Tomé las cifras de una hoja de medidas real y las pegué a otro
+conjunto: 68′5″ de parachoques a parachoques en una combinación cuya cadena de
+ejes mide 69′5″. Sesenta y ocho pies es una longitud razonable; el PAR no lo es,
+porque los dos voladizos van por fuera de los ejes. La pantalla lo enseñó sin
+quejarse. Salió del recorrido, no de una prueba, y el arreglo trajo una
+validación que no existía.
+
+**Media cadena no es media respuesta.** La distancia que pide un permiso se da
+entera o no se da: una suma a la que le falta un tramo no es una aproximación,
+es un número que se parece a un dato de permiso y acaba copiado en un papel que
+alguien firma. Es la misma regla de `AxleSpacings::cuadran()` —ninguna, todas,
+nunca a medias— un nivel más arriba.
+
+**Contar filas mide algo adyacente a «están todas».** `cadena()` necesita el
+recuento de ejes de cada unidad y no le basta con contar los huecos guardados:
+cero huecos es lo correcto para un remolque de un eje y es «sin medir» para uno
+de tres. Sin el recuento al lado, las dos cosas son la misma lista vacía.
+
+**Media medida cabe en la misma casilla que la entera.** La columna se llamaba
+`kingpin_inches` y la etiqueta decía «del eje de dirección al kingpin»; el dato
+que venía de la hoja real era del kingpin al final del remolque. De la misma
+palabra salen tres cifras distintas. Nombrar cada medida por sus DOS extremos.
+
+**Una excepción sin motivo escrito es una puerta.** La lista de controladores
+que tienen `destroy()` y no borran una ficha era un array de dos nombres sueltos
+con un comentario encima. Al añadir el tercero la convertí en registro con
+motivo por nombre, como `BORRADOS_DE_FICHA`, y le puse una prueba que exige que
+un nombre no esté en los dos sitios: la excepción se lee primero, y un nombre en
+las dos listas deja el borrado sin vigilancia.
+
+**Una prueba que se salta sola no comprueba nada.** Escribí la invariante del
+sembrado como prueba de funcionalidad con `->skip()` cuando la base no tenía
+datos de demostración — y la base de pruebas nunca los tiene. Se fue a
+`DemoInvariantsTest`, que siembra la demostración dentro de la prueba y sí puede
+medirla.

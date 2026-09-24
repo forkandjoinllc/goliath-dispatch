@@ -295,9 +295,16 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
               ) : null}
             </Dl>
 
-            {/* Las distancias, de delante atrás. Y la suma, porque es la que
-                pide la fórmula federal del puente y nadie debería tener que
-                sumarla a mano mirando la pantalla. */}
+            {/* Las distancias de ESTA unidad, de delante atrás, y su suma.
+                La suma es del primer eje al último de la unidad sola: en un
+                tractor, del eje de dirección a la última tracción.
+
+                No es la distancia que pide un permiso. Esa va del primer eje
+                del tractor al último del remolque y le falta el tramo de en
+                medio —de la última tracción al primer eje del remolque—, que
+                no es de ninguna de las dos fichas porque cambia al cambiar
+                cualquiera de las dos unidades. Vive en la pantalla de
+                conjuntos, y el enlace de abajo lleva a ella. */}
             <div className="mt-4 border-t border-steel-100 pt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-steel-600">
                 {t('equipment.detail.axleSpacings')}
@@ -317,6 +324,12 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
                   </p>
                 </>
               )}
+              <Link
+                href="/equipment/combos"
+                className="mt-2 inline-block text-xs font-medium text-navy-700 underline-offset-2 hover:underline"
+              >
+                {t('equipment.detail.comboLink')}
+              </Link>
             </div>
           </Card>
 

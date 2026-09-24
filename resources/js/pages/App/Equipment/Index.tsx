@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
 import { AppLayout } from '@/layouts/AppLayout'
 import { EmptyState } from '@/components/App/EmptyState'
+import { EquipmentTabs } from '@/components/App/Equipment/Tabs'
 import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
 
@@ -100,24 +101,7 @@ export default function EquipmentIndex({ type, units, filters, scope, facets, ca
         ) : null
       }
     >
-      {/* Pestañas. Camiones y remolques son el mismo dominio y se miran juntos:
-          partirlos en dos entradas del menú obligaría a volver atrás cada vez. */}
-      <div className="flex gap-1 border-b border-steel-200">
-        {(['trucks', 'trailers'] as const).map((tab) => (
-          <Link
-            key={tab}
-            href={`/equipment/${tab}`}
-            aria-current={tab === type ? 'page' : undefined}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
-              tab === type
-                ? 'border-safety-600 text-navy-800'
-                : 'border-transparent text-steel-600 hover:text-navy-700'
-            }`}
-          >
-            {t(tab === 'trucks' ? 'equipment.index.trucksTab' : 'equipment.index.trailersTab')}
-          </Link>
-        ))}
-      </div>
+      <EquipmentTabs active={type} />
 
       <p className="mt-4 text-xs font-medium uppercase tracking-[0.12em] text-steel-600">
         {t(`equipment.scope.${scope}`)}
