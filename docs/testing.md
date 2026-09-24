@@ -4117,3 +4117,59 @@ NULL con valor por omisión, así que el `??` nunca iba a ejecutarse. Salió al
 escribir la prueba: el `insert` con huso nulo reventó contra la restricción.
 Fuera. Una rama que no puede correr no es cautela, es una afirmación falsa sobre
 el esquema.
+
+## Lote 40 — los filtros del tablero
+
+**La prueba tiene que hablar el mismo reloj que la pantalla.** Ocho pruebas del
+filtro de fechas fallaron a la vez teniendo razón el código: construían las
+citas con `now()`, que es UTC, mientras el filtro resuelve «hoy» en el huso de
+quien mira. «Hoy a las ocho» en UTC son las cuatro de la madrugada del día
+siguiente para quien está en Chicago, así que la carga se guardaba fuera del día
+que la prueba decía estar midiendo. El arreglo no fue tocar el código: fue una
+ayuda, `enElRelojDelQueMira()`, que lee el huso **del usuario que ha entrado** y
+no de una constante escrita en la prueba, para que siga siendo cierta si la
+siembra cambia. Cuando una prueba de fechas falla en masa, sospecha del reloj de
+la prueba antes que del código.
+
+**Y una ausencia que pasaba en verde por la razón equivocada.** Las mismas
+pruebas seguían vacías después de arreglar el reloj, y no era el filtro: el
+escenario nace en BORRADOR, y un borrador no está en ninguna pestaña del
+tablero. Estaba midiendo un filtro de fechas sobre un tablero que ya estaba
+vacío por otro motivo. Las que decían «esta carga NO sale» habrían pasado en
+verde para siempre sin comprobar nada. **Una prueba que mide una ausencia tiene
+que enseñar primero la presencia**, y por eso la ayuda que mueve el tramo pone
+además la carga viva.
+
+**El guardián se cayó por su propio comentario. Otra vez.** El que prohíbe
+construir la dirección del tablero a mano buscaba `` `/home?tab= `` en el
+fichero entero, y lo encontró en el párrafo que explica por qué está prohibido.
+Es exactamente lo que pasó en el lote 39 con `bg-${`. Dos veces es un patrón, no
+una casualidad: la ayuda de quitar comentarios se fue a `Tests\Support\Source`
+—`Source::codigo()`, que reparte entre el analizador de PHP y una limpieza a la
+brava para lo demás— y ahora la usan los dos guardianes.
+
+**Tres sabotajes que no probaban nada, y ninguno era culpa del guardián.** El
+del transportista añadía un `whereRaw('1 = 1')` sin quitar la condición de
+verdad; el de los conductores libres inventaba un método que no existe y ni
+compilaba; y el del destino del aviso llevaba una aguja mal escapada que no
+estaba en el fichero. Los tres los cazó el propio arnés —«la aguja no está»,
+«no compila», «siguió en verde»—, que es para lo que está. **Una aguja de
+sabotaje sacada del fichero de verdad vale más que una escrita de memoria**: la
+del destino acabó construyéndose leyendo la línea y quitándole un carácter.
+
+**Un argumento bueno puede seguir siendo bueno y aun así perder.** La campana
+era un enlace, con un comentario que defendía la decisión: un panel flotante
+obliga a decidir cuáles caben y deja al resto detrás de un «ver todos» que casi
+nadie pulsa. Todo cierto, y el panel se hizo igual — porque el otro lado pesaba
+más: sin panel, mirar un aviso cuesta perder el sitio en el que se estaba. Lo
+que sí hizo el argumento viejo fue dictar la forma del nuevo: el «ver todos» va
+ARRIBA, y hay un guardián que comprueba que siga por delante de la lista.
+Cuando se derriba una decisión razonada, el motivo que la sostenía se convierte
+en el requisito de lo que la sustituye.
+
+**Dos métodos estáticos con las mismas cinco condiciones y la misma
+comprobación imposible.** phpstan cazó `$actor->tenantId === null` sobre una
+columna que no puede ser nula — en mi método nuevo, porque lo copié del de al
+lado, que ya lo tenía. La señal no era el aviso: era que había copiado cinco
+líneas de filtro de tenant y usuario. Las dos puertas comparten ahora
+`deEsaPersona()`, y el conteo bajó de 136 a 135.

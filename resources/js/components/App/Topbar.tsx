@@ -328,41 +328,135 @@ function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
 }
 
 /**
- * La campana.
+ * La campana, con su panel.
  *
- * Un enlace, no un desplegable: al pulsarla se va a la pantalla de avisos. Un
- * panel flotante con los últimos cinco obliga a decidir cuáles caben y deja al
- * resto escondido detrás de un «ver todos» que casi nadie pulsa.
+ * ## Era un enlace, y el cambio tiene motivo
  *
- * El número se lee del armazón, que lo trae en TODAS las páginas: así la
- * campana no depende de que cada controlador se acuerde de contarlos.
+ * Durante mucho tiempo esto fue un enlace a secas, con este argumento escrito:
+ * un panel flotante obliga a decidir cuáles caben y deja al resto detrás de un
+ * «ver todos» que casi nadie pulsa. Sigue siendo verdad, y aun así el enlace
+ * salía caro por el otro lado: para saber de qué iba un aviso había que salir
+ * de lo que se estaba haciendo, cargar otra pantalla y volver. En el tablero
+ * de despacho eso es perder el sitio en el que se estaba.
+ *
+ * El panel enseña lo justo para decidir si interesa. Y el «ver todos» está
+ * ARRIBA, no escondido al final: es la respuesta al defecto del argumento
+ * viejo, no una excusa para ignorarlo.
+ *
+ * ## Lo que decide el servidor
+ *
+ * A dónde lleva cada aviso. La pantalla no construye la dirección ni la
+ * recibe: publica en `/notifications/{id}/open` y el servidor marca el aviso
+ * leído y redirige. Un aviso de firma va a la firma, uno de gasto a los
+ * gastos, y eso lo sabe quien escribió el aviso, no la campana.
  */
 function NotificationBell({ shell }: { shell: Shell }) {
   const { t } = useI18n()
   const sinLeer = shell.unreadNotifications
+  const avisos = shell.notifications ?? []
+  // El mismo `useMenu` que los otros tres menús de esta barra: cierra al
+  // pulsar fuera, cierra con Escape y DEVUELVE EL FOCO al botón. Escribirlo
+  // otra vez aquí habría dado un cuarto menú que casi hace lo mismo, y el que
+  // se desviara sería este, que es el que se abre cien veces al día.
+  const { open: abierto, setOpen: setAbierto, container: caja, trigger } = useMenu()
 
   return (
-    <Link
-      href="/notifications"
-      aria-label={
-        sinLeer > 0 ? t('notifications.bell.unread', { n: String(sinLeer) }) : t('notifications.bell.none')
-      }
-      className="relative rounded p-2 text-navy-700 transition hover:bg-navy-50"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className="h-5 w-5">
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M13.7 21a2 2 0 0 1-3.4 0" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+    <div ref={caja} className="relative">
+      <button
+        ref={trigger}
+        type="button"
+        onClick={() => setAbierto(! abierto)}
+        aria-haspopup="menu"
+        aria-expanded={abierto}
+        aria-label={
+          sinLeer > 0 ? t('notifications.bell.unread', { n: String(sinLeer) }) : t('notifications.bell.none')
+        }
+        className="relative rounded p-2 text-navy-700 transition hover:bg-navy-50"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true" className="h-5 w-5">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M13.7 21a2 2 0 0 1-3.4 0" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
 
-      {sinLeer > 0 ? (
-        <span
-          aria-hidden="true"
-          className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-safety-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+        {sinLeer > 0 ? (
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-safety-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+          >
+            {sinLeer > 99 ? '99+' : sinLeer}
+          </span>
+        ) : null}
+      </button>
+
+      {abierto ? (
+        <div
+          role="menu"
+          aria-label={t('notifications.bell.label')}
+          className="absolute right-0 z-50 mt-1 w-[22rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-steel-300 bg-white shadow-lg"
         >
-          {sinLeer > 99 ? '99+' : sinLeer}
-        </span>
+          <div className="flex items-center gap-2 border-b border-steel-200 px-3 py-2">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-navy-800">
+              {t('notifications.bell.label')}
+            </p>
+            {/* Arriba y a la vista: el panel enseña seis, y los demás existen. */}
+            <Link
+              href="/notifications"
+              onClick={() => setAbierto(false)}
+              className="ml-auto text-xs font-semibold text-navy-700 hover:underline"
+            >
+              {t('notifications.bell.seeAll')}
+            </Link>
+          </div>
+
+          {avisos.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-steel-700">{t('notifications.index.empty')}</p>
+          ) : (
+            <ul className="max-h-[22rem] divide-y divide-steel-200 overflow-y-auto">
+              {avisos.map((aviso) => (
+                <li key={aviso.id}>
+                  <Link
+                    href={`/notifications/${aviso.id}/open`}
+                    method="post"
+                    as="button"
+                    role="menuitem"
+                    onClick={() => setAbierto(false)}
+                    className={`block w-full px-3 py-2.5 text-left transition hover:bg-navy-50 ${
+                      aviso.read ? '' : 'bg-safety-50'
+                    }`}
+                  >
+                    <span className="flex items-start gap-2">
+                      {/* El punto dice «sin leer» y el fondo lo repite: el
+                          color por sí solo no lo lleva nadie que no lo vea. */}
+                      <span
+                        aria-hidden="true"
+                        className={`mt-1.5 size-2 shrink-0 rounded-full ${
+                          aviso.read ? 'bg-transparent' : 'bg-safety-500'
+                        }`}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-carbon">{aviso.title}</span>
+                        {/* Dos líneas y basta: es un adelanto, no el aviso. */}
+                        <span className="mt-0.5 line-clamp-2 block text-xs text-steel-700">
+                          {aviso.body}
+                        </span>
+                        <span className="mt-1 flex items-center gap-2 text-[11px] text-steel-500">
+                          {aviso.at === null ? null : <span className="tabular-nums">{aviso.at}</span>}
+                          {aviso.read ? null : (
+                            <span className="font-semibold text-safety-700">
+                              {t('notifications.bell.newOne')}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       ) : null}
-    </Link>
+    </div>
   )
 }
 

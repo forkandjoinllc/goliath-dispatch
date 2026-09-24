@@ -36,7 +36,10 @@ function panel(string $query): array
     /** @var Assert $pagina */
     $pagina = null;
 
-    test()->get('/home?'.$query)
+    // Con el periodo ancho: estas pruebas miden los paneles, no el filtro de
+    // fechas —que viene puesto en «hoy» y dejaría fuera las cargas del
+    // escenario—. El filtro se prueba en `BoardFiltersTest`.
+    test()->get('/home?period=this_year&'.$query)
         ->assertOk()
         ->assertInertia(function (Assert $p) use (&$pagina): void {
             $pagina = $p;

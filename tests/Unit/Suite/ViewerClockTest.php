@@ -276,12 +276,17 @@ it('las ayudas estáticas usan la misma puerta', function (): void {
         'app/Support/Onboarding/Readiness.php' => 2,
         'app/Support/Fmcsa/RevalidationState.php' => 1,
         'app/Http/Controllers/App/MessageController.php' => 1,
-        // Los dos de aquí estaban escritos con $this->hora() y REVENTABAN en
-        // marcha: el map de la lista de avisos es un `static fn`. Un guardián
-        // que lee el código no lo puede ver —el texto es idéntico— y lo cazó la
-        // prueba de integración al pedir la página de verdad. Queda contado
-        // aquí para que no vuelva a escribirse con $this.
-        'app/Http/Controllers/App/NotificationController.php' => 2,
+        // Los dos primeros de aquí estaban escritos con $this->hora() y
+        // REVENTABAN en marcha: el map de la lista de avisos es un `static
+        // fn`. Un guardián que lee el código no lo puede ver —el texto es
+        // idéntico— y lo cazó la prueba de integración al pedir la página de
+        // verdad. Queda contado aquí para que no vuelva a escribirse con $this.
+        //
+        // El tercero es el panel de la campana, que también es estático porque
+        // lo llama el armazón. Que haya que subir la cifra al nacer un sitio
+        // nuevo es lo que hace este guardián: obliga a mirar si el nuevo usa
+        // el reloj bueno, en vez de dejarlo pasar porque «ya aparece».
+        'app/Http/Controllers/App/NotificationController.php' => 3,
     ];
 
     foreach ($estaticas as $fichero => $cuantas) {

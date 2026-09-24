@@ -162,6 +162,11 @@ abrirse, **no sale** mientras está abierta, **Escape** cierra, y el foco
 El fondo cierra con `mousedown` y no con `onClick`: arrastrar para seleccionar
 un texto del formulario y soltar un pixel fuera tiraba lo escrito.
 
+## Los filtros
+
+El periodo y el transportista, y el panel de la campana, están en
+**`docs/board-filters.md`**.
+
 ## Lo que hay que hacer en el servidor
 
 Nada nuevo. Ver `docs/dispatch-board.md` para `GOOGLE_MAPS_KEY`.

@@ -3,7 +3,7 @@ import { Avatar } from '@/components/App/Board/Avatar'
 import { DriverStatusBadge } from '@/components/App/DriverStatus'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { Timeline, type Suceso } from '@/components/App/Board/Timeline'
-import { boardHref } from '@/components/App/Board/href'
+import { boardHref, type FiltrosDelTablero } from '@/components/App/Board/href'
 import { useI18n } from '@/lib/i18n'
 
 export interface ConductorElegido {
@@ -37,7 +37,7 @@ export interface ConductorElegido {
  * lleve hoy: la pregunta de esta columna es «¿con qué anda?», que se contesta
  * igual esté llevando algo o no.
  */
-export function DriverPanel({ conductor, tab }: { conductor: ConductorElegido; tab: string }) {
+export function DriverPanel({ conductor, filtros }: { conductor: ConductorElegido; filtros: FiltrosDelTablero }) {
   const { t } = useI18n()
   const nombre = `${conductor.firstName} ${conductor.lastName}`
   const equipo = [conductor.truck?.unitNumber, conductor.trailer?.unitNumber].filter(
@@ -56,7 +56,7 @@ export function DriverPanel({ conductor, tab }: { conductor: ConductorElegido; t
         </div>
 
         <Link
-          href={boardHref(tab)}
+          href={boardHref(filtros)}
           preserveScroll
           aria-label={t('common.actions.close')}
           className="rounded px-2 py-1 text-lg leading-none text-steel-600 transition hover:bg-steel-100 hover:text-carbon"
@@ -115,7 +115,7 @@ export function DriverPanel({ conductor, tab }: { conductor: ConductorElegido; t
         ) : (
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <Link
-              href={boardHref(tab, { load: conductor.currentLoad.id })}
+              href={boardHref(filtros, { load: conductor.currentLoad.id })}
               preserveScroll
               className="text-sm font-semibold tabular-nums text-navy-800 hover:underline"
             >
@@ -135,7 +135,7 @@ export function DriverPanel({ conductor, tab }: { conductor: ConductorElegido; t
         <h3 className="pb-2 text-xs font-bold uppercase tracking-[0.1em] text-safety-600">
           {t('board.panel.tabs.history')}
         </h3>
-        <Timeline sucesos={conductor.timeline} vacio={t('board.panel.driver.noTimeline')} tab={tab} />
+        <Timeline sucesos={conductor.timeline} vacio={t('board.panel.driver.noTimeline')} filtros={filtros} />
       </section>
 
       <Link

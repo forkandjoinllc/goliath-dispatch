@@ -136,5 +136,22 @@
         "document": "Se subió {type}",
         "position": "Posición recibida",
         "checkCall": "Parte anotado por despacho"
+    },
+    "filters": {
+        "period": "Periodo",
+        "carrier": "Transportista",
+        "allCarriers": "Todos los transportistas",
+        "noCarriers": "No hay ningún transportista por el que filtrar.",
+        "periods": {
+            "today": "Hoy",
+            "yesterday": "Ayer",
+            "this_week": "Esta semana",
+            "last_week": "La semana pasada",
+            "this_month": "Este mes",
+            "last_month": "El mes pasado",
+            "this_year": "Este año",
+            "last_year": "El año pasado",
+            "custom": "Rango a medida"
+        }
     }
 }

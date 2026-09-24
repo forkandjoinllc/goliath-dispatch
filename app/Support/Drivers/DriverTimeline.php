@@ -30,15 +30,31 @@ final class DriverTimeline
     public const TOPE = 40;
 
     /**
+     * @param  array{0: string, 1: string}|null  $periodo  Los dos extremos en UTC, o nulo para todo.
      * @return list<array<string, mixed>>
      */
-    public static function de(string $tenantId, string $driverId): array
+    public static function de(string $tenantId, string $driverId, ?array $periodo = null): array
     {
+        [$desde, $hasta] = $periodo ?? [null, null];
+
         $asignaciones = DB::table('load_assignments as a')
             ->join('loads as l', 'l.id', '=', 'a.load_id')
             ->where('a.tenant_id', $tenantId)
             ->where('a.driver_id', $driverId)
             ->whereNull('a.deleted_at')
+            /*
+             * La asignación entra si se hizo dentro del periodo O si seguía en
+             * pie durante él. Lo segundo es lo que importa: preguntar «¿qué
+             * hizo esta semana?» por un conductor al que se le asignó una
+             * carga el lunes pasado y sigue con ella tiene que contestar esa
+             * carga, no «nada».
+             */
+            ->when($desde !== null, function ($q) use ($desde, $hasta): void {
+                $q->where('a.created_at', '<=', $hasta)
+                    ->where(function ($o) use ($desde): void {
+                        $o->whereNull('a.unassigned_at')->orWhere('a.unassigned_at', '>=', $desde);
+                    });
+            })
             ->orderByDesc('a.created_at')
             ->limit(self::TOPE)
             ->get(['a.id', 'a.load_id', 'a.created_at', 'a.unassigned_at', 'a.unassigned_reason',
@@ -74,7 +90,7 @@ final class DriverTimeline
             }
         }
 
-        foreach (self::posiciones($tenantId, $cargas) as $posicion) {
+        foreach (self::posiciones($tenantId, $cargas, $desde, $hasta) as $posicion) {
             $sucesos[] = $posicion;
         }
 
@@ -101,7 +117,7 @@ final class DriverTimeline
      * @param  list<string>  $loadIds
      * @return list<array<string, mixed>>
      */
-    private static function posiciones(string $tenantId, array $loadIds): array
+    private static function posiciones(string $tenantId, array $loadIds, ?string $desde, ?string $hasta): array
     {
         if ($loadIds === []) {
             return [];
@@ -126,6 +142,10 @@ final class DriverTimeline
             ->where('e.tenant_id', $tenantId)
             ->whereIn('e.load_id', $loadIds)
             ->whereNull('e.archived_at')
+            // Las posiciones sí van por su hora a secas: una posición es un
+            // instante y no un tramo, así que «dentro del periodo» no tiene
+            // segunda lectura.
+            ->when($desde !== null, fn ($q) => $q->whereBetween('e.occurred_at', [$desde, $hasta]))
             ->orderByDesc('e.occurred_at')
             ->limit(self::TOPE)
             ->get(['e.id', 'e.event_type', 'e.provider', 'e.location_label', 'e.occurred_at',

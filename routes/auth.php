@@ -391,6 +391,12 @@ Route::middleware(['auth'])->group(function (): void {
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
     Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    /*
+     * Abrir uno desde el panel de la campana: lo marca leído y lleva a donde
+     * lleve el aviso. POST y no GET porque cambia algo —ver `open()`—, aunque
+     * en pantalla sea un enlace.
+     */
+    Route::post('notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('notification-preferences', [NotificationController::class, 'savePreferences'])->name('notifications.preferences');
 
     /*

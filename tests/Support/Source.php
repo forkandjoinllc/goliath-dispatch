@@ -63,6 +63,32 @@ final class Source
         return $codigo;
     }
 
+    /**
+     * El fichero sin comentarios, sea del idioma que sea.
+     *
+     * `sinComentarios` usa el analizador de PHP y no sirve para un `.tsx`.
+     * Hace falta porque un guardián que busca una cadena PROHIBIDA la
+     * encuentra en el comentario que explica por qué está prohibida, y se
+     * queda verde midiendo su propia explicación. Pasó dos veces: con `bg-${`
+     * en la cronología y con `` `/home?tab=`` en el tablero.
+     *
+     * Para lo que no es PHP se quitan a la brava —`/* … *``/` y `// …`—. No es
+     * un analizador: una barra doble dentro de una cadena de texto se llevaría
+     * por delante el resto de la línea. Vale para lo que hace falta, que es
+     * mirar código y no cadenas.
+     */
+    public static function codigo(string $ruta): string
+    {
+        if (str_ends_with($ruta, '.php')) {
+            return self::sinComentarios($ruta);
+        }
+
+        $fuente = (string) file_get_contents($ruta);
+        $fuente = (string) preg_replace('#/\*.*?\*/#s', '', $fuente);
+
+        return (string) preg_replace('#^\s*//.*$#m', '', $fuente);
+    }
+
     /** El fichero sin comentarios NI espacios. */
     public static function compacta(string $ruta): string
     {

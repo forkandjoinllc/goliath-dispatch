@@ -31,12 +31,22 @@ afterEach(fn () => app(TenantContext::class)->forget());
  *
  * La forma de la pantalla la sujetan los guardianes de `tests/Unit/Suite`.
  */
+/**
+ * El tablero abierto en una pestaña, con el periodo ANCHO.
+ *
+ * `period=this_year` y no el de por omisión: el tablero viene puesto en «hoy»
+ * y las cargas del escenario tienen sus citas dentro de los próximos días, así
+ * que con el periodo por omisión estas pruebas medirían el filtro de fechas en
+ * vez de lo que dicen medir —cómo se reparten las pestañas, qué dice la
+ * tarjeta, qué se dibuja en el mapa—. El filtro tiene sus propias pruebas en
+ * `BoardFiltersTest`.
+ */
 function tablero(string $pestana = 'unassigned'): Assert
 {
     /** @var Assert $pagina */
     $pagina = null;
 
-    test()->get('/home?tab='.$pestana)
+    test()->get('/home?period=this_year&tab='.$pestana)
         ->assertOk()
         ->assertInertia(function (Assert $p) use (&$pagina): void {
             $pagina = $p;

@@ -65,10 +65,7 @@ function metodoDelPanel(string $ruta, string $metodo): string
 
 function codigoDelPanel(string $ruta): string
 {
-    $fuente = fuenteDelPanel($ruta);
-    $fuente = (string) preg_replace('#/\*.*?\*/#s', '', $fuente);
-
-    return (string) preg_replace('#^\s*//.*$#m', '', $fuente);
+    return Source::codigo(Source::root().'/'.$ruta);
 }
 
 /* ── Cancelar se escribe una sola vez ───────────────────────────────────── */
@@ -226,13 +223,18 @@ it('abrir una carga o un conductor cambia la URL y conserva la pestaña', functi
     // Sin esto la selección vive en el estado del componente: el enlace no se
     // puede pegar, el botón de atrás no cierra nada y el refresco de cada
     // minuto la pierde.
-    test()->assertStringContainsString('boardHref(tab, { load: carga.id })', $tablero);
-    test()->assertStringContainsString('boardHref(tab, { driver: conductor.id })', $tablero);
+    test()->assertStringContainsString('boardHref(filtros, { load: carga.id })', $tablero);
+    test()->assertStringContainsString('boardHref(filtros, { driver: conductor.id })', $tablero);
 
-    // Y la pestaña va en TODOS: es lo que evita que cerrar el panel devuelva
-    // el tablero a «sin asignar» desde cualquier otra pestaña.
+    // Y la pestaña y los dos filtros van en TODOS: es lo que evita que cerrar
+    // el panel devuelva el tablero a «sin asignar», a «hoy» y sin
+    // transportista desde cualquier otro sitio.
     $ayuda = fuenteDelPanel('resources/js/components/App/Board/href.ts');
-    test()->assertStringContainsString('new URLSearchParams({ tab })', $ayuda);
+    test()->assertStringContainsString(
+        'new URLSearchParams({ tab: filtros.tab, period: filtros.period })',
+        $ayuda,
+    );
+    test()->assertStringContainsString("q.set('carrier', filtros.carrier)", $ayuda);
 
     foreach ([
         'resources/js/components/App/Board/LoadPanel.tsx',

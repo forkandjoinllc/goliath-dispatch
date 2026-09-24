@@ -4,10 +4,11 @@ import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
 import { DriverStatusDot } from '@/components/App/DriverStatus'
 import { BoardMap, type MapaDelTablero } from '@/components/App/Board/BoardMap'
+import { BoardFilters, type FiltroDeTransportista, type PeriodoDelTablero } from '@/components/App/Board/Filters'
 import { DriverPanel, type ConductorElegido } from '@/components/App/Board/DriverPanel'
 import { LoadPanel, type CargaElegida } from '@/components/App/Board/LoadPanel'
 import { QuickAdd, type AltaRapida } from '@/components/App/Board/QuickAdd'
-import { boardHref } from '@/components/App/Board/href'
+import { boardHref, type FiltrosDelTablero } from '@/components/App/Board/href'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
@@ -57,6 +58,8 @@ interface Props {
   loads: Carga[]
   drivers: EnLaFlota[]
   map: MapaDelTablero
+  period: PeriodoDelTablero
+  carrierFilter: FiltroDeTransportista
   quickAdd: AltaRapida
   selectedLoad: CargaElegida | null
   selectedDriver: ConductorElegido | null
@@ -80,6 +83,8 @@ export default function Board({
   loads,
   drivers,
   map,
+  period,
+  carrierFilter,
   quickAdd,
   selectedLoad,
   selectedDriver,
@@ -104,6 +109,22 @@ export default function Board({
     return () => { window.clearInterval(reloj) }
   }, [])
 
+  /*
+   * Los filtros viajan en los enlaces de dentro del tablero.
+   *
+   * `router.reload` conserva la URL entera, así que el refresco de cada minuto
+   * no los pierde. Los ENLACES sí los perderían: abrir una carga con
+   * `/home?tab=x&load=y` devolvería el tablero a «hoy» y sin transportista, y
+   * al cerrar el panel la lista de debajo sería otra. Es el mismo defecto que
+   * tenía la pestaña, con otra ropa.
+   */
+  const filtros = {
+    tab,
+    period: period.key,
+    ...(period.key === 'custom' ? { from: period.from, to: period.to } : {}),
+    ...(carrierFilter.selected === null ? {} : { carrier: carrierFilter.selected }),
+  }
+
   const hora = new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
     timeStyle: 'short',
   }).format(new Date(refreshedAt))
@@ -115,9 +136,12 @@ export default function Board({
       description={t('board.subtitle')}
       crumbs={[{ label: t('board.title') }]}
       actions={
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
+          {/* Los filtros ANTES de las acciones rápidas: primero se decide qué
+              se está mirando, y después se añade. */}
+          <BoardFilters period={period} carrier={carrierFilter} tab={tab} />
           <QuickAdd quickAdd={quickAdd} />
-          <p className="text-xs text-steel-600">
+          <p className="pb-1.5 text-xs text-steel-600">
             {t('board.refreshed.label', { time: hora })} · {t('board.refreshed.auto')}
           </p>
         </div>
@@ -145,15 +169,17 @@ export default function Board({
               Es lo que se pidió —«en el mismo espacio de la izquierda»— y
               además es lo que deja el mapa entero a la vista mientras se lee.
             */
-            <LoadPanel carga={selectedLoad} customers={quickAdd.customers} tab={tab} />
+            <LoadPanel carga={selectedLoad} customers={quickAdd.customers} filtros={filtros} />
           ) : (
             <>
-              <Pestanas tab={tab} tabs={tabs} counts={counts} />
+              <Pestanas tab={tab} tabs={tabs} counts={counts} filtros={filtros} />
               <div className="mt-3 flex flex-col gap-3">
                 {loads.length === 0 ? (
                   <Vacio texto={t(vacioDe(tab))} />
                 ) : (
-                  loads.map((carga) => <TarjetaDeCarga key={carga.id} carga={carga} tab={tab} />)
+                  loads.map((carga) => (
+                    <TarjetaDeCarga key={carga.id} carga={carga} filtros={filtros} />
+                  ))
                 )}
               </div>
             </>
@@ -172,14 +198,14 @@ export default function Board({
           {! can.drivers ? (
             <Vacio texto={t('board.drivers.denied')} />
           ) : selectedDriver !== null ? (
-            <DriverPanel conductor={selectedDriver} tab={tab} />
+            <DriverPanel conductor={selectedDriver} filtros={filtros} />
           ) : (
             <div className="flex flex-col gap-3">
               {drivers.length === 0 ? (
                 <Vacio texto={t('board.drivers.empty')} />
               ) : (
                 drivers.map((conductor) => (
-                  <TarjetaDeConductor key={conductor.id} conductor={conductor} tab={tab} />
+                  <TarjetaDeConductor key={conductor.id} conductor={conductor} filtros={filtros} />
                 ))
               )}
             </div>
@@ -197,7 +223,17 @@ function vacioDe(tab: string): string {
   return 'board.loads.emptyUnassigned'
 }
 
-function Pestanas({ tab, tabs, counts }: { tab: string; tabs: string[]; counts: Record<string, number> }) {
+function Pestanas({
+  tab,
+  tabs,
+  counts,
+  filtros,
+}: {
+  tab: string
+  tabs: string[]
+  counts: Record<string, number>
+  filtros: FiltrosDelTablero
+}) {
   const { t } = useI18n()
 
   return (
@@ -208,7 +244,7 @@ function Pestanas({ tab, tabs, counts }: { tab: string; tabs: string[]; counts: 
         return (
           <Link
             key={clave}
-            href={`/home?tab=${clave}`}
+            href={boardHref({ ...filtros, tab: clave })}
             preserveScroll
             role="tab"
             aria-selected={activa}
@@ -226,7 +262,7 @@ function Pestanas({ tab, tabs, counts }: { tab: string; tabs: string[]; counts: 
 }
 
 /** Cada carga es una tarjeta, y la tarjeta entera lleva a la carga. */
-function TarjetaDeCarga({ carga, tab }: { carga: Carga; tab: string }) {
+function TarjetaDeCarga({ carga, filtros }: { carga: Carga; filtros: FiltrosDelTablero }) {
   const { t, locale } = useI18n()
   const equipo = [carga.truck, carga.trailer].filter((v) => v !== null && v !== '')
 
@@ -239,7 +275,7 @@ function TarjetaDeCarga({ carga, tab }: { carga: Carga; tab: string }) {
       al principio al abrir.
     */
     <Link
-      href={boardHref(tab, { load: carga.id })}
+      href={boardHref(filtros, { load: carga.id })}
       preserveScroll
       className="flex flex-col gap-2.5 rounded border border-steel-200 bg-white p-3.5 text-left transition hover:border-navy-300 hover:shadow-sm"
     >
@@ -333,7 +369,7 @@ function cuando(at: string, locale: string): string {
   }).format(new Date(at.replace(' ', 'T')))
 }
 
-function TarjetaDeConductor({ conductor, tab }: { conductor: EnLaFlota; tab: string }) {
+function TarjetaDeConductor({ conductor, filtros }: { conductor: EnLaFlota; filtros: FiltrosDelTablero }) {
   const { t } = useI18n()
   const equipo = [conductor.truck?.unitNumber, conductor.trailer?.unitNumber].filter(
     (v) => v !== undefined && v !== null && v !== '',
@@ -346,7 +382,7 @@ function TarjetaDeConductor({ conductor, tab }: { conductor: EnLaFlota; tab: str
         <Avatar id={conductor.id} firstName={conductor.firstName} lastName={conductor.lastName} />
         <span className="min-w-0 flex-1">
           <Link
-            href={boardHref(tab, { driver: conductor.id })}
+            href={boardHref(filtros, { driver: conductor.id })}
             preserveScroll
             className="block truncate text-sm font-medium text-navy-800 hover:underline"
           >

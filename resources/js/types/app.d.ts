@@ -56,7 +56,25 @@ export interface Shell {
   nav: NavGroup[]
   /** Avisos sin leer de ESTA persona en ESTA empresa. Sostiene la campana. */
   unreadNotifications: number
+  /** Los últimos, para el panel que se abre al pulsarla. Sin leer primero. */
+  notifications: ShellNotification[]
   supportEmail: string | null
+}
+
+/** Un aviso tal y como lo enseña el panel de la campana. */
+export interface ShellNotification {
+  id: string
+  eventKey: string
+  title: string
+  body: string
+  read: boolean
+  at: string | null
+  /**
+   * Si el aviso lleva a alguna pantalla. Lo decide el SERVIDOR: la dirección
+   * no viaja, porque la pantalla no tiene por qué saber a dónde va el aviso de
+   * una firma, y una dirección que viaja es una dirección que se puede tocar.
+   */
+  hasTarget: boolean
 }
 
 /** Props que trae toda página autenticada. `shell` es null en el sitio público. */

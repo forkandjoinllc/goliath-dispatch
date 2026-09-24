@@ -136,5 +136,22 @@
         "document": "{type} uploaded",
         "position": "Position received",
         "checkCall": "Check call logged by dispatch"
+    },
+    "filters": {
+        "period": "Period",
+        "carrier": "Carrier",
+        "allCarriers": "All carriers",
+        "noCarriers": "No carrier to filter by.",
+        "periods": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "this_week": "This week",
+            "last_week": "Last week",
+            "this_month": "This month",
+            "last_month": "Last month",
+            "this_year": "This year",
+            "last_year": "Last year",
+            "custom": "Custom range"
+        }
     }
 }

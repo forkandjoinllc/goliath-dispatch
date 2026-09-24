@@ -254,17 +254,136 @@ final class NotificationController
      */
     public static function unreadCount(?Actor $actor): int
     {
-        if ($actor === null || $actor->tenantId === null || $actor->userId === null) {
-            return 0;
+        $suyos = self::deEsaPersona($actor);
+
+        return $suyos === null ? 0 : $suyos->whereNull('read_at')->count();
+    }
+
+    /**
+     * Los avisos de ESA persona, o nada si no hay nadie.
+     *
+     * La regla de «solo los míos» escrita una vez para las dos puertas
+     * estáticas —el número de la campana y su panel—. Estaban repetidas, con
+     * las mismas cinco condiciones en las dos, y cada una llevaba además su
+     * propia comprobación de nulos sobre columnas que no pueden serlo. El
+     * hermano de instancia es `scoped()`, que es el que usa la pantalla.
+     */
+    private static function deEsaPersona(?Actor $actor): ?Builder
+    {
+        if ($actor === null) {
+            return null;
         }
 
         return DB::table('notifications')
             ->where('tenant_id', $actor->tenantId)
             ->where('user_id', $actor->userId)
             ->where('channel', 'in_app')
-            ->whereNull('deleted_at')
+            ->whereNull('deleted_at');
+    }
+
+    /** Cuántos caben en el panel de la campana. */
+    public const EN_LA_CAMPANA = 6;
+
+    /**
+     * Los últimos avisos, para el panel que se abre al pulsar la campana.
+     *
+     * ## Por qué ahora hay panel
+     *
+     * La campana era un enlace a secas, y el argumento era bueno: un panel
+     * flotante obliga a decidir cuáles caben y deja al resto detrás de un «ver
+     * todos» que casi nadie pulsa. Lo que ese argumento no pesaba es el otro
+     * lado: sin panel, mirar de qué va un aviso cuesta salir de lo que se está
+     * haciendo, cargar otra pantalla y volver. En el tablero de despacho eso
+     * es perder el sitio. El panel enseña lo suficiente para decidir si
+     * interesa, y el «ver todos» sigue estando —el primero de la lista, no
+     * escondido abajo—.
+     *
+     * ## Y por qué viaja en el armazón
+     *
+     * Por lo mismo que el número: se pinta en todas las pantallas. Pedirlo al
+     * abrir el panel significaría una espera cada vez que alguien lo abre, y la
+     * campana ya paga una consulta en cada página. Son seis filas.
+     *
+     * Sin leer PRIMERO y luego lo demás: quien abre la campana viene a ver lo
+     * que no ha visto. Ordenar solo por fecha empujaba lo nuevo fuera del panel
+     * en cuanto llegaban seis avisos ya leídos.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function preview(?Actor $actor): array
+    {
+        $suyos = self::deEsaPersona($actor);
+
+        if ($suyos === null) {
+            return [];
+        }
+
+        return $suyos
+            ->orderByRaw('read_at is not null asc')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit(self::EN_LA_CAMPANA)
+            ->get(['id', 'event_key', 'title', 'body', 'action_url', 'read_at', 'created_at'])
+            ->map(static fn (object $n): array => [
+                'id' => (string) $n->id,
+                'eventKey' => (string) $n->event_key,
+                'title' => (string) $n->title,
+                'body' => (string) $n->body,
+                'read' => $n->read_at !== null,
+                'at' => Viewer::at($n->created_at),
+                // Si LLEVA a algún sitio. La pantalla no construye la
+                // dirección: el aviso de una firma va a la firma y el de un
+                // gasto a los gastos, y eso lo sabe quien escribió el aviso.
+                'hasTarget' => $n->action_url !== null && $n->action_url !== '',
+            ])
+            ->all();
+    }
+
+    /**
+     * Abrir un aviso: marcarlo leído y llevar a donde lleva.
+     *
+     * Es POST y no GET aunque «abrir» suene a mirar, porque marca leído: un GET
+     * que cambia algo lo dispara cualquier cosa que adelante enlaces.
+     *
+     * El destino se comprueba ANTES de redirigir. `action_url` lo escribe la
+     * aplicación y hoy siempre es una ruta de dentro, pero es una columna de
+     * texto: el día que algo escriba ahí `//otro-sitio.example` el servidor
+     * mandaría a la gente fuera con la sesión abierta, y el navegador leería
+     * esas dos barras como un dominio. Se exige UNA barra y no dos.
+     */
+    public function open(Request $request, string $notification, CurrentActor $current): RedirectResponse
+    {
+        $actor = $current->require();
+
+        $fila = $this->scoped($actor)->where('id', $notification)->first(['id', 'action_url']);
+
+        if ($fila === null) {
+            return redirect()->route('notifications.index');
+        }
+
+        $this->scoped($actor)
+            ->where('id', $fila->id)
             ->whereNull('read_at')
-            ->count();
+            ->update(['read_at' => CarbonImmutable::now(), 'updated_at' => CarbonImmutable::now()]);
+
+        $destino = self::destinoDe($fila->action_url);
+
+        return $destino === null
+            ? redirect()->route('notifications.index')
+            : redirect()->to($destino);
+    }
+
+    /** Una ruta de DENTRO, o nada. Ver `open()`. */
+    public static function destinoDe(mixed $actionUrl): ?string
+    {
+        $url = is_string($actionUrl) ? trim($actionUrl) : '';
+
+        // Una barra y no dos, y nada de espacios ni de barras invertidas:
+        // `//sitio.example` es una dirección de fuera con la forma de una de
+        // dentro, y `\` la enderezan algunos navegadores hasta `/`.
+        return preg_match('#^/[^/\\\\\s][^\\\\\s]*$#', $url) === 1 || $url === '/'
+            ? $url
+            : null;
     }
 
     /**

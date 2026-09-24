@@ -13,7 +13,9 @@
     "bell": {
         "label": "Notifications",
         "unread": "{n} unread",
-        "none": "No unread notifications"
+        "none": "No unread notifications",
+        "seeAll": "See all",
+        "newOne": "New"
     },
     "preferences": {
         "title": "What you get told about",

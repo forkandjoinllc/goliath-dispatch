@@ -13,7 +13,9 @@
     "bell": {
         "label": "Avisos",
         "unread": "{n} sin leer",
-        "none": "Ningún aviso sin leer"
+        "none": "Ningún aviso sin leer",
+        "seeAll": "Ver todos",
+        "newOne": "Nuevo"
     },
     "preferences": {
         "title": "De qué se le avisa",

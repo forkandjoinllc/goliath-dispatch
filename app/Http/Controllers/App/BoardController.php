@@ -12,6 +12,7 @@ use App\Enums\Scope;
 use App\Models\Driver;
 use App\Models\Load;
 use App\Services\Map\MapProvider;
+use App\Support\Board\Period;
 use App\Support\Board\Positions;
 use App\Support\Board\Tabs;
 use App\Support\Drivers\DriverScope;
@@ -23,6 +24,7 @@ use App\Support\Loads\History;
 use App\Support\Loads\LoadClock;
 use App\Support\Loads\LoadScope;
 use App\Support\Loads\Transitions;
+use App\Support\Time\Viewer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -121,13 +123,32 @@ final class BoardController
 
         $ahora = CarbonImmutable::now();
 
+        /*
+         * El periodo y el transportista, los dos filtros del tablero.
+         *
+         * Se resuelven UNA vez y viajan a todo lo que pregunta: la lista, las
+         * cuentas de las pestañas, el mapa y la columna de conductores.
+         * Resolverlos dentro de cada método daría cuatro respuestas a la misma
+         * pregunta, y la que se desviara sería la cuenta de la pestaña —el
+         * número que dice «3» sobre una lista de dos—.
+         */
+        $periodo = Period::de(
+            $request->query('period') === null ? null : (string) $request->query('period'),
+            $request->query('from') === null ? null : (string) $request->query('from'),
+            $request->query('to') === null ? null : (string) $request->query('to'),
+            Viewer::zone(),
+            $ahora,
+        );
+
         // Quien no puede leer cargas ve el tablero sin la columna de cargas ni
         // el mapa, y no un 403: un conductor tiene tablero, solo que el suyo.
         $puedeCargas = $checker->can($actor, 'load:read', null, $policy)->allowed;
         $puedeConductores = $checker->can($actor, 'driver:read', null, $policy)->allowed;
 
-        $cargas = $puedeCargas ? $this->cargas($checker, $actor, $policy, $pestana) : collect();
-        $cuentas = $puedeCargas ? $this->cuentas($checker, $actor, $policy) : [];
+        $transportista = $this->transportistaElegido($request, $actor);
+
+        $cargas = $puedeCargas ? $this->cargas($checker, $actor, $policy, $pestana, $periodo, $transportista) : collect();
+        $cuentas = $puedeCargas ? $this->cuentas($checker, $actor, $policy, $periodo, $transportista) : [];
 
         return Inertia::render('App/Board', [
             'tab' => $pestana,
@@ -135,8 +156,26 @@ final class BoardController
             'counts' => $cuentas,
             'can' => ['loads' => $puedeCargas, 'drivers' => $puedeConductores],
             'loads' => $this->tarjetasDeCarga($actor, $cargas),
-            'drivers' => $puedeConductores ? $this->conductores($checker, $actor, $policy, $ahora) : [],
-            'map' => $this->mapaDe($actor, $mapa, $checker, $policy, $ahora),
+            'drivers' => $puedeConductores
+                ? $this->conductores($checker, $actor, $policy, $ahora, $transportista)
+                : [],
+            'map' => $this->mapaDe($actor, $mapa, $checker, $policy, $ahora, $periodo, $transportista),
+            /*
+             * Los dos filtros, tal y como quedaron resueltos.
+             *
+             * El periodo que viaja es el que SE ESTÁ USANDO, no el que pidió la
+             * URL: un rango a medida del revés vuelve a «hoy», y el desplegable
+             * tiene que decir «hoy». Un desplegable que dice «marzo» sobre una
+             * lista de hoy es peor que uno que dice «hoy».
+             */
+            'period' => $periodo->paraLaPantalla(),
+            // En cierre ENTERO y no con el cierre dentro del array: Inertia
+            // evalúa los cierres que son la propiedad, no los que van
+            // anidados, y uno anidado se intentaría serializar tal cual.
+            'carrierFilter' => fn (): array => [
+                'selected' => $transportista,
+                'options' => $this->transportistasDelFiltro($actor),
+            ],
             // Las acciones rápidas. Los permisos se deciden AQUÍ y no en la
             // pantalla: un botón que se enseña y luego devuelve 403 al pulsar
             // es peor que no enseñarlo.
@@ -158,7 +197,7 @@ final class BoardController
                 ? $this->cargaElegida($request, $checker, $actor, $policy)
                 : null,
             'selectedDriver' => fn (): ?array => $puedeConductores
-                ? $this->conductorElegido($request, $checker, $actor, $policy, $ahora)
+                ? $this->conductorElegido($request, $checker, $actor, $policy, $ahora, $periodo)
                 : null,
             // La hora del servidor, para que la pantalla pueda decir «hace un
             // minuto» sin creerse el reloj del navegador.
@@ -249,11 +288,17 @@ final class BoardController
      * @param  array<string, mixed>|null  $policy
      * @return Collection<int, Load>
      */
-    private function cargas(PermissionChecker $checker, Actor $actor, ?array $policy, string $pestana): Collection
-    {
+    private function cargas(
+        PermissionChecker $checker,
+        Actor $actor,
+        ?array $policy,
+        string $pestana,
+        Period $periodo,
+        ?string $transportista,
+    ): Collection {
         $scope = $checker->authorize($actor, 'load:read', null, $policy);
 
-        return $this->conPestana($this->scoped($checker, $actor, $scope), $pestana)
+        return $this->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), $pestana)
             ->orderByRaw('coalesce(planned_pickup_at, created_at) asc')
             ->orderBy('id')
             ->limit(self::TOPE)
@@ -264,13 +309,23 @@ final class BoardController
      * @param  array<string, mixed>|null  $policy
      * @return array<string, int>
      */
-    private function cuentas(PermissionChecker $checker, Actor $actor, ?array $policy): array
-    {
+    private function cuentas(
+        PermissionChecker $checker,
+        Actor $actor,
+        ?array $policy,
+        Period $periodo,
+        ?string $transportista,
+    ): array {
         $scope = $checker->authorize($actor, 'load:read', null, $policy);
         $cuentas = [];
 
+        // Por los MISMOS filtros que la lista. Contar sobre el total mientras
+        // la lista enseña el periodo deja una pestaña que dice «12» encima de
+        // tres tarjetas, y quien la mira concluye que faltan nueve.
         foreach (Tabs::TODAS as $pestana) {
-            $cuentas[$pestana] = $this->conPestana($this->scoped($checker, $actor, $scope), $pestana)->count();
+            $cuentas[$pestana] = $this
+                ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), $pestana)
+                ->count();
         }
 
         return $cuentas;
@@ -839,6 +894,7 @@ final class BoardController
         Actor $actor,
         ?array $policy,
         CarbonImmutable $ahora,
+        Period $periodo,
     ): ?array {
         $id = (string) $request->query('driver', '');
 
@@ -879,7 +935,10 @@ final class BoardController
             // La carga que lleva AHORA, si lleva alguna. Es la primera pregunta
             // que se hace mirando a un conductor en un tablero.
             'currentLoad' => $this->cargaEnCursoDe($tenantId, $id),
-            'timeline' => DriverTimeline::de($tenantId, $id),
+            // La cronología SÍ va por el periodo: es «la actividad» del
+            // conductor, que es justo lo que el filtro de fechas pregunta. La
+            // columna de la derecha no, porque esa contesta otra cosa.
+            'timeline' => DriverTimeline::de($tenantId, $id, $periodo->limitesUtc()),
         ];
     }
 
@@ -923,11 +982,19 @@ final class BoardController
      * @param  array<string, mixed>|null  $policy
      * @return list<array<string, mixed>>
      */
-    private function conductores(PermissionChecker $checker, Actor $actor, ?array $policy, CarbonImmutable $ahora): array
-    {
+    private function conductores(
+        PermissionChecker $checker,
+        Actor $actor,
+        ?array $policy,
+        CarbonImmutable $ahora,
+        ?string $transportista,
+    ): array {
         $scope = $checker->authorize($actor, 'driver:read', null, $policy);
 
-        $filas = DriverScope::apply(Driver::query(), $checker, $actor, $scope)
+        $filas = $this->deEseTransportista(
+            DriverScope::apply(Driver::query(), $checker, $actor, $scope),
+            $transportista,
+        )
             ->whereNull('drivers.deleted_at')
             ->orderBy('drivers.first_name')
             ->orderBy('drivers.last_name')
@@ -1024,6 +1091,8 @@ final class BoardController
         PermissionChecker $checker,
         ?array $policy,
         CarbonImmutable $ahora,
+        Period $periodo,
+        ?string $transportista,
     ): array {
         $base = [
             'provider' => $mapa->name(),
@@ -1043,7 +1112,11 @@ final class BoardController
         // «En vivo» es lo que está rodando: asignadas y no terminadas. Una
         // carga entregada la semana pasada en el mapa es ruido con forma de
         // dato.
-        $vivas = $this->conPestana($this->scoped($checker, $actor, $scope), Tabs::ASIGNADAS)
+        // El mapa sigue a la lista. Dibujar cargas que la columna de la
+        // izquierda no enseña deja puntos sin tarjeta: se pulsa uno y no hay
+        // dónde ir.
+        $vivas = $this
+            ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), Tabs::ASIGNADAS)
             ->limit(self::TOPE)
             ->get(['id', 'load_number', 'customer_id']);
 
@@ -1182,5 +1255,113 @@ final class BoardController
     private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
     {
         return LoadScope::apply(Load::query(), $checker, $actor, $scope);
+    }
+
+    /**
+     * Lo que alcanza el rol, RECORTADO además por los dos filtros.
+     *
+     * Son dos cosas distintas y por eso son dos métodos. `scoped()` es la
+     * frontera: lo que esta persona tiene derecho a ver, y no se negocia.
+     * Esto de aquí es lo que además ha pedido mirar, y se cambia con un
+     * desplegable.
+     *
+     * Quien abre una carga por su enlace pasa por `scoped()` y no por aquí, a
+     * propósito: pegar en un mensaje el enlace de una carga de marzo tiene que
+     * abrirla aunque el tablero esté puesto en «hoy». Si el filtro también
+     * cerrara esa puerta, el enlace contestaría «no existe» a alguien que sí
+     * puede verla.
+     *
+     * @return Builder<Load>
+     */
+    private function filtradas(
+        PermissionChecker $checker,
+        Actor $actor,
+        Scope $scope,
+        Period $periodo,
+        ?string $transportista,
+    ): Builder {
+        $query = $periodo->aplicar($this->scoped($checker, $actor, $scope));
+
+        return $transportista === null
+            ? $query
+            : $query->where('loads.carrier_id', $transportista);
+    }
+
+    /**
+     * Los conductores de ESE transportista, cuando hay filtro.
+     *
+     * Un conductor no tiene columna de transportista: la relación vive en
+     * `driver_carrier_relationships`, así que es un EXISTS. Es la misma forma
+     * que usa `DriverScope` para el alcance, y por el mismo motivo.
+     *
+     * El PERIODO no recorta esta columna, y es a propósito: la columna existe
+     * para contestar «¿a quién se la doy?», y esconder a los que están libres
+     * porque hoy no han hecho nada la deja sin contestar nada. Lo que sí se
+     * recorta al periodo es la cronología del panel del conductor, que es su
+     * actividad.
+     *
+     * @param  Builder<Driver>  $query
+     * @return Builder<Driver>
+     */
+    private function deEseTransportista(Builder $query, ?string $transportista): Builder
+    {
+        if ($transportista === null) {
+            return $query;
+        }
+
+        return $query->whereExists(function ($q) use ($transportista): void {
+            $q->select(DB::raw(1))
+                ->from('driver_carrier_relationships as fr')
+                ->whereColumn('fr.driver_id', 'drivers.id')
+                ->where('fr.carrier_id', $transportista)
+                ->whereNull('fr.deleted_at');
+        });
+    }
+
+    /**
+     * El transportista del filtro, comprobado contra los que se le ofrecen.
+     *
+     * No basta con que mida 36 caracteres: se mira que esté en la lista que
+     * esta persona puede elegir. Sin eso, escribir en la barra de direcciones
+     * el identificador de un transportista ajeno no enseñaría sus cargas
+     * —`LoadScope` sigue en pie— pero sí dejaría el tablero vacío con el
+     * nombre de una empresa que no es suya en el desplegable, y eso ya
+     * confirma que existe.
+     */
+    private function transportistaElegido(Request $request, Actor $actor): ?string
+    {
+        $id = (string) $request->query('carrier', '');
+
+        if ($id === '') {
+            return null;
+        }
+
+        $permitidos = array_column($this->transportistasDelFiltro($actor), 'id');
+
+        return in_array($id, $permitidos, true) ? $id : null;
+    }
+
+    /**
+     * Los transportistas entre los que se puede filtrar.
+     *
+     * Los de la empresa, y solo el suyo si quien mira es un transportista. Se
+     * ofrecen TODOS los que existen y no solo los que tienen carga en el
+     * periodo: un desplegable que cambia de contenido al cambiar la fecha
+     * obliga a volver a buscar el mismo nombre cada vez, y esconde justo el
+     * caso que se quiere ver —«¿este no tiene nada esta semana?»—.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    private function transportistasDelFiltro(Actor $actor): array
+    {
+        return DB::table('carriers')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->when($actor->carrierId !== null, fn ($q) => $q->where('id', $actor->carrierId))
+            ->orderBy('legal_name')
+            ->limit(self::TOPE_DE_LISTA)
+            ->get(['id', 'legal_name as name'])
+            ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+            ->all();
     }
 }

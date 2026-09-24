@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react'
-import { boardHref } from '@/components/App/Board/href'
+import { boardHref, type FiltrosDelTablero } from '@/components/App/Board/href'
 import { useI18n } from '@/lib/i18n'
 
 export interface Suceso {
@@ -30,11 +30,11 @@ export interface Suceso {
 export function Timeline({
   sucesos,
   vacio,
-  tab,
+  filtros,
 }: {
   sucesos: Suceso[]
   vacio: string
-  tab: string
+  filtros: FiltrosDelTablero
 }) {
   const { t, locale } = useI18n()
 
@@ -61,7 +61,7 @@ export function Timeline({
               {s.at === null ? t('board.loads.noDate') : `${cuando(s.at, locale)} · ${s.zone}`}
             </p>
             <p className="text-sm text-carbon">{titulo(s, t)}</p>
-            <Detalle suceso={s} tab={tab} />
+            <Detalle suceso={s} filtros={filtros} />
           </div>
         </li>
       ))}
@@ -125,7 +125,7 @@ function titulo(s: Suceso, t: (k: string, r?: Record<string, string | number>) =
   return t('board.timeline.created')
 }
 
-function Detalle({ suceso, tab }: { suceso: Suceso; tab: string }) {
+function Detalle({ suceso, filtros }: { suceso: Suceso; filtros: FiltrosDelTablero }) {
   const { t } = useI18n()
   const d = suceso.detail
   const trozos: string[] = []
@@ -150,7 +150,7 @@ function Detalle({ suceso, tab }: { suceso: Suceso; tab: string }) {
     <p className="text-xs text-steel-600">
       {carga === null || suceso.type === 'assigned' || suceso.type === 'unassigned' ? null : (
         <Link
-          href={boardHref(tab, { load: carga.id })}
+          href={boardHref(filtros, { load: carga.id })}
           preserveScroll
           className="font-medium tabular-nums text-navy-700 hover:underline"
         >

@@ -163,7 +163,8 @@ los tres importan:
 
 Pulsar una carga o un conductor abre su panel en el sitio de su tarjeta, con
 tres pestañas y un menú de tres acciones; arriba hay dos altas rápidas en
-ventana. Todo eso está en **`docs/board-panels.md`**.
+ventana. Todo eso está en **`docs/board-panels.md`**, y los dos filtros de
+arriba —periodo y transportista— en **`docs/board-filters.md`**.
 
 ## Lo que hay que hacer en el servidor
 

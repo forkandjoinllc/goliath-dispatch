@@ -4,7 +4,7 @@ import { Modal } from '@/components/App/Modal'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
 import { Timeline, type Suceso } from '@/components/App/Board/Timeline'
-import { boardHref } from '@/components/App/Board/href'
+import { boardHref, type FiltrosDelTablero } from '@/components/App/Board/href'
 import { TextField } from '@/components/Form/Field'
 import { SearchableSelect, type Choice } from '@/components/Form/SearchableSelect'
 import { useI18n } from '@/lib/i18n'
@@ -135,11 +135,11 @@ type Pestana = 'detail' | 'customer' | 'history'
 export function LoadPanel({
   carga,
   customers,
-  tab,
+  filtros,
 }: {
   carga: CargaElegida
   customers: Choice[]
-  tab: string
+  filtros: FiltrosDelTablero
 }) {
   const { t } = useI18n()
   const [pestana, setPestana] = useState<Pestana>('detail')
@@ -167,7 +167,7 @@ export function LoadPanel({
             onCancel={() => setCancelando(true)}
           />
           <Link
-            href={boardHref(tab)}
+            href={boardHref(filtros)}
             preserveScroll
             aria-label={t('common.actions.close')}
             className="rounded px-2 py-1 text-lg leading-none text-steel-600 transition hover:bg-steel-100 hover:text-carbon"
@@ -196,10 +196,10 @@ export function LoadPanel({
         ))}
       </div>
 
-      {pestana === 'detail' ? <Detalle carga={carga} tab={tab} /> : null}
+      {pestana === 'detail' ? <Detalle carga={carga} filtros={filtros} /> : null}
       {pestana === 'customer' ? <Cliente carga={carga} /> : null}
       {pestana === 'history' ? (
-        <Timeline sucesos={carga.history} vacio={t('board.panel.history.empty')} tab={tab} />
+        <Timeline sucesos={carga.history} vacio={t('board.panel.history.empty')} filtros={filtros} />
       ) : null}
 
       <Link
@@ -327,7 +327,7 @@ function ItemMenu({
   )
 }
 
-function Detalle({ carga, tab }: { carga: CargaElegida; tab: string }) {
+function Detalle({ carga, filtros }: { carga: CargaElegida; filtros: FiltrosDelTablero }) {
   const { t, locale } = useI18n()
   const equipo = [carga.truck, carga.trailer].filter((v) => v !== null && v !== '')
 
@@ -345,7 +345,7 @@ function Detalle({ carga, tab }: { carga: CargaElegida; tab: string }) {
             />
             <span className="min-w-0">
               <Link
-                href={boardHref(tab, { driver: carga.driver.id })}
+                href={boardHref(filtros, { driver: carga.driver.id })}
                 preserveScroll
                 className="block truncate text-sm font-medium text-navy-800 hover:underline"
               >

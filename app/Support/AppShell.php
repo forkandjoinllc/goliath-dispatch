@@ -82,6 +82,9 @@ final class AppShell
             // campana a cero sin que nadie lo notara — y una campana que miente
             // es peor que no tenerla.
             'unreadNotifications' => NotificationController::unreadCount($actor),
+            // Y los últimos, para el panel que se abre al pulsarla. Ver
+            // `NotificationController::preview` para por qué van aquí.
+            'notifications' => NotificationController::preview($actor),
             // El correo de soporte de la empresa.
             //
             // Va en el armazón por el mismo motivo que la campana: lo necesitan
