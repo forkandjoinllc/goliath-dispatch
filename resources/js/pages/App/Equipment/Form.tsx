@@ -17,7 +17,67 @@ interface Props {
   choices: {
     carriers: { id: string; name: string }[]
     equipmentTypes: { id: string; code: string; labelEn: string; labelEs: string }[]
+    /** Proveedores de tipo arrendamiento, activos. Ver `EquipmentController`. */
+    lessors?: { id: string; name: string }[]
   }
+}
+
+/**
+ * El arrendador de la unidad: una FICHA, no un nombre tecleado.
+ *
+ * ## Lo que ya estaba escrito no se tira
+ *
+ * `lessor_name` lleva ahí desde el primer día y es lo único que existe sobre el
+ * arrendador de las unidades dadas de alta hasta hoy. Cuando la unidad todavía
+ * no apunta a ninguna ficha, este campo enseña ese nombre y dice que no la
+ * tiene, con el desplegable al lado para enlazarla. Sustituirlo por un
+ * desplegable vacío habría hecho desaparecer el dato de la pantalla sin
+ * borrarlo de la base: peor que borrarlo, porque parece que no había nada.
+ *
+ * ## Y no se crean proveedores desde aquí
+ *
+ * Si falta el que hace falta, se da de alta en Finanzas. Dos sitios donde nace
+ * una ficha de proveedor son dos sitios donde olvidarse del W-9 y de los
+ * contactos, y el segundo siempre es el que se olvida.
+ */
+function LessorField({
+  vendorId,
+  typedName,
+  choices,
+  onPick,
+  error,
+}: {
+  vendorId: string
+  typedName: string
+  choices: { id: string; name: string }[]
+  onPick: (id: string) => void
+  error?: string
+}) {
+  const { t } = useI18n()
+  const elegido = choices.find((c) => c.id === vendorId) ?? null
+  const sinFicha = vendorId === '' && typedName !== ''
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <SearchableSelect
+        label={t('equipment.form.lessorName')}
+        choices={choices}
+        selected={elegido}
+        onPick={onPick}
+        onClear={() => onPick('')}
+        emptyText={t('equipment.form.lessorNoVendors')}
+        changeText={t('common.actions.change')}
+        hint={t('equipment.form.lessorHint')}
+        error={error}
+      />
+
+      {sinFicha ? (
+        <p className="rounded bg-safety-50 px-2.5 py-2 text-xs text-safety-800">
+          {t('equipment.form.lessorTypedOnly', { name: typedName })}
+        </p>
+      ) : null}
+    </div>
+  )
 }
 
 export default function EquipmentForm({ type, unit, choices }: Props) {
@@ -66,6 +126,7 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
     notes: g('notes'),
     ownership: g('ownership') || 'owned',
     lessor_name: g('lessorName'),
+    lessor_vendor_id: g('lessorVendorId'),
     lease_ends_on: date('leaseEndsOn'),
     // Las cinco medidas van en el estado aunque cada clase de unidad enseñe
     // solo las suyas. El servidor valida las de SU tipo y descarta el resto:
@@ -432,13 +493,12 @@ export default function EquipmentForm({ type, unit, choices }: Props) {
             error={form.errors.ownership}
           />
           {arrendada ? (
-            <TextField
-              label={t('equipment.form.lessorName')}
-              hint={t('equipment.form.lessorHint')}
-              maxLength={160}
-              value={form.data.lessor_name}
-              onChange={(e) => form.setData('lessor_name', e.target.value)}
-              error={form.errors.lessor_name}
+            <LessorField
+              vendorId={form.data.lessor_vendor_id}
+              typedName={form.data.lessor_name}
+              choices={choices.lessors ?? []}
+              onPick={(id) => form.setData('lessor_vendor_id', id)}
+              error={form.errors.lessor_vendor_id}
             />
           ) : (
             /* Y se dice, porque al guardar se borran: quien pasa una unidad

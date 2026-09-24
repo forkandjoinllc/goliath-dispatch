@@ -34,7 +34,8 @@
         "tenants": "Organizaciones",
         "plans": "Planes",
         "platformHealth": "Salud de la plataforma",
-        "retention": "Retención"
+        "retention": "Retención",
+        "vendors": "Proveedores"
     },
     "groups": {
         "operations": "Operaciones",

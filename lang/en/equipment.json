@@ -99,7 +99,8 @@
         "axleSpacings": "Distance between axles",
         "axleSpacingsTotal": "first axle to last",
         "noAxleSpacings": "Not measured.",
-        "dimensionsTruck": "Dimensions and axles"
+        "dimensionsTruck": "Dimensions and axles",
+        "lessorNoRecord": "(typed in by hand, no vendor record)"
     },
     "form": {
         "createTruckTitle": "Add truck",
@@ -156,7 +157,7 @@
         "ownershipSection": "Ownership",
         "ownership": "Ownership",
         "lessorName": "Lessor",
-        "lessorHint": "Who the unit is leased from, as it appears on the lease.",
+        "lessorHint": "The company that leases this unit. Their record lives under Finance → Vendors.",
         "leaseEndsOn": "Lease ends",
         "ownershipOwnedHint": "A unit you own has no lessor and no end date, so those two are cleared when you save.",
         "height": "Height",
@@ -168,7 +169,10 @@
         "axleSpacingPair": "Axle {from} to axle {to}",
         "axleSpacingsMismatch": "With {axles} axles you need {n} gaps, and they are not all filled in. Fill them all in, or leave them all blank.",
         "axleSpacingZero": "A gap cannot be zero. Leave both boxes blank if it has not been measured.",
-        "axleSpacingsMismatchOne": "With {axles} axles you need {n} gap, and it is missing. Fill it in, or leave it blank."
+        "axleSpacingsMismatchOne": "With {axles} axles you need {n} gap, and it is missing. Fill it in, or leave it blank.",
+        "lessorNoVendors": "No leasing vendor on file. Add one under Finance → Vendors.",
+        "lessorTypedOnly": "Typed in by hand: “{name}”. Pick the vendor above to tie this unit to its record.",
+        "lessorNotFound": "That vendor does not belong to this company."
     },
     "flash": {
         "created": "Unit {unit} was added.",
@@ -234,5 +238,9 @@
         "owned": "Owned",
         "leased": "Leased",
         "lease_to_own": "Lease to own"
+    },
+    "kind": {
+        "truck": "Truck",
+        "trailer": "Trailer"
     }
 }

@@ -1,0 +1,131 @@
+{
+    "index": {
+        "title": "Proveedores",
+        "subtitle": "Quién le cobra a un transportista: la arrendadora, el taller, la aseguradora.",
+        "carrierCount": "{n} transportistas",
+        "carrierCountOne": "{n} transportista",
+        "unitCount": "{n} unidades arrendadas",
+        "unitCountOne": "{n} unidad arrendada",
+        "noUnits": "Ninguna unidad arrendada",
+        "columns": {
+            "name": "Proveedor",
+            "type": "Tipo",
+            "contact": "Contacto",
+            "place": "Dónde",
+            "terms": "Condiciones",
+            "serves": "Sirve a",
+            "status": "Estado"
+        },
+        "emptyHint": "Añade el primero. La arrendadora de tus camiones es un buen sitio por donde empezar.",
+        "noResults": "Ningún proveedor coincide con estos filtros",
+        "noResultsHint": "Quita los filtros para ver todo lo que alcanzas.",
+        "add": "Añadir proveedor",
+        "searchLabel": "Buscar proveedores",
+        "searchPlaceholder": "Nombre de la empresa, correo o teléfono",
+        "showing": "Enseñando {from}–{to} de {total}"
+    },
+    "type": {
+        "leasing": "Arrendamiento",
+        "maintenance": "Mantenimiento y reparación",
+        "insurance": "Seguros",
+        "fuel": "Combustible",
+        "parts": "Piezas y neumáticos",
+        "towing": "Grúa y asistencia",
+        "permitting": "Permisos y licencias",
+        "other": "Otro"
+    },
+    "status": {
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "archived": "Archivado"
+    },
+    "paymentMethod": {
+        "ach": "ACH",
+        "check": "Cheque",
+        "wire": "Transferencia",
+        "card": "Tarjeta",
+        "other": "Otro"
+    },
+    "form": {
+        "createTitle": "Proveedor nuevo",
+        "editTitle": "Editar {name}",
+        "identity": "Quién es",
+        "companyName": "Nombre de la empresa",
+        "vendorType": "Qué proporciona",
+        "website": "Sitio web",
+        "address": "Dirección",
+        "money": "Cómo se le paga",
+        "taxId": "Identificador fiscal (EIN o equivalente)",
+        "taxIdHint": "Se guarda cifrado. Solo se vuelven a enseñar los cuatro últimos: déjalo en blanco para conservar el que hay.",
+        "taxIdOnFile": "Guardado, termina en {last4}",
+        "w9OnFile": "Tenemos su W-9",
+        "w9ReceivedOn": "W-9 recibido el",
+        "paymentTermsDays": "Condiciones de pago (días)",
+        "paymentMethod": "Cómo se le paga",
+        "accountLast4": "Cuenta, cuatro últimos",
+        "accountLast4Hint": "Cuatro dígitos, para reconocer el pago en el extracto. El número de cuenta completo no se guarda aquí.",
+        "serves": "Transportistas a los que sirve",
+        "servesHint": "Un proveedor, los transportistas que haga falta. Una arrendadora que trabaja con tres de tus transportistas es una ficha, no tres.",
+        "noCarriers": "No hay ningún transportista al que atarlo.",
+        "contacts": "Contactos",
+        "contactsHint": "El primero es el contacto principal.",
+        "addContact": "Añadir un contacto",
+        "removeContact": "Quitar",
+        "primary": "Principal",
+        "firstName": "Nombre",
+        "lastName": "Apellidos",
+        "position": "Cargo",
+        "extension": "Ext.",
+        "notes": "Notas",
+        "save": "Guardar proveedor"
+    },
+    "detail": {
+        "contacts": "Contactos",
+        "noContacts": "Sin contactos.",
+        "serves": "Sirve a",
+        "noServes": "Todavía no está atado a ningún transportista.",
+        "account": "Cuenta {reference}",
+        "leased": "Lo que nos arrienda",
+        "noLeased": "Ninguna unidad apunta a este proveedor.",
+        "leaseEndsOn": "Vence el {date}",
+        "leaseOpen": "Sin fecha de fin",
+        "expenses": "Gastos",
+        "noExpenses": "No se le ha imputado ningún gasto.",
+        "expenseTotal": "{amount} en {n} gastos",
+        "expenseTotalOne": "{amount} en {n} gasto",
+        "showingRecent": "Se enseñan solo los más recientes. El total de arriba los cuenta todos.",
+        "taxId": "Identificador fiscal",
+        "taxIdMasked": "termina en {last4}",
+        "w9": "W-9",
+        "w9Yes": "Guardado, recibido el {date}",
+        "w9YesNoDate": "Guardado",
+        "w9No": "No lo tenemos",
+        "terms": "Condiciones de pago",
+        "termsDays": "{n} días",
+        "termsDaysOne": "{n} día",
+        "edit": "Editar proveedor",
+        "delete": "Retirar proveedor",
+        "deleteConfirm": "¿Retirar este proveedor? Se queda en el registro y deja de ofrecerse.",
+        "onFileSince": "En ficha desde"
+    },
+    "flash": {
+        "created": "{name} ya está en ficha.",
+        "updated": "{name} guardado.",
+        "deleted": "{name} retirado."
+    },
+    "errors": {
+        "stillInUse": "Este proveedor no se puede retirar: {units} unidades apuntan a él y {expenses} gastos están imputados a su nombre. Muévelos primero."
+    },
+    "scope": {
+        "tenant": "Todos los proveedores de esta empresa",
+        "platform": "Todos los proveedores de la plataforma",
+        "carrier": "Solo los proveedores que sirven a tu transportista"
+    },
+    "filters": {
+        "type": "Tipo",
+        "status": "Estado",
+        "carrier": "Sirve a",
+        "all": "Todos",
+        "clear": "Quitar filtros"
+    }
+}

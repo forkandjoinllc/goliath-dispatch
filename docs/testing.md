@@ -4173,3 +4173,57 @@ columna que no puede ser nula — en mi método nuevo, porque lo copié del de a
 lado, que ya lo tenía. La señal no era el aviso: era que había copiado cinco
 líneas de filtro de tenant y usuario. Las dos puertas comparten ahora
 `deEsaPersona()`, y el conteo bajó de 136 a 135.
+
+## Lote 41 — los proveedores
+
+**Cuatro guardianes me pararon antes de escribir una sola prueba, y los cuatro
+tenían razón.** Al añadir un controlador nuevo saltaron, a la vez: que el
+permiso declarado no lo comprobaba nadie, que el `scoped()` estrechaba por
+ámbito sin usar una pieza registrada, que el listado puede venir acotado y no
+decía el alcance a la vista, y que el borrado de ficha no declaraba qué
+comprueba antes. Ninguno es una prueba de mi código: son **registros de deuda
+declarada**, y lo que vigilan es que una pieza nueva pase por las mismas
+puertas que las viejas. El coste de entrar en el registro es una línea; el de
+no tenerlo es un dominio que se salta una regla porque nadie se acordó.
+
+**El sabotaje que no rompía nada porque la prueba tampoco mandaba nada.** «Al
+pasar la unidad a propia se suelta la ficha del arrendador» pasaba con y sin la
+regla: la prueba mandaba el PATCH **sin** `lessor_vendor_id`, así que el valor
+llegaba nulo de todas formas. La prueba tenía que mandar el arrendador PUESTO,
+que es lo que hace el formulario de verdad — la pantalla cambia el desplegable
+de propiedad y las dos casillas del arrendador siguen con lo que había en el
+estado. **Una prueba que no reproduce lo que manda la pantalla mide otra cosa.**
+
+**Y el sabotaje que apuntaba a la prueba equivocada.** «El alcance por
+transportista se escribe como columna» estaba dirigido al guardián de forma,
+que prohibía una ortografía concreta (`where('vendors.carrier_id'`) y no la
+forma. El sabotaje escribía otra cosa distinta y pasaba por debajo. Apuntado a
+la prueba de funcionalidad se cae al primer intento, porque ahí lo que se mide
+es quién sale en la lista. **Cuando un guardián de forma prohíbe una ortografía
+en vez de exigir una estructura, el sabotaje tiene que ir a la prueba que mide
+el efecto.**
+
+**phpstan encontró un defecto de verdad, no un aviso de tipos.** `Undefined
+variable: $filters` dentro de un cierre que no lo pasaba por `use`: buscar un
+proveedor por teléfono habría reventado en producción la primera vez que
+alguien tecleara un número. No lo habría cazado ninguna de mis pruebas —
+ninguna buscaba por teléfono— y tampoco el paseo por el navegador. Y de paso:
+`isset($x) && $x !== null` es redundante, y el aviso lo decía.
+
+**Insertar un método delante de otro se lleva su docblock.** Puse el método
+nuevo justo encima de `categories()` y le robé su `@return`; phpstan lo
+reportó como «sin tipo de valor en iterable» y tardé un rato en entender que la
+culpa no era del método que había escrito, sino del que tenía debajo. Al
+insertar código encima de una función existente, mirar qué había pegado arriba.
+
+**Un guardián que prohíbe una cadena en todo el fichero prohíbe también el uso
+correcto.** El mío decía «`tax_id_encrypted` no aparece en el controlador» — y
+el controlador TIENE que escribir esa columna, para eso está el campo. Lo que
+quería medir era que no sale en lo que VIAJA a la pantalla, así que ahora
+recorta `detail()` y `row()` y mira dentro. Tercera vez en tres lotes que un
+guardián mide el fichero entero cuando quería medir un trozo.
+
+**Los datos de prueba tienen que producir el caso feo.** La siembra deja una
+unidad con el arrendador escrito a mano y sin ficha, a propósito: es el estado
+en el que está cualquier flota el día que estrena esta pantalla. Sin esa fila,
+la única forma de ver ese camino sería que se lo encontrara un cliente.

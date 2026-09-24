@@ -65,6 +65,7 @@ const BORRADOS_DE_FICHA = [
     'CarrierController' => 'OpenWork::forCarrier — cargas sin cerrar, liquidaciones sin pagar y facturas con saldo.',
     'CustomerController' => 'OpenWork::forCustomer — cargas sin cerrar. No tiene liquidaciones y sus facturas cuelgan de la carga.',
     'FactoringController' => 'Cuenta propia sobre factoring_assignments: aquí la pregunta no es si queda trabajo abierto sino si algo la nombra, y una asignación cerrada la nombra igual.',
+    'VendorController' => 'Cuenta propia sobre trucks/trailers.lessor_vendor_id y expenses.vendor_id: como en factoring, la pregunta no es si queda trabajo abierto sino si algo lo NOMBRA — un gasto cerrado del año pasado sigue teniendo que poder explicarse, y una unidad se quedaría con un arrendador que no existe.',
 ];
 
 /* ── La regla vive en un sitio y las dos fichas pasan por él ─────────────── */

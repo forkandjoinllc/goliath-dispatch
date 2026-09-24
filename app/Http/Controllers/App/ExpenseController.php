@@ -12,15 +12,16 @@ use App\Enums\AuditAction;
 use App\Enums\Scope;
 use App\Models\Expense;
 use App\Models\Load;
+use App\Models\Vendor;
 use App\Support\Audit;
 use App\Support\Documents\ExpenseFile;
 use App\Support\Finance\ExpenseTransitions;
 use App\Support\InertiaPage;
+use App\Support\Loads\LoadScope;
 use App\Support\Notifications\Events;
 use App\Support\Notifications\Notifier;
-use App\Support\Storage\DocumentStore;
 use App\Support\Screens\Reachable;
-use App\Support\Loads\LoadScope;
+use App\Support\Storage\DocumentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -154,6 +155,9 @@ final class ExpenseController
             'categories' => $this->categories($actor),
             'loads' => $this->openLoads($actor, $checker, $current),
             'loadFrozen' => $visible && $this->alreadyFrozen($actor, $elegida),
+            // A quién se le pagó. OPCIONAL: un peaje no tiene proveedor en
+            // ficha y exigirlo dejaría sin registrar el gasto más común.
+            'vendors' => $this->proveedores($actor),
         ]);
     }
 
@@ -170,6 +174,7 @@ final class ExpenseController
             'amount_cents' => ['required', 'integer', 'min:1', 'max:99999999999'],
             'incurred_on' => ['nullable', 'date'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'vendor_id' => ['nullable', 'string', 'size:36'],
         ]);
 
         // Se busca por la consulta ESTRECHADA. Comprobar solo la empresa dejaría
@@ -195,6 +200,25 @@ final class ExpenseController
             throw ValidationException::withMessages(['category_id' => __('expenses.errors.categoryNotFound')]);
         }
 
+        /*
+         * El proveedor, comprobado contra los de ESTA empresa.
+         *
+         * `size:36` deja pasar el id de un proveedor de otra empresa: el
+         * ámbito global impide leerlo, no impide escribirlo aquí. Sin esto, la
+         * ficha del gasto enseñaría el nombre de una empresa ajena a quien
+         * pegara un identificador en la petición — y la ficha del proveedor
+         * ajeno sumaría un gasto que no es suyo.
+         */
+        $vendorId = null;
+
+        if (($data['vendor_id'] ?? null) !== null && $data['vendor_id'] !== '') {
+            $vendorId = Vendor::query()->whereKey($data['vendor_id'])->value('id');
+
+            if ($vendorId === null) {
+                throw ValidationException::withMessages(['vendor_id' => __('expenses.errors.vendorNotFound')]);
+            }
+        }
+
         $ahora = CarbonImmutable::now();
         $id = (string) Str::uuid();
 
@@ -205,6 +229,7 @@ final class ExpenseController
             // Se copia de la carga para que el estrechamiento por ámbito
             // funcione sin tener que pasar por `loads` en cada consulta.
             'carrier_id' => $load->carrier_id,
+            'vendor_id' => $vendorId,
             'category_id' => $categoria->id,
             // El tratamiento se CONGELA aquí. Ver la cabecera de la clase.
             'treatment_snapshot' => $categoria->treatment,
@@ -700,6 +725,34 @@ final class ExpenseController
             // `reimbursed` es un aprobado que además ya se pagó: cuenta igual.
             'countingCents' => (int) ($filas['approved'] ?? 0) + (int) ($filas['reimbursed'] ?? 0),
         ];
+    }
+
+    /**
+     * Los proveedores a los que se le puede imputar un gasto.
+     *
+     * Activos y de cualquier tipo, no solo arrendadoras: un gasto se le paga
+     * igual al taller que a la aseguradora. El alcance del listado no se aplica
+     * aquí a propósito — quien puede presentar un gasto no tiene por qué poder
+     * leer la ficha entera del proveedor, y lo que necesita es el nombre para
+     * elegirlo—.
+     *
+     * @return list<array{id: string, name: string, type: string}>
+     */
+    private function proveedores(Actor $actor): array
+    {
+        return DB::table('vendors')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->orderBy('company_name')
+            ->limit(200)
+            ->get(['id', 'company_name as name', 'vendor_type'])
+            ->map(fn ($r): array => [
+                'id' => (string) $r->id,
+                'name' => (string) $r->name,
+                'type' => (string) $r->vendor_type,
+            ])
+            ->all();
     }
 
     /**

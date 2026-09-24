@@ -34,6 +34,7 @@ final class Truck extends BaseModel
         'model',
         'ownership',
         'lessor_name',
+        'lessor_vendor_id',
         'lease_ends_on',
         'length_inches',
         'width_inches',

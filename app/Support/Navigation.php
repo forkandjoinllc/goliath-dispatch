@@ -52,6 +52,9 @@ final class Navigation
             ['invoices', 'invoices', ['invoice:read']],
             ['settlements', 'settlements', ['settlement:read']],
             ['expenses', 'expenses', ['expense:read', 'expense:submit']],
+            // Encima de los pagos y debajo de los gastos: de un proveedor sale
+            // un gasto, y de un gasto sale un pago.
+            ['vendors', 'vendors', ['vendor:read']],
             ['payments', 'payments', ['payment:record', 'invoice:read']],
             // `assignment:read` y no un permiso de dinero: al despachador se le
             // concede con alcance `own`, que es justo «puedo ver lo mío».
@@ -103,7 +106,7 @@ final class Navigation
      */
     private static function construidas(): array
     {
-        return ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages', 'retention', 'billing', 'insight/dashboard'];
+        return ['carriers', 'customers', 'loads', 'drivers', 'equipment/trucks', 'documents', 'factoring', 'invoices', 'settlements', 'expenses', 'vendors', 'users', 'assignments', 'payments', 'commissions', 'settings', 'reports', 'audit', 'leads', 'platform/tenants', 'platform/plans', 'tracking', 'signatures', 'permits', 'platform/health', 'onboarding', 'messages', 'retention', 'billing', 'insight/dashboard'];
     }
 
     /**

@@ -4,7 +4,8 @@
         "onlyThese": "Un gasto {status} solo puede pasar a: {options}.",
         "categoryNotFound": "Esa categoría no existe o ya no está activa.",
         "loadNotFound": "Esa carga no existe o no es suya.",
-        "receiptRequired": "Este gasto no se puede aprobar sin recibo: su categoría lo exigía cuando se presentó. Adjúntelo, o rechácelo si no lo hay."
+        "receiptRequired": "Este gasto no se puede aprobar sin recibo: su categoría lo exigía cuando se presentó. Adjúntelo, o rechácelo si no lo hay.",
+        "vendorNotFound": "Ese proveedor no es de esta empresa."
     },
     "flash": {
         "submitted": "Gasto presentado. Cuenta cuando alguien lo apruebe.",
@@ -31,7 +32,10 @@
         "descriptionHint": "Dónde, para qué, número de recibo. Quien lo revise solo ve lo que escriba aquí.",
         "approvalNote": "Presentarlo no lo aprueba. Alguien con permiso de aprobación tiene que revisarlo antes de que cuente en una factura o una liquidación.",
         "submit": "Presentar gasto",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "vendor": "Pagado a",
+        "vendorHint": "Opcional. Un peaje no tiene proveedor; una reparación sí.",
+        "noVendor": "Sin proveedor"
     },
     "index": {
         "title": "Gastos",

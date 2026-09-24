@@ -34,7 +34,8 @@
         "tenants": "Tenants",
         "plans": "Plans",
         "platformHealth": "Platform health",
-        "retention": "Retention"
+        "retention": "Retention",
+        "vendors": "Vendors"
     },
     "groups": {
         "operations": "Operations",

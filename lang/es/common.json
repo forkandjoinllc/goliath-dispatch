@@ -154,7 +154,9 @@
     "address": {
         "country": "País",
         "state": "Estado / provincia",
-        "statePlaceholder": "Seleccione…"
+        "statePlaceholder": "Seleccione…",
+        "line1": "Dirección, línea 1",
+        "line2": "Dirección, línea 2"
     },
     "pager": {
         "showing": "Mostrando {from}–{to} de {total}"

@@ -99,7 +99,8 @@
         "axleSpacings": "Distancia entre ejes",
         "axleSpacingsTotal": "del primer eje al último",
         "noAxleSpacings": "Sin medir.",
-        "dimensionsTruck": "Medidas y ejes"
+        "dimensionsTruck": "Medidas y ejes",
+        "lessorNoRecord": "(escrito a mano, sin ficha de proveedor)"
     },
     "form": {
         "createTruckTitle": "Agregar camión",
@@ -156,7 +157,7 @@
         "ownershipSection": "Propiedad",
         "ownership": "Propiedad",
         "lessorName": "Arrendador",
-        "lessorHint": "De quién se arrienda la unidad, tal como figura en el contrato.",
+        "lessorHint": "La empresa que arrienda esta unidad. Su ficha vive en Finanzas → Proveedores.",
         "leaseEndsOn": "El arrendamiento vence",
         "ownershipOwnedHint": "Una unidad propia no tiene arrendador ni fecha de vencimiento: al guardar, esos dos se borran.",
         "height": "Alto",
@@ -168,7 +169,10 @@
         "axleSpacingPair": "Del eje {from} al eje {to}",
         "axleSpacingsMismatch": "Con {axles} ejes hacen falta {n} distancias, y no están todas. Rellénelas todas o déjelas todas en blanco.",
         "axleSpacingZero": "Un hueco no puede ser cero. Deje las dos casillas en blanco si no se ha medido.",
-        "axleSpacingsMismatchOne": "Con {axles} ejes hace falta {n} distancia, y no está puesta. Rellénela o déjela en blanco."
+        "axleSpacingsMismatchOne": "Con {axles} ejes hace falta {n} distancia, y no está puesta. Rellénela o déjela en blanco.",
+        "lessorNoVendors": "No hay ninguna arrendadora en ficha. Se da de alta en Finanzas → Proveedores.",
+        "lessorTypedOnly": "Escrito a mano: «{name}». Elige arriba el proveedor para atar esta unidad a su ficha.",
+        "lessorNotFound": "Ese proveedor no es de esta empresa."
     },
     "flash": {
         "created": "Se agregó la unidad {unit}.",
@@ -234,5 +238,9 @@
         "owned": "Propia",
         "leased": "Arrendada",
         "lease_to_own": "Arrendamiento con opción a compra"
+    },
+    "kind": {
+        "truck": "Camión",
+        "trailer": "Remolque"
     }
 }

@@ -10,8 +10,10 @@ use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\EquipmentOwnership;
 use App\Enums\Scope;
+use App\Enums\VendorType;
 use App\Models\Trailer;
 use App\Models\Truck;
+use App\Models\Vendor;
 use App\Rules\SubdivisionOfCountry;
 use App\Services\Vin\VinDecoder;
 use App\Support\Compliance\ExpiryWindow;
@@ -31,6 +33,7 @@ use App\Support\Plural;
 use App\Support\Storage\DocumentStore;
 use App\Support\Time\CalendarDates;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
@@ -991,6 +994,26 @@ final class EquipmentController
         $propiedad = [
             'ownership' => EnumValue::of($g('ownership'), EquipmentOwnership::Owned->value),
             'lessorName' => $g('lessor_name'),
+            /*
+             * La ficha del arrendador, si la unidad apunta a una.
+             *
+             * `lessorName` se queda al lado y no se borra: es lo único que hay
+             * escrito en todas las unidades dadas de alta antes de que
+             * existieran los proveedores. La pantalla enseña el nombre
+             * tecleado diciendo que no tiene ficha, con el desplegable al lado
+             * para enlazarlo. Borrarlo al ganar la columna nueva habría
+             * tirado en silencio el único dato que existe sobre el arrendador
+             * de cada unidad, a cambio de nada.
+             */
+            'lessorVendorId' => $g('lessor_vendor_id'),
+            // Y su nombre, para poder enlazar la ficha sin que la pantalla
+            // tenga que ir a buscarlo. Sale de la ficha DE VERDAD y no de
+            // `lessor_name`: si los dos existen y no coinciden, el que manda
+            // es el que está enlazado.
+            'lessorVendorName' => $g('lessor_vendor_id') === null ? null : DB::table('vendors')
+                ->where('id', $g('lessor_vendor_id'))
+                ->whereNull('deleted_at')
+                ->value('company_name'),
             'leaseEndsOn' => CalendarDates::dia($g('lease_ends_on')),
             // Las distancias entre ejes, en orden y en pulgadas. La pantalla
             // las parte en pies y pulgadas; la base guarda una sola cifra.
@@ -1120,6 +1143,26 @@ final class EquipmentController
                     'labelEs' => (string) $r->label_es,
                 ])
                 ->all(),
+
+            /*
+             * Los arrendadores entre los que elegir.
+             *
+             * Solo los proveedores de tipo `leasing` y activos: ofrecer un
+             * taller como arrendador de un camión es ofrecer un dato que
+             * después nadie sabe leer. Si falta el que hace falta, se da de
+             * alta en Finanzas → Proveedores; esta pantalla no crea fichas de
+             * proveedor, porque entonces habría dos sitios donde nacen y el
+             * segundo se quedaría sin los contactos y sin el W-9.
+             */
+            'lessors' => DB::table('vendors')
+                ->where('tenant_id', $actor->tenantId)
+                ->whereNull('deleted_at')
+                ->where('vendor_type', VendorType::Leasing->value)
+                ->where('status', 'active')
+                ->orderBy('company_name')
+                ->get(['id', 'company_name as name'])
+                ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+                ->all(),
         ];
     }
 
@@ -1174,6 +1217,7 @@ final class EquipmentController
             // arrendador de una unidad propia deja un dato que contradice al
             // de al lado, y quien lo lea después no sabrá cuál vale.
             'lessor_name' => $esPropia ? null : ($data['lessor_name'] ?? null),
+            'lessor_vendor_id' => $esPropia ? null : ($data['lessor_vendor_id'] ?? null),
             'lease_ends_on' => $esPropia ? null : ($data['lease_ends_on'] ?? null),
         ];
 
@@ -1231,6 +1275,27 @@ final class EquipmentController
             'notes' => ['nullable', 'string', 'max:5000'],
             'ownership' => ['nullable', Rule::in(EquipmentOwnership::values())],
             'lessor_name' => ['nullable', 'string', 'max:160'],
+            /*
+             * Y que sea un proveedor DE ESTA EMPRESA.
+             *
+             * `size:36` deja pasar el identificador de un proveedor de otra
+             * empresa: el ámbito global impide LEERLO, no impide escribirlo
+             * aquí. Sin esta comprobación, la ficha de la unidad enseñaría el
+             * nombre de una empresa ajena en cuanto alguien lo pegara en la
+             * petición. Es la misma comprobación que hace el alta de carga con
+             * el sitio del cliente.
+             */
+            'lessor_vendor_id' => ['nullable', 'uuid', function (string $attribute, mixed $value, Closure $fail): void {
+                if ($value === null || $value === '') {
+                    return;
+                }
+
+                $existe = Vendor::query()->whereKey($value)->exists();
+
+                if (! $existe) {
+                    $fail(__('equipment.form.lessorNotFound'));
+                }
+            }],
             'lease_ends_on' => ['nullable', 'date'],
             'axle_count' => ['nullable', 'integer', 'min:1', 'max:20'],
             'axle_configuration' => ['nullable', 'string', 'max:60'],

@@ -38,14 +38,14 @@ function allModels(): array
     return $classes;
 }
 
-it('encuentra los 95 modelos esperados', function () {
+it('encuentra los 98 modelos esperados', function () {
     // 90 generados desde information_schema + User y Session escritos a mano,
     // que no encajan en las convenciones de BaseModel.
     // 95 desde que existen FactoringCompanyContact, CarrierContact y
-    // LoadRequirement. El número está a propósito: un modelo nuevo sin su
-    // tabla, o una tabla nueva sin su modelo, se nota aquí antes que en
-    // producción.
-    expect(allModels())->toHaveCount(95);
+    // LoadRequirement, y 98 desde que existen Vendor, VendorContact y
+    // VendorCarrier. El número está a propósito: un modelo nuevo sin su tabla,
+    // o una tabla nueva sin su modelo, se nota aquí antes que en producción.
+    expect(allModels())->toHaveCount(98);
 });
 
 it('la tabla de cada modelo existe', function () {

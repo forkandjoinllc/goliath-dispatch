@@ -203,7 +203,29 @@ export default function EquipmentShow({ type, unit, loads, blockingKeys, verific
                   arrendador ni vencimiento, y un guion en su sitio se lee
                   como un dato que falta y no como uno que no existe. */}
               {propiedad === 'owned' ? null : (
-                <Item label={t('equipment.detail.lessorName')}>{s('lessorName')}</Item>
+                <Item label={t('equipment.detail.lessorName')}>
+                  {/* Con ficha, un enlace a ella. Sin ficha, lo que hay
+                      escrito diciendo que es solo un nombre: un nombre
+                      tecleado y una ficha no valen lo mismo, y la diferencia
+                      es justo lo que este lote vino a hacer visible. */}
+                  {s('lessorVendorId') === '' ? (
+                    s('lessorName') === '' ? null : (
+                      <span>
+                        {s('lessorName')}
+                        <span className="ml-2 text-xs text-safety-700">
+                          {t('equipment.detail.lessorNoRecord')}
+                        </span>
+                      </span>
+                    )
+                  ) : (
+                    <Link
+                      href={`/vendors/${s('lessorVendorId')}`}
+                      className="font-medium text-navy-700 hover:underline"
+                    >
+                      {s('lessorVendorName') === '' ? s('lessorName') : s('lessorVendorName')}
+                    </Link>
+                  )}
+                </Item>
               )}
               {propiedad === 'owned' ? null : (
                 <Item label={t('equipment.detail.leaseEndsOn')}>{day('leaseEndsOn')}</Item>

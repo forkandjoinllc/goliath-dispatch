@@ -20,14 +20,22 @@ interface LoadChoice {
   hint: string | null
 }
 
+interface Vendor {
+  id: string
+  name: string
+  type: string
+}
+
 interface Props {
   categories: Category[]
   loads: LoadChoice[]
+  /** A quién se le pagó. Opcional: un peaje no tiene proveedor. */
+  vendors: Vendor[]
   /** La carga elegida ya tiene cifras congeladas. Llega por recarga parcial. */
   loadFrozen?: boolean
 }
 
-export default function ExpenseForm({ categories, loads, loadFrozen = false }: Props) {
+export default function ExpenseForm({ categories, loads, vendors, loadFrozen = false }: Props) {
   const { t, locale } = useI18n()
 
   const form = useForm({
@@ -36,6 +44,7 @@ export default function ExpenseForm({ categories, loads, loadFrozen = false }: P
     amount_cents: null as number | null,
     incurred_on: '',
     description: '',
+    vendor_id: '',
   })
 
   const cargaElegida = useMemo(
@@ -229,6 +238,25 @@ export default function ExpenseForm({ categories, loads, loadFrozen = false }: P
                   {form.errors.incurred_on}
                 </p>
               ) : null}
+            </div>
+
+            {/*
+              A quién se le pagó. Va ANTES de la descripción porque, cuando hay
+              proveedor, la descripción es lo que se le compró: «cambio de
+              frenos» al lado de «Taller Delgado» se lee entero; sola, no.
+            */}
+            <div className="sm:col-span-2">
+              <SearchableSelect
+                label={t('expenses.form.vendor')}
+                choices={vendors}
+                selected={vendors.find((v) => v.id === form.data.vendor_id) ?? null}
+                onPick={(id) => form.setData('vendor_id', id)}
+                onClear={() => form.setData('vendor_id', '')}
+                emptyText={t('expenses.form.noVendor')}
+                changeText={t('common.actions.change')}
+                hint={t('expenses.form.vendorHint')}
+                error={form.errors.vendor_id}
+              />
             </div>
 
             <div className="sm:col-span-2">

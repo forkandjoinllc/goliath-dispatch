@@ -1,0 +1,131 @@
+{
+    "index": {
+        "title": "Vendors",
+        "subtitle": "Who bills a carrier: the leasing company, the shop, the insurer.",
+        "carrierCount": "{n} carriers",
+        "carrierCountOne": "{n} carrier",
+        "unitCount": "{n} units leased",
+        "unitCountOne": "{n} unit leased",
+        "noUnits": "No unit leased",
+        "columns": {
+            "name": "Vendor",
+            "type": "Type",
+            "contact": "Contact",
+            "place": "Where",
+            "terms": "Terms",
+            "serves": "Serves",
+            "status": "Status"
+        },
+        "emptyHint": "Add the first one. The leasing company on your trucks is a good place to start.",
+        "noResults": "No vendor matches these filters",
+        "noResultsHint": "Clear the filters to see everything you have access to.",
+        "add": "Add vendor",
+        "searchLabel": "Search vendors",
+        "searchPlaceholder": "Company name, email or phone",
+        "showing": "Showing {from}–{to} of {total}"
+    },
+    "type": {
+        "leasing": "Leasing",
+        "maintenance": "Maintenance & repair",
+        "insurance": "Insurance",
+        "fuel": "Fuel",
+        "parts": "Parts & tires",
+        "towing": "Towing & roadside",
+        "permitting": "Permits & licensing",
+        "other": "Other"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "archived": "Archived"
+    },
+    "paymentMethod": {
+        "ach": "ACH",
+        "check": "Check",
+        "wire": "Wire",
+        "card": "Card",
+        "other": "Other"
+    },
+    "form": {
+        "createTitle": "New vendor",
+        "editTitle": "Edit {name}",
+        "identity": "Who they are",
+        "companyName": "Company name",
+        "vendorType": "What they provide",
+        "website": "Website",
+        "address": "Address",
+        "money": "Paying them",
+        "taxId": "Tax ID (EIN or equivalent)",
+        "taxIdHint": "Stored encrypted. Only the last four are ever shown again — leave it blank to keep what is on file.",
+        "taxIdOnFile": "On file, ending in {last4}",
+        "w9OnFile": "We have their W-9",
+        "w9ReceivedOn": "W-9 received on",
+        "paymentTermsDays": "Payment terms (days)",
+        "paymentMethod": "How we pay them",
+        "accountLast4": "Account, last four",
+        "accountLast4Hint": "Four digits, to recognise the payment on a statement. The full account number is not stored here.",
+        "serves": "Carriers they serve",
+        "servesHint": "One vendor, however many carriers. A leasing company working with three of your carriers is one record, not three.",
+        "noCarriers": "No carrier to tie them to.",
+        "contacts": "Contacts",
+        "contactsHint": "The first one is the primary contact.",
+        "addContact": "Add a contact",
+        "removeContact": "Remove",
+        "primary": "Primary",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "position": "Position",
+        "extension": "Ext.",
+        "notes": "Notes",
+        "save": "Save vendor"
+    },
+    "detail": {
+        "contacts": "Contacts",
+        "noContacts": "No contact on file.",
+        "serves": "Serves",
+        "noServes": "Not tied to any carrier yet.",
+        "account": "Account {reference}",
+        "leased": "What they lease us",
+        "noLeased": "No unit points at this vendor.",
+        "leaseEndsOn": "Lease ends {date}",
+        "leaseOpen": "No end date",
+        "expenses": "Expenses",
+        "noExpenses": "Nothing has been charged to this vendor.",
+        "expenseTotal": "{amount} across {n} expenses",
+        "expenseTotalOne": "{amount} across {n} expense",
+        "showingRecent": "Only the most recent are shown. The total above counts them all.",
+        "taxId": "Tax ID",
+        "taxIdMasked": "ending in {last4}",
+        "w9": "W-9",
+        "w9Yes": "On file, received {date}",
+        "w9YesNoDate": "On file",
+        "w9No": "Not on file",
+        "terms": "Payment terms",
+        "termsDays": "{n} days",
+        "termsDaysOne": "{n} day",
+        "edit": "Edit vendor",
+        "delete": "Retire vendor",
+        "deleteConfirm": "Retire this vendor? It stays in the record and stops being offered.",
+        "onFileSince": "On file since"
+    },
+    "flash": {
+        "created": "{name} is on file.",
+        "updated": "{name} saved.",
+        "deleted": "{name} retired."
+    },
+    "errors": {
+        "stillInUse": "This vendor cannot be retired: {units} units point at it and {expenses} expenses are charged to it. Move those first."
+    },
+    "scope": {
+        "tenant": "All vendors in this company",
+        "platform": "All vendors on the platform",
+        "carrier": "Only the vendors that serve your carrier"
+    },
+    "filters": {
+        "type": "Type",
+        "status": "Status",
+        "carrier": "Serves",
+        "all": "All",
+        "clear": "Clear filters"
+    }
+}

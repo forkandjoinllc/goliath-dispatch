@@ -309,6 +309,7 @@ const DICEN_EL_ALCANCE = [
     'EquipmentController' => 'scope',
     'LoadController' => 'scope',
     'PaymentController' => 'scope',
+    'VendorController' => 'scope',
     'AssignmentController' => 'onlyMine',
     'CommissionController' => 'onlyMine',
 ];

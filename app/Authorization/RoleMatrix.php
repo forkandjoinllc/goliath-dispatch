@@ -89,6 +89,10 @@ final class RoleMatrix
         'customer:update' => Scope::Tenant,
         'customer:duplicate:override' => Scope::Tenant,
         'customer:delete' => Scope::Tenant,
+        'vendor:read' => Scope::Tenant,
+        'vendor:create' => Scope::Tenant,
+        'vendor:update' => Scope::Tenant,
+        'vendor:delete' => Scope::Tenant,
         'load:read' => Scope::Tenant,
         'load:create' => Scope::Tenant,
         'load:update' => Scope::Tenant,
@@ -170,6 +174,12 @@ final class RoleMatrix
         'driver:read' => Scope::Tenant,
         'driver:approve' => Scope::Tenant,
         'customer:read' => Scope::Tenant,
+        // Contabilidad da de alta proveedores y les pone las condiciones de
+        // pago —es quien les paga—, pero no los borra: un proveedor con
+        // gastos detrás lo retira quien administra.
+        'vendor:read' => Scope::Tenant,
+        'vendor:create' => Scope::Tenant,
+        'vendor:update' => Scope::Tenant,
         'load:read' => Scope::Tenant,
         'load:financials:read' => Scope::Tenant,
         'load:financials:update' => Scope::Tenant,
@@ -287,6 +297,10 @@ final class RoleMatrix
         'notification:preference:update' => Scope::Own,
         'expense:read' => Scope::Carrier,
         'expense:submit' => Scope::Carrier,
+        // Solo los que le dan servicio A ÉL. Ver `Vendors\VendorScope`: un
+        // proveedor no tiene columna de transportista, la relación vive en
+        // `vendor_carriers`, así que el alcance es un EXISTS.
+        'vendor:read' => Scope::Carrier,
         'invoice:read' => Scope::Carrier,
         'invoice:pay' => Scope::Carrier,
         'settlement:read' => Scope::Carrier,

@@ -35,6 +35,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -116,6 +117,10 @@ class DemoDataSeeder extends Seeder
                 $this->fmcsaVerifications($carriers);
                 $this->carrierDocuments($carriers);
                 $this->equipment($carriers, $equipment);
+                // Los proveedores van DESPUÉS del equipo: enlazan las unidades
+                // que ya existen con la ficha de su arrendadora, y antes de
+                // que existan las unidades no habría nada que enlazar.
+                $this->proveedores($carriers);
                 $drivers = $this->drivers($carriers);
                 $customers = $this->customers();
                 // linkDemoUsers va ANTES que loads a propósito: ata
@@ -805,6 +810,195 @@ class DemoDataSeeder extends Seeder
      * ese aviso no se vería nunca hasta llegar a producción sin proveedor
      * atado.
      */
+    /**
+     * Los proveedores, y el enlace con las unidades que ya estaban.
+     *
+     * ## Por qué NO se enlazan todas
+     *
+     * «Bravo Fleet Leasing, LLC» arrienda cuatro unidades en esta
+     * demostración. Tres se enlazan a su ficha y una se queda con el nombre
+     * tecleado y sin ficha, a propósito: es el estado en el que va a estar
+     * cualquier empresa el día que estrene esta pantalla, y una siembra que
+     * solo produce el caso bonito garantiza que nadie vea el otro hasta que un
+     * cliente se lo encuentre.
+     *
+     * Ver la lección del lote 39 sobre la siembra que solo produce el caso
+     * fácil.
+     *
+     * ## Nada real
+     *
+     * Ni identificadores fiscales de verdad ni cuentas de verdad. El EIN es un
+     * número inventado con la forma correcta y de la cuenta solo hay cuatro
+     * dígitos, que es todo lo que el producto guarda.
+     *
+     * @param  array<string, string>  $carriers
+     */
+    private function proveedores(array $carriers): void
+    {
+        $now = Carbon::now();
+
+        /*
+         * Con claves y no por posición.
+         *
+         * Diez valores sueltos entre corchetes se leen contando, y al añadir
+         * el undécimo hay que recontar las cuatro filas. Con claves se lee sin
+         * contar — y además el análisis estático puede seguir qué hay dentro,
+         * que con la tupla no podía.
+         */
+        $fichas = [
+            [
+                'nombre' => 'Bravo Fleet Leasing, LLC',
+                'tipo' => 'leasing',
+                'tel' => '+1 214 555 0180',
+                'correo' => 'cuentas@bravofleetleasing.test',
+                'ciudad' => 'Dallas',
+                'estado' => 'TX',
+                'dias' => 30,
+                'forma' => 'ach',
+                'cuenta' => '4412',
+                'w9' => true,
+                'sirve' => ['atlas', 'northline'],
+                'contactos' => [
+                    ['Marta', 'Solís', 'Gerente de cuenta', '+1 214 555 0181', 'msolis@bravofleetleasing.test', 'es'],
+                    ['Kevin', 'Boyd', 'Cobranza', '+1 214 555 0182', 'kboyd@bravofleetleasing.test', 'en'],
+                ],
+            ],
+            [
+                'nombre' => 'Arrendadora Norte de Equipos, S. de R.L.',
+                'tipo' => 'leasing',
+                'tel' => '+1 956 555 0190',
+                'correo' => 'contacto@arrendadoranorte.test',
+                'ciudad' => 'Laredo',
+                'estado' => 'TX',
+                'dias' => 45,
+                'forma' => 'wire',
+                'cuenta' => '9007',
+                'w9' => true,
+                'sirve' => ['atlas', 'cordillera'],
+                'contactos' => [
+                    ['Rubén', 'Cantú', 'Director comercial', '+1 956 555 0191', 'rcantu@arrendadoranorte.test', 'es'],
+                ],
+            ],
+            [
+                'nombre' => 'Taller Diésel del Golfo',
+                'tipo' => 'maintenance',
+                'tel' => '+1 713 555 0210',
+                'correo' => 'ordenes@tallerdelgolfo.test',
+                'ciudad' => 'Houston',
+                'estado' => 'TX',
+                'dias' => 15,
+                'forma' => 'check',
+                'cuenta' => null,
+                'w9' => false,
+                'sirve' => ['atlas', 'bluewater'],
+                'contactos' => [
+                    ['Hilda', 'Vargas', 'Jefa de taller', '+1 713 555 0211', 'hvargas@tallerdelgolfo.test', 'es'],
+                ],
+            ],
+            [
+                'nombre' => 'Gulf Coast Commercial Insurance',
+                'tipo' => 'insurance',
+                'tel' => '+1 281 555 0240',
+                'correo' => 'service@gulfcoastci.test',
+                'ciudad' => 'Houston',
+                'estado' => 'TX',
+                'dias' => 0,
+                'forma' => 'ach',
+                'cuenta' => '7781',
+                'w9' => true,
+                'sirve' => ['atlas', 'cordillera', 'northline', 'bluewater'],
+                'contactos' => [
+                    ['Dana', 'Whitfield', 'Account executive', '+1 281 555 0241', 'dwhitfield@gulfcoastci.test', 'en'],
+                ],
+            ],
+        ];
+
+        $porNombre = [];
+
+        foreach ($fichas as $ficha) {
+            $nombre = $ficha['nombre'];
+            $correo = $ficha['correo'];
+            $conW9 = $ficha['w9'];
+
+            $id = $this->upsert('vendors', ['company_name_normalized' => NameKey::for($nombre)], [
+                'company_name' => $nombre,
+                'vendor_type' => $ficha['tipo'],
+                'phone' => $ficha['tel'],
+                'phone_normalized' => preg_replace('/\D+/', '', $ficha['tel']),
+                'email' => $correo,
+                'email_normalized' => strtolower($correo),
+                'preferred_locale' => str_contains($correo, 'arrendadora') ? 'es' : 'en',
+                'line1' => '100 Commerce St',
+                'city' => $ficha['ciudad'],
+                'state' => $ficha['estado'],
+                'country' => 'US',
+                'postal_code' => '77002',
+                // Inventado, con la forma de un EIN y nada más.
+                'tax_id_encrypted' => Crypt::encryptString('99-'.str_pad((string) random_int(1000000, 9999999), 7, '0', STR_PAD_LEFT)),
+                'tax_id_last4' => str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT),
+                'w9_on_file' => $conW9,
+                'w9_received_on' => $conW9 ? $now->copy()->subMonths(random_int(3, 20))->toDateString() : null,
+                'payment_terms_days' => $ficha['dias'],
+                'payment_method' => $ficha['forma'],
+                'account_last4' => $ficha['cuenta'],
+                'status' => 'active',
+            ]);
+
+            $porNombre[$nombre] = $id;
+
+            foreach ($ficha['sirve'] as $i => $clave) {
+                if (! isset($carriers[$clave])) {
+                    continue;
+                }
+
+                $this->upsert('vendor_carriers', ['vendor_id' => $id, 'carrier_id' => $carriers[$clave]], [
+                    'account_reference' => strtoupper(substr($clave, 0, 3)).'-'.(1000 + $i),
+                ]);
+            }
+
+            foreach ($ficha['contactos'] as $i => [$nom, $ape, $cargo, $telC, $correoC, $idioma]) {
+                $this->upsert('vendor_contacts', ['vendor_id' => $id, 'email' => $correoC], [
+                    'first_name' => $nom,
+                    'last_name' => $ape,
+                    'phone' => $telC,
+                    'position' => $cargo,
+                    'preferred_locale' => $idioma,
+                    'is_primary' => $i === 0,
+                ]);
+            }
+        }
+
+        /*
+         * Y el enlace con las unidades. TRES de las cuatro de Bravo, no las
+         * cuatro: ver el comentario de arriba.
+         */
+        $enlazar = [
+            ['trucks', '104', 'Bravo Fleet Leasing, LLC'],
+            ['trucks', 'C-07', 'Arrendadora Norte de Equipos, S. de R.L.'],
+            ['trailers', 'T-310', 'Arrendadora Norte de Equipos, S. de R.L.'],
+            ['trailers', 'R-21', 'Bravo Fleet Leasing, LLC'],
+            // 'NR-3' se queda con «Bravo Fleet Leasing, LLC» escrito a mano y
+            // sin ficha, a propósito.
+        ];
+
+        foreach ($enlazar as [$tabla, $unidad, $nombre]) {
+            DB::table($tabla)
+                ->where('tenant_id', $this->tenantId)
+                ->where('unit_number', $unidad)
+                ->update(['lessor_vendor_id' => $porNombre[$nombre], 'updated_at' => $now]);
+        }
+
+        // Un gasto de taller, atribuido. Sin al menos uno, la tarjeta de
+        // gastos de la ficha del proveedor sale siempre vacía y nadie ve que
+        // existe.
+        DB::table('expenses')
+            ->where('tenant_id', $this->tenantId)
+            ->whereNull('vendor_id')
+            ->whereNull('deleted_at')
+            ->limit(2)
+            ->update(['vendor_id' => $porNombre['Taller Diésel del Golfo'], 'updated_at' => $now]);
+    }
+
     private function posiciones(): void
     {
         $rodando = [

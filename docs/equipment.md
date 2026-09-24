@@ -144,6 +144,13 @@ demostración tiene justo ese caso.
 - **No se reverifica al cambiar de transportista.** Una unidad que pasa a otro
   transportista conserva su verificación, hecha contra la póliza del anterior.
 
+## El arrendador es una ficha
+
+Desde el lote 41, la unidad arrendada APUNTA a un proveedor
+(`lessor_vendor_id`) en vez de llevar su nombre tecleado. `lessor_name` se
+queda para lo que ya estaba escrito, y la pantalla lo enseña diciendo que no
+tiene ficha. Ver **`docs/vendors.md`**.
+
 ## Dónde vive
 
 | | |

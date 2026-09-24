@@ -4,7 +4,8 @@
         "onlyThese": "A {status} expense can only become: {options}.",
         "categoryNotFound": "That category does not exist or is no longer active.",
         "loadNotFound": "That load does not exist or is not yours.",
-        "receiptRequired": "This expense cannot be approved without a receipt: its category required one when it was submitted. Attach it, or reject the expense if there is none."
+        "receiptRequired": "This expense cannot be approved without a receipt: its category required one when it was submitted. Attach it, or reject the expense if there is none.",
+        "vendorNotFound": "That vendor does not belong to this company."
     },
     "flash": {
         "submitted": "Expense submitted. It counts once someone approves it.",
@@ -31,7 +32,10 @@
         "descriptionHint": "Where, what for, receipt number. Whoever reviews it only sees what you write here.",
         "approvalNote": "Submitting does not approve it. Someone with approval rights has to review it before it counts on an invoice or a settlement.",
         "submit": "Submit expense",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "vendor": "Paid to",
+        "vendorHint": "Optional. A toll has no vendor; a repair does.",
+        "noVendor": "No vendor"
     },
     "index": {
         "title": "Expenses",

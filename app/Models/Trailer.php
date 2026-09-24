@@ -34,6 +34,7 @@ final class Trailer extends BaseModel
         'model',
         'ownership',
         'lessor_name',
+        'lessor_vendor_id',
         'lease_ends_on',
         'equipment_type_id',
         'plate_number',

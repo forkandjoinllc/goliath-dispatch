@@ -100,6 +100,10 @@ final class Permissions
         'customer:update' => 'Edit a customer or contact',
         'customer:duplicate:override' => 'Create a customer despite a duplicate warning',
         'customer:delete' => 'Soft-delete a customer',
+        'vendor:read' => 'View vendors and their contacts',
+        'vendor:create' => 'Create a vendor',
+        'vendor:update' => 'Edit a vendor or contact',
+        'vendor:delete' => 'Soft-delete a vendor',
 
         /* ── Loads ───────────────────────────────────────────────────────── */
         'load:read' => 'View loads',

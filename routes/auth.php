@@ -39,6 +39,7 @@ use App\Http\Controllers\App\TenantSettingController;
 use App\Http\Controllers\App\TimezoneController;
 use App\Http\Controllers\App\TrackingController;
 use App\Http\Controllers\App\UserController;
+use App\Http\Controllers\App\VendorController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Platform\HealthController;
@@ -289,6 +290,26 @@ Route::middleware(['auth'])->group(function (): void {
     | Presentar y decidir son actos distintos con permisos distintos: un
     | conductor presenta, alguien con `expense:approve` decide.
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Proveedores
+    |--------------------------------------------------------------------------
+    |
+    | Quién le da servicio a un transportista: la arrendadora del camión, el
+    | taller, la aseguradora. Vive en Finanzas porque lo que se hace con un
+    | proveedor es pagarle.
+    |
+    | Está aquí, justo encima de los gastos, porque es de donde salen: un gasto
+    | apunta a un proveedor desde este lote.
+    */
+    Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
+    Route::get('vendors/create', [VendorController::class, 'create'])->name('vendors.create');
+    Route::post('vendors', [VendorController::class, 'store'])->name('vendors.store');
+    Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('vendors.show');
+    Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('vendors.edit');
+    Route::patch('vendors/{vendor}', [VendorController::class, 'update'])->name('vendors.update');
+    Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('vendors.destroy');
+
     Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
     Route::get('expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
     Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
