@@ -52,5 +52,89 @@
     "refreshed": {
         "label": "Updated {time}",
         "auto": "Refreshes itself every minute."
+    },
+    "quick": {
+        "load": {
+            "button": "Add load",
+            "title": "New load",
+            "submit": "Create load",
+            "customer": "Customer",
+            "noCustomers": "No active customer to load against.",
+            "commodity": "Commodity",
+            "date": "Date",
+            "rest": "This is what a load needs to exist. Once it is created you land on its record, where the rate, the paperwork and the rest of the stops go."
+        },
+        "driver": {
+            "button": "Add driver",
+            "title": "New driver",
+            "submit": "Create driver",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "phone": "Phone",
+            "carrier": "Carrier",
+            "noCarriers": "No carrier to tie the driver to.",
+            "rest": "This is what a driver needs to exist. Once created you land on their record, for the licence, the medical card and the standing equipment."
+        }
+    },
+    "panel": {
+        "tabs": {
+            "detail": "Detail",
+            "customer": "Customer",
+            "history": "History"
+        },
+        "actions": "Other actions",
+        "openFull": "Open the full load record",
+        "menu": {
+            "edit": "Edit load",
+            "reassign": "Reassign driver",
+            "cancel": "Cancel load"
+        },
+        "detail": {
+            "commodity": "Commodity",
+            "reference": "Customer reference",
+            "weight": "Weight",
+            "pounds": "{n} lb",
+            "noFacility": "No facility named",
+            "arrived": "Arrived {time}"
+        },
+        "customer": {
+            "contact": "Contact",
+            "terms": "Payment terms",
+            "days": "{n} days",
+            "daysOne": "{n} day"
+        },
+        "history": {
+            "empty": "Nothing has happened to this load yet."
+        },
+        "edit": {
+            "title": "Edit {number}",
+            "rest": "Everything this window does not show travels back untouched. For the rate, the paperwork and the requirements, open the full record.",
+            "fromLocation": "The address comes from the customer’s site. Change it on the full load record."
+        },
+        "cancel": {
+            "title": "Cancel {number}",
+            "keep": "Keep the load",
+            "warning": "Cancelling stops the load. The record, its paperwork and its history stay.",
+            "reasonHint": "At least 10 characters. This is what gets read back weeks later when the customer asks."
+        },
+        "driver": {
+            "cdl": "CDL",
+            "equipment": "Standing equipment",
+            "currentLoad": "Running load",
+            "noLoad": "Not running anything right now.",
+            "noTimeline": "Nothing recorded for this driver yet.",
+            "openFull": "Open the full driver record"
+        }
+    },
+    "timeline": {
+        "created": "Load created",
+        "status": "Moved to {to}",
+        "assigned": "{name} assigned",
+        "unassigned": "{name} taken off",
+        "arrived": "Arrived at the {stop} · {place}",
+        "departed": "Left the {stop} · {place}",
+        "document": "{type} uploaded",
+        "position": "Position received",
+        "checkCall": "Check call logged by dispatch"
     }
 }

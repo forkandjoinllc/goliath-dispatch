@@ -4033,3 +4033,87 @@ asignación vale. Al dar de baja a alguien, ponerle fecha de fin hoy dejaba su
 camión ocupado justo la tarde en que alguien intenta dárselo al relevo. La
 prueba lo cazó porque medía el efecto —¿se lo puede quedar otro?— y no el valor
 de la columna.
+
+## Lote 39 — los paneles del tablero
+
+**El sabotaje que no rompe nada no prueba que el guardián sobre: prueba que el
+sabotaje era un adorno.** Quise verificar que un conductor sin carga no tiene
+posición inventada, y el sabotaje era cambiar la salida temprana
+`if ($loadIds === []) return [];` por `$loadIds = ['-']`. Siguió verde, y esta
+vez con razón: la consulta con un identificador que no existe devuelve lo mismo
+que no hacerla. El defecto estaba en mi prueba, pero no donde parecía. Decía
+«un conductor sin carga no tiene posición» y lo medía con un conductor que no
+tenía NADA — igual de bien lo cumple una lista que está siempre vacía. La
+versión buena tiene tres mitades: alguien que lleva una carga con posiciones
+(y las ve), alguien que no lleva ninguna (y no las ve), y **alguien que lleva
+otras** — que es la única que se cae si se quita el filtro por carga y las
+posiciones se cruzan entre compañeros. **Novena, décima y undécima vez** que un
+sabotaje verde señala lo que el guardián no estaba mirando.
+
+**Un molde con `.*?` desde el nombre de un método sigue leyendo los métodos de
+abajo.** `/paradasParaEditar.*?'id' => \(string\) \$s->id/s` encontraba ese `id`
+en `paradasDe`, el vecino de abajo, así que borrarlo del método que importaba no
+rompía nada. Es la forma más discreta de guardián inútil: verde porque mide la
+casa de al lado. Ahora se recorta el cuerpo del método primero y se busca dentro.
+
+**Que la palabra aparezca no es que la puerta esté puesta.** El guardián del
+menú comprobaba que `carga.can.update` estuviera en el fichero. Quitarle la
+guarda a la entrada del menú lo dejó verde, porque la comprobación que cierra el
+menú ENTERO seguía nombrándola. Cuando un mismo nombre tiene dos usos legítimos,
+la cuenta —`substr_count(...) === 2`— dice lo que la presencia no dice.
+
+**El guardián se cayó por su propio comentario.** El que prohíbe construir
+clases de Tailwind al vuelo buscaba `bg-${` en el fichero entero, y lo encontró
+en el párrafo que explica por qué está prohibido. Los guardianes que buscan una
+cadena prohibida tienen que mirar el código sin comentarios.
+
+**`?? 0` sobre dinero convierte «este formulario no lo enseña» en «vale cero».**
+No es un detalle de estilo. `loadColumns` escribía la tarifa del cliente así, y
+cualquier guardado que no la trajera —una ventana rápida, una llamada que solo
+corrige la mercancía— dejaba una carga de 2.500 dólares a cero sin un error ni
+un aviso. `array_key_exists` es lo que distingue «no viene» de «viene vacío», y
+es la diferencia entre no tocarlo y borrarlo.
+
+**Comprobé un defecto antes de arreglarlo, y no existía.** Di por hecho que
+`$request->validate()` tiraba los campos de contacto del muelle porque no veía
+sus reglas, y ya estaba escribiendo el arreglo. La sonda —un PATCH real, leer la
+fila— dijo que se guardaban: las reglas existían cuarenta líneas más abajo, y
+los comodines `stops.*.x` devuelven el subarray entero. Media hora ahorrada por
+escribir la prueba antes que el arreglo. **Un arreglo sin una prueba que falle
+primero es una conjetura con la confianza de un arreglo.**
+
+**Y un defecto que sí existía resultó ser una regla de negocio.** Contabilidad
+no podía guardar la tarifa del cliente; lo «arreglé» moviendo la regla al bloque
+del dinero y se cayó una prueba que decía, con su comentario puesto, que el
+precio de VENTA lo fija quien habló con el cliente y no quien reparte. La
+prueba tenía razón y yo no. Cuando un arreglo rompe una prueba que explica su
+propio porqué, el que está equivocado es el arreglo.
+
+**Una cuenta en un guardián envejece bien a propósito.** `substr_count($codigo,
+'LoadClock::previsto(') === 2` se cayó al nacer el tercer sitio que manda una
+hora de muelle. Molestar es lo que hace: obliga a mirar si el sitio nuevo usa el
+reloj bueno, en vez de dejarlo pasar porque «ya aparece en alguna parte».
+
+**El paseo por el navegador encontró dos cosas que ninguna prueba encontró, y
+las dos por el mismo motivo.** Una parada que apunta a una instalación del
+cliente deja su propio nombre, su ciudad y su estado en nulo: todo eso está en
+`customer_locations`. La cronología decía «Llegó a la recogida · —» y la ventana
+de edición enseñaba «Ciudad» y «Estado» en blanco — las dos **justo al lado** del
+panel que, en la misma pantalla, nombraba «Bodega Laredo · Laredo, TX», porque
+ese panel sí hacía el `leftJoin`. Ninguna prueba lo vio porque **los datos de
+prueba escriben la ciudad en la parada**, que es la forma que la aplicación de
+verdad casi nunca usa. La siembra que solo produce el caso fácil es una siembra
+que garantiza el caso fácil.
+
+Y de las dos, la casilla vacía era la peor: no perdía nada al guardar —volvía
+nula como estaba— pero decía que la parada no tenía ciudad cuando sí la tenía, y
+escribir una habría creado un segundo domicilio compitiendo con el del cliente.
+**Dos casillas en blanco que no mandan en lo que se ve son peores que ninguna
+casilla.**
+
+**Y de camino, una rama que no podía dispararse.** Al arreglarlo añadí un
+respaldo del huso horario desde la instalación — y `load_stops.timezone` es NOT
+NULL con valor por omisión, así que el `??` nunca iba a ejecutarse. Salió al
+escribir la prueba: el `insert` con huso nulo reventó contra la restricción.
+Fuera. Una rama que no puede correr no es cautela, es una afirmación falsa sobre
+el esquema.

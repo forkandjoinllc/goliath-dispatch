@@ -48,6 +48,7 @@ const INVARIABLES = [
     'loads.eligibility.failsShort' => '«1 sin cumplir» es correcto.',
     'loads.eligibility.unknownShort' => '«1 sin constar» es correcto.',
     'leads.show.pounds' => '«lb» es una abreviatura de unidad y no lleva plural.',
+    'board.panel.detail.pounds' => 'Lo mismo que en el prospecto: «lb» no lleva plural.',
 ];
 
 /** @return array<string, string> clave con puntos => texto */
@@ -177,6 +178,6 @@ it('el cliente aplica la misma regla', function () {
     // comprueba es que sigue partiendo por «uno» y usando el sufijo `One`.
     $cliente = (string) file_get_contents(dirname(__DIR__, 3).'/resources/js/lib/i18n.tsx');
 
-    expect($cliente)->toContain("Number(params.n) === 1");
+    expect($cliente)->toContain('Number(params.n) === 1');
     expect($cliente)->toContain("key + 'One'");
 });

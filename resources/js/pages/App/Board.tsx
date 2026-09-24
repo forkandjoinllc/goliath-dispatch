@@ -4,6 +4,10 @@ import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
 import { DriverStatusDot } from '@/components/App/DriverStatus'
 import { BoardMap, type MapaDelTablero } from '@/components/App/Board/BoardMap'
+import { DriverPanel, type ConductorElegido } from '@/components/App/Board/DriverPanel'
+import { LoadPanel, type CargaElegida } from '@/components/App/Board/LoadPanel'
+import { QuickAdd, type AltaRapida } from '@/components/App/Board/QuickAdd'
+import { boardHref } from '@/components/App/Board/href'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
 
@@ -53,6 +57,9 @@ interface Props {
   loads: Carga[]
   drivers: EnLaFlota[]
   map: MapaDelTablero
+  quickAdd: AltaRapida
+  selectedLoad: CargaElegida | null
+  selectedDriver: ConductorElegido | null
   refreshedAt: string
 }
 
@@ -65,7 +72,19 @@ const CADA = 60_000
  * Tres columnas que contestan la misma pregunta por tres caminos: qué hay que
  * mover, dónde está, y quién puede moverlo.
  */
-export default function Board({ tab, tabs, counts, can, loads, drivers, map, refreshedAt }: Props) {
+export default function Board({
+  tab,
+  tabs,
+  counts,
+  can,
+  loads,
+  drivers,
+  map,
+  quickAdd,
+  selectedLoad,
+  selectedDriver,
+  refreshedAt,
+}: Props) {
   const { t, locale } = useI18n()
 
   /*
@@ -96,9 +115,12 @@ export default function Board({ tab, tabs, counts, can, loads, drivers, map, ref
       description={t('board.subtitle')}
       crumbs={[{ label: t('board.title') }]}
       actions={
-        <p className="text-xs text-steel-600">
-          {t('board.refreshed.label', { time: hora })} · {t('board.refreshed.auto')}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <QuickAdd quickAdd={quickAdd} />
+          <p className="text-xs text-steel-600">
+            {t('board.refreshed.label', { time: hora })} · {t('board.refreshed.auto')}
+          </p>
+        </div>
       }
     >
       {/*
@@ -115,19 +137,26 @@ export default function Board({ tab, tabs, counts, can, loads, drivers, map, ref
           title={t('board.loads.title')}
           className="order-2 border-steel-200 xl:order-1 xl:border-r"
         >
-          {can.loads ? (
+          {! can.loads ? (
+            <Vacio texto={t('board.loads.denied')} />
+          ) : selectedLoad !== null ? (
+            /*
+              La carga abierta OCUPA el sitio de la lista, no se abre encima.
+              Es lo que se pidió —«en el mismo espacio de la izquierda»— y
+              además es lo que deja el mapa entero a la vista mientras se lee.
+            */
+            <LoadPanel carga={selectedLoad} customers={quickAdd.customers} tab={tab} />
+          ) : (
             <>
               <Pestanas tab={tab} tabs={tabs} counts={counts} />
               <div className="mt-3 flex flex-col gap-3">
                 {loads.length === 0 ? (
                   <Vacio texto={t(vacioDe(tab))} />
                 ) : (
-                  loads.map((carga) => <TarjetaDeCarga key={carga.id} carga={carga} />)
+                  loads.map((carga) => <TarjetaDeCarga key={carga.id} carga={carga} tab={tab} />)
                 )}
               </div>
             </>
-          ) : (
-            <Vacio texto={t('board.loads.denied')} />
           )}
         </Columna>
 
@@ -140,18 +169,20 @@ export default function Board({ tab, tabs, counts, can, loads, drivers, map, ref
           title={t('board.drivers.title')}
           className="order-3 border-steel-200 xl:border-l"
         >
-          {can.drivers ? (
+          {! can.drivers ? (
+            <Vacio texto={t('board.drivers.denied')} />
+          ) : selectedDriver !== null ? (
+            <DriverPanel conductor={selectedDriver} tab={tab} />
+          ) : (
             <div className="flex flex-col gap-3">
               {drivers.length === 0 ? (
                 <Vacio texto={t('board.drivers.empty')} />
               ) : (
                 drivers.map((conductor) => (
-                  <TarjetaDeConductor key={conductor.id} conductor={conductor} />
+                  <TarjetaDeConductor key={conductor.id} conductor={conductor} tab={tab} />
                 ))
               )}
             </div>
-          ) : (
-            <Vacio texto={t('board.drivers.denied')} />
           )}
         </Columna>
       </div>
@@ -195,14 +226,22 @@ function Pestanas({ tab, tabs, counts }: { tab: string; tabs: string[]; counts: 
 }
 
 /** Cada carga es una tarjeta, y la tarjeta entera lleva a la carga. */
-function TarjetaDeCarga({ carga }: { carga: Carga }) {
+function TarjetaDeCarga({ carga, tab }: { carga: Carga; tab: string }) {
   const { t, locale } = useI18n()
   const equipo = [carga.truck, carga.trailer].filter((v) => v !== null && v !== '')
 
   return (
+    /*
+      Pulsar una tarjeta ABRE EL PANEL, no manda a la ficha. La selección viaja
+      en la URL —`?load=`— y no en el estado del componente: el enlace se pega
+      en un mensaje, el botón de atrás cierra el panel, y un refresco no pierde
+      lo que se estaba mirando. `preserveScroll` para que la columna no salte
+      al principio al abrir.
+    */
     <Link
-      href={`/loads/${carga.id}`}
-      className="flex flex-col gap-2.5 rounded border border-steel-200 bg-white p-3.5 transition hover:border-navy-300 hover:shadow-sm"
+      href={boardHref(tab, { load: carga.id })}
+      preserveScroll
+      className="flex flex-col gap-2.5 rounded border border-steel-200 bg-white p-3.5 text-left transition hover:border-navy-300 hover:shadow-sm"
     >
       <div className="flex items-center gap-2">
         <span className="font-semibold tabular-nums text-navy-800">{carga.loadNumber}</span>
@@ -294,7 +333,7 @@ function cuando(at: string, locale: string): string {
   }).format(new Date(at.replace(' ', 'T')))
 }
 
-function TarjetaDeConductor({ conductor }: { conductor: EnLaFlota }) {
+function TarjetaDeConductor({ conductor, tab }: { conductor: EnLaFlota; tab: string }) {
   const { t } = useI18n()
   const equipo = [conductor.truck?.unitNumber, conductor.trailer?.unitNumber].filter(
     (v) => v !== undefined && v !== null && v !== '',
@@ -307,7 +346,8 @@ function TarjetaDeConductor({ conductor }: { conductor: EnLaFlota }) {
         <Avatar id={conductor.id} firstName={conductor.firstName} lastName={conductor.lastName} />
         <span className="min-w-0 flex-1">
           <Link
-            href={`/drivers/${conductor.id}`}
+            href={boardHref(tab, { driver: conductor.id })}
+            preserveScroll
             className="block truncate text-sm font-medium text-navy-800 hover:underline"
           >
             {nombre}

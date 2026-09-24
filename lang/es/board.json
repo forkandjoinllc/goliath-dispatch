@@ -52,5 +52,89 @@
     "refreshed": {
         "label": "Actualizado {time}",
         "auto": "Se refresca solo cada minuto."
+    },
+    "quick": {
+        "load": {
+            "button": "Agregar carga",
+            "title": "Carga nueva",
+            "submit": "Crear carga",
+            "customer": "Cliente",
+            "noCustomers": "No hay ningún cliente activo al que abrirle una carga.",
+            "commodity": "Mercancía",
+            "date": "Fecha",
+            "rest": "Esto es lo que una carga necesita para existir. Al crearla se abre su ficha, que es donde van la tarifa, los papeles y el resto de las paradas."
+        },
+        "driver": {
+            "button": "Agregar conductor",
+            "title": "Conductor nuevo",
+            "submit": "Crear conductor",
+            "firstName": "Nombre",
+            "lastName": "Apellidos",
+            "phone": "Teléfono",
+            "carrier": "Transportista",
+            "noCarriers": "No hay ningún transportista al que atar el conductor.",
+            "rest": "Esto es lo que un conductor necesita para existir. Al crearlo se abre su ficha, que es donde van la licencia, la tarjeta médica y el equipo habitual."
+        }
+    },
+    "panel": {
+        "tabs": {
+            "detail": "Detalle",
+            "customer": "Cliente",
+            "history": "Historial"
+        },
+        "actions": "Otras acciones",
+        "openFull": "Abrir la ficha completa de la carga",
+        "menu": {
+            "edit": "Editar la carga",
+            "reassign": "Reasignar conductor",
+            "cancel": "Cancelar la carga"
+        },
+        "detail": {
+            "commodity": "Mercancía",
+            "reference": "Referencia del cliente",
+            "weight": "Peso",
+            "pounds": "{n} lb",
+            "noFacility": "Sin instalación nombrada",
+            "arrived": "Llegó {time}"
+        },
+        "customer": {
+            "contact": "Contacto",
+            "terms": "Condiciones de pago",
+            "days": "{n} días",
+            "daysOne": "{n} día"
+        },
+        "history": {
+            "empty": "Todavía no le ha pasado nada a esta carga."
+        },
+        "edit": {
+            "title": "Editar {number}",
+            "rest": "Todo lo que esta ventana no enseña vuelve intacto. Para la tarifa, los papeles y los requisitos, abre la ficha completa.",
+            "fromLocation": "La dirección sale del sitio del cliente. Se cambia en la ficha completa de la carga."
+        },
+        "cancel": {
+            "title": "Cancelar {number}",
+            "keep": "Dejarla como está",
+            "warning": "Cancelar detiene la carga. La ficha, sus papeles y su historial se quedan.",
+            "reasonHint": "Al menos 10 caracteres. Es lo que se lee semanas después, cuando el cliente pregunta."
+        },
+        "driver": {
+            "cdl": "CDL",
+            "equipment": "Equipo habitual",
+            "currentLoad": "Carga en curso",
+            "noLoad": "Ahora mismo no lleva nada.",
+            "noTimeline": "Todavía no hay nada registrado de este conductor.",
+            "openFull": "Abrir la ficha completa del conductor"
+        }
+    },
+    "timeline": {
+        "created": "Carga creada",
+        "status": "Pasó a {to}",
+        "assigned": "Se asignó a {name}",
+        "unassigned": "Se retiró a {name}",
+        "arrived": "Llegó a la {stop} · {place}",
+        "departed": "Salió de la {stop} · {place}",
+        "document": "Se subió {type}",
+        "position": "Posición recibida",
+        "checkCall": "Parte anotado por despacho"
     }
 }

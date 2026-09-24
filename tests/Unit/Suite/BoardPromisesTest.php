@@ -205,8 +205,10 @@ it('la hora es la del muelle, resuelta en el servidor', function (): void {
         Source::root().'/app/Http/Controllers/App/BoardController.php',
     );
 
-    // En LOS DOS sitios que mandan una hora de parada: la tarjeta de la carga
-    // y el punto del mapa. Comprobar que aparece «alguna vez» dejaba pasar un
-    // sabotaje que solo tocaba uno.
-    expect(substr_count($codigo, 'LoadClock::previsto('))->toBe(2);
+    // En LOS TRES sitios que mandan una hora de parada: la tarjeta de la
+    // carga, el punto del mapa y las paradas del panel que se abre al pulsar.
+    // Comprobar que aparece «alguna vez» dejaba pasar un sabotaje que solo
+    // tocaba uno. La cifra sube cuando nace un cuarto sitio, y que haya que
+    // tocarla es lo que obliga a mirar si el nuevo también usa el reloj bueno.
+    expect(substr_count($codigo, 'LoadClock::previsto('))->toBe(3);
 });

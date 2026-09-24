@@ -7,6 +7,7 @@ namespace App\Http\Controllers\App;
 use App\Authorization\Actor;
 use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
+use App\Authorization\ResourceContext;
 use App\Enums\Scope;
 use App\Models\Driver;
 use App\Models\Load;
@@ -14,11 +15,14 @@ use App\Services\Map\MapProvider;
 use App\Support\Board\Positions;
 use App\Support\Board\Tabs;
 use App\Support\Drivers\DriverScope;
+use App\Support\Drivers\DriverTimeline;
 use App\Support\EnumValue;
 use App\Support\Fleet\StandingAssignment;
 use App\Support\InertiaPage;
+use App\Support\Loads\History;
 use App\Support\Loads\LoadClock;
 use App\Support\Loads\LoadScope;
+use App\Support\Loads\Transitions;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -72,6 +76,30 @@ final class BoardController
     /** Tope por columna. Un tablero no es un listado: para eso está /loads. */
     private const TOPE = 40;
 
+    /**
+     * El nombre de la acción de cancelar, escrito UNA vez.
+     *
+     * Es a la vez el último segmento de la URL —`/loads/{id}/status/cancelled`—
+     * y la clave que mira {@see Transitions::allowedFrom}. Estuvo escrito
+     * «cancel» aquí y «cancelled» en la ruta el tiempo suficiente para que el
+     * menú del tablero no enseñara nunca la opción: `allowedFrom` no encuentra
+     * ninguna arista con ese nombre y contesta que no, sin equivocarse.
+     * `BoardPanelsTest` comprueba que la pantalla publique en esta misma
+     * palabra.
+     */
+    public const CANCELAR = 'cancelled';
+
+    /**
+     * Tope de las listas de las ventanas de alta rápida.
+     *
+     * No es el tope de columnas: son dos cosas distintas que casualmente valen
+     * lo mismo hoy. Una empresa con doscientos clientes no puede mandarlos
+     * todos en cada carga del tablero, que se refresca cada minuto; el
+     * desplegable se busca escribiendo y el formulario completo de `/loads` los
+     * tiene todos.
+     */
+    private const TOPE_DE_LISTA = 200;
+
     public function __invoke(
         Request $request,
         CurrentActor $current,
@@ -81,7 +109,9 @@ final class BoardController
         $actor = $current->require();
         $policy = $current->policy();
 
-        $this->usesDictionary($request, ['board', 'loads', 'drivers', 'equipment', 'nav']);
+        // `documents` por los nombres de los papeles en la cronología
+        // (`documents.types.*`). Sin él, «Se subió pod» decía la clave cruda.
+        $this->usesDictionary($request, ['board', 'loads', 'drivers', 'equipment', 'nav', 'documents']);
 
         $pestana = (string) $request->query('tab', Tabs::SIN_ASIGNAR);
 
@@ -107,10 +137,110 @@ final class BoardController
             'loads' => $this->tarjetasDeCarga($actor, $cargas),
             'drivers' => $puedeConductores ? $this->conductores($checker, $actor, $policy, $ahora) : [],
             'map' => $this->mapaDe($actor, $mapa, $checker, $policy, $ahora),
+            // Las acciones rápidas. Los permisos se deciden AQUÍ y no en la
+            // pantalla: un botón que se enseña y luego devuelve 403 al pulsar
+            // es peor que no enseñarlo.
+            'quickAdd' => fn (): array => $this->accionesRapidas($checker, $actor, $policy),
+            /*
+             * Lo que se abrió al pulsar. Viaja en la URL —`?load=` o
+             * `?driver=`— y no en el estado de la pantalla: así el enlace se
+             * puede pegar en un mensaje, el botón de atrás funciona, y un
+             * refresco no pierde lo que se estaba mirando.
+             *
+             * En cierre, como las listas de la ventana de alta, para que el
+             * refresco de cada minuto no los calcule: ese refresco pide cuatro
+             * propiedades por su nombre y ninguna es esta, e Inertia solo
+             * evalúa los cierres de lo que se pide. Escritos como valor, el
+             * servidor juntaba las cinco tablas de la cronología una vez por
+             * minuto para tirar el resultado a la basura.
+             */
+            'selectedLoad' => fn (): ?array => $puedeCargas
+                ? $this->cargaElegida($request, $checker, $actor, $policy)
+                : null,
+            'selectedDriver' => fn (): ?array => $puedeConductores
+                ? $this->conductorElegido($request, $checker, $actor, $policy, $ahora)
+                : null,
             // La hora del servidor, para que la pantalla pueda decir «hace un
             // minuto» sin creerse el reloj del navegador.
             'refreshedAt' => $ahora->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Lo que hace falta para dar de alta desde el tablero sin salir de él.
+     *
+     * ## Por qué solo lo esencial
+     *
+     * La ventana pide lo MÍNIMO para que la carga o el conductor existan —lo
+     * mismo que exige el servidor, ni un campo más— y al terminar lleva a la
+     * ficha para lo demás. Una ventana con los treinta campos del formulario
+     * completo no es una acción rápida: es el formulario completo dentro de una
+     * caja más pequeña, y se abandona a la mitad.
+     *
+     * Las dos puertas son las de siempre: `POST /loads` y `POST /drivers`. No
+     * hay un segundo camino de creación, porque un segundo camino es un segundo
+     * sitio donde olvidarse de una regla.
+     *
+     * Las listas viajan solo si la persona puede crear: quien no puede dar de
+     * alta un conductor tampoco necesita la lista de transportistas en la carga
+     * de la página.
+     *
+     * @param  array<string, mixed>|null  $policy
+     * @return array<string, mixed>
+     */
+    private function accionesRapidas(PermissionChecker $checker, Actor $actor, ?array $policy): array
+    {
+        $puedeCarga = $checker->can($actor, 'load:create', null, $policy)->allowed;
+        $puedeConductor = $checker->can($actor, 'driver:create', null, $policy)->allowed;
+
+        return [
+            'canLoad' => $puedeCarga,
+            'canDriver' => $puedeConductor,
+            'customers' => $puedeCarga ? $this->clientesParaElegir($actor) : [],
+            'carriers' => $puedeConductor ? $this->transportistasParaElegir($actor) : [],
+        ];
+    }
+
+    /**
+     * Los clientes a los que se les puede abrir una carga.
+     *
+     * Activos y solo activos: es la misma lista que ofrece `/loads/create`, y
+     * ofrecer aquí uno archivado dejaría la ventana enseñando un cliente que el
+     * formulario de siempre no enseña.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    private function clientesParaElegir(Actor $actor): array
+    {
+        return DB::table('customers')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->orderBy('company_name')
+            ->limit(self::TOPE_DE_LISTA)
+            ->get(['id', 'company_name as name'])
+            ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+            ->all();
+    }
+
+    /**
+     * Los transportistas a los que se puede atar un conductor nuevo.
+     *
+     * Un usuario transportista solo ve el suyo, igual que en `/drivers/create`.
+     *
+     * @return list<array{id: string, name: string}>
+     */
+    private function transportistasParaElegir(Actor $actor): array
+    {
+        return DB::table('carriers')
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->when($actor->carrierId !== null, fn ($q) => $q->where('id', $actor->carrierId))
+            ->orderBy('legal_name')
+            ->limit(self::TOPE_DE_LISTA)
+            ->get(['id', 'legal_name as name'])
+            ->map(fn ($r): array => ['id' => (string) $r->id, 'name' => (string) $r->name])
+            ->all();
     }
 
     /* ── Las cargas ─────────────────────────────────────────────────────── */
@@ -371,6 +501,412 @@ final class BoardController
             ->pluck('company_name', 'id')
             ->map(fn ($v): string => (string) $v)
             ->all();
+    }
+
+    /* ── Lo que se abre al pulsar ───────────────────────────────────────── */
+
+    /**
+     * La carga que se está mirando, con sus tres pestañas.
+     *
+     * Es un resumen y no la ficha entera: la ficha vive en `/loads/{id}` y el
+     * panel lleva a ella. Lo que hay aquí es lo que se mira sin soltar el
+     * tablero —de qué va, quién es el cliente, y qué ha pasado— y las tres
+     * acciones que se toman desde ahí.
+     *
+     * @param  array<string, mixed>|null  $policy
+     * @return array<string, mixed>|null
+     */
+    private function cargaElegida(Request $request, PermissionChecker $checker, Actor $actor, ?array $policy): ?array
+    {
+        $id = (string) $request->query('load', '');
+
+        if ($id === '') {
+            return null;
+        }
+
+        $scope = $checker->authorize($actor, 'load:read', null, $policy);
+
+        /** @var Load|null $carga */
+        $carga = $this->scoped($checker, $actor, $scope)->whereKey($id)->first();
+
+        // Fuera de alcance es lo mismo que no existe: decir «no puede verla»
+        // ya diría que existe.
+        if ($carga === null) {
+            return null;
+        }
+
+        $tenantId = (string) $actor->tenantId;
+        $equipo = $this->tripulacionDe($tenantId, [$id])[$id] ?? null;
+        $contexto = new ResourceContext(
+            tenantId: $tenantId,
+            carrierId: $carga->carrier_id === null ? null : (string) $carga->carrier_id,
+        );
+
+        $puedeEditar = $checker->can($actor, 'load:update', $contexto, $policy)->allowed;
+        $puedeDinero = $checker->can($actor, 'load:financials:update', $contexto, $policy)->allowed;
+
+        return [
+            'id' => $id,
+            'loadNumber' => (string) $carga->load_number,
+            'status' => EnumValue::of($carga->status),
+            'commodity' => $carga->commodity,
+            'reference' => $carga->customer_reference,
+            'weightPounds' => $carga->weight_pounds === null ? null : (int) $carga->weight_pounds,
+            'driver' => $equipo['driver'] ?? null,
+            'truck' => $equipo['truck'] ?? null,
+            'trailer' => $equipo['trailer'] ?? null,
+            'stops' => $this->paradasDe($tenantId, $id),
+            'customer' => $this->clienteDe($tenantId, $carga),
+            // El formulario de la ventana de edición, COMPLETO. Ver `edicionDe`.
+            'edit' => $puedeEditar
+                ? $this->edicionDe($tenantId, $carga, $puedeDinero)
+                : null,
+            'history' => History::de($tenantId, $id),
+            'can' => [
+                // Las tres acciones del menú, decididas en el SERVIDOR. Un menú
+                // que ofrece lo que el servidor va a rechazar con un 403 es
+                // peor que un menú corto.
+                'update' => $puedeEditar,
+                'assign' => $checker->can($actor, 'load:assign_resources', $contexto, $policy)->allowed,
+                // `cancelled` y no `cancel`: es el nombre de la ACCIÓN en la
+                // URL —`/loads/{id}/status/cancelled`— y el mismo que mira
+                // `Transitions`. Con «cancel» la comprobación devolvía siempre
+                // falso, porque no hay ninguna arista con ese nombre, y el
+                // menú se quedaba sin la opción para todo el mundo.
+                'cancel' => $checker->can($actor, 'load:cancel', $contexto, $policy)->allowed
+                    && Transitions::allowedFrom(self::CANCELAR, $carga->status),
+            ],
+        ];
+    }
+
+    /**
+     * El formulario de la ventana de edición, ENTERO.
+     *
+     * ## Por qué viaja todo y no solo lo que se edita
+     *
+     * `PATCH /loads/{id}` no es un parche: `LoadController::loadColumns` escribe
+     * cada columna con `$data[...] ?? null` y `syncStops` REEMPLAZA las paradas
+     * por las que le llegan. Una ventana que mandara solo la mercancía y dos
+     * ciudades dejaría la carga sin número de PO, sin peso, sin millas, sin
+     * instrucciones, con la tarifa a cero y con las paradas reducidas a dos, sin
+     * contactos, sin código postal y sin el sitio del cliente al que apuntaban.
+     * Nada de eso daría un error: la pantalla diría «guardado».
+     *
+     * Así que la ventana lleva el estado completo y devuelve intacto lo que no
+     * enseña. Es la única forma de tener una edición rápida por la MISMA puerta
+     * que el formulario largo; la alternativa —una segunda ruta que solo toque
+     * tres columnas— es un segundo sitio donde olvidarse de un permiso, de una
+     * auditoría de dinero o de una regla.
+     *
+     * Las dos cifras de dinero solo viajan si quien mira puede tocarlas. Quien
+     * no puede no las manda, y `loadColumns` ni las mira: van fuera del `if` de
+     * `$canMoney` y no se pisan.
+     *
+     * `requirements` NO viaja a propósito: `syncRequirements(null)` deja lo que
+     * hubiera, que es justo lo que queremos de una ventana que no los enseña.
+     *
+     * @return array<string, mixed>
+     */
+    private function edicionDe(string $tenantId, Load $carga, bool $conDinero): array
+    {
+        $formulario = [
+            'customer_id' => (string) $carga->customer_id,
+            'customer_reference' => $carga->customer_reference,
+            'po_number' => $carga->po_number,
+            'commodity' => $carga->commodity,
+            'weight_pounds' => $carga->weight_pounds === null ? null : (int) $carga->weight_pounds,
+            'piece_count' => $carga->piece_count === null ? null : (int) $carga->piece_count,
+            'length_inches' => $carga->length_inches === null ? null : (int) $carga->length_inches,
+            'width_inches' => $carga->width_inches === null ? null : (int) $carga->width_inches,
+            'height_inches' => $carga->height_inches === null ? null : (int) $carga->height_inches,
+            'required_equipment_type_id' => $carga->required_equipment_type_id,
+            'is_oversize' => (bool) $carga->is_oversize,
+            'is_overweight' => (bool) $carga->is_overweight,
+            'miles' => $carga->miles === null ? null : (int) $carga->miles,
+            'deadhead_miles' => $carga->deadhead_miles === null ? null : (int) $carga->deadhead_miles,
+            'special_instructions' => $carga->special_instructions,
+            'internal_notes' => $carga->internal_notes,
+            'stops' => $this->paradasParaEditar($tenantId, (string) $carga->id),
+        ];
+
+        /*
+         * Los porcentajes del reparto, y SOLO si quien mira puede tocar dinero.
+         *
+         * Los dos importes en céntimos no hacen falta: `loadColumns` ya no los
+         * pisa cuando no vienen. Los porcentajes sí, porque los suyos no son
+         * `?? null` sino `?? política de la empresa`, y ese valor por omisión
+         * existe para las cargas NUEVAS: aplicado a una que ya existe,
+         * devolvería al 25 % una comisión que alguien pactó al 18 %.
+         *
+         * Quien no puede tocar dinero no manda ninguno de los cuatro, y el
+         * bloque entero de `loadColumns` ni se ejecuta.
+         */
+        if ($conDinero) {
+            $formulario['carrier_dispatch_fee_bps'] = (int) $carga->carrier_dispatch_fee_bps;
+            $formulario['dispatcher_commission_bps'] = (int) $carga->dispatcher_commission_bps;
+        }
+
+        return $formulario;
+    }
+
+    /**
+     * Las paradas con TODAS las columnas que `syncStops` escribe.
+     *
+     * Una por una y con su `id`: sin el identificador, guardar borraría las
+     * paradas de verdad y crearía copias nuevas, y con ellas se irían las horas
+     * de llegada reales, las detenciones y todo lo que cuelga de la parada.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function paradasParaEditar(string $tenantId, string $loadId): array
+    {
+        return DB::table('load_stops as s')
+            ->leftJoin('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+            ->where('s.tenant_id', $tenantId)
+            ->where('s.load_id', $loadId)
+            ->whereNull('s.deleted_at')
+            ->orderBy('s.sequence')
+            ->get([
+                's.id', 's.stop_type', 's.facility_name', 's.customer_location_id', 's.line1',
+                's.city', 's.state', 's.country', 's.postal_code', 's.timezone',
+                's.appointment_type', 's.window_start', 's.window_end', 's.contact_name',
+                's.contact_phone', 's.contact_email', 's.instructions', 's.confirmation_number',
+                // Solo para ENSEÑAR. No vuelve al servidor: ver `locationName`.
+                'cl.name as loc_name', 'cl.city as loc_city', 'cl.state as loc_state',
+            ])
+            ->map(static fn (object $s): array => [
+                'id' => (string) $s->id,
+                'stop_type' => (string) $s->stop_type,
+                'facility_name' => $s->facility_name,
+                'customer_location_id' => $s->customer_location_id,
+                'line1' => $s->line1,
+                'city' => $s->city,
+                'state' => $s->state,
+                'country' => $s->country,
+                'postal_code' => $s->postal_code,
+                'timezone' => $s->timezone,
+                'appointment_type' => $s->appointment_type,
+                // En el formato que espera un campo de fecha y hora del
+                // navegador —«2026-09-24T08:00»— y no el de la base.
+                'window_start' => self::paraElNavegador($s->window_start),
+                'window_end' => self::paraElNavegador($s->window_end),
+                'contact_name' => $s->contact_name,
+                'contact_phone' => $s->contact_phone,
+                'contact_email' => $s->contact_email,
+                'instructions' => $s->instructions,
+                'confirmation_number' => $s->confirmation_number,
+                /*
+                 * El sitio del cliente al que apunta la parada, si apunta a
+                 * uno. Va SOLO para enseñarlo, y el formulario lo quita antes
+                 * de mandar —`loads.*` no tiene regla para él y `syncStops` no
+                 * lo escribe—.
+                 *
+                 * Sin esto, la ventana enseñaba «Ciudad» y «Estado» en blanco
+                 * para una parada que, en el panel de detrás y en la misma
+                 * pantalla, decía «Bodega Laredo · Laredo, TX»: la dirección
+                 * estaba en `customer_locations` y las casillas de la parada
+                 * estaban vacías de verdad. Dos casillas en blanco que no
+                 * mandan en lo que se ve son peores que ninguna casilla.
+                 */
+                'locationName' => $s->customer_location_id === null ? null : trim(implode(' · ', array_filter([
+                    $s->loc_name,
+                    $s->loc_city === null
+                        ? null
+                        : $s->loc_city.($s->loc_state === null ? '' : ', '.$s->loc_state),
+                ]))),
+            ])
+            ->all();
+    }
+
+    /** «2026-09-24 08:00:00» pasa a «2026-09-24T08:00». Nulo sigue siendo nulo. */
+    private static function paraElNavegador(mixed $valor): ?string
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return str_replace(' ', 'T', mb_substr((string) $valor, 0, 16));
+    }
+
+    /**
+     * Las paradas de la carga, en orden y con la hora del muelle.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function paradasDe(string $tenantId, string $loadId): array
+    {
+        return DB::table('load_stops as s')
+            ->leftJoin('customer_locations as cl', 'cl.id', '=', 's.customer_location_id')
+            ->where('s.tenant_id', $tenantId)
+            ->where('s.load_id', $loadId)
+            ->whereNull('s.deleted_at')
+            ->orderBy('s.sequence')
+            ->get([
+                's.id', 's.stop_type', 's.sequence', 's.window_start', 's.timezone',
+                's.actual_arrival_at', 's.city', 's.state', 's.facility_name',
+                'cl.name as loc_name', 'cl.city as loc_city', 'cl.state as loc_state',
+                'cl.line1 as loc_line1', 'cl.timezone as loc_tz',
+            ])
+            ->map(function ($s): array {
+                $huso = $s->timezone ?? $s->loc_tz;
+
+                return [
+                    'id' => (string) $s->id,
+                    'type' => (string) $s->stop_type,
+                    'sequence' => (int) $s->sequence,
+                    'name' => $s->facility_name ?? $s->loc_name,
+                    'line1' => $s->loc_line1,
+                    'city' => $s->city ?? $s->loc_city,
+                    'state' => $s->state ?? $s->loc_state,
+                    ...LoadClock::previsto($s->window_start, $huso),
+                    // Y si ya se llegó, cuándo. Es lo que distingue «va a las
+                    // ocho» de «llegó a las ocho y diez».
+                    'arrived' => $s->actual_arrival_at === null
+                        ? null
+                        : LoadClock::real($s->actual_arrival_at, $huso)['at'],
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * El cliente de la carga: con quién se habla y en qué condiciones.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function clienteDe(string $tenantId, Load $carga): ?array
+    {
+        if ($carga->customer_id === null) {
+            return null;
+        }
+
+        $cliente = DB::table('customers')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $carga->customer_id)
+            ->first(['id', 'company_name', 'email', 'phone', 'payment_terms_days', 'status']);
+
+        if ($cliente === null) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $cliente->id,
+            'name' => (string) $cliente->company_name,
+            'email' => $cliente->email,
+            'phone' => $cliente->phone,
+            'termsDays' => $cliente->payment_terms_days === null ? null : (int) $cliente->payment_terms_days,
+            'status' => EnumValue::of($cliente->status),
+            // El contacto de ESTA carga, no el primero de la ficha del cliente:
+            // una empresa con seis contactos tiene uno por carga, y llamar al
+            // que no es cuesta una llamada y media.
+            'contact' => $carga->customer_contact_id === null ? null : $this->contacto($tenantId, (string) $carga->customer_contact_id),
+        ];
+    }
+
+    /**
+     * El nombre del contacto de la carga.
+     *
+     * Va por su tenant además de por su id: un id de contacto llega desde la
+     * carga, pero el filtro de tenant no se deja de escribir porque la fuente
+     * parezca de dentro.
+     */
+    private function contacto(string $tenantId, string $id): ?string
+    {
+        $fila = DB::table('customer_contacts')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first(['first_name', 'last_name']);
+
+        if ($fila === null) {
+            return null;
+        }
+
+        $nombre = trim((string) $fila->first_name.' '.(string) $fila->last_name);
+
+        return $nombre === '' ? null : $nombre;
+    }
+
+    /**
+     * El conductor que se está mirando, con su cronología.
+     *
+     * @param  array<string, mixed>|null  $policy
+     * @return array<string, mixed>|null
+     */
+    private function conductorElegido(
+        Request $request,
+        PermissionChecker $checker,
+        Actor $actor,
+        ?array $policy,
+        CarbonImmutable $ahora,
+    ): ?array {
+        $id = (string) $request->query('driver', '');
+
+        if ($id === '') {
+            return null;
+        }
+
+        $scope = $checker->authorize($actor, 'driver:read', null, $policy);
+
+        /** @var Driver|null $conductor */
+        $conductor = DriverScope::apply(Driver::query(), $checker, $actor, $scope)
+            ->whereNull('drivers.deleted_at')
+            ->whereKey($id)
+            ->first();
+
+        if ($conductor === null) {
+            return null;
+        }
+
+        $tenantId = (string) $actor->tenantId;
+        $fija = StandingAssignment::deConductor($tenantId, $id, $ahora);
+        $unidades = $fija === null ? ['trucks' => [], 'trailers' => []] : $this->unidadesPorId($tenantId, [$id => $fija]);
+
+        return [
+            'id' => $id,
+            'firstName' => (string) $conductor->first_name,
+            'lastName' => (string) $conductor->last_name,
+            'phone' => $conductor->phone,
+            'email' => $conductor->email,
+            'status' => EnumValue::of($conductor->status),
+            'statusNote' => $conductor->status_note,
+            'cdlClass' => $conductor->cdl_class,
+            'licenseState' => $conductor->license_state,
+            'truck' => $fija === null ? null : ($unidades['trucks'][$fija['truckId']] ?? null),
+            'trailer' => $fija === null || $fija['trailerId'] === null
+                ? null
+                : ($unidades['trailers'][$fija['trailerId']] ?? null),
+            // La carga que lleva AHORA, si lleva alguna. Es la primera pregunta
+            // que se hace mirando a un conductor en un tablero.
+            'currentLoad' => $this->cargaEnCursoDe($tenantId, $id),
+            'timeline' => DriverTimeline::de($tenantId, $id),
+        ];
+    }
+
+    /**
+     * La carga viva que lleva este conductor, si lleva alguna.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function cargaEnCursoDe(string $tenantId, string $driverId): ?array
+    {
+        $fila = DB::table('load_assignments as a')
+            ->join('loads as l', 'l.id', '=', 'a.load_id')
+            ->where('a.tenant_id', $tenantId)
+            ->where('a.driver_id', $driverId)
+            ->whereNull('a.unassigned_at')
+            ->whereNull('a.deleted_at')
+            ->whereNotIn('l.status', Tabs::terminados())
+            ->whereNotIn('l.status', Tabs::fuera())
+            ->orderByDesc('a.created_at')
+            ->first(['l.id', 'l.load_number', 'l.status', 'l.commodity']);
+
+        return $fila === null ? null : [
+            'id' => (string) $fila->id,
+            'loadNumber' => (string) $fila->load_number,
+            'status' => (string) $fila->status,
+            'commodity' => $fila->commodity,
+        ];
     }
 
     /* ── Los conductores ────────────────────────────────────────────────── */

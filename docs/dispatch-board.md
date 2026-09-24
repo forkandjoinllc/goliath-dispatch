@@ -159,6 +159,12 @@ los tres importan:
 
 `load_assignments` sigue mandando en lo que se despacha.
 
+## Lo que pasa al pulsar
+
+Pulsar una carga o un conductor abre su panel en el sitio de su tarjeta, con
+tres pestañas y un menú de tres acciones; arriba hay dos altas rápidas en
+ventana. Todo eso está en **`docs/board-panels.md`**.
+
 ## Lo que hay que hacer en el servidor
 
 `php artisan migrate`, y —si se quiere carretera debajo del mapa—

@@ -939,8 +939,25 @@ final class LoadController
             'planned_delivery_at' => $data['planned_delivery_at'] ?? null,
             'special_instructions' => $data['special_instructions'] ?? null,
             'internal_notes' => $data['internal_notes'] ?? null,
-            'customer_charge_cents' => $data['customer_charge_cents'] ?? 0,
         ] : [];
+
+        /*
+         * Las tarifas se escriben SOLO si vinieron, y no con `?? 0`.
+         *
+         * `?? 0` convierte «este formulario no enseña el importe» en «el importe
+         * es cero». Un guardado que no traiga la cifra —la ventana rápida del
+         * tablero, una llamada que solo corrige la mercancía— dejaba una carga
+         * de 2.500 dólares a cero sin un error ni un aviso, y se descubría al
+         * facturar semanas después.
+         *
+         * Con `array_key_exists` la ausencia significa «no lo toques», que es lo
+         * que ya hacía `dispatcher_user_id` más abajo por el mismo motivo. El
+         * cero explícito sigue siendo un cero: el formulario que enseña el campo
+         * en blanco manda `0`, y eso sí se escribe.
+         */
+        if ($canFreight && array_key_exists('customer_charge_cents', $data)) {
+            $columns['customer_charge_cents'] = $data['customer_charge_cents'] ?? 0;
+        }
 
         // La base de la tarifa se sella SIEMPRE, tenga o no permiso de dinero
         // quien da de alta la carga. No es una cifra que se teclee: es la
@@ -952,7 +969,10 @@ final class LoadController
             ->dispatchFeeBase->value;
 
         if ($canMoney) {
-            $columns['carrier_gross_rate_cents'] = $data['carrier_gross_rate_cents'] ?? 0;
+            if (array_key_exists('carrier_gross_rate_cents', $data)) {
+                $columns['carrier_gross_rate_cents'] = $data['carrier_gross_rate_cents'] ?? 0;
+            }
+
             // Los valores por defecto salen de la POLÍTICA DE LA EMPRESA, no de
             // constantes. Antes eran `?? 1000` y `?? 2500` y las columnas
             // `default_carrier_dispatch_fee_bps` y
@@ -1304,6 +1324,12 @@ final class LoadController
             'planned_delivery_at' => ['nullable', 'date', 'after_or_equal:planned_pickup_at'],
             'special_instructions' => ['nullable', 'string', 'max:5000'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
+            /*
+             * El precio de VENTA lo fija quien habló con el cliente, así que
+             * vive con la mercancía y no con el reparto: un despachador lo
+             * cambia y contabilidad no —ella reparte lo que ya se acordó—. Ver
+             * la prueba «el despachador edita la mercancía pero no el reparto».
+             */
             'customer_charge_cents' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
 
             'stops' => ['required', 'array', 'min:2'],
