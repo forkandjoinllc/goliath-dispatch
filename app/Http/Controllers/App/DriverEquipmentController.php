@@ -13,7 +13,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -71,12 +70,15 @@ final class DriverEquipmentController
             $this->exigeDeLaEmpresa('trailers', (string) $actor->tenantId, (string) $datos['trailer_id'], 'trailer_id');
         }
 
-        $choques = StandingAssignment::choques(
+        $choques = StandingAssignment::crear(
             (string) $actor->tenantId,
             (string) $modelo->id,
             (string) $datos['truck_id'],
+            $datos['trailer_id'] ?? null,
             $inicio,
             $fin,
+            $actor->userId,
+            $datos['notes'] ?? null,
         );
 
         if ($choques !== []) {
@@ -86,20 +88,6 @@ final class DriverEquipmentController
                 'truck_id' => __('drivers.standing.'.$choques[0]),
             ]);
         }
-
-        DB::table('driver_equipment_assignments')->insert([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => (string) $actor->tenantId,
-            'driver_id' => (string) $modelo->id,
-            'truck_id' => (string) $datos['truck_id'],
-            'trailer_id' => $datos['trailer_id'] ?? null,
-            'starts_on' => $inicio,
-            'ends_on' => $fin,
-            'assigned_by_user_id' => $actor->userId,
-            'notes' => $datos['notes'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
 
         return back()->with('success', __('drivers.standing.saved'));
     }
@@ -126,27 +114,10 @@ final class DriverEquipmentController
             $current->policy(),
         );
 
-        $fila = DB::table('driver_equipment_assignments')
-            ->where('tenant_id', $actor->tenantId)
-            ->where('driver_id', $modelo->id)
-            ->where('id', $assignment)
-            ->whereNull('deleted_at')
-            ->first(['id', 'starts_on']);
-
-        abort_if($fila === null, 404);
-
-        // Una asignación que empieza mañana no se puede terminar ayer: la
-        // restricción de la base lo rechaza, y decirlo aquí es más útil que un
-        // error de SQL.
-        $hoy = CarbonImmutable::now()->toDateString();
-        $inicio = substr((string) $fila->starts_on, 0, 10);
-
-        DB::table('driver_equipment_assignments')
-            ->where('id', $fila->id)
-            ->update([
-                'ends_on' => max($hoy, $inicio),
-                'updated_at' => now(),
-            ]);
+        abort_unless(
+            StandingAssignment::terminar((string) $actor->tenantId, (string) $modelo->id, $assignment),
+            404,
+        );
 
         return back()->with('success', __('drivers.standing.ended'));
     }

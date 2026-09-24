@@ -73,7 +73,8 @@
             "deleted": "Borró un documento"
         },
         "driver": {
-            "verified": "Revisó a un conductor"
+            "verified": "Revisó a un conductor",
+            "employment_changed": "Cambió la situación laboral de un conductor"
         },
         "equipment": {
             "verified": "Equipo verificado"

@@ -37,7 +37,9 @@
     "available": "Available",
     "on_load": "On a load",
     "off_duty": "Off duty",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "on_hold": "On hold",
+    "terminated": "Terminated"
   },
   "detail": {
     "identity": "Identity",
@@ -154,7 +156,15 @@
     "noCarrierMatches": "No carrier matches.",
     "noneChosen": "No carrier chosen yet.",
     "removeCarrier": "Remove",
-    "nYearsOne": "1 year"
+    "nYearsOne": "1 year",
+    "equipment": {
+      "title": "Usual equipment",
+      "hint": "The truck and trailer they will run. It can be changed later from their record.",
+      "chooseCarrierFirst": "Pick a carrier first and their equipment will show up here.",
+      "noTrucks": "That carrier has no free truck.",
+      "hiddenTrucks": "{n} trucks are not listed because another driver already runs them.",
+      "hiddenTrucksOne": "{n} truck is not listed because another driver already runs it."
+    }
   },
   "flash": {
     "created": "{name} was added.",
@@ -214,5 +224,31 @@
     "notYours": "That unit does not belong to your company.",
     "saved": "Equipment assigned.",
     "ended": "Assignment ended."
+  },
+  "employment": {
+    "title": "Employment",
+    "hint": "Putting somebody on hold or terminating them pulls them off running loads. A note is always required.",
+    "change": "Change employment",
+    "available": "Put back to work",
+    "on_hold": "Put on hold",
+    "terminated": "Terminate",
+    "note": "Reason",
+    "noteHint": "What happened. Somebody will read this a year from now, and it may be a lawyer.",
+    "noteRequired": "Write the reason: a change of employment with no reason cannot be explained later.",
+    "rehire": "Would you hire them again?",
+    "rehireYes": "Yes, eligible for rehire",
+    "rehireNo": "No, not eligible for rehire",
+    "rehireRequired": "Pick one. Whoever signs the termination is the one who knows; asking two years from now is asking somebody who was not there.",
+    "rehireEligible": "Eligible for rehire",
+    "rehireNotEligible": "Not eligible for rehire",
+    "save": "Save",
+    "cancel": "Cancel",
+    "currentNote": "Reason",
+    "changedOn": "Since {date}",
+    "done": "{name}'s employment updated.",
+    "doneAndReleased": "{name}'s employment updated, and they were pulled off {count} running loads.",
+    "doneAndReleasedOne": "{name}'s employment updated, and they were pulled off {count} running load.",
+    "releasedBecause": "The driver stopped being available: {reason}",
+    "equipmentReleased": "Their usual equipment is now free for another driver."
   }
 }

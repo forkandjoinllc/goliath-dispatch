@@ -35,6 +35,8 @@ enum AuditAction: string
     case EquipmentVerified = 'equipment.verified';
     /** Revisión de la licencia de un conductor. Añadido, no portado — ver la migración. */
     case DriverVerified = 'driver.verified';
+    /** Se le puso en espera, se le dio de baja, o volvió a la flota. */
+    case DriverEmploymentChanged = 'driver.employment_changed';
     case OnboardingStatusChanged = 'onboarding.status_changed';
     case LoadCreated = 'load.created';
     case LoadStatusChanged = 'load.status_changed';

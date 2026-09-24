@@ -17,6 +17,7 @@ use App\Models\Customer;
 use App\Models\Load;
 use App\Rules\SubdivisionOfCountry;
 use App\Support\Audit;
+use App\Support\Drivers\Employment;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
@@ -753,7 +754,7 @@ final class LoadController
             ])
             ->map(function ($d) use ($today, $requisitosParaComparar, $solapesDeConductor): array {
                 $problem = match (true) {
-                    $d->status === 'inactive' => 'driverInactive',
+                    Employment::bloquea($d->status) => Employment::motivo($d->status),
                     $d->license_expires_at !== null && $d->license_expires_at < $today => 'licenseExpired',
                     $d->medical_card_expires_at !== null && $d->medical_card_expires_at < $today => 'medicalExpired',
                     default => null,

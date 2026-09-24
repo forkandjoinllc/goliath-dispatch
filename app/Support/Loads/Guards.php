@@ -7,6 +7,7 @@ namespace App\Support\Loads;
 use App\Enums\LoadStatus;
 use App\Models\Load;
 use App\Support\Documents\DocumentTypes;
+use App\Support\Drivers\Employment;
 use App\Support\Oversize\NeedsPapers;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -282,7 +283,6 @@ final class Guards
         ));
     }
 
-
     /**
      * @param  list<string>  $driverIds
      * @return list<string>
@@ -300,7 +300,10 @@ final class Guards
                     // olvida el doble de veces, porque caduca cada dos años y no
                     // cada cinco.
                     ->orWhereDate('medical_card_expires_at', '<', $today)
-                    ->orWhere('status', 'inactive');
+                    // Quién no puede trabajar lo decide `Drivers\Employment`,
+                    // en un solo sitio: esta comparación estaba escrita cuatro
+                    // veces y las cuatro decían «inactivo» por casualidad.
+                    ->orWhereIn('status', Employment::bloqueantes());
             })
             ->exists();
 

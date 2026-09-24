@@ -1,8 +1,9 @@
 import { Link, useForm } from '@inertiajs/react'
 import { useState, type ReactNode } from 'react'
+import { DriverStatusBadge } from '@/components/App/DriverStatus'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { SearchableSelect } from '@/components/Form/SearchableSelect'
-import { TextField } from '@/components/Form/Field'
+import { TextArea, TextField } from '@/components/Form/Field'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatDay } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
@@ -29,6 +30,10 @@ interface Props {
     verifiedAt: string | null
     verificationNotes: string | null
     trackingConsentAt: string | null
+    statusNote: string | null
+    statusChangedAt: string | null
+    /** Nulo es «no se ha dado de baja», no «no se sabe». */
+    rehireEligible: boolean | null
     hasLogin: boolean
     notes: string | null
     createdAt: string | null
@@ -56,8 +61,9 @@ interface Props {
   }
   /** Nulo cuando quien mira no puede cambiar el equipo: no viaja la flota. */
   equipmentChoices: {
-    trucks: { id: string; name: string }[]
-    trailers: { id: string; name: string }[]
+    trucks: { id: string; name: string; carrierId: string }[]
+    trailers: { id: string; name: string; carrierId: string }[]
+    takenTrucks: number
   } | null
   can: { update: boolean; approve: boolean; consent: boolean }
 }
@@ -194,6 +200,8 @@ export default function DriverShow({ driver, carriers, loads, standing, equipmen
               {t('drivers.detail.licenceHidden')}
             </p>
           </Card>
+
+          <SituacionLaboral driver={driver} puedeEditar={can.update} />
 
           <EquipoHabitual
             driverId={driver.id}
@@ -423,6 +431,189 @@ function Expiry({ label, date, flag }: { label: string; date: string; flag: stri
         ) : null}
       </dd>
     </div>
+  )
+}
+
+/**
+ * La situación laboral: trabajando, en espera, o dado de baja.
+ *
+ * Tres cosas que no son evidentes y están puestas a propósito:
+ *
+ *  - **La nota es obligatoria** en los tres casos. Un cambio de situación sin
+ *    motivo escrito es una fila que dentro de un año nadie sabe explicar.
+ *  - **La recontratación se elige al dar de baja**, no después. Quien firma la
+ *    baja es quien lo sabe.
+ *  - **Se avisa de lo que pasa además de cambiar la palabra**: se le retira de
+ *    las cargas en curso, y la baja suelta su equipo. Enterarse después de que
+ *    una carga se quedó sin conductor es la peor manera de enterarse.
+ */
+function SituacionLaboral({
+  driver,
+  puedeEditar,
+}: {
+  driver: {
+    id: string
+    status: string
+    statusNote: string | null
+    statusChangedAt: string | null
+    rehireEligible: boolean | null
+  }
+  puedeEditar: boolean
+}) {
+  const { t, locale } = useI18n()
+  const [eligiendo, setEligiendo] = useState<string | null>(null)
+
+  const form = useForm({ status: '', note: '', rehire_eligible: '' })
+
+  const abrir = (estado: string) => {
+    setEligiendo(estado)
+    form.setData((d) => ({ ...d, status: estado, note: '', rehire_eligible: '' }))
+  }
+
+  const esBaja = eligiendo === 'terminated'
+
+  return (
+    <Card title={t('drivers.employment.title')}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <DriverStatusBadge value={driver.status} />
+        {driver.statusChangedAt === null ? null : (
+          <span className="text-xs text-steel-600">
+            {t('drivers.employment.changedOn', { date: formatDay(driver.statusChangedAt, locale) })}
+          </span>
+        )}
+        {driver.rehireEligible === null ? null : (
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+              driver.rehireEligible
+                ? 'bg-success-50 text-success-700'
+                : 'bg-danger-50 text-danger-700'
+            }`}
+          >
+            {t(
+              driver.rehireEligible
+                ? 'drivers.employment.rehireEligible'
+                : 'drivers.employment.rehireNotEligible',
+            )}
+          </span>
+        )}
+      </div>
+
+      {driver.statusNote === null || driver.statusNote === '' ? null : (
+        <p className="mt-3 rounded border border-steel-200 bg-steel-50 p-3 text-sm text-carbon">
+          <strong className="block text-xs font-semibold uppercase tracking-wide text-steel-600">
+            {t('drivers.employment.currentNote')}
+          </strong>
+          {driver.statusNote}
+        </p>
+      )}
+
+      {puedeEditar ? (
+        <div className="mt-4 border-t border-steel-100 pt-4">
+          <p className="text-xs text-steel-600">{t('drivers.employment.hint')}</p>
+
+          {eligiendo === null ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(['available', 'on_hold', 'terminated'] as const)
+                .filter((estado) => estado !== driver.status)
+                .map((estado) => (
+                  <button
+                    key={estado}
+                    type="button"
+                    onClick={() => { abrir(estado) }}
+                    className={`rounded border px-3 py-2 text-sm font-medium transition ${
+                      estado === 'terminated'
+                        ? 'border-danger-500 text-danger-700 hover:bg-danger-50'
+                        : 'border-steel-300 text-navy-700 hover:bg-navy-50'
+                    }`}
+                  >
+                    {t(`drivers.employment.${estado}`)}
+                  </button>
+                ))}
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                form.post(`/drivers/${driver.id}/employment`, {
+                  preserveScroll: true,
+                  onSuccess: () => { setEligiendo(null) },
+                })
+              }}
+              className="mt-3 flex flex-col gap-4"
+            >
+              <p className="text-sm font-semibold text-navy-800">
+                {t(`drivers.employment.${eligiendo}`)}
+              </p>
+
+              {esBaja ? (
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-sm font-medium text-carbon">
+                    {t('drivers.employment.rehire')}
+                  </legend>
+                  {/* Sin marca por omisión: elegir es el acto, y una respuesta
+                      preseleccionada la toma por quien no la tomó. */}
+                  {([
+                    { valor: '1', clave: 'drivers.employment.rehireYes' },
+                    { valor: '0', clave: 'drivers.employment.rehireNo' },
+                  ] as const).map(({ valor, clave }) => (
+                    <label key={valor} className="flex items-center gap-2 text-sm text-carbon">
+                      <input
+                        type="radio"
+                        name="rehire_eligible"
+                        value={valor}
+                        checked={form.data.rehire_eligible === valor}
+                        onChange={() => form.setData('rehire_eligible', valor)}
+                        className="h-4 w-4"
+                      />
+                      {t(clave)}
+                    </label>
+                  ))}
+                  {form.errors.rehire_eligible ? (
+                    <p role="alert" className="text-xs font-medium text-safety-700">
+                      {form.errors.rehire_eligible}
+                    </p>
+                  ) : null}
+                </fieldset>
+              ) : null}
+
+              <TextArea
+                label={t('drivers.employment.note')}
+                hint={t('drivers.employment.noteHint')}
+                required
+                maxLength={2000}
+                rows={3}
+                value={form.data.note}
+                onChange={(e) => form.setData('note', e.target.value)}
+                error={form.errors.note}
+              />
+
+              {eligiendo === 'terminated' ? (
+                <p className="text-xs text-steel-600">
+                  {t('drivers.employment.equipmentReleased')}
+                </p>
+              ) : null}
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={form.processing}
+                  className="rounded bg-safety-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
+                >
+                  {t('drivers.employment.save')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEligiendo(null) }}
+                  className="rounded border border-steel-300 px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-navy-50"
+                >
+                  {t('drivers.employment.cancel')}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      ) : null}
+    </Card>
   )
 }
 

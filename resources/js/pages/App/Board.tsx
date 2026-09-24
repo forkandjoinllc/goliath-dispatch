@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react'
 import { useEffect, type ReactNode } from 'react'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
+import { DriverStatusDot } from '@/components/App/DriverStatus'
 import { BoardMap, type MapaDelTablero } from '@/components/App/Board/BoardMap'
 import { AppLayout } from '@/layouts/AppLayout'
 import { useI18n } from '@/lib/i18n'
@@ -293,21 +294,6 @@ function cuando(at: string, locale: string): string {
   }).format(new Date(at.replace(' ', 'T')))
 }
 
-/**
- * El punto de estado: verde libre, azul cargado, gris ni una cosa ni otra.
- *
- * Los tonos son los que la marca DEFINE —500 y 700, no 600—. Escribir un tono
- * que no existe no da error: Tailwind no genera la clase y el punto sale sin
- * color, que fue justo lo que pasó — los dos grises se veían y los dos de color
- * no.
- */
-const PUNTO: Record<string, string> = {
-  available: 'bg-success-500',
-  on_load: 'bg-info-500',
-  off_duty: 'bg-steel-400',
-  inactive: 'bg-steel-400',
-}
-
 function TarjetaDeConductor({ conductor }: { conductor: EnLaFlota }) {
   const { t } = useI18n()
   const equipo = [conductor.truck?.unitNumber, conductor.trailer?.unitNumber].filter(
@@ -333,18 +319,7 @@ function TarjetaDeConductor({ conductor }: { conductor: EnLaFlota }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="inline-flex items-center gap-1.5 text-steel-700">
-          <span
-            aria-hidden="true"
-            className={`inline-block h-2.5 w-2.5 rounded-full ${
-              PUNTO[conductor.status ?? ''] ?? 'bg-steel-400'
-            }`}
-          />
-          {/* Las MISMAS palabras que la ficha del conductor: un segundo juego
-              de nombres para los mismos cuatro estados acabaría diciendo otra
-              cosa. */}
-          {conductor.status === null ? '—' : t(`drivers.status.${conductor.status}`)}
-        </span>
+        <DriverStatusDot value={conductor.status} />
 
         {conductor.phone === null || conductor.phone === '' ? (
           <span className="text-steel-500">{t('board.drivers.noPhone')}</span>

@@ -11,6 +11,7 @@ use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
 use App\Models\Load;
 use App\Support\Audit;
+use App\Support\Drivers\Employment;
 use App\Support\Equipment\Eligibility;
 use App\Support\Equipment\Media;
 use App\Support\Equipment\UnitFacts;
@@ -329,8 +330,10 @@ final class LoadAssignmentController
 
             $name = trim("{$driver->first_name} {$driver->last_name}");
 
-            if ($driver->status === 'inactive') {
-                return __('loads.assign.driverInactive', ['name' => $name]);
+            $bloqueo = Employment::motivo($driver->status);
+
+            if ($bloqueo !== null) {
+                return __('loads.assign.'.$bloqueo, ['name' => $name]);
             }
 
             // Solo la fecha. La columna es datetime(3) y en crudo sale

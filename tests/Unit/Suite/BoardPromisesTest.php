@@ -141,16 +141,42 @@ it('las cargas sin posición se cuentan y se explican', function (): void {
     }
 });
 
-it('la columna de conductores dice el estado con las palabras de su ficha', function (): void {
-    // Un segundo juego de nombres para los mismos cuatro estados acabaría
-    // diciendo otra cosa que la ficha del conductor.
-    $pantalla = fuenteDelTablero('resources/js/pages/App/Board.tsx');
+it('un solo sitio traduce y colorea los estados del conductor', function (): void {
+    // Eran tres: la lista de conductores con sus tonos, el tablero con sus
+    // puntos, y la ficha con los suyos. Tres copias de la misma tabla aguantan
+    // mientras nadie añada un estado; el día que entraron «en espera» y «dado
+    // de baja», las tres son tres sitios donde falta uno — y el que se quede
+    // corto pinta gris lo que debería pintar rojo.
+    $comun = fuenteDelTablero('resources/js/components/App/DriverStatus.tsx');
 
-    test()->assertStringContainsString('drivers.status.${conductor.status}', $pantalla);
-    test()->assertStringNotContainsString('board.drivers.status', $pantalla);
+    test()->assertStringContainsString('drivers.status.${value}', $comun);
+
+    foreach ([
+        'resources/js/pages/App/Board.tsx',
+        'resources/js/pages/App/Drivers/Index.tsx',
+        'resources/js/pages/App/Drivers/Show.tsx',
+    ] as $ruta) {
+        $pantalla = fuenteDelTablero($ruta);
+
+        test()->assertStringContainsString(
+            "from '@/components/App/DriverStatus'",
+            $pantalla,
+            "`{$ruta}` pinta el estado del conductor por su cuenta.",
+        );
+
+        // Traducir la palabra en una etiqueta de filtro está bien. Lo que no
+        // puede volver es la TABLA DE COLORES: un `Record` con `on_load:`
+        // dentro es una segunda copia de la misma decisión, y es la que se
+        // queda corta cuando entra un estado nuevo.
+        test()->assertStringNotContainsString(
+            'on_load:',
+            $pantalla,
+            "`{$ruta}` volvió a tener su propia tabla de colores de estado.",
+        );
+    }
 
     // Y el teléfono se marca: el tablero se mira desde el móvil.
-    test()->assertStringContainsString('href={`tel:', $pantalla);
+    test()->assertStringContainsString('href={`tel:', fuenteDelTablero('resources/js/pages/App/Board.tsx'));
 });
 
 it('el tablero dice de qué es la fecha', function (): void {

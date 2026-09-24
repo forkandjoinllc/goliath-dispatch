@@ -19,6 +19,18 @@ interface Props {
    * y lo decían: la validación admitía cualquier cadena de cuatro caracteres.
    */
   codes: { cdlClass: string[]; endorsements: string[]; restrictions: string[] }
+  /**
+   * El equipo que se puede elegir en el alta.
+   *
+   * Solo llega al CREAR: en la edición el equipo se cambia desde la ficha, que
+   * es donde está el historial y donde se ve lo que ya tiene puesto.
+   */
+  equipment?: {
+    trucks: { id: string; name: string; carrierId: string }[]
+    trailers: { id: string; name: string; carrierId: string }[]
+    /** Camiones que no se ofrecen porque ya los lleva otro conductor. */
+    takenTrucks: number
+  }
 }
 
 /** Espejo de App\Enums\WorkAuthorization. */
@@ -32,7 +44,7 @@ const WORK_AUTHORIZATIONS = [
 /** Los tramos que piden los clientes. 31 se pinta como «más de 30». */
 const RECORD_YEARS = [0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 31]
 
-export default function DriverForm({ driver, carriers, selectedCarriers, codes }: Props) {
+export default function DriverForm({ driver, carriers, selectedCarriers, codes, equipment }: Props) {
   const { t } = useI18n()
   const editing = driver !== null
   const g = (key: string): string => {
@@ -70,6 +82,9 @@ export default function DriverForm({ driver, carriers, selectedCarriers, codes }
     status: g('status') || 'available',
     notes: g('notes'),
     carrier_ids: selectedCarriers,
+    // Solo se mandan al crear; el servidor los ignora en la edición.
+    truck_id: '',
+    trailer_id: '',
   })
 
   const toggleCarrier = (id: string) => {
@@ -288,6 +303,18 @@ export default function DriverForm({ driver, carriers, selectedCarriers, codes }
           )}
         </fieldset>
 
+        {/* El equipo, después de los transportistas y solo al dar de alta: la
+            lista depende de a quién se le acaba de marcar. */}
+        {! editing && equipment !== undefined ? (
+          <EquipoDelAlta
+            equipment={equipment}
+            carrierIds={form.data.carrier_ids}
+            truckId={form.data.truck_id}
+            trailerId={form.data.trailer_id}
+            onPick={(campo, id) => form.setData(campo, id)}
+          />
+        ) : null}
+
         <Section title={t('drivers.form.qualification')}>
           <div className="sm:col-span-2">
             <p className="text-xs text-steel-600">{t('drivers.form.qualificationHint')}</p>
@@ -405,6 +432,95 @@ export default function DriverForm({ driver, carriers, selectedCarriers, codes }
         </div>
       </form>
     </AppLayout>
+  )
+}
+
+/**
+ * El camión y el remolque del alta.
+ *
+ * Las unidades que se ofrecen son las DEL TRANSPORTISTA que se acaba de marcar
+ * —no la flota entera— y solo los camiones que no lleva ya otro conductor. Lo
+ * segundo se decide en el servidor y se dice aquí: un camión que falta de la
+ * lista sin explicación se busca durante un rato.
+ *
+ * Sin transportista marcado no hay nada que ofrecer, y se dice, en vez de
+ * enseñar un buscador vacío que parece roto.
+ */
+function EquipoDelAlta({
+  equipment,
+  carrierIds,
+  truckId,
+  trailerId,
+  onPick,
+}: {
+  equipment: {
+    trucks: { id: string; name: string; carrierId: string }[]
+    trailers: { id: string; name: string; carrierId: string }[]
+    takenTrucks: number
+  }
+  carrierIds: string[]
+  truckId: string
+  trailerId: string
+  onPick: (campo: 'truck_id' | 'trailer_id', id: string) => void
+}) {
+  const { t } = useI18n()
+  const suyos = <T extends { carrierId: string }>(lista: T[]): T[] =>
+    lista.filter((u) => carrierIds.includes(u.carrierId))
+
+  const camiones = suyos(equipment.trucks)
+  const remolques = suyos(equipment.trailers)
+
+  return (
+    <fieldset className="rounded border border-steel-200 bg-white p-5">
+      <legend className="px-1 text-xs font-bold uppercase tracking-[0.12em] text-safety-600">
+        {t('drivers.form.equipment.title')}
+      </legend>
+
+      <p className="mt-2 text-xs text-steel-600">{t('drivers.form.equipment.hint')}</p>
+
+      {carrierIds.length === 0 ? (
+        <p className="mt-3 text-sm text-steel-700">{t('drivers.form.equipment.chooseCarrierFirst')}</p>
+      ) : (
+        <div className="mt-3 flex flex-col gap-4">
+          {camiones.length === 0 ? (
+            <p className="text-sm text-steel-700">{t('drivers.form.equipment.noTrucks')}</p>
+          ) : (
+            <SearchableSelect
+              label={t('drivers.standing.truck')}
+              choices={camiones}
+              selected={camiones.find((c) => c.id === truckId) ?? null}
+              onPick={(id) => { onPick('truck_id', id) }}
+              onClear={() => { onPick('truck_id', '') }}
+              placeholder={t('drivers.standing.chooseTruck')}
+              emptyText={t('drivers.standing.noTruckMatches')}
+              changeText={t('common.actions.change')}
+            />
+          )}
+
+          <SearchableSelect
+            label={t('drivers.standing.trailer')}
+            choices={remolques}
+            selected={remolques.find((c) => c.id === trailerId) ?? null}
+            onPick={(id) => { onPick('trailer_id', id) }}
+            onClear={() => { onPick('trailer_id', '') }}
+            placeholder={t('drivers.standing.chooseTrailer')}
+            emptyText={t('drivers.standing.noTrailerMatches')}
+            changeText={t('common.actions.change')}
+          />
+
+          {equipment.takenTrucks > 0 ? (
+            <p className="text-xs text-steel-600">
+              {t(
+                equipment.takenTrucks === 1
+                  ? 'drivers.form.equipment.hiddenTrucksOne'
+                  : 'drivers.form.equipment.hiddenTrucks',
+                { n: String(equipment.takenTrucks) },
+              )}
+            </p>
+          ) : null}
+        </div>
+      )}
+    </fieldset>
   )
 }
 

@@ -20,6 +20,7 @@ use App\Services\Malware\UnavailableFileScanner;
 use App\Services\Tracking\PositionReport;
 use App\Support\Customers\NameKey;
 use App\Support\Documents\Scanning;
+use App\Support\Drivers\Employment;
 use App\Support\Equipment\AxleSpacings;
 use App\Support\Finance\Billable;
 use App\Support\Finance\CommissionLedger;
@@ -878,15 +879,18 @@ class DemoDataSeeder extends Seeder
         $desde = Carbon::now()->subMonths(8)->toDateString();
 
         $pares = [
-            ['salas', '101', 'T-220'],
-            ['brennan', '104', 'T-310'],
-            ['quiroga', 'C-07', 'R-14'],
-            ['delatorre', 'C-12', 'R-21'],
-            ['okafor', 'NR-3', 'NT-9'],
-            ['mensah', 'BW-2', null],
+            ['salas', '101', 'T-220', null],
+            ['brennan', '104', 'T-310', null],
+            ['quiroga', 'C-07', 'R-14', null],
+            ['delatorre', 'C-12', 'R-21', null],
+            // Okafor está dado de baja: su asignación terminó, y por eso el
+            // NR-3 vuelve a estar libre. Una baja que conserva el camión deja
+            // un camión fantasma que la regla impide dar a otro.
+            ['okafor', 'NR-3', 'NT-9', -40],
+            ['mensah', 'BW-2', null, null],
         ];
 
-        foreach ($pares as [$conductor, $camion, $remolque]) {
+        foreach ($pares as [$conductor, $camion, $remolque, $terminaEn]) {
             if (! isset($drivers[$conductor])) {
                 continue;
             }
@@ -909,7 +913,7 @@ class DemoDataSeeder extends Seeder
                 'truck_id' => (string) $truckId,
                 'trailer_id' => $trailerId === null ? null : (string) $trailerId,
                 'starts_on' => $desde,
-                'ends_on' => null,
+                'ends_on' => $terminaEn === null ? null : Carbon::now()->addDays($terminaEn)->toDateString(),
             ]);
         }
     }
@@ -926,8 +930,13 @@ class DemoDataSeeder extends Seeder
             ['key' => 'salas', 'endorsements' => ['H', 'N', 'X'], 'restrictions' => [], 'first' => 'Eduardo', 'last' => 'Salas', 'locale' => 'es', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OnLoad, 'licenseDays' => 512, 'medicalDays' => 88, 'verification' => VerificationStatus::Verified],
             ['key' => 'brennan', 'endorsements' => ['T'], 'restrictions' => ['E'], 'first' => 'Maureen', 'last' => 'Brennan', 'locale' => 'en', 'carrier' => 'atlas', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 240, 'medicalDays' => 19, 'verification' => VerificationStatus::Verified],
             ['key' => 'quiroga', 'endorsements' => ['H', 'T'], 'restrictions' => [], 'first' => 'Javier', 'last' => 'Quiroga', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::Available, 'licenseDays' => 800, 'medicalDays' => 300, 'verification' => VerificationStatus::Verified],
-            ['key' => 'delatorre', 'endorsements' => [], 'restrictions' => ['L', 'V'], 'first' => 'Ana Lucía', 'last' => 'De la Torre', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OffDuty, 'licenseDays' => 130, 'medicalDays' => -6, 'verification' => VerificationStatus::Pending],
-            ['key' => 'okafor', 'endorsements' => ['N'], 'restrictions' => [], 'first' => 'Chidi', 'last' => 'Okafor', 'locale' => 'en', 'carrier' => 'northline', 'state' => 'IN', 'class' => 'A', 'status' => DriverStatus::Inactive, 'licenseDays' => 410, 'medicalDays' => 200, 'verification' => VerificationStatus::NotStarted],
+            // En espera: se le paró mientras se resuelve un papel. Conserva su
+            // equipo, que es lo que distingue una espera de una baja.
+            ['key' => 'delatorre', 'endorsements' => [], 'restrictions' => ['L', 'V'], 'first' => 'Ana Lucía', 'last' => 'De la Torre', 'locale' => 'es', 'carrier' => 'cordillera', 'state' => 'TX', 'class' => 'A', 'status' => DriverStatus::OnHold, 'note' => 'Pendiente del certificado médico renovado. Vuelve en cuanto lo entregue.', 'licenseDays' => 130, 'medicalDays' => -6, 'verification' => VerificationStatus::Pending],
+            // Dado de baja, y con la decisión tomada: se le volvería a
+            // contratar. Su equipo quedó libre — una baja que no lo suelta deja
+            // un camión que no se le puede dar a nadie.
+            ['key' => 'okafor', 'endorsements' => ['N'], 'restrictions' => [], 'first' => 'Chidi', 'last' => 'Okafor', 'locale' => 'en', 'carrier' => 'northline', 'state' => 'IN', 'class' => 'A', 'status' => DriverStatus::Terminated, 'note' => 'Se mudó de estado y dejó la flota en buenos términos.', 'rehire' => true, 'licenseDays' => 410, 'medicalDays' => 200, 'verification' => VerificationStatus::NotStarted],
             // El de Bluewater. Su transportista está suspendido HOY, y la carga
             // que llevó es de antes: sin un conductor suyo, el sembrador caía
             // en el respaldo de «cualquier conductor» y ataba a la carga uno de
@@ -975,9 +984,22 @@ class DemoDataSeeder extends Seeder
                 'verified_at' => $r['verification'] === VerificationStatus::Verified
                     ? $now->copy()->subDays(random_int(10, 200))
                     : null,
-                'tracking_consent_granted_at' => $r['status'] === DriverStatus::Inactive
+                'tracking_consent_granted_at' => Employment::bloquea($r['status'])
                     ? null
                     : $now->copy()->subDays(random_int(10, 300)),
+                // Por qué está parado o de baja, y desde cuándo. Un cambio de
+                // situación sin motivo escrito es justo lo que esa columna
+                // existe para impedir: sembrarlo vacío enseñaría el estado que
+                // la aplicación no deja crear.
+                'status_note' => $r['note'] ?? null,
+                'status_changed_at' => isset($r['note'])
+                    ? $now->copy()->subDays(random_int(5, 90))
+                    : null,
+                'status_changed_by_user_id' => isset($r['note'])
+                    ? ($this->users['admin@demo.test'] ?? null)
+                    : null,
+                // Solo con la baja puesta. La decisión la toma quien la firma.
+                'rehire_eligible' => Employment::esBaja($r['status']) ? ($r['rehire'] ?? false) : null,
             ]);
 
             $this->upsert('driver_carrier_relationships', [

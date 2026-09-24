@@ -9,6 +9,7 @@ use App\Authorization\CurrentActor;
 use App\Authorization\PermissionChecker;
 use App\Authorization\ResourceContext;
 use App\Enums\AuditAction;
+use App\Enums\DriverStatus;
 use App\Enums\Scope;
 use App\Enums\WorkAuthorization;
 use App\Models\Driver;
@@ -18,6 +19,7 @@ use App\Support\Compliance\ExpiryWindow;
 use App\Support\Drivers\Cdl;
 use App\Support\Drivers\DriverScope;
 use App\Support\EnumValue;
+use App\Support\Fleet\StandingAssignment;
 use App\Support\Geo\Regions;
 use App\Support\InertiaPage;
 use App\Support\Links\CrossLink;
@@ -156,7 +158,7 @@ final class DriverController
             // la flota entera en la carga de una pantalla de solo lectura es
             // un dato que nadie pidió.
             'standing' => $this->equipoHabitual($model),
-            'equipmentChoices' => $puedeEditar ? $this->unidadesParaElegir($model) : null,
+            'equipmentChoices' => $puedeEditar ? $this->unidadesParaElegir($actor) : null,
             'loads' => $checker->can($actor, 'load:read', null, $policy)->allowed
                 ? $this->recentLoads($model)
                 : null,
@@ -185,6 +187,10 @@ final class DriverController
             'driver' => null,
             'carriers' => $this->carrierChoices($actor),
             'selectedCarriers' => [],
+            // El equipo se elige en el alta: el camión y el remolque del
+            // transportista que se acaba de marcar, y solo los que no lleva ya
+            // otro conductor.
+            'equipment' => $this->unidadesParaElegir($actor),
             'codes' => self::CODIGOS,
         ]);
     }
@@ -211,8 +217,14 @@ final class DriverController
             return $driver;
         });
 
+        // El equipo, si se eligió. Fuera de la transacción de arriba a
+        // propósito: un choque de asignación no puede deshacer el alta del
+        // conductor, que ya es correcta. Se avisa y se resuelve desde su ficha.
+        $choques = $this->equipoDelAlta($request, $actor, $driver);
+
         return redirect()->route('drivers.show', $driver->id)
-            ->with('success', __('drivers.flash.created', ['name' => $driver->first_name.' '.$driver->last_name]));
+            ->with('success', __('drivers.flash.created', ['name' => $driver->first_name.' '.$driver->last_name]))
+            ->with('warning', $choques === null ? null : __('drivers.standing.'.$choques));
     }
 
     public function edit(Request $request, string $driver, CurrentActor $current, PermissionChecker $checker): Response
@@ -375,6 +387,36 @@ final class DriverController
      * @return Builder<Driver>
      */
     /**
+     * El equipo elegido en el alta, si se eligió.
+     *
+     * Devuelve la clave del choque, o nada si se guardó (o si no se pidió). Las
+     * reglas son las MISMAS que desde la ficha —un camión, un conductor— porque
+     * es la misma tabla y el mismo `StandingAssignment` quien escribe: un alta
+     * que se las saltara sería la puerta de atrás de una regla que no tiene red
+     * debajo en la base.
+     */
+    private function equipoDelAlta(Request $request, Actor $actor, Driver $driver): ?string
+    {
+        $camion = $request->input('truck_id');
+
+        if ($camion === null || $camion === '') {
+            return null;
+        }
+
+        $choques = StandingAssignment::crear(
+            (string) $actor->tenantId,
+            (string) $driver->id,
+            (string) $camion,
+            $request->input('trailer_id') ?: null,
+            CarbonImmutable::now()->toDateString(),
+            null,
+            $actor->userId,
+        );
+
+        return $choques[0] ?? null;
+    }
+
+    /**
      * El equipo habitual de este conductor: la asignación vigente y el historial.
      *
      * El historial se enseña entero y no se borra nunca: una carga de marzo se
@@ -437,29 +479,54 @@ final class DriverController
     /**
      * Los camiones y remolques de la empresa, para elegir.
      *
-     * Los de la empresa y no los del transportista del conductor: un conductor
-     * puede trabajar para más de uno —`driver_carrier_relationships` es una
-     * relación de varios— y recortar por el primero escondería la mitad de la
-     * flota sin decirlo. Que el camión sea de un transportista que no es el
-     * suyo es una decisión de despacho, no un error de datos.
+     * Los de la empresa entera y no los del transportista del conductor: un
+     * conductor puede trabajar para más de uno —`driver_carrier_relationships`
+     * es una relación de varios— y recortar por el primero escondería la mitad
+     * de la flota sin decirlo. Cada unidad viaja con SU transportista para que
+     * la pantalla ofrezca las del que se acaba de marcar.
      *
-     * @return array{trucks: list<array<string, string>>, trailers: list<array<string, string>>}
+     * **Los camiones que ya lleva otro conductor no se ofrecen.** La regla de
+     * «un camión, un conductor a la vez» los rechazaría al guardar, y ofrecer
+     * algo que se va a rechazar es hacer perder el viaje. Se dice cuántos hay
+     * escondidos, porque un camión que falta de la lista sin explicación se
+     * busca durante un rato.
+     *
+     * Los remolques se ofrecen todos: en una flota se sueltan y se recogen, y
+     * el mismo remolque pasa por varias manos sin que nadie mienta.
+     *
+     * @return array{trucks: list<array<string, string>>, trailers: list<array<string, string>>, takenTrucks: int}
      */
-    private function unidadesParaElegir(Driver $conductor): array
+    private function unidadesParaElegir(Actor $actor): array
     {
-        $leer = fn (string $tabla): array => DB::table($tabla)
-            ->where('tenant_id', $conductor->tenant_id)
+        $ocupados = DB::table('driver_equipment_assignments')
+            ->where('tenant_id', $actor->tenantId)
             ->whereNull('deleted_at')
+            ->whereDate('starts_on', '<=', CarbonImmutable::now()->toDateString())
+            ->where(fn ($q) => $q->whereNull('ends_on')
+                ->orWhereDate('ends_on', '>=', CarbonImmutable::now()->toDateString()))
+            ->pluck('truck_id')
+            ->map(fn ($v): string => (string) $v)
+            ->all();
+
+        $leer = fn (string $tabla, array $fuera): array => DB::table($tabla)
+            ->where('tenant_id', $actor->tenantId)
+            ->whereNull('deleted_at')
+            ->when($fuera !== [], fn ($q) => $q->whereNotIn('id', $fuera))
             ->orderBy('unit_number')
             ->limit(500)
-            ->get(['id', 'unit_number', 'make', 'model'])
+            ->get(['id', 'unit_number', 'make', 'model', 'carrier_id'])
             ->map(fn ($r): array => [
                 'id' => (string) $r->id,
                 'name' => trim((string) $r->unit_number.' '.trim((string) $r->make.' '.(string) $r->model)),
+                'carrierId' => (string) $r->carrier_id,
             ])
             ->all();
 
-        return ['trucks' => $leer('trucks'), 'trailers' => $leer('trailers')];
+        return [
+            'trucks' => $leer('trucks', $ocupados),
+            'trailers' => $leer('trailers', []),
+            'takenTrucks' => count($ocupados),
+        ];
     }
 
     private function scoped(PermissionChecker $checker, Actor $actor, Scope $scope): Builder
@@ -491,7 +558,7 @@ final class DriverController
             });
         }
 
-        if (in_array($filters['status'], ['available', 'on_load', 'off_duty', 'inactive'], true)) {
+        if (in_array($filters['status'], DriverStatus::values(), true)) {
             $query->where('status', $filters['status']);
         }
 
@@ -522,7 +589,7 @@ final class DriverController
             $filters,
             ['status', 'expiring'],
             'status',
-            ['available', 'on_load', 'off_duty', 'inactive'],
+            DriverStatus::values(),
             ['expiring' => ['expiring' => '1']],
         );
     }
@@ -617,6 +684,13 @@ final class DriverController
             'restrictions' => $d->restrictions ?? [],
             'verifiedAt' => $d->verified_at?->toIso8601String(),
             'verificationNotes' => $d->verification_notes,
+            // Por qué está en su situación actual, y desde cuándo. Va en la
+            // ficha y no solo en la pista de auditoría porque quien mira al
+            // conductor tiene que poder leerlo sin irse a otra pantalla.
+            'statusNote' => $d->status_note,
+            'statusChangedAt' => $d->status_changed_at?->toIso8601String(),
+            // Nulo es «no se ha dado de baja», no «no se sabe».
+            'rehireEligible' => $d->rehire_eligible,
             // Lo que hay HOY, con la versión de texto de hoy: un consentimiento
             // sobre una redacción que ya cambió no cuenta, así que la fecha de
             // `drivers` sola mentiría en cuanto se subiera la versión. Ver

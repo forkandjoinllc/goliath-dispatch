@@ -73,7 +73,8 @@
             "deleted": "Document deleted"
         },
         "driver": {
-            "verified": "Driver reviewed"
+            "verified": "Driver reviewed",
+            "employment_changed": "Changed a driver's employment"
         },
         "equipment": {
             "verified": "Equipment verified"

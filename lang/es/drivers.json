@@ -37,7 +37,9 @@
     "available": "Disponible",
     "on_load": "En una carga",
     "off_duty": "Fuera de servicio",
-    "inactive": "Inactivo"
+    "inactive": "Inactivo",
+    "on_hold": "En espera",
+    "terminated": "Dado de baja"
   },
   "detail": {
     "identity": "Identidad",
@@ -154,7 +156,15 @@
     "noCarrierMatches": "Ningún transportista coincide.",
     "noneChosen": "Todavía no hay ningún transportista elegido.",
     "removeCarrier": "Quitar",
-    "nYearsOne": "1 año"
+    "nYearsOne": "1 año",
+    "equipment": {
+      "title": "Equipo habitual",
+      "hint": "El camión y el remolque con los que va a andar. Se puede cambiar después desde su ficha.",
+      "chooseCarrierFirst": "Marque primero un transportista y aquí saldrá su equipo.",
+      "noTrucks": "Ese transportista no tiene ningún camión libre.",
+      "hiddenTrucks": "{n} camiones no salen en la lista porque ya los lleva otro conductor.",
+      "hiddenTrucksOne": "{n} camión no sale en la lista porque ya lo lleva otro conductor."
+    }
   },
   "flash": {
     "created": "Se agregó a {name}.",
@@ -214,5 +224,31 @@
     "notYours": "Esa unidad no es de su empresa.",
     "saved": "Equipo asignado.",
     "ended": "Asignación terminada."
+  },
+  "employment": {
+    "title": "Situación laboral",
+    "hint": "Parar a alguien o darle de baja le retira de las cargas en curso. Siempre hace falta una nota.",
+    "change": "Cambiar la situación",
+    "available": "Volver a activar",
+    "on_hold": "Poner en espera",
+    "terminated": "Dar de baja",
+    "note": "Motivo",
+    "noteHint": "Qué pasó. Lo va a leer alguien dentro de un año, y puede que sea un abogado.",
+    "noteRequired": "Escriba el motivo: un cambio de situación sin motivo no se puede explicar después.",
+    "rehire": "¿Se le volvería a contratar?",
+    "rehireYes": "Sí, se le volvería a contratar",
+    "rehireNo": "No, no se le vuelve a contratar",
+    "rehireRequired": "Elija una de las dos. Quien firma la baja es quien lo sabe; preguntarlo dentro de dos años es preguntárselo a alguien que no estaba.",
+    "rehireEligible": "Se le volvería a contratar",
+    "rehireNotEligible": "No se le vuelve a contratar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "currentNote": "Motivo",
+    "changedOn": "Desde {date}",
+    "done": "Situación de {name} actualizada.",
+    "doneAndReleased": "Situación de {name} actualizada, y se le retiró de {count} cargas en curso.",
+    "doneAndReleasedOne": "Situación de {name} actualizada, y se le retiró de {count} carga en curso.",
+    "releasedBecause": "El conductor dejó de estar disponible: {reason}",
+    "equipmentReleased": "Su equipo habitual queda libre para otro conductor."
   }
 }

@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react'
 import { useEffect, useRef, useState } from 'react'
+import { DriverStatusBadge, ESTADOS_DE_CONDUCTOR } from '@/components/App/DriverStatus'
 import { AppLayout } from '@/layouts/AppLayout'
 import { EmptyState } from '@/components/App/EmptyState'
 import { formatDay } from '@/lib/format'
@@ -29,13 +30,6 @@ interface Props {
   scope: string
   facets: Record<string, number>
   can: { create: boolean }
-}
-
-const STATUS_TONE: Record<string, string> = {
-  available: 'bg-success-50 text-success-700 ring-success-500/40',
-  on_load: 'bg-navy-100 text-navy-800 ring-navy-500/30',
-  off_duty: 'bg-steel-100 text-steel-800 ring-steel-300',
-  inactive: 'bg-steel-100 text-steel-600 ring-steel-300',
 }
 
 const VERIFICATION_TONE: Record<string, string> = {
@@ -120,7 +114,7 @@ export default function DriversIndex({ drivers, filters, scope, facets, can }: P
           active={filters.status === '' && filters.expiring === ''}
           onClick={() => navigate(filters, { status: '', expiring: '' })}
         />
-        {['available', 'on_load', 'off_duty', 'inactive'].map((s) => (
+        {ESTADOS_DE_CONDUCTOR.map((s) => (
           <Chip
             key={s}
             label={t(`drivers.status.${s}`)}
@@ -221,13 +215,7 @@ export default function DriversIndex({ drivers, filters, scope, facets, can }: P
                       </span>
                     </td>
                     <td className="px-3 py-3">
-                      <span
-                        className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                          STATUS_TONE[d.status] ?? STATUS_TONE.inactive
-                        }`}
-                      >
-                        {t(`drivers.status.${d.status}`)}
-                      </span>
+                      <DriverStatusBadge value={d.status} />
                     </td>
                   </tr>
                 ))}

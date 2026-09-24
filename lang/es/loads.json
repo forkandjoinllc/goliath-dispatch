@@ -58,7 +58,9 @@
         "scheduleConflictShort": "se pisa con {n}",
         "scheduleConflictOne": "Ya está en la carga {loads}, que se pisa con esta ventana. No se impide asignarlo; decide usted.",
         "scheduleConflictShortOne": "se pisa con otra",
-        "driverDoneWithEquipment": "Conductor asignado, y con él su equipo habitual: {equipment}."
+        "driverDoneWithEquipment": "Conductor asignado, y con él su equipo habitual: {equipment}.",
+        "driverOnHold": "{name} está en espera y no puede ir a una carga.",
+        "driverTerminated": "{name} está dado de baja y no puede ir a una carga."
     },
     "blocking": {
         "noPickup": "No tiene parada de recogida.",

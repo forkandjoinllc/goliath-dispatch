@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Enums\EquipmentOwnership;
+use App\Support\Drivers\Employment;
 use App\Support\Equipment\AxleSpacings;
 use App\Support\Equipment\Vin;
+use App\Support\Fleet\StandingAssignment;
 use App\Support\Oversize\NeedsPapers;
 use App\Support\Screens\Reachable;
 use App\Support\TenantContext;
@@ -210,6 +212,62 @@ function invariantesDeLaDemostracion(string $tenantId): array
             },
             'app/Enums/EquipmentOwnership.php',
             'case LeaseToOwn',
+        ],
+
+        'nadie parado ni de baja lleva una carga en curso' => [
+            // Ni en espera ni de baja se conduce. Sembrarlo dejaría una carga
+            // que dice que tiene conductor mientras el conductor no puede
+            // salir, y `Guards::forDispatch()` la bloquea: es un estado que
+            // ninguna ruta puede producir.
+            function () use ($tenantId): int {
+                return DB::table('load_assignments as a')
+                    ->join('drivers as d', 'd.id', '=', 'a.driver_id')
+                    ->join('loads as l', 'l.id', '=', 'a.load_id')
+                    ->where('a.tenant_id', $tenantId)
+                    ->whereNull('a.unassigned_at')
+                    ->whereNull('a.deleted_at')
+                    ->whereIn('d.status', Employment::bloqueantes())
+                    ->whereNotIn('l.status', ['delivered', 'pod_received', 'invoiced', 'paid', 'cancelled'])
+                    ->count();
+            },
+            'app/Support/Drivers/Employment.php',
+            'public static function bloqueantes(): array',
+        ],
+
+        'un conductor de baja no retiene su camión' => [
+            // Un camión atado a alguien que ya no trabaja aquí no se le puede
+            // dar a nadie —la regla de «un camión, un conductor» lo impide— y
+            // la flota se queda con un camión fantasma.
+            function () use ($tenantId): int {
+                $deBaja = DB::table('drivers')
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'terminated')
+                    ->pluck('id')
+                    ->map(fn ($v): string => (string) $v)
+                    ->all();
+
+                if ($deBaja === []) {
+                    return 0;
+                }
+
+                return count(StandingAssignment::deConductores($tenantId, $deBaja));
+            },
+            'app/Support/Fleet/StandingAssignment.php',
+            'public static function terminarVigentes(',
+        ],
+
+        'todo estado de empleo trae su motivo escrito' => [
+            // La nota es obligatoria al cambiarlo. Sembrarlo vacío enseñaría el
+            // estado que la aplicación no deja crear.
+            function () use ($tenantId): int {
+                return DB::table('drivers')
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('status', ['on_hold', 'terminated'])
+                    ->where(fn ($q) => $q->whereNull('status_note')->orWhere('status_note', ''))
+                    ->count();
+            },
+            'app/Http/Controllers/App/DriverEmploymentController.php',
+            "__('drivers.employment.noteRequired')",
         ],
 
         'el equipo habitual no se solapa' => [

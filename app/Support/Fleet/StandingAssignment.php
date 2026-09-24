@@ -6,6 +6,7 @@ namespace App\Support\Fleet;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Qué camión y qué remolque lleva un conductor habitualmente.
@@ -111,6 +112,117 @@ final class StandingAssignment
             ->value('driver_id');
 
         return $id === null ? null : (string) $id;
+    }
+
+    /**
+     * Guarda una asignación, o dice por qué no cabe.
+     *
+     * **El único sitio que escribe en la tabla.** Lo comprueba un guardián:
+     * MySQL no sabe rechazar un solapamiento —no hay tipo rango ni restricción
+     * de exclusión— así que no hay red debajo, y un `insert` suelto en otro
+     * controlador dejaría el mismo camión con dos conductores sin que nada
+     * fallara.
+     *
+     * Devuelve las claves de `drivers.standing.*` que explican el choque; una
+     * lista vacía quiere decir que se guardó.
+     *
+     * @return list<string>
+     */
+    public static function crear(
+        string $tenantId,
+        string $driverId,
+        string $truckId,
+        ?string $trailerId,
+        string $startsOn,
+        ?string $endsOn = null,
+        ?string $porUsuario = null,
+        ?string $nota = null,
+    ): array {
+        $choques = self::choques($tenantId, $driverId, $truckId, $startsOn, $endsOn);
+
+        if ($choques !== []) {
+            return $choques;
+        }
+
+        DB::table('driver_equipment_assignments')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $tenantId,
+            'driver_id' => $driverId,
+            'truck_id' => $truckId,
+            'trailer_id' => $trailerId,
+            'starts_on' => $startsOn,
+            'ends_on' => $endsOn,
+            'assigned_by_user_id' => $porUsuario,
+            'notes' => $nota,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return [];
+    }
+
+    /**
+     * Termina UNA asignación, hoy.
+     *
+     * Devuelve falso si esa fila no es de ese conductor de esa empresa: la
+     * comprobación va aquí y no en el controlador porque aquí es donde se
+     * escribe.
+     */
+    public static function terminar(string $tenantId, string $driverId, string $id, ?CarbonImmutable $dia = null): bool
+    {
+        $fila = DB::table('driver_equipment_assignments')
+            ->where('tenant_id', $tenantId)
+            ->where('driver_id', $driverId)
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first(['id', 'starts_on']);
+
+        if ($fila === null) {
+            return false;
+        }
+
+        // Nunca antes de su comienzo: una asignación que empieza mañana se
+        // termina mañana, y la restricción de la base rechaza lo contrario.
+        $hoy = self::dia($dia);
+        $inicio = substr((string) $fila->starts_on, 0, 10);
+
+        DB::table('driver_equipment_assignments')
+            ->where('id', $fila->id)
+            ->update(['ends_on' => max($hoy, $inicio), 'updated_at' => now()]);
+
+        return true;
+    }
+
+    /**
+     * Termina lo que esté vigente de un conductor, AHORA.
+     *
+     * Terminar y no borrar: una carga de marzo se mira con el camión que se
+     * llevó en marzo. Se usa al dar de baja a alguien — si no, su camión se
+     * queda atado a un conductor que ya no trabaja aquí y no hay manera de
+     * dárselo a otro.
+     *
+     * La fecha de fin es AYER y no hoy, y la diferencia importa: `ends_on` es
+     * el último día en que la asignación vale, así que terminarla «hoy» la
+     * dejaría vigente hoy y el camión seguiría ocupado la tarde en que alguien
+     * intenta dárselo al relevo. Lo único que no se puede es terminarla antes
+     * de empezar —la base lo rechaza—, y por eso una que empezó hoy dura ese
+     * día.
+     *
+     * Devuelve cuántas se terminaron.
+     */
+    public static function terminarVigentes(string $tenantId, string $driverId, ?CarbonImmutable $dia = null): int
+    {
+        $ayer = ($dia ?? CarbonImmutable::now())->subDay()->toDateString();
+
+        return DB::table('driver_equipment_assignments')
+            ->where('tenant_id', $tenantId)
+            ->where('driver_id', $driverId)
+            ->whereNull('deleted_at')
+            ->whereNull('ends_on')
+            ->update([
+                'ends_on' => DB::raw("greatest(starts_on, '".$ayer."')"),
+                'updated_at' => now(),
+            ]);
     }
 
     /**

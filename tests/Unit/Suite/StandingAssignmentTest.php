@@ -29,15 +29,21 @@ it('el solapamiento se comprueba en un solo sitio', function (): void {
     test()->assertStringContainsString("'driverBusy'", $soporte);
     test()->assertStringContainsString("'truckBusy'", $soporte);
 
-    // Y el que escribe la fila las pregunta antes de escribirla.
-    $controlador = fuenteDeLaAsignacion('app/Http/Controllers/App/DriverEquipmentController.php');
-
-    test()->assertStringContainsString('StandingAssignment::choques(', $controlador);
+    // Y quien guarda una asignación no puede saltárselas: `crear()` las
+    // pregunta y se niega a escribir si chocan.
+    test()->assertStringContainsString('$choques = self::choques(', $soporte);
+    test()->assertStringContainsString("if (\$choques !== []) {\n            return \$choques;\n        }", $soporte);
 });
 
 it('nadie más escribe en la tabla sin preguntar', function (): void {
-    // El sembrador sí: escribe un conjunto que cumple la regla por
-    // construcción, y `DemoInvariantsTest` lo comprueba sobre la base sembrada.
+    // Leerla la lee quien quiera. Lo que no puede hacer nadie más es
+    // ESCRIBIRLA: un `insert` suelto en otro controlador dejaría el mismo
+    // camión con dos conductores sin que nada fallara, porque MySQL no sabe
+    // rechazar un solapamiento.
+    //
+    // Se mira la consulta, no el fichero: `DriverController` lee la tabla para
+    // saber qué camiones ofrecer, y tiene `->update(` de otras tablas a
+    // montones. Contar por fichero lo señalaría a él y no al defecto.
     $raiz = Source::root().'/app';
     $escriben = [];
 
@@ -48,33 +54,37 @@ it('nadie más escribe en la tabla sin preguntar', function (): void {
             continue;
         }
 
-        $codigo = Source::sinComentarios((string) $fichero->getPathname());
+        $codigo = Source::compacta((string) $fichero->getPathname());
+        $trozos = explode("DB::table('driver_equipment_assignments')", $codigo);
+        array_shift($trozos);
 
-        if (! str_contains($codigo, "DB::table('driver_equipment_assignments')")) {
-            continue;
+        foreach ($trozos as $trozo) {
+            // Hasta el final de ESA consulta.
+            $consulta = explode(';', $trozo, 2)[0] ?? '';
+
+            if (preg_match('/->(insert|update|delete)\(/', $consulta) === 1) {
+                $escriben[] = substr((string) $fichero->getPathname(), strlen(Source::root()) + 1);
+
+                break;
+            }
         }
-
-        if (! str_contains($codigo, 'insert(') && ! str_contains($codigo, 'update(')) {
-            continue;
-        }
-
-        $escriben[] = substr((string) $fichero->getPathname(), strlen(Source::root()) + 1);
     }
 
     sort($escriben);
 
-    // Uno inserta y otro termina. Un tercero tiene que declararse aquí y decir
-    // cómo comprueba el solapamiento.
-    expect($escriben)->toBe(['app/Http/Controllers/App/DriverEquipmentController.php']);
+    // UNO y nada más: el soporte. Los controladores le piden que escriba, y por
+    // eso no pueden saltarse la comprobación. Un segundo escritor tiene que
+    // declararse aquí y decir cómo comprueba el solapamiento.
+    expect($escriben)->toBe(['app/Support/Fleet/StandingAssignment.php']);
 });
 
 it('el historial no se borra', function (): void {
     // Una carga de marzo se mira con el camión que se llevó en marzo. Terminar
     // es poner fecha de fin, no quitar la fila.
-    $controlador = fuenteDeLaAsignacion('app/Http/Controllers/App/DriverEquipmentController.php');
+    $soporte = fuenteDeLaAsignacion('app/Support/Fleet/StandingAssignment.php');
 
-    test()->assertStringContainsString("'ends_on' => max(\$hoy, \$inicio)", $controlador);
-    test()->assertStringNotContainsString('->delete()', $controlador);
+    test()->assertStringContainsString("'ends_on' => max(\$hoy, \$inicio)", $soporte);
+    test()->assertStringNotContainsString('->delete()', $soporte);
 });
 
 it('el remolque puede faltar y el camión no', function (): void {

@@ -14,6 +14,7 @@ use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\DocumentController;
 use App\Http\Controllers\App\DocumentFileController;
 use App\Http\Controllers\App\DriverController;
+use App\Http\Controllers\App\DriverEmploymentController;
 use App\Http\Controllers\App\DriverEquipmentController;
 use App\Http\Controllers\App\EquipmentController;
 use App\Http\Controllers\App\ExpenseController;
@@ -198,6 +199,11 @@ Route::middleware(['auth'])->group(function (): void {
     // propia ficha. Ver App\Support\Tracking\Consent.
     // El equipo HABITUAL de un conductor. Prerrellena la asignación de la
     // carga; `load_assignments` sigue mandando en lo que de verdad se despacha.
+    // Parar, dar de baja, o volver a poner a trabajar. Con nota siempre, y con
+    // la decisión de recontratación cuando es una baja.
+    Route::post('drivers/{driver}/employment', DriverEmploymentController::class)
+        ->name('drivers.employment');
+
     Route::post('drivers/{driver}/equipment', [DriverEquipmentController::class, 'store'])
         ->name('drivers.equipment.store');
     Route::post('drivers/{driver}/equipment/{assignment}/end', [DriverEquipmentController::class, 'end'])

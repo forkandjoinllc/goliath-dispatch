@@ -3989,3 +3989,47 @@ botón, no el fichero entero: `lg:hidden` aparece en otros sitios legítimos.
 aplicación se quedó sin nombre en pantalla hasta que alguien abriera el menú.
 Está en la barra, y un guardián comprueba que no vuelva a estar en los dos sitios
 — porque al abrir se pintaría dos veces.
+
+## Lote 38 — la situación laboral del conductor
+
+**Cuatro copias de una comparación se aguantan hasta que cambia la pregunta.**
+«¿Puede este conductor trabajar?» estaba escrita cuatro veces, y las cuatro
+decían `'inactive'`. No era deuda mientras hubo un solo estado: eran cuatro
+líneas correctas. Al añadir dos estados pasaron a ser cuatro sitios donde falta
+uno. **La señal para juntar código duplicado no es que esté duplicado: es que va
+a cambiar.**
+
+**Una migración que falla a la mitad deja hecha la mitad.** DDL en MySQL no es
+transaccional. La mía añadía cuatro columnas y luego reescribía una restricción;
+al fallar la segunda parte, cada intento siguiente moría con «columna duplicada»
+— y persiguiendo ESE error se pierde el rato, porque no es el fallo, es el
+rastro del fallo anterior. Dos lecciones: leer el error de la PRIMERA ejecución
+sobre una base limpia, y escribir cada paso de una migración de forma que
+sobreviva a que el anterior ya esté hecho.
+
+**Y la restricción se reconstruye desde el enum, no leyendo la que había.**
+Mi primera versión leía la lista de acciones de `information_schema` para
+añadirle una. Además de no funcionar —la consulta devolvía vacío—, era la idea
+equivocada: `AuditAction` es la lista de verdad y la restricción es su copia en
+la base. Reconstruirla desde el enum es lo que las mantiene iguales.
+
+**Dos clientes de MySQL, dos respuestas.** Media hora mirando cómo `show
+columns` decía que la columna no existía y el `alter` decía que sí. El cliente
+por socket y el de la aplicación por TCP no estaban viendo lo mismo. Cuando dos
+herramientas contestan distinto a la misma pregunta, la pregunta no es cuál
+miente: es si están hablando con el mismo sitio.
+
+**Tres sabotajes nulos, tres guardianes que medían de menos.** El del filtro de
+la lista no movía nada porque `DriverStatus::values()` aparece DOS veces en ese
+controlador —el filtro y las pestañas— y comprobar que aparece «alguna vez»
+dejaba pasar que uno volviera a una lista a mano. El de la nota obligatoria
+cambiaba `required` por `nullable` y la prueba seguía verde porque el
+controlador la rechazaba por longitud: la prueba medía el campo vacío y no el
+motivo de dos letras. **Octava vez que un sabotaje verde señala lo que el
+guardián no estaba mirando.**
+
+**Terminar «hoy» no libera nada hoy.** `ends_on` es el último día en que la
+asignación vale. Al dar de baja a alguien, ponerle fecha de fin hoy dejaba su
+camión ocupado justo la tarde en que alguien intenta dárselo al relevo. La
+prueba lo cazó porque medía el efecto —¿se lo puede quedar otro?— y no el valor
+de la columna.
