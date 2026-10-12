@@ -4,7 +4,13 @@ import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
 import { DriverStatusDot } from '@/components/App/DriverStatus'
 import { BoardMap, type MapaDelTablero } from '@/components/App/Board/BoardMap'
-import { BoardFilters, type FiltroDeTransportista, type PeriodoDelTablero } from '@/components/App/Board/Filters'
+import {
+  BoardFilters,
+  type FiltroDeEstado,
+  type FiltroDeEstadoDeConductor,
+  type FiltroDeTransportista,
+  type PeriodoDelTablero,
+} from '@/components/App/Board/Filters'
 import { DriverPanel, type ConductorElegido } from '@/components/App/Board/DriverPanel'
 import { LoadPanel, type CargaElegida } from '@/components/App/Board/LoadPanel'
 import { QuickAdd, type AltaRapida } from '@/components/App/Board/QuickAdd'
@@ -60,6 +66,8 @@ interface Props {
   map: MapaDelTablero
   period: PeriodoDelTablero
   carrierFilter: FiltroDeTransportista
+  loadStatusFilter: FiltroDeEstado
+  driverStatusFilter: FiltroDeEstadoDeConductor
   quickAdd: AltaRapida
   selectedLoad: CargaElegida | null
   selectedDriver: ConductorElegido | null
@@ -85,6 +93,8 @@ export default function Board({
   map,
   period,
   carrierFilter,
+  loadStatusFilter,
+  driverStatusFilter,
   quickAdd,
   selectedLoad,
   selectedDriver,
@@ -123,6 +133,8 @@ export default function Board({
     period: period.key,
     ...(period.key === 'custom' ? { from: period.from, to: period.to } : {}),
     ...(carrierFilter.selected === null ? {} : { carrier: carrierFilter.selected }),
+    status: loadStatusFilter.selected,
+    driverStatus: driverStatusFilter.selected,
   }
 
   const hora = new Intl.DateTimeFormat(locale === 'es' ? 'es-US' : 'en-US', {
@@ -139,7 +151,13 @@ export default function Board({
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           {/* Los filtros ANTES de las acciones rápidas: primero se decide qué
               se está mirando, y después se añade. */}
-          <BoardFilters period={period} carrier={carrierFilter} tab={tab} />
+          <BoardFilters
+            period={period}
+            carrier={carrierFilter}
+            loadStatus={loadStatusFilter}
+            driverStatus={driverStatusFilter}
+            tab={tab}
+          />
           <QuickAdd quickAdd={quickAdd} />
           <p className="pb-1.5 text-xs text-steel-600">
             {t('board.refreshed.label', { time: hora })} · {t('board.refreshed.auto')}

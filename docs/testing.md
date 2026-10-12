@@ -4298,3 +4298,67 @@ sembrado como prueba de funcionalidad con `->skip()` cuando la base no tenía
 datos de demostración — y la base de pruebas nunca los tiene. Se fue a
 `DemoInvariantsTest`, que siembra la demostración dentro de la prueba y sí puede
 medirla.
+
+---
+
+## Lote 43 — filtrar el tablero por estado
+
+**Un guardián que busca una palabra dentro de un método la encuentra en su
+firma.** El mío comprobaba que `cargas()`, `cuentas()` y `mapaDe()` «pasan los
+estados» buscando `$estados` dentro de cada uno — y los tres lo declaran como
+parámetro. Quitarlo de la llamada a `filtradas()`, que es el defecto entero,
+dejaba la palabra en el texto y la prueba en verde. Lo que había que medir era
+la LLAMADA: `'$periodo, $transportista, $estados)'`. Cuarta vez en cinco lotes
+que un guardián mide algo adyacente a lo que dice medir.
+
+**Una prueba que mide una ausencia tiene que enseñar primero la presencia.** La
+del mapa decía «con el filtro puesto el mapa está vacío», y estaba vacío de
+todas formas: la carga no tenía conductor, así que no entraba en «asignadas» y
+no se habría dibujado nunca. Pasaba en verde con el filtro del mapa quitado. La
+lección ya estaba escrita aquí de un lote anterior; esta vez la cazó el sabotaje
+y no la lectura.
+
+**El valor por defecto de un filtro conviene escribirlo por la negativa.** La
+columna de conductores esconde ahora a los dados de baja y a los inactivos. Si
+se escribe la lista de «los que sí salen», un estado nuevo cae fuera y esos
+conductores desaparecen del tablero sin que nadie lo haya decidido. Escrita como
+«los que NO» —y el reparto es todo lo demás— un estado nuevo entra solo. Las dos
+versiones son idénticas hoy; se diferencian el día que alguien añade un estado,
+y por eso el sabotaje que las separa tiene que añadir uno.
+
+**Un sabotaje puede necesitar dos ediciones.** Las dos propiedades anteriores no
+se distinguen tocando un solo fichero: hay que escribir la lista al derecho Y
+añadir un caso al enum. El arnés pasó a aceptar una lista de ediciones por
+sabotaje, aplicarlas juntas y restaurarlas todas.
+
+**Esconder algo por defecto obliga a decir cuánto se esconde.** Cambiar lo que
+la columna enseña es la mitad del trabajo; la otra mitad es el «1 conductor
+oculto» debajo del filtro. Sin eso, el arreglo de un defecto —enseñar a quien ya
+no trabaja ahí— crea el siguiente: alguien busca a una persona que estaba ahí
+ayer.
+
+**Ninguna prueba miraba qué rótulos PIDE un componente.** El botón del filtro de
+conductores leía `board.filters.defaultDriverStatuses` con sus puntos, porque el
+diccionario la llamaba `workingDrivers`. 2.536 pruebas en verde y el fallo en la
+primera pantalla del producto. Lo cazó el paseo por el navegador. El guardián
+nuevo lee del componente las claves `board.filters.*` que pide y las busca en
+los dos idiomas — incluido el hermano singular de las que llevan `n`.
+
+**Dos diccionarios del mismo producto pueden tener convenciones distintas a
+propósito.** `nav.status.load` es camello y `drivers.status` no, y
+`UnnamedValuesTest` lo lleva declarado desde hace lotes. Mi componente convertía
+siempre a camello y pintaba la clave cruda en los seis estados de conductor. Al
+escribir un componente que lee de un diccionario ajeno, mirar primero cómo lo
+lee quien ya lo usa.
+
+**El comentario de un fichero puede ser el aviso de lo que vas a hacer.**
+`useMenu` vivía dentro de la barra superior con una nota que decía «un cuarto
+menú escrito a mano acabaría haciendo dos de las tres». El cuarto llegó con este
+lote, en otro fichero. Copiarlo habría sido escribir el defecto que el
+comentario anunciaba, así que el gancho salió a `lib/useMenu`.
+
+**El guardián de colisiones de nombres ahorró la caída de la suite entera.** Mi
+ayuda se llamaba `props()` y ya había una en `InternalNotesTest`. Pest las carga
+todas en el mismo espacio global: la suite habría muerto al arrancar, sin
+señalar a ninguna de las dos. El aviso lo dijo con los dos ficheros y el comando
+para comprobarlo antes de escribir la siguiente.

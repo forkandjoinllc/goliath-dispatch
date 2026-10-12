@@ -1,46 +1,17 @@
 import { Link, router, usePage } from '@inertiajs/react'
-import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { useMenu } from '@/lib/useMenu'
 import type { SharedProps } from '@/types'
 import type { Crumb, Shell } from '@/types/app'
 
 /**
  * La barra superior: migas, empresa activa, idioma y cuenta.
  *
- * Los tres menús desplegables comparten `useMenu`, que hace tres cosas que un
- * `useState` suelto no hace: cierra al pulsar fuera, cierra con Escape, y
- * devuelve el foco al botón que lo abrió. Sin lo tercero, quien navega con
- * teclado acaba con el foco en el <body> y tiene que empezar la página de nuevo.
+ * Los tres menús desplegables comparten `useMenu` —que vive en
+ * `lib/useMenu`—: cierra al pulsar fuera, cierra con Escape, y devuelve el
+ * foco al botón que lo abrió. Estaba escrito aquí hasta que lo necesitó un
+ * cuarto menú, el de los filtros por estado del tablero.
  */
-function useMenu() {
-  const [open, setOpen] = useState(false)
-  const container = useRef<HTMLDivElement>(null)
-  const trigger = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-
-    const onPointer = (event: MouseEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false)
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false)
-        trigger.current?.focus()
-      }
-    }
-
-    document.addEventListener('mousedown', onPointer)
-    document.addEventListener('keydown', onKey)
-
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  return { open, setOpen, container, trigger }
-}
 
 function Chevron() {
   return (

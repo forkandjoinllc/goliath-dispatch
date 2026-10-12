@@ -152,6 +152,14 @@
             "this_year": "Este año",
             "last_year": "El año pasado",
             "custom": "Rango a medida"
-        }
+        },
+        "loadStatus": "Estado de la carga",
+        "allLoadStatuses": "Todos los estados",
+        "driverStatus": "Estado del conductor",
+        "workingDrivers": "Los que trabajan aquí",
+        "statusCount": "{n} estados",
+        "statusCountOne": "{n} estado",
+        "driversHidden": "{n} conductores ocultos",
+        "driversHiddenOne": "{n} conductor oculto"
     }
 }

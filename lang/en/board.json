@@ -152,6 +152,14 @@
             "this_year": "This year",
             "last_year": "Last year",
             "custom": "Custom range"
-        }
+        },
+        "loadStatus": "Load status",
+        "allLoadStatuses": "All statuses",
+        "driverStatus": "Driver status",
+        "workingDrivers": "Drivers who work here",
+        "statusCount": "{n} statuses",
+        "statusCountOne": "{n} status",
+        "driversHidden": "{n} drivers hidden",
+        "driversHiddenOne": "{n} driver hidden"
     }
 }

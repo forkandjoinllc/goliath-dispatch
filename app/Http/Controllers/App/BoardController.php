@@ -14,6 +14,7 @@ use App\Models\Load;
 use App\Services\Map\MapProvider;
 use App\Support\Board\Period;
 use App\Support\Board\Positions;
+use App\Support\Board\Statuses;
 use App\Support\Board\Tabs;
 use App\Support\Drivers\DriverScope;
 use App\Support\Drivers\DriverTimeline;
@@ -147,8 +148,31 @@ final class BoardController
 
         $transportista = $this->transportistaElegido($request, $actor);
 
-        $cargas = $puedeCargas ? $this->cargas($checker, $actor, $policy, $pestana, $periodo, $transportista) : collect();
-        $cuentas = $puedeCargas ? $this->cuentas($checker, $actor, $policy, $periodo, $transportista) : [];
+        /*
+         * Los dos filtros por estado.
+         *
+         * El de cargas se resuelve DENTRO de la pestaña: filtra lo que esa
+         * pestaña ya enseña, y las tres cuentas lo reflejan. Elegir «entregada»
+         * estando en «sin asignar» puede dar cero, y eso es cierto — las
+         * cuentas de al lado dicen en qué pestaña está lo que se buscaba.
+         *
+         * El de conductores trae su propio reparto cuando nadie lo toca: ver
+         * `Statuses`.
+         */
+        $estadosDeCarga = Statuses::deCargaElegidos(
+            $request->query('status') === null ? null : (string) $request->query('status'),
+        );
+
+        $estadosDeConductor = Statuses::deConductorElegidos(
+            $request->query('driverStatus') === null ? null : (string) $request->query('driverStatus'),
+        );
+
+        $cargas = $puedeCargas
+            ? $this->cargas($checker, $actor, $policy, $pestana, $periodo, $transportista, $estadosDeCarga)
+            : collect();
+        $cuentas = $puedeCargas
+            ? $this->cuentas($checker, $actor, $policy, $periodo, $transportista, $estadosDeCarga)
+            : [];
 
         return Inertia::render('App/Board', [
             'tab' => $pestana,
@@ -157,9 +181,9 @@ final class BoardController
             'can' => ['loads' => $puedeCargas, 'drivers' => $puedeConductores],
             'loads' => $this->tarjetasDeCarga($actor, $cargas),
             'drivers' => $puedeConductores
-                ? $this->conductores($checker, $actor, $policy, $ahora, $transportista)
+                ? $this->conductores($checker, $actor, $policy, $ahora, $transportista, $estadosDeConductor)
                 : [],
-            'map' => $this->mapaDe($actor, $mapa, $checker, $policy, $ahora, $periodo, $transportista),
+            'map' => $this->mapaDe($actor, $mapa, $checker, $policy, $ahora, $periodo, $transportista, $estadosDeCarga),
             /*
              * Los dos filtros, tal y como quedaron resueltos.
              *
@@ -175,6 +199,38 @@ final class BoardController
             'carrierFilter' => fn (): array => [
                 'selected' => $transportista,
                 'options' => $this->transportistasDelFiltro($actor),
+            ],
+            /*
+             * Los dos filtros por estado, con sus opciones.
+             *
+             * Las opciones viajan desde el servidor y no escritas en el
+             * componente: un desplegable con un estado que el tablero no puede
+             * enseñar —un borrador, una cancelada— da cero en las tres
+             * pestañas sin decir por qué.
+             */
+            'loadStatusFilter' => [
+                'selected' => $estadosDeCarga,
+                'options' => Statuses::deCarga(),
+            ],
+            'driverStatusFilter' => fn (): array => [
+                'selected' => $estadosDeConductor,
+                'options' => Statuses::deConductor(),
+                /*
+                 * Cuántos se quedan fuera por este filtro.
+                 *
+                 * Sin esto, el cambio de reparto por defecto esconde a los
+                 * dados de baja y a los inactivos en silencio, y un conductor
+                 * que falta de una lista sin explicación se busca durante un
+                 * rato. Es la misma razón por la que el alta dice cuántos
+                 * camiones no se ofrecen.
+                 */
+                'hidden' => $puedeConductores
+                    ? $this->conductoresEscondidos($checker, $actor, $policy, $transportista, $estadosDeConductor)
+                    : 0,
+                // Si lo elegido es el reparto de siempre. Lo decide quien lo
+                // reparte: sin esto el botón leería «4 estados» nada más abrir
+                // el tablero, que es cierto y no dice nada.
+                'isDefault' => Statuses::esElRepartoPorDefecto($estadosDeConductor),
             ],
             // Las acciones rápidas. Los permisos se deciden AQUÍ y no en la
             // pantalla: un botón que se enseña y luego devuelve 403 al pulsar
@@ -286,6 +342,7 @@ final class BoardController
 
     /**
      * @param  array<string, mixed>|null  $policy
+     * @param  list<string>  $estados
      * @return Collection<int, Load>
      */
     private function cargas(
@@ -295,10 +352,11 @@ final class BoardController
         string $pestana,
         Period $periodo,
         ?string $transportista,
+        array $estados,
     ): Collection {
         $scope = $checker->authorize($actor, 'load:read', null, $policy);
 
-        return $this->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), $pestana)
+        return $this->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista, $estados), $pestana)
             ->orderByRaw('coalesce(planned_pickup_at, created_at) asc')
             ->orderBy('id')
             ->limit(self::TOPE)
@@ -307,6 +365,7 @@ final class BoardController
 
     /**
      * @param  array<string, mixed>|null  $policy
+     * @param  list<string>  $estados
      * @return array<string, int>
      */
     private function cuentas(
@@ -315,16 +374,22 @@ final class BoardController
         ?array $policy,
         Period $periodo,
         ?string $transportista,
+        array $estados,
     ): array {
         $scope = $checker->authorize($actor, 'load:read', null, $policy);
         $cuentas = [];
 
-        // Por los MISMOS filtros que la lista. Contar sobre el total mientras
-        // la lista enseña el periodo deja una pestaña que dice «12» encima de
-        // tres tarjetas, y quien la mira concluye que faltan nueve.
+        // Por los MISMOS filtros que la lista —periodo, transportista y estado—.
+        // Contar sobre el total mientras la lista enseña el periodo deja una
+        // pestaña que dice «12» encima de tres tarjetas, y quien la mira
+        // concluye que faltan nueve.
+        //
+        // Con el filtro por estado las cuentas hacen además de brújula: quien
+        // elige «entregada» estando en «sin asignar» ve cero ahí y el número
+        // encima de «completadas», que es donde está lo que buscaba.
         foreach (Tabs::TODAS as $pestana) {
             $cuentas[$pestana] = $this
-                ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), $pestana)
+                ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista, $estados), $pestana)
                 ->count();
         }
 
@@ -980,6 +1045,7 @@ final class BoardController
      * enseñar.
      *
      * @param  array<string, mixed>|null  $policy
+     * @param  list<string>  $estados
      * @return list<array<string, mixed>>
      */
     private function conductores(
@@ -988,6 +1054,7 @@ final class BoardController
         ?array $policy,
         CarbonImmutable $ahora,
         ?string $transportista,
+        array $estados,
     ): array {
         $scope = $checker->authorize($actor, 'driver:read', null, $policy);
 
@@ -996,6 +1063,7 @@ final class BoardController
             $transportista,
         )
             ->whereNull('drivers.deleted_at')
+            ->whereIn('drivers.status', $estados)
             ->orderBy('drivers.first_name')
             ->orderBy('drivers.last_name')
             ->limit(self::TOPE)
@@ -1083,6 +1151,7 @@ final class BoardController
      * recibido en las últimas horas—.
      *
      * @param  array<string, mixed>|null  $policy
+     * @param  list<string>  $estados
      * @return array<string, mixed>
      */
     private function mapaDe(
@@ -1093,6 +1162,7 @@ final class BoardController
         CarbonImmutable $ahora,
         Period $periodo,
         ?string $transportista,
+        array $estados,
     ): array {
         $base = [
             'provider' => $mapa->name(),
@@ -1116,7 +1186,7 @@ final class BoardController
         // izquierda no enseña deja puntos sin tarjeta: se pulsa uno y no hay
         // dónde ir.
         $vivas = $this
-            ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista), Tabs::ASIGNADAS)
+            ->conPestana($this->filtradas($checker, $actor, $scope, $periodo, $transportista, $estados), Tabs::ASIGNADAS)
             ->limit(self::TOPE)
             ->get(['id', 'load_number', 'customer_id']);
 
@@ -1271,6 +1341,7 @@ final class BoardController
      * cerrara esa puerta, el enlace contestaría «no existe» a alguien que sí
      * puede verla.
      *
+     * @param  list<string>  $estados
      * @return Builder<Load>
      */
     private function filtradas(
@@ -1279,12 +1350,52 @@ final class BoardController
         Scope $scope,
         Period $periodo,
         ?string $transportista,
+        array $estados = [],
     ): Builder {
         $query = $periodo->aplicar($this->scoped($checker, $actor, $scope));
 
-        return $transportista === null
-            ? $query
-            : $query->where('loads.carrier_id', $transportista);
+        if ($transportista !== null) {
+            $query->where('loads.carrier_id', $transportista);
+        }
+
+        // Vacío quiere decir «todos», y no «ninguno»: un `whereIn` con una
+        // lista vacía devuelve cero filas, y el tablero se quedaría en blanco
+        // la primera vez que alguien lo abre sin tocar nada.
+        return $estados === [] ? $query : $query->whereIn('loads.status', $estados);
+    }
+
+    /**
+     * Cuántos conductores deja fuera el filtro por estado.
+     *
+     * La columna contesta «¿a quién se la doy?», así que por defecto no
+     * enseña a los dados de baja ni a los inactivos. Eso es un cambio de lo
+     * que se veía antes, y un conductor que falta de una lista sin
+     * explicación se busca durante un rato: la pantalla dice cuántos hay
+     * detrás del filtro, igual que el alta dice cuántos camiones no ofrece.
+     *
+     * Se cuenta con el MISMO alcance y el MISMO transportista que la lista.
+     * Contar sobre la empresa entera daría un número que no cuadra con nada
+     * de lo que se está mirando.
+     *
+     * @param  array<string, mixed>|null  $policy
+     * @param  list<string>  $estados
+     */
+    private function conductoresEscondidos(
+        PermissionChecker $checker,
+        Actor $actor,
+        ?array $policy,
+        ?string $transportista,
+        array $estados,
+    ): int {
+        $scope = $checker->authorize($actor, 'driver:read', null, $policy);
+
+        return $this->deEseTransportista(
+            DriverScope::apply(Driver::query(), $checker, $actor, $scope),
+            $transportista,
+        )
+            ->whereNull('drivers.deleted_at')
+            ->whereNotIn('drivers.status', $estados)
+            ->count();
     }
 
     /**

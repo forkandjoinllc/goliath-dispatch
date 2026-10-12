@@ -131,3 +131,10 @@ que importa— **no se le apaga su campana**.
 ## Lo que hay que hacer en el servidor
 
 Nada. Ver `docs/dispatch-board.md` y `docs/board-panels.md`.
+
+## Dos filtros más
+
+El estado de la carga y el estado del conductor, cada uno con varios valores a
+la vez. Viven en [board-status-filters.md](board-status-filters.md), y con
+ellos la ayuda que conserva los filtros al moverse pasó de llevar dos a llevar
+cuatro — y de dos ayudas sueltas a una sola.
