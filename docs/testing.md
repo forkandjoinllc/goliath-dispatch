@@ -4362,3 +4362,38 @@ ayuda se llamaba `props()` y ya había una en `InternalNotesTest`. Pest las carg
 todas en el mismo espacio global: la suite habría muerto al arrancar, sin
 señalar a ninguna de las dos. El aviso lo dijo con los dos ficheros y el comando
 para comprobarlo antes de escribir la siguiente.
+
+---
+
+## Lote 44 — el foco que se escapaba
+
+**Un efecto puede cumplir su comentario y aun así mentir.** El de la ventana
+modal decía «al abrirse, el foco va al primer campo», y lo hacía. Lo que no era
+cierto era «al abrirse»: dependía de `[open, onClose]`, `onClose` es una función
+nueva en cada render, y la ventana se «abría» otra vez con cada tecla. Al leer
+un efecto, la pregunta no es qué hace, sino **cuántas veces**.
+
+**La convención `onAlgo` es un indicio buscable.** Una prop con ese nombre es,
+por costumbre de React, una función que escribe el padre y casi nunca memoriza.
+Dentro de un array de dependencias de un efecto CON LIMPIEZA es un defecto
+latente, y eso se puede recorrer con una expresión regular sobre toda la
+aplicación en vez de arreglarlo solo donde dolió. El guardián mira el cuerpo del
+efecto para saber si tiene limpieza: sin ella, volver a montarlo no le hace daño
+a nadie, y prohibirlo sería prohibir el arreglo mismo.
+
+**El arreglo va en la pieza, no en quien la usa.** Envolver cada `onClose` en
+`useCallback` también funcionaba, y es un contrato invisible: aguanta hasta que
+alguien escribe la cuarta ventana sin enterarse. Una pieza compartida tiene que
+aguantar que le pasen una función nueva en cada render.
+
+**Sin un banco de pruebas de pantalla, el sabotaje se hace en el navegador.**
+Esta suite no monta componentes de React, así que el guardián solo puede sujetar
+la forma. Para comprobar que el paseo mide el defecto de verdad, se volvió a
+poner `onClose` en las dependencias, se reconstruyó y se pasó el paseo: se cayó.
+Después se restauró y volvió a pasar. Un paseo que no se ha visto fallar no
+prueba nada.
+
+**Buscar la forma destapó un vecino.** El menú de los tres puntos del panel de
+la carga escribía su propio cierre y hacía dos de las tres cosas de `useMenu`;
+la que faltaba era devolver el foco al botón. Lo había predicho el comentario
+del propio gancho, meses antes, en otro fichero.

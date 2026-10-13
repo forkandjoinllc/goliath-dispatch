@@ -1,5 +1,5 @@
 import { Link, router, useForm } from '@inertiajs/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from '@/components/App/Modal'
 import { StatusBadge } from '@/components/App/StatusBadge'
 import { Avatar } from '@/components/App/Board/Avatar'
@@ -8,6 +8,7 @@ import { boardHref, type FiltrosDelTablero } from '@/components/App/Board/href'
 import { TextField } from '@/components/Form/Field'
 import { SearchableSelect, type Choice } from '@/components/Form/SearchableSelect'
 import { useI18n } from '@/lib/i18n'
+import { useMenu } from '@/lib/useMenu'
 
 export interface ParadaDelPanel {
   id: string
@@ -234,25 +235,20 @@ function Kebab({
   onCancel: () => void
 }) {
   const { t } = useI18n()
-  const [abierto, setAbierto] = useState(false)
-  const caja = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (! abierto) return
-
-    const fuera = (e: MouseEvent) => {
-      if (caja.current !== null && ! caja.current.contains(e.target as Node)) setAbierto(false)
-    }
-    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') setAbierto(false) }
-
-    document.addEventListener('mousedown', fuera)
-    document.addEventListener('keydown', escape)
-
-    return () => {
-      document.removeEventListener('mousedown', fuera)
-      document.removeEventListener('keydown', escape)
-    }
-  }, [abierto])
+  /*
+   * El cuarto menú de la aplicación, y el que escribía su propio cierre.
+   *
+   * Hacía dos de las tres cosas que hace `useMenu`: cerraba al pulsar fuera y
+   * cerraba con Escape. La que faltaba era devolver el foco al botón, así que
+   * quien cerraba este menú con el teclado se quedaba con el foco en el
+   * `<body>` y tenía que recorrer la página entera para volver.
+   *
+   * Es exactamente lo que avisaba el comentario del gancho cuando vivía
+   * dentro de la barra superior: «un cuarto menú escrito a mano acabaría
+   * haciendo dos de las tres».
+   */
+  const { open: abierto, setOpen: setAbierto, container: caja, trigger } = useMenu()
 
   // Sin ninguna de las tres no hay menú. Un botón que abre una lista vacía es
   // una promesa de que hay algo detrás.
@@ -261,8 +257,9 @@ function Kebab({
   return (
     <div ref={caja} className="relative">
       <button
+        ref={trigger}
         type="button"
-        onClick={() => setAbierto((v) => ! v)}
+        onClick={() => { setAbierto(! abierto) }}
         aria-haspopup="menu"
         aria-expanded={abierto}
         aria-label={t('board.panel.actions')}

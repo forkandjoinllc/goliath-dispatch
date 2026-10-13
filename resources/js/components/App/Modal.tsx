@@ -22,7 +22,9 @@ interface Props {
  * aquí hay cuatro cosas y no una:
  *
  * 1. **El foco entra.** Al abrirse, el foco va al primer campo. Sin esto, el
- *    tabulador empieza donde estaba antes —detrás de la ventana—.
+ *    tabulador empieza donde estaba antes —detrás de la ventana—. Al ABRIRSE
+ *    y nada más: ver la referencia de `onClose` más abajo, que es lo que
+ *    impide que «abrirse» vuelva a pasar en cada tecla.
  * 2. **El foco no sale.** El tabulador da la vuelta dentro de la ventana.
  * 3. **Escape cierra.** Es lo que todo el mundo prueba primero.
  * 4. **El foco vuelve.** Al cerrarse, vuelve al botón que la abrió, que es
@@ -43,6 +45,44 @@ export function Modal({ open, title, onClose, children, footer, closeLabel }: Pr
   const caja = useRef<HTMLDivElement>(null)
   const devolverA = useRef<HTMLElement | null>(null)
 
+  /*
+   * `onClose` vive en una REFERENCIA, y no en las dependencias del efecto.
+   *
+   * ## El defecto que esto arregla
+   *
+   * Escribir una letra en cualquier campo de una ventana hacía saltar el foco
+   * al primer campo. Una letra, un salto. Rellenar el alta rápida de una carga
+   * era imposible.
+   *
+   * El efecto de abajo dependía de `[open, onClose]`, y `onClose` llega como
+   * una función escrita dentro de quien pinta la ventana —`cerrar` en
+   * `QuickAdd`— así que es OTRA función en cada render. Cada tecla cambia el
+   * estado del formulario, cada cambio vuelve a pintar, cada pintada crea un
+   * `onClose` nuevo, y React ve una dependencia distinta: limpia el efecto y
+   * lo vuelve a montar. Y lo primero que hace el efecto al montarse es poner
+   * el foco en el primer campo, que es exactamente lo que promete su punto 1.
+   *
+   * El efecto hacía lo que decía. Lo que no era cierto es «al abrirse»: se
+   * abría treinta veces mientras alguien escribía una ciudad.
+   *
+   * ## Por qué una referencia y no pedirle al de fuera que memorice
+   *
+   * Porque `useCallback` en cada sitio que usa una ventana es un contrato que
+   * no se ve: funciona hasta que alguien escribe la cuarta ventana sin
+   * enterarse, y entonces el defecto vuelve en una pantalla distinta. La
+   * ventana tiene que aguantar que le pasen una función nueva en cada render,
+   * porque es lo normal en React.
+   *
+   * La referencia se actualiza en su propio efecto —y no durante el render—
+   * para no escribir fuera de tiempo. El efecto de abajo lee `cerrar.current`,
+   * que siempre es la última, y así puede depender solo de `open`.
+   */
+  const cerrar = useRef(onClose)
+
+  useEffect(() => {
+    cerrar.current = onClose
+  }, [onClose])
+
   useEffect(() => {
     if (! open) return
 
@@ -58,7 +98,7 @@ export function Modal({ open, title, onClose, children, footer, closeLabel }: Pr
     const enTecla = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        cerrar.current()
 
         return
       }
@@ -96,7 +136,14 @@ export function Modal({ open, title, onClose, children, footer, closeLabel }: Pr
       document.body.style.overflow = antes
       devolverA.current?.focus()
     }
-  }, [open, onClose])
+    /*
+     * SOLO `open`.
+     *
+     * Cualquier cosa que cambie de identidad en cada render —una función
+     * recién escrita, un objeto, un array— vuelve a montar este efecto, y
+     * montarlo mueve el foco. Ver la referencia de arriba.
+     */
+  }, [open])
 
   if (! open) return null
 
