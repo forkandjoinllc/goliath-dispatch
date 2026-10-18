@@ -469,6 +469,31 @@
     "success": {
       "title": "Thanks — we've received your information",
       "body": "Our onboarding team typically responds within one business day. Keep an eye on the email address you provided."
+    },
+    "lookup": {
+      "title": "Start with your USDOT or MC number",
+      "intro": "We look it up in the federal register and fill in what it publishes, so you only correct what is out of date.",
+      "kind": "Look up by",
+      "dot": "USDOT number",
+      "mc": "MC number",
+      "dotNumber": "USDOT number",
+      "mcNumber": "MC number",
+      "search": "Look it up",
+      "searching": "Looking…",
+      "found": "Found:",
+      "fromRegistry": "These details come from the FMCSA register, not from us.",
+      "fromMock": "Heads up: this site has no FMCSA credentials yet, so these details are a worked example, not a real lookup. Check every field before you send it.",
+      "editable": "Everything below can be corrected — the register is not always current.",
+      "notAuthorized": "The register says this carrier is not authorized to operate right now.",
+      "notFound": "The register has nobody with that number. If your authority is new it may not be published yet — you can fill the form in by hand.",
+      "badDot": "A USDOT number is 5 to 8 digits.",
+      "badMc": "An MC number is up to 8 digits.",
+      "providerDown": "The register did not answer. You can try again in a moment, or fill the form in by hand.",
+      "throttled": "That is a lot of lookups from one connection. Wait a few minutes, or fill the form in by hand.",
+      "rejected": "This page has been open a long time. Reload it and try again.",
+      "skip": "Skip this and fill the form in by hand",
+      "prefilled": "Some fields were filled in from the FMCSA register on {date}. Please check them — the register is not always current.",
+      "prefilledMock": "Some fields were filled in with a worked example on {date}, because this site has no FMCSA credentials yet. Check every one of them."
     }
   },
   "privacy": {

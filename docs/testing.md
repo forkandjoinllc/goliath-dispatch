@@ -4397,3 +4397,52 @@ prueba nada.
 la carga escribía su propio cierre y hacía dos de las tres cosas de `useMenu`;
 la que faltaba era devolver el foco al botón. Lo había predicho el comentario
 del propio gancho, meses antes, en otro fichero.
+
+---
+
+## Lote 45 — la búsqueda en el registro federal, desde fuera
+
+**Un extremo público no puede heredar las respuestas de uno privado.** El
+método de dentro devuelve «¿este transportista ya lo tienes?», que es lo más
+útil que puede devolver ahí. Copiado tal cual a un formulario público, esa misma
+respuesta deja a cualquiera enumerar la cartera entera probando números. La
+prueba que lo sujeta siembra un transportista con ese USDOT y comprueba que su
+nombre no aparece en la respuesta: así se cae el día que alguien copie el método
+de dentro «porque ya estaba hecho».
+
+**Una regla de seguridad puede decir lo contrario de lo que quiere decir en otro
+sitio.** La pausa de tres segundos del sello existe para los envíos —nadie
+rellena veinte campos tan rápido— y para una búsqueda rechaza justo el camino
+rápido: pegar el número y pulsar. Al hacerla opcional, lo que hay que medir no
+es que la búsqueda la perdone, sino que **los envíos siguen exigiéndola**; si
+no, aflojar una cosa afloja la otra sin que nadie lo vea.
+
+**Un dato traído de fuera necesita procedencia, no solo valor.** Un domicilio
+del registro federal pintado en la misma casilla y con la misma letra que lo que
+escribió la persona se lee como suyo — y el registro publica fichas de hace
+años. La procedencia va ARRIBA, junto a los campos que llegaron rellenos, no en
+una nota al pie.
+
+**Un simulacro tiene que decir que lo es, en pantalla y no solo en el código.**
+Sin credenciales se ata el adaptador simulado, que fabrica una ficha coherente.
+Veinte casillas rellenas con datos inventados y presentadas como venidas del
+registro federal es la mentira más cara que puede contar un formulario público.
+`FmcsaLookup::live` existía desde hacía lotes para esto, y nadie lo leía.
+
+**«No encontrado» se pinta distinto de «error».** Y ninguno de los dos en rojo
+cuando la respuesta correcta es seguir a mano: un USDOT recién sacado no está
+publicado todavía, y esa persona se da de alta igual. El guardián mira la clase
+CSS con la que se pinta, no el texto.
+
+**El registro de promesas públicas hizo su trabajo sin que yo lo recordara.**
+Escribí tres frases nuevas en la página de ventas y la suite se cayó:
+`PublicClaimsTest` exige que cada afirmación funcional diga qué código la
+sostiene. Es la clase de guardián que paga el peaje meses después, con alguien
+que ya no se acuerda de por qué existe — y funcionó exactamente así.
+
+**Dos errores míos en el mismo fichero de guardianes.** Una aguja escrita contra
+el texto del diccionario en vez de contra la llamada del componente
+(`'lookup.skip'` donde el código dice `texto('skip')`), y —peor— una prueba con
+un `->skip()` de relleno que había dejado puesto. Una prueba que se salta sola
+no comprueba nada: es la lección del lote anterior, cometida en el lote
+siguiente.

@@ -42,9 +42,22 @@ final class FormToken
     }
 
     /**
+     * @param  bool  $exigirPausa  Si se exige que hayan pasado `MIN_SECONDS`.
+     *
+     * ## Por qué la pausa es opcional
+     *
+     * La pausa existe para los ENVÍOS: nadie rellena veinte campos en tres
+     * segundos, así que quien lo hace es un script. Pero el mismo sello vale
+     * para la búsqueda en el registro federal del alta de transportista, y ahí
+     * la regla dice lo contrario de lo que quiere decir: a esa casilla llega
+     * alguien con el número del DOT ya en la mano, lo pega y pulsa buscar. Es
+     * el camino rápido, no el sospechoso.
+     *
+     * Lo que sujeta la búsqueda frente al abuso es el límite por IP, que es la
+     * defensa que de verdad cuenta peticiones.
      * @return array{valid: bool, reason?: 'malformed'|'bad_signature'|'wrong_form'|'too_fast'|'expired'|'future'}
      */
-    public static function verify(?string $token, string $form): array
+    public static function verify(?string $token, string $form, bool $exigirPausa = true): array
     {
         if ($token === null || ! str_contains($token, '.')) {
             return ['valid' => false, 'reason' => 'malformed'];
@@ -76,7 +89,7 @@ final class FormToken
         if ($elapsed < 0) {
             return ['valid' => false, 'reason' => 'future'];
         }
-        if ($elapsed < self::MIN_SECONDS * 1000) {
+        if ($exigirPausa && $elapsed < self::MIN_SECONDS * 1000) {
             return ['valid' => false, 'reason' => 'too_fast'];
         }
         if ($elapsed > self::MAX_SECONDS * 1000) {

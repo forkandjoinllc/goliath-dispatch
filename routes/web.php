@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Marketing\CarrierLookupController;
 use App\Http\Controllers\Marketing\CarrierSignupController;
 use App\Http\Controllers\Marketing\LeadController;
 use App\Http\Controllers\Marketing\PageController;
 use App\Http\Controllers\Public\BillingWebhookController;
+use App\Http\Controllers\Public\BrandLogoController;
 use App\Http\Controllers\Public\InvoiceController as PublicInvoiceController;
 use App\Http\Controllers\Public\MockCheckoutController;
 use App\Http\Controllers\Public\MockInvoicePaymentController;
 use App\Http\Controllers\Public\SignatureController as PublicSignatureController;
-use App\Http\Controllers\Public\BrandLogoController;
 use App\Http\Controllers\Public\TrackingController as PublicTrackingController;
 use App\Support\Locales;
 use App\Support\Marketing\Site;
@@ -76,6 +77,22 @@ Route::middleware('throttle:6,60')->group(function (): void {
     Route::post('quote-requests', [LeadController::class, 'storeQuote'])->name('marketing.quotes.store');
     Route::post('carrier-signup', CarrierSignupController::class)->name('marketing.carrierSignup.store');
 });
+
+/*
+| La búsqueda en el registro federal del alta de transportista.
+|
+| Su propio tope, y no el de los envíos: buscar no es enviar. Quien se da de
+| alta busca una vez, y dos si se equivocó al teclear; doce por hora le sobran
+| a cualquier persona y no le sirven de nada a quien quisiera usar este
+| formulario como raspador de FMCSA con nuestra credencial. Las otras dos
+| defensas —el sello firmado y el campo trampa— van dentro de la petición.
+|
+| El tope es POR IP y no por sesión, que es lo único que hay al otro lado: aquí
+| no ha entrado nadie.
+*/
+Route::middleware('throttle:12,60')
+    ->post('carrier-lookup', CarrierLookupController::class)
+    ->name('marketing.carrierLookup');
 
 /*
 |--------------------------------------------------------------------------
@@ -168,7 +185,6 @@ Route::middleware('throttle:20,1')->group(function (): void {
 });
 
 require __DIR__.'/auth.php';
-
 
 /*
 |--------------------------------------------------------------------------

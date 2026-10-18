@@ -469,6 +469,31 @@
     "success": {
       "title": "Gracias — hemos recibido su información",
       "body": "Nuestro equipo de registro generalmente responde dentro de un día hábil. Esté atento al correo electrónico que proporcionó."
+    },
+    "lookup": {
+      "title": "Empiece por su número USDOT o MC",
+      "intro": "Lo buscamos en el registro federal y rellenamos lo que publica, para que usted solo corrija lo que esté desactualizado.",
+      "kind": "Buscar por",
+      "dot": "Número USDOT",
+      "mc": "Número MC",
+      "dotNumber": "Número USDOT",
+      "mcNumber": "Número MC",
+      "search": "Buscar",
+      "searching": "Buscando…",
+      "found": "Encontrado:",
+      "fromRegistry": "Estos datos vienen del registro de FMCSA, no de nosotros.",
+      "fromMock": "Aviso: este sitio todavía no tiene credenciales de FMCSA, así que estos datos son un ejemplo de muestra y no una consulta real. Revise cada campo antes de enviarlo.",
+      "editable": "Todo lo de abajo se puede corregir — el registro no siempre está al día.",
+      "notAuthorized": "El registro dice que este transportista no está autorizado a operar ahora mismo.",
+      "notFound": "El registro no tiene a nadie con ese número. Si su autoridad es nueva, puede que aún no esté publicada — puede rellenar el formulario a mano.",
+      "badDot": "Un número USDOT tiene de 5 a 8 dígitos.",
+      "badMc": "Un número MC tiene hasta 8 dígitos.",
+      "providerDown": "El registro no contestó. Puede intentarlo en un momento, o rellenar el formulario a mano.",
+      "throttled": "Son muchas búsquedas desde una misma conexión. Espere unos minutos, o rellene el formulario a mano.",
+      "rejected": "Esta página lleva mucho tiempo abierta. Recárguela e inténtelo otra vez.",
+      "skip": "Omitir esto y rellenar el formulario a mano",
+      "prefilled": "Algunos campos se rellenaron desde el registro de FMCSA el {date}. Revíselos — el registro no siempre está al día.",
+      "prefilledMock": "Algunos campos se rellenaron con un ejemplo de muestra el {date}, porque este sitio todavía no tiene credenciales de FMCSA. Revíselos todos."
     }
   },
   "privacy": {

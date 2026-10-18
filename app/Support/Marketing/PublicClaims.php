@@ -125,6 +125,23 @@ final class PublicClaims
         // mensaje.
         'privacy.sections.smsConsentAndStop.body' => 'App\Support\Notifications\Channels',
 
+        /*
+        | La búsqueda en el registro federal del alta de transportista.
+        |
+        | Las tres son promesas sobre el DATO, no sobre el producto, y las tres
+        | las sostiene el mismo sitio: el directorio devuelve `live`, que
+        | distingue una consulta de verdad de la ficha que fabrica el adaptador
+        | simulado cuando no hay credenciales, y la pantalla lo dice.
+        |
+        | «Se puede corregir» es la más fácil de romper sin darse cuenta: basta
+        | con que alguien ponga `readOnly` en un campo prerrellenado para que el
+        | texto pase a mentir. Por eso se declara, y por eso hay un guardián
+        | que comprueba que ningún campo del alta se bloquea.
+        */
+        'carrierSignup.lookup.fromMock' => 'App\Services\Fmcsa\FmcsaLookup',
+        'carrierSignup.lookup.prefilled' => 'App\Http\Controllers\Marketing\CarrierLookupController',
+        'carrierSignup.lookup.editable' => 'App\Http\Controllers\Marketing\CarrierLookupController',
+
         // Comercial, sin código detrás a propósito: describe lo que hace una
         // persona con la solicitud, no lo que hace el sistema.
         'forClients.quoting.body' => self::LO_HACE_UNA_PERSONA,

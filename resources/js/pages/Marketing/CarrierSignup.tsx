@@ -1,7 +1,9 @@
 import { useForm } from '@inertiajs/react'
+import { useState } from 'react'
 import { MarketingLayout } from '@/layouts/MarketingLayout'
 import { AntiSpamFields } from '@/components/Form/AntiSpamFields'
 import { CheckboxField, TextField } from '@/components/Form/Field'
+import { FmcsaLookup, type FichaFederal } from '@/components/Marketing/FmcsaLookup'
 import { PageHero } from '@/components/Marketing/PageHero'
 import { Section } from '@/components/Marketing/Section'
 import { useI18n } from '@/lib/i18n'
@@ -61,6 +63,54 @@ export default function CarrierSignup({
   const label = (key: string) => t(`marketing.forms.labels.${key}`)
   const section = (key: string) => t(`marketing.carrierSignup.sections.${key}`)
 
+  /*
+   * El formulario nace CERRADO y lo abre el primer paso.
+   *
+   * Veinte campos en blanco delante de alguien que todavía no ha dicho quién
+   * es son veinte campos que se rellenan a mano. Primero el número, y el
+   * formulario aparece con lo que el registro federal ya sabe.
+   *
+   * Se abre de las dos maneras: encontrando la ficha, o diciendo que se sigue
+   * a mano. La segunda no es el camino de castigo — un USDOT recién sacado no
+   * está en el registro todavía.
+   */
+  const [abierto, setAbierto] = useState(false)
+
+  /** De dónde salió lo prerrellenado, para que la pantalla no se lo calle. */
+  const [procedencia, setProcedencia] = useState<{ live: boolean; checkedAt: string } | null>(null)
+
+  const prerrellenar = (ficha: FichaFederal, live: boolean, checkedAt: string) => {
+    /*
+     * Solo lo que el registro dice, y sin pisar lo que ya haya escrito la
+     * persona. Un valor nulo del registro es «no lo sé», no «bórralo»: con un
+     * `?? ''` por medio, buscar por segunda vez vaciaría las casillas que
+     * alguien acabara de corregir a mano.
+     */
+    const pon = (clave: keyof SignupData, valor: string | null) => {
+      if (valor !== null && valor !== '' && form.data[clave] === '') {
+        form.setData(clave as string, valor)
+      }
+    }
+
+    pon('dot_number', ficha.dotNumber)
+    pon('mc_number', ficha.mcNumber)
+    pon('legal_name', ficha.legalName)
+    pon('dba', ficha.dba)
+    pon('phone', ficha.phone)
+    pon('physical_line1', ficha.line1)
+    pon('physical_city', ficha.city)
+    pon('physical_state', ficha.state)
+    pon('physical_postal_code', ficha.postalCode)
+
+    setProcedencia({ live, checkedAt })
+    setAbierto(true)
+  }
+
+  const seguirAMano = (kind: 'dot' | 'mc', numero: string) => {
+    if (numero !== '') form.setData(kind === 'dot' ? 'dot_number' : 'mc_number', numero)
+    setAbierto(true)
+  }
+
   if (form.wasSuccessful) {
     return (
       <MarketingLayout {...props}>
@@ -89,6 +139,19 @@ export default function CarrierSignup({
       />
 
       <Section>
+        {/* El buscador y el formulario en la MISMA sección: dos secciones
+            apiladas meten su relleno dos veces, y el formulario aparecía muy
+            por debajo del pliegue justo después de buscar. */}
+        <div className="mb-8">
+          <FmcsaLookup
+            formToken={formToken}
+            onFound={prerrellenar}
+            onSkip={seguirAMano}
+            abierto={abierto}
+          />
+        </div>
+
+        {! abierto ? null : (
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <form
             noValidate
@@ -99,6 +162,19 @@ export default function CarrierSignup({
             className="relative flex flex-col gap-10"
           >
             <AntiSpamFields token={formToken} />
+
+            {/* De dónde vino lo que está escrito, encima de los campos que
+                vinieron rellenos y no al final de la página. */}
+            {procedencia === null ? null : (
+              <p className="rounded border-l-4 border-safety-500 bg-navy-50 px-4 py-3 text-sm text-steel-700">
+                {t(
+                  procedencia.live
+                    ? 'marketing.carrierSignup.lookup.prefilled'
+                    : 'marketing.carrierSignup.lookup.prefilledMock',
+                  { date: new Date(procedencia.checkedAt).toLocaleDateString(locale === 'es' ? 'es-US' : 'en-US') },
+                )}
+              </p>
+            )}
 
             <fieldset className="flex flex-col gap-5">
               <legend className="uppercase-heading mb-4 text-sm text-navy-700">{section('companyInfo')}</legend>
@@ -243,6 +319,7 @@ export default function CarrierSignup({
             </ul>
           </aside>
         </div>
+        )}
       </Section>
     </MarketingLayout>
   )
