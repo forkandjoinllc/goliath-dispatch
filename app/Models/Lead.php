@@ -30,6 +30,9 @@ final class Lead extends BaseModel
         'company_name',
         'dot_number',
         'mc_number',
+        'uses_factoring',
+        'factoring_company_id',
+        'factoring_company_name',
         'message',
         'locale',
         'source',
@@ -51,6 +54,7 @@ final class Lead extends BaseModel
     {
         return [
             'locale' => Locale::class,
+            'uses_factoring' => 'boolean',
             'utm' => 'array',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',

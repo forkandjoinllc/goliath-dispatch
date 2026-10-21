@@ -439,6 +439,11 @@ final class CarrierController
             'canSetFee' => $checker->can($actor, 'carrier:fee:update', $this->context($model), $current->policy())->allowed,
             'factoringCompanies' => $this->factoringOptions($actor),
             'factoringCompanyId' => $this->currentFactoring($actor, (string) $model->id),
+            // Lo que el transportista declaró al darse de alta. El formulario lo
+            // preselecciona cuando todavía no hay asignación, y LO DICE: guardar
+            // convierte una declaración en una asignación, y eso es un acto de
+            // la casa que no debe pasar en silencio.
+            'factoringDeclared' => $this->declaredFactoring($actor, $model),
             'contactPositions' => CarrierContactPosition::values(),
         ]);
     }
@@ -680,6 +685,9 @@ final class CarrierController
             'contacts' => $this->contacts($c),
             'website' => $c->website,
             'usesFactoring' => (bool) $c->uses_factoring,
+            // Con QUIÉN, y en qué calidad. La ficha decía «Factoring: Sí» y no
+            // decía con quién ni cuando la asignación estaba en la base.
+            'factoring' => $this->factoringPicture($actor, $c),
             // La etiqueta del campo dice «No se le muestran al transportista»,
             // y hasta ahora se le mostraban: entraba a su propia ficha y venían
             // dentro. Se calcula aquí y no se esconde en React, por lo mismo que
@@ -1175,6 +1183,111 @@ final class CarrierController
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    /**
+     * Con quién factoriza este transportista, y en qué calidad.
+     *
+     * Hay tres respuestas posibles y la pantalla tiene que poder distinguirlas,
+     * porque significan cosas distintas para quien va a cobrar:
+     *
+     *  • **asignada** — hay fila en `factoring_assignments`. La casa estableció
+     *    el vínculo; puede tener carta de cesión y verificación.
+     *  • **declarada** — el transportista dijo un nombre al darse de alta y
+     *    nadie lo ha convertido en asignación todavía. Es una afirmación suya,
+     *    no un vínculo comprobado.
+     *  • **sin nada** — dijo que factoriza y no hay ni lo uno ni lo otro. Pasa
+     *    cuando un despachador marca la casilla sin saber la empresa.
+     *
+     * `declaredHasRecord` es la diferencia entre «declaró una de nuestra lista»
+     * y «escribió un nombre que no tenemos». Lo segundo no es un error: es la
+     * opción «Other» del alta, y la pantalla lo dice en vez de enseñar el nombre
+     * como si tuviera ficha detrás.
+     *
+     * @return array{assignedName: string|null, declaredName: string|null, declaredHasRecord: bool}
+     */
+    private function factoringPicture(Actor $actor, Carrier $c): array
+    {
+        $asignada = DB::table('factoring_assignments as fa')
+            ->join('factoring_companies as fc', function ($join): void {
+                $join->on('fc.id', '=', 'fa.factoring_company_id')
+                    ->on('fc.tenant_id', '=', 'fa.tenant_id');
+            })
+            ->where('fa.tenant_id', $actor->tenantId)
+            ->where('fa.carrier_id', $c->id)
+            ->whereNull('fa.deleted_at')
+            ->orderByDesc('fa.created_at')
+            ->value('fc.name');
+
+        $declaradaId = $c->factoring_declared_company_id === null
+            ? null : (string) $c->factoring_declared_company_id;
+
+        $nombreFicha = $declaradaId === null ? null : DB::table('factoring_companies')
+            ->where('tenant_id', $actor->tenantId)
+            ->where('id', $declaradaId)
+            ->value('name');
+
+        // El texto libre se CONSERVA aunque después se enlace una ficha (lote
+        // 41), así que puede haber los dos: gana la ficha para enseñar, y el
+        // texto sigue en la base para quien quiera saber qué escribió.
+        $declarada = $nombreFicha ?? $c->factoring_declared_name;
+
+        return [
+            'assignedName' => $asignada === null ? null : (string) $asignada,
+            'declaredName' => $declarada === null ? null : (string) $declarada,
+            'declaredHasRecord' => $declaradaId !== null,
+        ];
+    }
+
+    /**
+     * Lo que el transportista declaró, para preseleccionar en el formulario.
+     *
+     * Solo el identificador sirve para preseleccionar: un nombre que no está en
+     * la lista no se puede elegir en un desplegable. Por eso viajan los dos —el
+     * identificador cuando hay ficha, y el nombre siempre— y la pantalla enseña
+     * el nombre aunque no pueda preseleccionarlo.
+     *
+     * @return array{id: string|null, name: string|null}
+     */
+    private function declaredFactoring(Actor $actor, Carrier $c): array
+    {
+        $id = $c->factoring_declared_company_id === null
+            ? null : (string) $c->factoring_declared_company_id;
+
+        if ($id !== null) {
+            // Una ficha borrada o desactivada después del alta no se puede
+            // preseleccionar: el desplegable solo lleva las activas, y
+            // preseleccionar un valor que no está entre las opciones deja el
+            // desplegable enseñando otra cosa de la que dice tener.
+            $viva = DB::table('factoring_companies')
+                ->where('tenant_id', $actor->tenantId)
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->where('active', true)
+                ->exists();
+
+            if (! $viva) {
+                $id = null;
+            }
+        }
+
+        // El NOMBRE viaja siempre, aunque el identificador se haya caído: la
+        // pantalla tiene que poder decir «el transportista escribió esto y no se
+        // puede elegir» en vez de dejar la casilla marcada y el desplegable en
+        // blanco sin explicar por qué.
+        $nombre = $c->factoring_declared_name;
+
+        if ($nombre === null && $c->factoring_declared_company_id !== null) {
+            $nombre = DB::table('factoring_companies')
+                ->where('tenant_id', $actor->tenantId)
+                ->where('id', (string) $c->factoring_declared_company_id)
+                ->value('name');
+        }
+
+        return [
+            'id' => $id,
+            'name' => $nombre === null ? null : (string) $nombre,
+        ];
     }
 
     /**

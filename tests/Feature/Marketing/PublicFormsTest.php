@@ -248,6 +248,10 @@ function signupPayload(array $overrides = []): array
         'mailing_same_as_physical' => true,
         'preferred_locale' => 'es',
         'uses_factoring' => true,
+        // Desde el lote 46, decir que se factoriza obliga a decir con quién:
+        // la casilla sin el nombre era la fila que decía «sí» y no decía con
+        // quién. Este nombre NO está en ninguna lista, que es el caso «Other».
+        'factoring_company_name' => 'Tesorería del Norte LLC',
         'lead_consent' => true,
         'privacy_consent' => true,
         'terms_consent' => true,

@@ -8,7 +8,9 @@ use App\Enums\Locale;
 use App\Support\Forms\FormToken;
 use App\Support\InertiaPage;
 use App\Support\Locales;
+use App\Support\Marketing\PublicFactoring;
 use App\Support\Marketing\Site;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,6 +29,8 @@ final class PageController
 
     /** Espacios del diccionario que necesita cualquier página pública. */
     private const NAMESPACES = ['marketing', 'validation'];
+
+    public function __construct(private readonly TenantContext $context) {}
 
     public function __invoke(Request $request, string $route = 'home'): Response
     {
@@ -64,6 +68,13 @@ final class PageController
             // cliente. Ver App\Support\Forms\FormToken para por qué un
             // `Date.now()` del navegador no comprueba nada.
             'formToken' => $this->formTokenFor($route),
+
+            // Solo el alta de transportista la necesita, y solo cuando hay
+            // empresa detrás. En goliathdispatch.com vuelve vacía a propósito:
+            // ver App\Support\Marketing\PublicFactoring.
+            'factoringCompanies' => $route === 'carrier-signup'
+                ? PublicFactoring::names($this->context)
+                : [],
         ]);
     }
 

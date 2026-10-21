@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { MarketingLayout } from '@/layouts/MarketingLayout'
 import { AntiSpamFields } from '@/components/Form/AntiSpamFields'
 import { CheckboxField, TextField } from '@/components/Form/Field'
+import { FactoringChoice } from '@/components/Marketing/FactoringChoice'
 import { FmcsaLookup, type FichaFederal } from '@/components/Marketing/FmcsaLookup'
 import { PageHero } from '@/components/Marketing/PageHero'
 import { Section } from '@/components/Marketing/Section'
@@ -34,6 +35,7 @@ interface SignupData {
   mailing_postal_code: string
   preferred_locale: string
   uses_factoring: boolean
+  factoring_company_name: string
   lead_consent: boolean
   privacy_consent: boolean
   terms_consent: boolean
@@ -44,8 +46,9 @@ interface SignupData {
 
 export default function CarrierSignup({
   formToken,
+  factoringCompanies = [],
   ...props
-}: MarketingPageProps & { formToken: string }) {
+}: MarketingPageProps & { formToken: string; factoringCompanies?: string[] }) {
   const { t, locale } = useI18n()
 
   const form = useForm<SignupData>({
@@ -56,6 +59,7 @@ export default function CarrierSignup({
     mailing_line1: '', mailing_line2: '', mailing_city: '', mailing_state: '', mailing_postal_code: '',
     preferred_locale: locale,
     uses_factoring: false,
+    factoring_company_name: '',
     lead_consent: false, privacy_consent: false, terms_consent: false,
     hp_field: '', form_token: formToken,
   })
@@ -246,10 +250,13 @@ export default function CarrierSignup({
                   <option value="es">Español</option>
                 </select>
               </div>
-              <CheckboxField
-                label={label('factoringApplies')}
-                checked={form.data.uses_factoring}
-                onChange={(e) => form.setData('uses_factoring', e.target.checked)}
+              <FactoringChoice
+                usa={form.data.uses_factoring}
+                nombre={form.data.factoring_company_name}
+                opciones={factoringCompanies}
+                error={form.errors.factoring_company_name}
+                onUsa={(valor) => form.setData('uses_factoring', valor)}
+                onNombre={(valor) => form.setData('factoring_company_name', valor)}
               />
             </fieldset>
 

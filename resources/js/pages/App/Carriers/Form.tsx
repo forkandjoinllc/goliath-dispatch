@@ -95,6 +95,8 @@ interface Props {
   contactPositions: string[]
   /** La factoring que ya tiene asignada, al editar. */
   factoringCompanyId?: string | null
+  /** Lo que el transportista DECLARÓ al darse de alta, si algo. */
+  factoringDeclared?: { id: string | null; name: string | null }
   /** Solo en el alta. Al editar no se consulta nada. */
   lookup?: Lookup | null
 }
@@ -116,6 +118,7 @@ export default function CarrierForm({
   factoringCompanies,
   contactPositions,
   factoringCompanyId = null,
+  factoringDeclared = { id: null, name: null },
   lookup = null,
 }: Props) {
   const { t } = useI18n()
@@ -195,7 +198,16 @@ export default function CarrierForm({
     // correcto sin traducir nombres a mano.
     dispatch_fee_bps: carrier?.dispatchFeeBps ?? 1000,
     uses_factoring: carrier?.usesFactoring ?? false,
-    factoring_company_id: factoringCompanyId ?? '',
+    /*
+     * Al editar manda la asignación; si no hay ninguna, lo declarado.
+     *
+     * Preseleccionar lo declarado es lo que convierte el alta en algo útil: el
+     * transportista ya dijo con quién factoriza y guardar la ficha establece la
+     * asignación de una vez. Pero no puede pasar en silencio —abajo hay un
+     * aviso— porque una asignación es un vínculo de la casa y no una afirmación
+     * del transportista.
+     */
+    factoring_company_id: factoringCompanyId ?? factoringDeclared.id ?? '',
     notes: carrier?.notes ?? '',
   })
 
@@ -584,6 +596,22 @@ export default function CarrierForm({
                   </span>
                 ) : null}
               </label>
+
+              {/* Lo declarado, dicho como declarado.
+
+                  Dos avisos distintos a propósito: si la empresa está en la
+                  lista queda preseleccionada y guardar la asigna; si el
+                  transportista escribió un nombre que no tenemos, el
+                  desplegable NO puede ofrecerlo y lo honesto es enseñar el
+                  texto y decir que no tiene ficha, en vez de dejar la casilla
+                  marcada y el desplegable en blanco sin explicar por qué. */}
+              {factoringCompanyId === null && factoringDeclared.name !== null ? (
+                <p className="mt-2 rounded border border-warning-300 bg-warning-50 px-3 py-2 text-xs text-warning-800">
+                  {factoringDeclared.id === null
+                    ? t('carriers.form.factoringDeclaredNoRecord', { name: factoringDeclared.name })
+                    : t('carriers.form.factoringDeclaredPreselected', { name: factoringDeclared.name })}
+                </p>
+              ) : null}
             </div>
           ) : null}
           <div className="sm:col-span-2">

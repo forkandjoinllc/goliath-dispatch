@@ -45,6 +45,30 @@ final class StoreCarrierSignupRequest extends PublicFormRequest
 
             'preferred_locale' => ['required', 'in:en,es'],
             'uses_factoring' => ['boolean'],
+            /*
+             * Con quién factoriza, por NOMBRE y en un solo campo.
+             *
+             * El desplegable y la casilla de «Other» mandan el mismo campo a
+             * propósito: quien elige de la lista manda el nombre que leyó y
+             * quien escribe manda el que teclea, y es el servidor el que decide
+             * si eso tiene ficha detrás. Un segundo campo con el identificador
+             * habría publicado los UUID de la tabla en una página pública y
+             * habría abierto el estado imposible de elegir una empresa y
+             * escribir otra.
+             *
+             * Obligatorio SOLO si dijo que factoriza: la casilla sin el nombre
+             * es la fila que dice «sí» y no dice con quién, que es exactamente
+             * la que este lote viene a quitar. Y prohibido si dijo que no, para
+             * que no quede un nombre colgando de una respuesta negativa —lo
+             * mismo que impide el CHECK de la base.
+             */
+            'factoring_company_name' => [
+                'nullable',
+                'required_if_accepted:uses_factoring',
+                'prohibited_if_declined:uses_factoring',
+                'string',
+                'max:200',
+            ],
 
             'lead_consent' => ['accepted'],
             'privacy_consent' => ['accepted'],
@@ -57,6 +81,8 @@ final class StoreCarrierSignupRequest extends PublicFormRequest
         $this->merge([
             'mailing_same_as_physical' => $this->boolean('mailing_same_as_physical'),
             'uses_factoring' => $this->boolean('uses_factoring'),
+            'factoring_company_name' => $this->filled('factoring_company_name')
+                ? trim((string) $this->input('factoring_company_name')) : null,
             'physical_state' => $this->filled('physical_state')
                 ? mb_strtoupper((string) $this->input('physical_state')) : null,
             'mailing_state' => $this->filled('mailing_state')

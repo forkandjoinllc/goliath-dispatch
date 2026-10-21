@@ -93,10 +93,11 @@ final class LeadController
 
         $filas = collect($page->items());
         $nombres = $this->names($filas->pluck('assigned_to_user_id')->filter()->unique()->all());
+        $factorings = $this->factoringNames($filas->pluck('factoring_company_id')->filter()->unique()->all());
 
         return Inertia::render('App/Leads/Index', [
             'leads' => [
-                'data' => $filas->map(fn (object $l): array => $this->row($l, $nombres))->all(),
+                'data' => $filas->map(fn (object $l): array => $this->row($l, $nombres, $factorings))->all(),
                 'meta' => [
                     'total' => $page->total(),
                     'perPage' => self::PER_PAGE,
@@ -125,10 +126,11 @@ final class LeadController
 
         $fila = $this->find($actor, $lead);
         $nombres = $this->names(array_filter([$fila->assigned_to_user_id]));
+        $factorings = $this->factoringNames(array_filter([$fila->factoring_company_id]));
 
         return Inertia::render('App/Leads/Show', [
             'lead' => [
-                ...$this->row($fila, $nombres),
+                ...$this->row($fila, $nombres, $factorings),
                 'message' => $fila->message,
                 'sourcePath' => $fila->source_path,
                 'utm' => $this->json($fila->utm),
@@ -562,9 +564,10 @@ final class LeadController
 
     /**
      * @param  array<string, string>  $nombres
+     * @param  array<string, string>  $factorings  id de empresa de factoring => nombre
      * @return array<string, mixed>
      */
-    private function row(object $l, array $nombres): array
+    private function row(object $l, array $nombres, array $factorings = []): array
     {
         $asignado = $l->assigned_to_user_id === null ? null : (string) $l->assigned_to_user_id;
 
@@ -578,6 +581,18 @@ final class LeadController
             'companyName' => $l->company_name,
             'dotNumber' => $l->dot_number,
             'mcNumber' => $l->mc_number,
+            // La respuesta de factoring del alta. En goliathdispatch.com ESTA
+            // es la única fila que la guarda: allí no se crea transportista.
+            // Antes del lote 46 la casilla se marcaba y no llegaba a ningún
+            // sitio, así que comercial no tenía forma de saberlo.
+            'usesFactoring' => (bool) $l->uses_factoring,
+            // Un nombre, venga de la ficha o del texto libre, y la diferencia
+            // aparte. Enseñar un nombre escrito a mano como si tuviera ficha
+            // detrás sería la mentira silenciosa del lote 41.
+            'factoringCompany' => $l->factoring_company_id === null
+                ? $l->factoring_company_name
+                : ($factorings[(string) $l->factoring_company_id] ?? null),
+            'factoringHasRecord' => $l->factoring_company_id !== null,
             'status' => (string) $l->status,
             'source' => (string) $l->source,
             'assignedToId' => $asignado,
@@ -585,6 +600,34 @@ final class LeadController
             'createdOn' => substr((string) $l->created_at, 0, 10),
             'createdAt' => substr((string) $l->created_at, 0, 19),
         ];
+    }
+
+    /**
+     * Los nombres de las empresas de factoring que aparecen en estas filas.
+     *
+     * Una consulta para toda la página y no una por fila. El `whereIn` va
+     * acotado al tenant aunque los identificadores salgan de filas que ya son de
+     * este tenant: el ámbito no se da por heredado.
+     *
+     * @param  array<int, mixed>  $ids
+     * @return array<string, string>
+     */
+    private function factoringNames(array $ids): array
+    {
+        $limpios = array_values(array_unique(array_map(
+            static fn ($id): string => (string) $id,
+            array_filter($ids, static fn ($id): bool => $id !== null && $id !== ''),
+        )));
+
+        if ($limpios === []) {
+            return [];
+        }
+
+        return DB::table('factoring_companies')
+            ->whereIn('id', $limpios)
+            ->pluck('name', 'id')
+            ->map(static fn ($n): string => (string) $n)
+            ->all();
     }
 
     private function label(object $l): string

@@ -35,6 +35,9 @@ interface Props {
     assignedToName: string | null
     createdAt: string
     message: string | null
+    usesFactoring: boolean
+    factoringCompany: string | null
+    factoringHasRecord: boolean
     sourcePath: string | null
     utm: Record<string, string> | null
     ipAddress: string | null
@@ -75,6 +78,20 @@ export default function LeadShow({ lead, quotes, matches, statuses, assignees, c
             <Dato label={t('leads.show.company')} value={lead.companyName ?? '—'} />
             <Dato label={t('leads.show.source')} value={t(`leads.source.${lead.source}`)} />
             {lead.dotNumber ? <Dato label={t('leads.show.dotNumber')} value={lead.dotNumber} /> : null}
+            {/* La respuesta de factoring del alta. Solo cuando dijo que sí:
+                enseñar «Factoring: No» en cada prospecto de contacto que nunca
+                vio la pregunta sería inventarse una respuesta que nadie dio. */}
+            {lead.usesFactoring ? (
+              <Dato
+                label={t('leads.show.factoring')}
+                value={
+                  lead.factoringCompany === null
+                    ? t('leads.show.factoringUnknown')
+                    : lead.factoringCompany
+                      + (lead.factoringHasRecord ? '' : ' · ' + t('leads.show.factoringNoRecord'))
+                }
+              />
+            ) : null}
             {lead.mcNumber ? <Dato label={t('leads.show.mcNumber')} value={lead.mcNumber} /> : null}
             <Dato label={t('leads.show.receivedAt')} value={lead.createdAt.replace('T', ' ')} />
             <Dato label={t('leads.show.language')} value={lead.locale.toUpperCase()} />

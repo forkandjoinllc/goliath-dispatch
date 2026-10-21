@@ -62,6 +62,8 @@ final class Carrier extends BaseModel
         'suspended_at',
         'suspension_reason',
         'uses_factoring',
+        'factoring_declared_company_id',
+        'factoring_declared_name',
         'notes',
         'last_activity_at',
         'deleted_by',

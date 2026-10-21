@@ -12,6 +12,7 @@ use App\Models\CarrierOnboarding;
 use App\Models\Lead;
 use App\Support\Leads\Arrival;
 use App\Support\Locales;
+use App\Support\Marketing\PublicFactoring;
 use App\Support\Plans\Limits;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -45,7 +46,30 @@ final class CarrierSignupController
         /** @var Locale $locale */
         $locale = $request->attributes->get('locale', Locales::default());
 
-        $prospecto = DB::transaction(function () use ($data, $locale, $request): Lead {
+        /*
+         * El nombre de la factoring se resuelve ANTES de abrir la transacción.
+         *
+         * Devuelve el identificador si ese nombre es una empresa activa de esta
+         * casa, y null si no lo es. Null no es un fallo: es «escribió un nombre
+         * que no está en la lista», que es para lo que existe «Other». Las dos
+         * respuestas van a columnas distintas y nunca a las dos a la vez —el
+         * CHECK de la base lo impide, y aquí se cumple por construcción.
+         */
+        $factoriza = (bool) ($data['uses_factoring'] ?? false);
+        $nombreFactoring = $factoriza ? ($data['factoring_company_name'] ?? null) : null;
+        $fichaFactoring = $nombreFactoring === null
+            ? null
+            : PublicFactoring::resolve(
+                $this->context->hasTenant() ? (string) $this->context->id() : null,
+                (string) $nombreFactoring,
+            );
+
+        $declarada = [
+            'id' => $fichaFactoring,
+            'nombre' => $fichaFactoring === null ? $nombreFactoring : null,
+        ];
+
+        $prospecto = DB::transaction(function () use ($data, $locale, $request, $factoriza, $declarada): Lead {
             $lead = Lead::create([
                 'first_name' => $data['contact_first_name'],
                 'last_name' => $data['contact_last_name'],
@@ -55,6 +79,13 @@ final class CarrierSignupController
                 'dot_number' => $data['dot_number'],
                 'mc_number' => $data['mc_number'] ?? null,
                 'locale' => $locale->value,
+                // En el sitio de la plataforma el prospecto ES el resultado, así
+                // que esta es la ÚNICA fila que llega a guardar la respuesta.
+                // Antes de este lote la casilla se marcaba y no iba a ningún
+                // sitio: `leads` no tenía dónde ponerla.
+                'uses_factoring' => $factoriza,
+                'factoring_company_id' => $declarada['id'],
+                'factoring_company_name' => $declarada['nombre'],
                 'source' => 'carrier_signup',
                 'source_path' => mb_substr((string) $request->headers->get('referer'), 0, 500) ?: null,
                 'ip_address' => $request->ip(),
@@ -100,7 +131,14 @@ final class CarrierSignupController
                 'physical_postal_code' => $data['physical_postal_code'],
                 'physical_country' => 'US',
                 ...$this->mailing($data),
-                'uses_factoring' => $data['uses_factoring'] ?? false,
+                'uses_factoring' => $factoriza,
+                // DECLARADO, no asignado. La asignación vive en
+                // `factoring_assignments` y la establece la casa desde la ficha;
+                // un tercero rellenando un formulario público no puede crear un
+                // vínculo que nadie ha verificado. Ver la migración
+                // 2026_10_21_100000_declared_factoring.
+                'factoring_declared_company_id' => $declarada['id'],
+                'factoring_declared_name' => $declarada['nombre'],
                 'onboarding_status' => OnboardingStatus::Draft,
             ]);
 

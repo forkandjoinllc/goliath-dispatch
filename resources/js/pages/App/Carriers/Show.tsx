@@ -19,6 +19,11 @@ interface Carrier {
   fmcsaStatus: string | null
   dispatchFeeBps: number
   usesFactoring: boolean
+  factoring: {
+    assignedName: string | null
+    declaredName: string | null
+    declaredHasRecord: boolean
+  }
   notes: string | null
   physical: {
     line1: string | null
@@ -297,8 +302,30 @@ export default function CarrierShow({ carrier, onboarding, verification, documen
                 })}
                 %
               </Item>
+              {/* «Sí» no era una respuesta: la pregunta es con quién.
+
+                  Tres estados distintos, y la pantalla los distingue porque
+                  significan cosas distintas para quien va a cobrar. Asignada
+                  es un vínculo que estableció la casa. Declarada es lo que
+                  dijo el transportista y nadie ha comprobado. Y «sí» a secas
+                  es lo que había antes: una respuesta que no responde. */}
               <Item label={t('carriers.detail.factoring')}>
-                {carrier.usesFactoring ? t('common.labels.yes') : t('common.labels.no')}
+                {! carrier.usesFactoring ? (
+                  t('common.labels.no')
+                ) : carrier.factoring.assignedName !== null ? (
+                  carrier.factoring.assignedName
+                ) : carrier.factoring.declaredName !== null ? (
+                  <span>
+                    {carrier.factoring.declaredName}
+                    <span className="ml-2 rounded bg-warning-100 px-1.5 py-0.5 text-xs text-warning-800">
+                      {carrier.factoring.declaredHasRecord
+                        ? t('carriers.detail.factoringDeclared')
+                        : t('carriers.detail.factoringDeclaredNoRecord')}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-steel-600">{t('carriers.detail.factoringUnknown')}</span>
+                )}
               </Item>
             </Dl>
           </Card>

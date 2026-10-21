@@ -4446,3 +4446,57 @@ el texto del diccionario en vez de contra la llamada del componente
 un `->skip()` de relleno que había dejado puesto. Una prueba que se salta sola
 no comprueba nada: es la lección del lote anterior, cometida en el lote
 siguiente.
+
+---
+
+## Lote 46 — con quién factoriza
+
+**La guarda que medía algo de al lado, otra vez.** La guarda decía «la lista
+pública solo lleva las activas» y lo que hacía era buscar `where('active', true)`
+**en todo el fichero**. Hay dos consultas ahí dentro —la que ofrece la lista y la
+que resuelve un nombre— y el sabotaje quitó el filtro de una: la cadena seguía
+apareciendo por la otra y la guarda siguió en verde. Es la quinta vez en seis
+lotes que aparece esta forma. La regla que faltaba: **cuando un fichero tiene dos
+consumidores de la misma regla, la guarda busca dentro de cada uno**, no en el
+fichero. Se arregló recortando el cuerpo de cada método y afirmando sobre los
+dos.
+
+**El barrido cambió el lote antes de escribir una línea.** El plan decía añadir
+`carriers.factoring_company_id`. Leyendo el código apareció `factoring_assignments`
+—con vigencia, carta de cesión y verificación— y un comentario que decía que la
+asignación vive ahí y NO en una columna de `carriers`. El plan iba a crear una
+segunda respuesta a la misma pregunta, que es el defecto contra el que el propio
+plan avisaba. **Un plan escrito sin leer del todo el código es una hipótesis, no
+una decisión.**
+
+**Una pregunta que se hace y no se guarda es peor que no hacerla.** La casilla
+«I factor my invoices» llevaba lotes pidiendo un dato que se tiraba entero en el
+sitio de la plataforma. El formulario le hacía gastar atención a alguien a cambio
+de nada. Cuando una pantalla pregunta algo, hay que poder enseñar dónde acaba la
+respuesta.
+
+**«Sí» no es una respuesta a «¿con quién?».** La ficha decía «Factoring: Sí»
+mientras la asignación estaba en la base, sin leerla. Una pantalla puede estar
+diciendo la verdad y aun así no contestar la pregunta que tiene delante.
+
+**Afirmar no es establecer.** Lo que un desconocido escribe en un formulario
+público es una declaración suya; un vínculo verificado lo establece la casa. Dos
+columnas separadas en vez de una, para que la pantalla pueda decir cuál de las
+dos cosas está mirando. Si el alta hubiera creado la asignación, la fila habría
+nacido afirmando algo que nadie comprobó.
+
+**Publicar una lista es publicarla.** El desplegable del alta deja los nombres de
+las empresas de factoring de la casa a la vista de cualquiera. Es lo que se pidió
+y tiene sentido, pero se escribe en la documentación en vez de descubrirse
+después. Lo que sí se sujeta con guardián es lo que NO sale: contactos, correos e
+instrucciones de pago.
+
+**Un solo campo donde podrían caber dos.** El desplegable y «Other» escriben el
+mismo campo. Con dos —identificador y texto— habría existido el envío que manda
+los dos y deja al servidor eligiendo a cuál creerle. El estado imposible que no
+se puede representar no hay que validarlo.
+
+**Un CHECK no mira otras tablas, y conviene decirlo.** La base impide el nombre
+colgando de un «no» y las dos respuestas a la vez. No impide «sí» sin empresa,
+porque eso cruzaría con `factoring_assignments`. Ese estado se ENSEÑA en pantalla
+en vez de fingir que la base lo previno.
