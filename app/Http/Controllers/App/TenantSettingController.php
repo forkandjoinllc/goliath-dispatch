@@ -19,10 +19,16 @@ use App\Support\InertiaPage;
 use App\Support\Storage\DocumentStore;
 use App\Support\Tenancy\TenantPolicy;
 use App\Support\TenantContext;
+use App\Support\Webhooks\Deliveries;
+use App\Support\Webhooks\SafeUrl;
+use App\Support\Webhooks\Signature;
+use App\Support\Webhooks\WebhookState;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -78,6 +84,20 @@ final class TenantSettingController
             // conectado no se revalida nadie, y quien escribe el 7 se queda
             // creyendo que sí. Ver App\Support\Fmcsa\RevalidationState.
             'revalidation' => RevalidationState::for((string) $actor->tenantId),
+            // El webhook del alta: a dónde va, si está encendido y —sobre todo—
+            // si algo lo está entregando. Una casilla «Activado» sin el cron de
+            // Forge puesto no manda nada, y sin esto la pantalla diría lo mismo
+            // en los dos casos. Ver App\Support\Webhooks\WebhookState.
+            'webhook' => WebhookState::for((string) $actor->tenantId),
+            /*
+             * El secreto recién creado, UNA vez.
+             *
+             * No va por la bolsa `flash` compartida: esa viaja en las props de
+             * TODAS las páginas, y una credencial no tiene por qué pasar por
+             * ahí ni una sola vez de más. Y `pull` y no `get`: lo saca de la
+             * sesión al leerlo, así que recargar la pantalla ya no lo enseña.
+             */
+            'webhookSecretOnce' => $request->session()->pull('webhookSecretOnce'),
             'readOnly' => [
                 'loadNextSequence' => (int) ($fila->load_number_next_sequence ?? 0),
                 'invoiceNextSequence' => (int) ($fila->invoice_number_next_sequence ?? 0),
@@ -225,6 +245,163 @@ final class TenantSettingController
             ->value('default_locale'));
 
         return in_array($locale, ['en', 'es'], true) ? (string) $locale : 'en';
+    }
+
+    /**
+     * Guarda la configuración del webhook del alta de transportista.
+     *
+     * Va en su propio endpoint y no en `update()` por dos razones que no son de
+     * estilo:
+     *
+     *  • **El secreto es de escritura.** Una credencial no viaja a la pantalla
+     *    para volver luego en el formulario: la pantalla no la tiene, así que
+     *    un guardado normal la mandaría vacía y la borraría sin querer. Aquí
+     *    «vacío» significa EXPLÍCITAMENTE «deja el que hay».
+     *  • **La URL se valida contra la red interna.** Esa comprobación resuelve
+     *    nombres y no debe colarse en el camino de guardar el resto de ajustes.
+     */
+    public function webhook(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $checker->authorize($actor, 'tenant:settings:update', null, $current->policy());
+
+        $data = $request->validate([
+            'carrier_signup_webhook_url' => ['nullable', 'string', 'max:500'],
+            'carrier_signup_webhook_enabled' => ['required', 'boolean'],
+            // Vacío = conservar el que hay. Ver arriba.
+            'carrier_signup_webhook_secret' => ['nullable', 'string', 'min:16', 'max:200'],
+            'generate_secret' => ['nullable', 'boolean'],
+        ]);
+
+        $url = trim((string) ($data['carrier_signup_webhook_url'] ?? ''));
+        $url = $url === '' ? null : $url;
+
+        /*
+         * La URL se comprueba ANTES de guardarse, no al entregarla.
+         *
+         * Guardar primero y fallar después dejaría al administrador con la
+         * casilla puesta, la pantalla en verde y las entregas acumulándose en
+         * «abandonada» sin que nadie entienda por qué. El motivo se dice aquí,
+         * con el campo delante.
+         */
+        if ($url !== null) {
+            $destino = SafeUrl::check($url);
+
+            if (! $destino['ok']) {
+                return back()->withErrors([
+                    'carrier_signup_webhook_url' => __('settings.webhook.errors.'.$destino['reason']),
+                ])->withInput();
+            }
+        }
+
+        $actual = Deliveries::settings((string) $actor->tenantId);
+
+        $nuevo = null;
+
+        if ((bool) ($data['generate_secret'] ?? false)) {
+            $nuevo = Signature::generateSecret();
+        } elseif (($data['carrier_signup_webhook_secret'] ?? '') !== '') {
+            $nuevo = (string) $data['carrier_signup_webhook_secret'];
+        }
+
+        $secreto = $nuevo ?? $actual['secret'];
+        $encendido = (bool) $data['carrier_signup_webhook_enabled'];
+
+        // La base lo impediría de todas formas —hay un CHECK—, pero una
+        // violación de restricción es una pantalla de error, no un mensaje.
+        if ($encendido && ($url === null || $secreto === null)) {
+            return back()->withErrors([
+                'carrier_signup_webhook_enabled' => __('settings.webhook.errors.incomplete'),
+            ])->withInput();
+        }
+
+        DB::table('tenant_settings')
+            ->where('tenant_id', $actor->tenantId)
+            ->update([
+                'carrier_signup_webhook_url' => $url,
+                'carrier_signup_webhook_enabled' => $encendido,
+                ...($nuevo === null ? [] : [
+                    'carrier_signup_webhook_secret_encrypted' => Crypt::encryptString($nuevo),
+                    'carrier_signup_webhook_secret_last4' => mb_substr($nuevo, -4),
+                ]),
+                'updated_at' => CarbonImmutable::now(),
+            ]);
+
+        Audit::record(
+            $actor,
+            AuditAction::SettingsUpdated,
+            entityType: 'tenant_settings',
+            entityId: (string) $actor->tenantId,
+            entityLabel: 'webhook',
+            // NUNCA el secreto, ni cifrado ni en claro: la pista de auditoría la
+            // lee gente, y lo que no puede volver a pantalla tampoco puede
+            // volver por aquí. Solo SI cambió.
+            before: ['url' => $actual['url'], 'enabled' => $actual['enabled']],
+            after: ['url' => $url, 'enabled' => $encendido, 'secretChanged' => $nuevo !== null],
+        );
+
+        // El secreto se enseña UNA vez, al crearlo, y nunca más. Va en la sesión
+        // de un solo uso y no en la respuesta de la pantalla.
+        $flash = $nuevo !== null && (bool) ($data['generate_secret'] ?? false)
+            ? ['webhookSecretOnce' => $nuevo]
+            : [];
+
+        return back()->with(['success' => (string) __('settings.webhook.saved'), ...$flash]);
+    }
+
+    /**
+     * Manda un evento de prueba, AHORA, y enseña lo que contestó el otro lado.
+     *
+     * En directo y no por el barrido a propósito: quien acaba de pegar una URL
+     * quiere saber si funciona antes de irse de la pantalla. Un «se ha
+     * encolado» no responde a esa pregunta.
+     *
+     * Queda anotado como entrega con `is_test`, para que se pueda auditar igual
+     * que las de verdad — y para que no se cuele en «la última entrega real»,
+     * donde haría creer que las altas están llegando.
+     */
+    public function webhookTest(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
+    {
+        $actor = $current->require();
+        $checker->authorize($actor, 'tenant:settings:update', null, $current->policy());
+
+        $ajustes = Deliveries::settings((string) $actor->tenantId);
+
+        if ($ajustes['url'] === null || $ajustes['secret'] === null) {
+            return back()->withErrors([
+                'carrier_signup_webhook_url' => __('settings.webhook.errors.incomplete'),
+            ]);
+        }
+
+        $id = (string) Str::uuid();
+
+        DB::table('webhook_deliveries')->insert([
+            'id' => $id,
+            'tenant_id' => (string) $actor->tenantId,
+            'event' => 'webhook.test',
+            'url' => $ajustes['url'],
+            'payload' => json_encode([
+                'event' => 'webhook.test',
+                'occurredAt' => CarbonImmutable::now()->toIso8601String(),
+                'message' => 'Test delivery from Goliath Dispatch.',
+            ], JSON_UNESCAPED_UNICODE),
+            'status' => 'sending',
+            'is_test' => true,
+            'last_attempt_at' => CarbonImmutable::now(),
+            'created_at' => CarbonImmutable::now(),
+            'updated_at' => CarbonImmutable::now(),
+        ]);
+
+        $fila = DB::table('webhook_deliveries')->where('id', $id)->first();
+
+        $estado = $fila === null ? 'abandoned' : Deliveries::attempt($fila);
+
+        $resultado = DB::table('webhook_deliveries')->where('id', $id)->first();
+
+        return back()->with('success', (string) __('settings.webhook.tested', [
+            'status' => $estado,
+            'code' => (string) ($resultado === null ? '—' : ($resultado->response_status ?? '—')),
+        ]));
     }
 
     public function branding(Request $request, CurrentActor $current, PermissionChecker $checker, DocumentStore $store): RedirectResponse

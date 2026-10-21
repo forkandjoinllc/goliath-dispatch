@@ -383,6 +383,23 @@ Route::middleware(['auth'])->group(function (): void {
     Route::post('settings/branding', [TenantSettingController::class, 'branding'])->name('settings.branding');
 
     /*
+    | El webhook del alta de transportista, en su propio endpoint.
+    |
+    | El secreto es de ESCRITURA: no viaja a la pantalla, así que no puede
+    | volver en el guardado general — iría vacío y lo borraría. Y la URL se
+    | comprueba contra la red interna antes de guardarse, que es una validación
+    | que resuelve nombres y no pinta en el camino del resto de ajustes.
+    |
+    | La prueba tiene su propio tope: sale a la red EN DIRECTO, con la URL que
+    | acaba de escribir quien la pulsa. Sin tope, ese botón es un cliente HTTP a
+    | demanda contra cualquier destino público que alguien quiera aporrear.
+    */
+    Route::post('settings/webhook', [TenantSettingController::class, 'webhook'])->name('settings.webhook');
+    Route::post('settings/webhook/test', [TenantSettingController::class, 'webhookTest'])
+        ->middleware('throttle:6,10')
+        ->name('settings.webhook.test');
+
+    /*
     | Plataforma
     |
     | Solo el super administrador. Todas las consultas de estos controladores

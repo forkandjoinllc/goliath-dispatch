@@ -4500,3 +4500,62 @@ se puede representar no hay que validarlo.
 colgando de un «no» y las dos respuestas a la vez. No impide «sí» sin empresa,
 porque eso cruzaría con `factoring_assignments`. Ese estado se ENSEÑA en pantalla
 en vez de fingir que la base lo previno.
+
+---
+
+## Lote 47 — el webhook del alta
+
+**La misma guarda floja, un lote después.** En el 46 quedó escrito que una
+guarda no puede buscar en todo el fichero cuando el fichero tiene dos sitios
+capaces de romper la regla. En el 47 lo volví a hacer: la guarda de «cada
+intento queda anotado» buscaba `response_status` en todo `Deliveries.php`, y hay
+DOS caminos que escriben el resultado —el que entregó y el que falló—. El
+sabotaje quitó la columna del camino bueno y la guarda siguió en verde. Escribir
+la lección no es haberla aprendido: hay que releerla **al escribir la guarda**,
+no al cerrar el lote. Sexta vez.
+
+**No montar sobre lo que no existe.** El plan decía «reintentos con espera
+creciente, en cola». Este proyecto no tiene cola —ni `app/Jobs`, ni un
+`ShouldQueue`, ni worker en Forge— así que la cola habría producido exactamente
+el fallo que el lote venía a evitar: el webhook «se dispara» y no llega nunca.
+Antes de elegir un mecanismo hay que comprobar que el mecanismo corre en el
+servidor de verdad.
+
+**Y lo que sí existía, ya existía.** Iba a crear una tabla `scheduled_runs` para
+poder decir «el barrido no ha corrido». `App\Support\Platform\ScheduledRuns` ya
+lo escribía en `job_queue`, y de ahí bebe la pantalla de salud de la plataforma.
+Dos lotes seguidos a punto de añadir una segunda respuesta a una pregunta que ya
+tenía una. **Buscar antes de crear no es una cortesía: es parte del barrido.**
+
+**Un estado intermedio sin rescate es una fuga lenta.** `sending` hacía falta
+—las filas se reclaman antes de salir a la red para que dos pasadas no manden lo
+mismo dos veces— y sin algo que devuelva a la cola lo que se quedó ahí por un
+reventón, la entrega se pierde y la pantalla enseña que sigue trabajando. Todo
+estado que se escribe antes de una operación que puede no volver necesita quién
+lo rescate.
+
+**Una prueba correcta no es una entrega correcta.** El botón de «Mandar prueba»
+dice que la URL funciona; no dice que los transportistas estén llegando al CRM.
+Contarla como última entrega habría tapado justo lo que hay que mirar, con un
+«todo bien» encima. Por eso `is_test` existe y por eso la pantalla las separa.
+
+**Congelar lo que se envió, no mirarlo en la configuración.** Si el reintento
+leyera la URL de los ajustes, cambiar el destino a mitad reescribiría el pasado:
+el registro diría a dónde apunta hoy la configuración y no a dónde fue de
+verdad. Un registro que miente sobre su propio destino no sirve para auditar.
+
+**Validar al guardar Y al usar.** Al guardar, para poder decir el motivo con el
+campo delante en vez de dejar entregas acumulándose en «abandonada» sin que
+nadie entienda por qué. Al usar, porque un nombre que hoy es público puede
+apuntar mañana a otro sitio.
+
+**Contra el SSRF no basta mirar la URL.** Hacen falta las cuatro: solo https,
+sin credenciales en la URL, TODAS las direcciones resueltas públicas —no la
+primera— y congelar la dirección comprobada al conectar, porque entre validar y
+conectar el nombre puede cambiar de respuesta. Y sin seguir redirecciones, que
+se saltarían las otras tres.
+
+**Un secreto tiene tres sitios donde se escapa, no uno.** La pantalla, la pista
+de auditoría y la bolsa `flash` compartida —que viaja en las props de TODAS las
+páginas—. Los tres tienen su guarda. Y «vacío conserva» en vez de «vacío borra»,
+porque el campo llega vacío en cada guardado por diseño.

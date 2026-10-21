@@ -57,3 +57,22 @@ Schedule::command('retention:sweep')
     ->weeklyOn(0, '04:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+/*
+| La entrega de webhooks, cada minuto.
+|
+| Es el único barrido de este proyecto que corre tan seguido, y tiene motivo: un
+| alta que entra a las 9:03 tiene que estar en el CRM del cliente a las 9:04. Un
+| webhook que llega a la mañana siguiente no sirve para lo que sirve un webhook.
+|
+| `withoutOverlapping` NO es la única defensa contra el envío doble —las filas se
+| reclaman en la base antes de salir a la red— pero evita además que dos pasadas
+| se peleen por el mismo trabajo cuando una se alarga.
+|
+| Si esta línea no corre, la pantalla de Ajustes lo DICE: ver
+| App\Support\Webhooks\WebhookState.
+*/
+Schedule::command('webhooks:deliver')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

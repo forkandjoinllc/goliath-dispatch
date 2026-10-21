@@ -100,5 +100,47 @@
         },
         "logoNotAnImage": "That file is not a PNG, JPG or WEBP image. A logo is served on a public page, so only formats that cannot carry instructions inside are accepted.",
         "unknownTokens": "This template uses {tokens}, which this email cannot fill: it would go out with the braces showing, in the email your customer reads. The ones it accepts are {allowed}."
+    },
+    "webhook": {
+        "title": "Carrier signup webhook",
+        "note": "When a carrier signs up on your public page, we POST the submission to a URL you choose, signed so you can verify it came from us.",
+        "url": "Destination URL",
+        "urlHint": "HTTPS only. Internal, loopback and link-local addresses are refused.",
+        "secret": "Signing secret",
+        "secretNone": "No secret set. One is required before you can turn this on.",
+        "secretSet": "A secret is set, ending ····{last4}. It is never shown again — replace it to change it.",
+        "secretKeep": "Leave blank to keep the current one",
+        "secretOnce": "Copy this secret now. It will not be shown again.",
+        "generate": "Generate",
+        "enabled": "Send a webhook on every carrier signup",
+        "enabledHint": "Needs a destination URL and a secret.",
+        "sendTest": "Send test",
+        "saved": "Webhook settings saved.",
+        "tested": "Test delivery: {status} (HTTP {code}).",
+        "sweepNeverRan": "The delivery sweep has never run on this server, so nothing is being sent. It needs the scheduler cron line.",
+        "sweepStalled": "The delivery sweep last ran on {date} and should run every minute. Nothing is being sent right now.",
+        "sweepOk": "Delivery sweep last ran {date}.",
+        "noRealDelivery": "No real signup has been sent yet. A successful test says the URL works, not that signups are arriving.",
+        "lastDelivery": "Last real signup delivery: {status}, {date}.",
+        "pending": "{count} waiting to be delivered.",
+        "abandoned": "{count} delivery attempt(s) gave up after retrying. They were not received.",
+        "log": "Recent deliveries",
+        "attempts": "{count} attempt(s)",
+        "test": "test",
+        "status": {
+            "pending": "waiting",
+            "sending": "sending",
+            "delivered": "delivered",
+            "failed": "failed",
+            "abandoned": "gave up"
+        },
+        "errors": {
+            "scheme": "The URL must start with https://.",
+            "credentials": "Remove the username and password from the URL.",
+            "malformed": "That is not a valid URL.",
+            "dns": "That host name does not resolve to any address.",
+            "private_address": "That address is on an internal, loopback or link-local network. Webhooks can only be sent to public addresses.",
+            "incomplete": "A destination URL and a secret are both required before turning this on."
+        }
     }
 }

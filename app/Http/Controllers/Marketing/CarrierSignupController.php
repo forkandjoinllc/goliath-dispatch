@@ -15,6 +15,7 @@ use App\Support\Locales;
 use App\Support\Marketing\PublicFactoring;
 use App\Support\Plans\Limits;
 use App\Support\TenantContext;
+use App\Support\Webhooks\Deliveries;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -158,6 +159,26 @@ final class CarrierSignupController
         // porque entre perder el contacto y perder la campanita no hay duda de
         // cuál se puede perder.
         Arrival::announce($prospecto, $this->context->hasTenant() ? (string) $this->context->id() : null);
+
+        /*
+         * Y el webhook, si esta casa tiene uno configurado.
+         *
+         * También FUERA de la transacción, y por lo mismo: entre perder el
+         * contacto de un transportista y perder una llamada a un sistema de
+         * terceros no hay duda de cuál duele menos.
+         *
+         * Esto NO sale a la red: solo anota la entrega pendiente. La manda el
+         * barrido `webhooks:deliver`. Si saliera aquí, el tiempo de respuesta
+         * de este formulario pasaría a depender de lo que tarde el servidor de
+         * otro — y un receptor caído dejaría colgada a la persona que acaba de
+         * pulsar enviar.
+         *
+         * En el sitio de la plataforma no hay empresa, así que no hay ajustes y
+         * no hay webhook. Es la misma decisión que toma `Arrival`.
+         */
+        if ($this->context->hasTenant()) {
+            Deliveries::record((string) $this->context->id(), $prospecto, $data);
+        }
 
         return back()->with('success', (string) __('marketing.carrierSignup.success.title'));
     }

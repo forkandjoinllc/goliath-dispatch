@@ -157,7 +157,8 @@
         "providerFallback": "Fallback",
         "consequence": {
             "notificationsSweep": "Without it, no alerts go out for expiring documents, carriers due for reverification, or overdue invoices.",
-            "retentionSweep": "Without it, nothing is archived or purged: expired records pile up indefinitely and the retention policy the company has configured is not being applied."
+            "retentionSweep": "Without it, nothing is archived or purged: expired records pile up indefinitely and the retention policy the company has configured is not being applied.",
+            "webhooksDeliver": "Without it no carrier signup webhook is delivered: submissions pile up waiting and the receiving system never hears about them, while the settings screen shows the webhook as switched on."
         }
     },
     "errors": {

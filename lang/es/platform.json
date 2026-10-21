@@ -157,7 +157,8 @@
         "providerFallback": "De reserva",
         "consequence": {
             "notificationsSweep": "Sin ella no se mandan los avisos de documentos que caducan, de transportistas por revalidar ni de facturas vencidas.",
-            "retentionSweep": "Sin ella no se archiva ni se purga nada: los registros vencidos se acumulan indefinidamente y la política de retención que la empresa tiene configurada no se está aplicando."
+            "retentionSweep": "Sin ella no se archiva ni se purga nada: los registros vencidos se acumulan indefinidamente y la política de retención que la empresa tiene configurada no se está aplicando.",
+            "webhooksDeliver": "Sin ella no se entrega ningún webhook del alta de transportista: los envíos se acumulan esperando y el sistema receptor no se entera de ninguno, mientras la pantalla de ajustes enseña el webhook como encendido."
         }
     },
     "errors": {

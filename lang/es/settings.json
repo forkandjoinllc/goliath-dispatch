@@ -100,5 +100,47 @@
         },
         "logoNotAnImage": "Ese fichero no es una imagen PNG, JPG o WEBP. Un logo se sirve en una página pública, así que solo se admiten formatos que no puedan traer instrucciones dentro.",
         "unknownTokens": "Esta plantilla usa {tokens}, que este correo no sabe rellenar: saldría con las llaves puestas en el correo que lee su cliente. Las que admite son {allowed}."
+    },
+    "webhook": {
+        "title": "Webhook del alta de transportista",
+        "note": "Cuando un transportista se da de alta en su página pública, mandamos el envío a una URL que usted elija, firmado para que pueda comprobar que viene de nosotros.",
+        "url": "URL de destino",
+        "urlHint": "Solo HTTPS. Se rechazan las direcciones internas, de loopback y de enlace local.",
+        "secret": "Secreto de firma",
+        "secretNone": "No hay secreto puesto. Hace falta uno antes de poder encenderlo.",
+        "secretSet": "Hay un secreto puesto, acabado en ····{last4}. No vuelve a enseñarse — para cambiarlo, sustitúyalo.",
+        "secretKeep": "Déjelo vacío para conservar el actual",
+        "secretOnce": "Copie este secreto ahora. No volverá a enseñarse.",
+        "generate": "Crear",
+        "enabled": "Mandar un webhook en cada alta de transportista",
+        "enabledHint": "Hace falta una URL de destino y un secreto.",
+        "sendTest": "Mandar prueba",
+        "saved": "Ajustes del webhook guardados.",
+        "tested": "Entrega de prueba: {status} (HTTP {code}).",
+        "sweepNeverRan": "El barrido de entregas no ha corrido nunca en este servidor, así que no se está mandando nada. Hace falta la línea de cron del planificador.",
+        "sweepStalled": "El barrido de entregas corrió por última vez el {date} y debería correr cada minuto. Ahora mismo no se está mandando nada.",
+        "sweepOk": "El barrido de entregas corrió por última vez el {date}.",
+        "noRealDelivery": "Todavía no se ha mandado ningún alta de verdad. Una prueba correcta dice que la URL funciona, no que las altas estén llegando.",
+        "lastDelivery": "Última entrega de un alta real: {status}, {date}.",
+        "pending": "{count} esperando a entregarse.",
+        "abandoned": "{count} entrega(s) se dieron por perdidas después de reintentar. No se recibieron.",
+        "log": "Últimas entregas",
+        "attempts": "{count} intento(s)",
+        "test": "prueba",
+        "status": {
+            "pending": "en espera",
+            "sending": "enviando",
+            "delivered": "entregada",
+            "failed": "fallida",
+            "abandoned": "abandonada"
+        },
+        "errors": {
+            "scheme": "La URL tiene que empezar por https://.",
+            "credentials": "Quite el usuario y la contraseña de la URL.",
+            "malformed": "Eso no es una URL válida.",
+            "dns": "Ese nombre de host no resuelve a ninguna dirección.",
+            "private_address": "Esa dirección está en una red interna, de loopback o de enlace local. Los webhooks solo pueden mandarse a direcciones públicas.",
+            "incomplete": "Hacen falta una URL de destino y un secreto antes de encenderlo."
+        }
     }
 }

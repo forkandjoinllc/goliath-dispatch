@@ -80,7 +80,40 @@ interface Props {
     body: string | null
     tokens: string[]
   }[]
+  /**
+   * El webhook del alta, y si algo lo está entregando.
+   *
+   * Lo segundo importa tanto como lo primero: una casilla «Activado» sin el
+   * cron de Forge puesto no manda nada, y la pantalla tiene que poder decir la
+   * diferencia entre «no se ha dado nadie de alta» y «no está corriendo nada».
+   */
+  webhook: {
+    enabled: boolean
+    url: string | null
+    secretLast4: string | null
+    sweepLastRunAt: string | null
+    sweepStalled: boolean
+    pending: number
+    abandoned: number
+    last: Entrega | null
+    recent: Entrega[]
+  }
+  /** Se enseña UNA vez, al crearlo, y nunca más. */
+  webhookSecretOnce?: string | null
   can: { update: boolean }
+}
+
+interface Entrega {
+  id: string
+  event: string
+  status: string
+  attempts: number
+  responseStatus: number | null
+  error: string | null
+  isTest: boolean
+  createdAt: string
+  lastAttemptAt: string | null
+  nextAttemptAt: string | null
 }
 
 /**
@@ -99,7 +132,7 @@ function claveDeEvento(evento: string): string {
   return evento.replace(/[._]([a-z])/g, (_, c: string) => c.toUpperCase())
 }
 
-export default function SettingsIndex({ settings, subscription = null, revalidation, readOnly, feeBases, commissionBases, branding, templates, can }: Props) {
+export default function SettingsIndex({ settings, subscription = null, revalidation, readOnly, feeBases, commissionBases, branding, templates, webhook, webhookSecretOnce = null, can }: Props) {
   const { t } = useI18n()
   const form = useForm<Settings>({ ...settings })
 
@@ -356,6 +389,11 @@ export default function SettingsIndex({ settings, subscription = null, revalidat
           y mezclarlo obligaría a mandar el formulario entero como multipart cada
           vez que alguien cambia un plazo de pago. */}
       <Marca branding={branding} templates={templates} bloqueado={bloqueado} />
+
+      {/* También en su propio formulario: el secreto es de ESCRITURA y no viaja
+          a esta pantalla, así que mandarlo con el resto de ajustes lo borraría
+          en cada guardado. */}
+      <Webhook estado={webhook} secretoUnaVez={webhookSecretOnce} bloqueado={bloqueado} />
     </AppLayout>
   )
 }
@@ -693,6 +731,222 @@ function Marca({
           </button>
         </div>
       ) : null}
+    </form>
+  )
+}
+
+/**
+ * El webhook del alta de transportista.
+ *
+ * ## Lo que esta sección tiene que decir, y por qué no basta con los campos
+ *
+ * Una URL, un secreto y una casilla «Activado» dejan a quien los rellena
+ * creyendo que a partir de ahí cada alta llega a su CRM. Si el planificador no
+ * corre, no llega ninguna — y sin el aviso de abajo la pantalla diría
+ * exactamente lo mismo en los dos casos.
+ *
+ * Por eso van por separado, y no en un semáforo: el estado de la configuración,
+ * el del barrido, la cola pendiente y la última entrega REAL. Un verde único
+ * que los junte es una garantía inventada.
+ *
+ * ## El secreto
+ *
+ * No llega a esta pantalla. Nunca. Lo único que viaja son los cuatro últimos
+ * caracteres, para poder decir CUÁL hay puesto. Si se genera uno nuevo, se
+ * enseña una vez —aquí, en un aviso que no vuelve— y después ya no existe en
+ * ningún sitio legible.
+ */
+function Webhook({
+  estado,
+  secretoUnaVez,
+  bloqueado,
+}: {
+  estado: Props['webhook']
+  secretoUnaVez: string | null
+  bloqueado: boolean
+}) {
+  const { t } = useI18n()
+  const form = useForm({
+    carrier_signup_webhook_url: estado.url ?? '',
+    carrier_signup_webhook_enabled: estado.enabled,
+    carrier_signup_webhook_secret: '',
+    generate_secret: false as boolean,
+  })
+  const prueba = useForm({})
+
+  const texto = (clave: string, params?: Record<string, string>) => t(`settings.webhook.${clave}`, params)
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.post('/settings/webhook', { preserveScroll: true })
+      }}
+      className="mt-6 flex max-w-3xl flex-col gap-6"
+    >
+      <Seccion titulo={texto('title')} nota={texto('note')}>
+        {secretoUnaVez === null ? null : (
+          <div className="sm:col-span-2 rounded border border-warning-300 bg-warning-50 px-3 py-2">
+            <p className="text-xs font-semibold text-carbon">{texto('secretOnce')}</p>
+            <code className="mt-1 block break-all font-mono text-xs text-carbon">{secretoUnaVez}</code>
+          </div>
+        )}
+
+        <div className="sm:col-span-2">
+          <Campo
+            label={texto('url')}
+            hint={texto('urlHint')}
+            error={form.errors.carrier_signup_webhook_url}
+          >
+            <input
+              type="url"
+              className={CAMPO}
+              disabled={bloqueado}
+              placeholder="https://"
+              value={form.data.carrier_signup_webhook_url}
+              onChange={(e) => form.setData('carrier_signup_webhook_url', e.target.value)}
+            />
+          </Campo>
+        </div>
+
+        <div className="sm:col-span-2">
+          <Campo
+            label={texto('secret')}
+            hint={
+              estado.secretLast4 === null
+                ? texto('secretNone')
+                : texto('secretSet', { last4: estado.secretLast4 })
+            }
+            error={form.errors.carrier_signup_webhook_secret}
+          >
+            <div className="flex gap-2">
+              <input
+                type="password"
+                autoComplete="new-password"
+                className={CAMPO}
+                disabled={bloqueado}
+                placeholder={texto('secretKeep')}
+                value={form.data.carrier_signup_webhook_secret}
+                onChange={(e) => form.setData('carrier_signup_webhook_secret', e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={bloqueado || form.processing}
+                onClick={() => {
+                  form.setData('generate_secret', true)
+                  form.transform((d) => ({ ...d, generate_secret: true }))
+                  form.post('/settings/webhook', {
+                    preserveScroll: true,
+                    onFinish: () => form.transform((d) => ({ ...d, generate_secret: false })),
+                  })
+                }}
+                className="whitespace-nowrap rounded border border-steel-300 px-3 py-2 text-sm font-medium text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+              >
+                {texto('generate')}
+              </button>
+            </div>
+          </Campo>
+        </div>
+
+        <div className="sm:col-span-2">
+          <Casilla
+            label={texto('enabled')}
+            hint={texto('enabledHint')}
+            checked={form.data.carrier_signup_webhook_enabled}
+            onChange={(v) => form.setData('carrier_signup_webhook_enabled', v)}
+            disabled={bloqueado}
+          />
+          {form.errors.carrier_signup_webhook_enabled ? (
+            <p className="mt-1 text-xs text-danger-700">{form.errors.carrier_signup_webhook_enabled}</p>
+          ) : null}
+        </div>
+
+        {/* ── Si esto está entregando de verdad ──────────────────────────── */}
+        <div className="sm:col-span-2 flex flex-col gap-2">
+          {estado.enabled && estado.sweepStalled ? (
+            <p className="rounded border-l-4 border-warning-300 bg-warning-50 px-2 py-1.5 text-xs text-carbon">
+              {estado.sweepLastRunAt === null
+                ? texto('sweepNeverRan')
+                : texto('sweepStalled', { date: estado.sweepLastRunAt })}
+            </p>
+          ) : null}
+
+          {estado.enabled && ! estado.sweepStalled && estado.sweepLastRunAt !== null ? (
+            <p className="text-xs text-steel-600">{texto('sweepOk', { date: estado.sweepLastRunAt })}</p>
+          ) : null}
+
+          {estado.abandoned > 0 ? (
+            <p className="rounded border-l-4 border-danger-300 bg-danger-50 px-2 py-1.5 text-xs text-carbon">
+              {texto('abandoned', { count: String(estado.abandoned) })}
+            </p>
+          ) : null}
+
+          {estado.pending > 0 ? (
+            <p className="text-xs text-steel-600">{texto('pending', { count: String(estado.pending) })}</p>
+          ) : null}
+
+          <p className="text-xs text-steel-600">
+            {estado.last === null
+              ? texto('noRealDelivery')
+              : texto('lastDelivery', {
+                  status: t(`settings.webhook.status.${estado.last.status}`),
+                  date: estado.last.createdAt.slice(0, 16),
+                })}
+          </p>
+        </div>
+
+        {/* ── El registro de entregas ────────────────────────────────────── */}
+        {estado.recent.length > 0 ? (
+          <div className="sm:col-span-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-steel-600">{texto('log')}</p>
+            <ul className="mt-1 divide-y divide-steel-200 rounded border border-steel-200">
+              {estado.recent.map((d) => (
+                <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-xs">
+                  <span className="font-medium text-carbon">{d.createdAt.slice(0, 16)}</span>
+                  <span className="text-steel-700">{d.event}</span>
+                  {d.isTest ? (
+                    <span className="rounded bg-steel-100 px-1.5 py-0.5 text-steel-700">{texto('test')}</span>
+                  ) : null}
+                  <span
+                    className={
+                      d.status === 'delivered'
+                        ? 'text-success-700'
+                        : d.status === 'abandoned'
+                          ? 'text-danger-700'
+                          : 'text-steel-700'
+                    }
+                  >
+                    {t(`settings.webhook.status.${d.status}`)}
+                  </span>
+                  {d.responseStatus === null ? null : <span className="text-steel-600">HTTP {d.responseStatus}</span>}
+                  <span className="text-steel-600">{texto('attempts', { count: String(d.attempts) })}</span>
+                  {d.error === null ? null : <span className="text-danger-700">{d.error}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {bloqueado ? null : (
+          <div className="sm:col-span-2 flex gap-2">
+            <button
+              type="submit"
+              disabled={form.processing}
+              className="rounded bg-safety-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
+            >
+              {form.processing ? t('common.states.saving') : t('settings.index.save')}
+            </button>
+            <button
+              type="button"
+              disabled={prueba.processing || estado.url === null || estado.secretLast4 === null}
+              onClick={() => prueba.post('/settings/webhook/test', { preserveScroll: true })}
+              className="rounded border border-steel-300 px-5 py-2.5 text-sm font-semibold text-carbon transition hover:bg-steel-50 disabled:opacity-50"
+            >
+              {prueba.processing ? t('common.states.saving') : texto('sendTest')}
+            </button>
+          </div>
+        )}
+      </Seccion>
     </form>
   )
 }
