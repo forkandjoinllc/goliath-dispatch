@@ -1,8 +1,13 @@
-import { useForm } from '@inertiajs/react'
+import { useForm, usePage } from '@inertiajs/react'
 import { CountryStateFields } from '@/components/Form/CountryStateFields'
+import { Button, FormActions } from '@/components/Ui/Button'
+import { Checkbox, ReadOnly, SelectInput, TextInput } from '@/components/Ui/Field'
+import { Card, CardHeader, FieldGrid, Note, Wide } from '@/components/Ui/Surface'
+import { TabPanel, Tabs } from '@/components/Ui/Tabs'
 import { AppLayout } from '@/layouts/AppLayout'
 import { formatCents } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
+import type { SharedProps } from '@/types'
 
 interface Settings {
   dispatch_fee_base: string
@@ -100,6 +105,10 @@ interface Props {
   }
   /** Se enseña UNA vez, al crearlo, y nunca más. */
   webhookSecretOnce?: string | null
+  /** Las pestañas que pinta la pantalla, en orden, declaradas en el servidor. */
+  tabs: string[]
+  /** La que está abierta. Sale de la URL y la valida el servidor. */
+  tab: string
   can: { update: boolean }
 }
 
@@ -132,11 +141,60 @@ function claveDeEvento(evento: string): string {
   return evento.replace(/[._]([a-z])/g, (_, c: string) => c.toUpperCase())
 }
 
-export default function SettingsIndex({ settings, subscription = null, revalidation, readOnly, feeBases, commissionBases, branding, templates, webhook, webhookSecretOnce = null, can }: Props) {
+export default function SettingsIndex({
+  settings,
+  subscription = null,
+  revalidation,
+  readOnly,
+  feeBases,
+  commissionBases,
+  branding,
+  templates,
+  webhook,
+  webhookSecretOnce = null,
+  tabs,
+  tab,
+  can,
+}: Props) {
   const { t } = useI18n()
-  const form = useForm<Settings>({ ...settings })
-
   const bloqueado = ! can.update
+
+  /*
+   * Los errores que vuelven del servidor, para marcar la pestaña.
+   *
+   * Vienen en la bolsa compartida de Inertia y no en el `useForm` de cada
+   * sección: la respuesta con errores llega a la página, y para entonces el
+   * formulario que la provocó puede no estar montado —quien guardó «Contacto» y
+   * cambió de pestaña mientras tanto—. Sin esto, ese error no se vería en
+   * ningún sitio: ni en la sección, que no está en pantalla, ni en la pestaña,
+   * que no sabría que tiene uno.
+   */
+  const { errors } = usePage<SharedProps & { errors: Record<string, string> }>().props
+  const conErrores = Object.keys(errors ?? {})
+
+  const DE_LA_PESTANA: Record<string, string[]> = {
+    money: [
+      'dispatch_fee_base', 'default_carrier_dispatch_fee_bps',
+      'default_dispatcher_commission_bps', 'dispatcher_commission_basis',
+      'default_payment_terms_days',
+    ],
+    numbering: ['load_number_prefix', 'invoice_number_prefix'],
+    ops: [
+      'document_expiration_warning_days', 'fmcsa_reverification_days',
+      'allow_dispatcher_resource_assignment', 'require_oversize_admin_validation',
+      'public_tracking_enabled', 'public_tracking_token_ttl_hours',
+    ],
+    contact: [
+      'contact_phone', 'contact_email', 'support_email', 'address_line1',
+      'address_line2', 'address_city', 'address_country', 'address_state',
+      'address_postal_code',
+    ],
+    brand: ['logo', 'primary_color', 'accent_color', 'email_footer'],
+    webhook: [
+      'carrier_signup_webhook_url', 'carrier_signup_webhook_secret',
+      'carrier_signup_webhook_enabled',
+    ],
+  }
 
   return (
     <AppLayout
@@ -146,208 +204,502 @@ export default function SettingsIndex({ settings, subscription = null, revalidat
     >
       <Plan subscription={subscription} />
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          form.patch('/settings', { preserveScroll: true })
-        }}
-        className="flex max-w-3xl flex-col gap-6"
-      >
-        <Seccion titulo={t('settings.money.title')} nota={t('settings.money.note')}>
-          <Campo label={t('settings.money.feeBase')} error={form.errors.dispatch_fee_base} hint={t(`settings.feeBase.${form.data.dispatch_fee_base}`)}>
-            <select
-              disabled={bloqueado}
-              value={form.data.dispatch_fee_base}
-              onChange={(e) => form.setData('dispatch_fee_base', e.target.value)}
-              className={CAMPO}
-            >
-              {feeBases.map((b) => (
-                <option key={b} value={b}>{t(`settings.feeBaseLabel.${b}`)}</option>
-              ))}
-            </select>
-          </Campo>
+      <div className="mt-6">
+        <Tabs
+          active={tab}
+          tabs={tabs.map((id) => ({
+            id,
+            label: t(`settings.tabs.${id}`),
+            invalid: (DE_LA_PESTANA[id] ?? []).some((campo) => conErrores.includes(campo)),
+          }))}
+        />
 
-          <Porcentaje
+        <TabPanel active={tab}>
+          <div className="max-w-3xl">
+            {tab === 'money' ? (
+              <SeccionDinero
+                settings={settings}
+                feeBases={feeBases}
+                commissionBases={commissionBases}
+                bloqueado={bloqueado}
+              />
+            ) : null}
+
+            {tab === 'numbering' ? (
+              <SeccionNumeracion settings={settings} readOnly={readOnly} bloqueado={bloqueado} />
+            ) : null}
+
+            {tab === 'ops' ? (
+              <SeccionOperacion
+                settings={settings}
+                revalidation={revalidation}
+                readOnly={readOnly}
+                bloqueado={bloqueado}
+              />
+            ) : null}
+
+            {tab === 'contact' ? (
+              <SeccionContacto settings={settings} bloqueado={bloqueado} />
+            ) : null}
+
+            {tab === 'brand' ? (
+              <Marca branding={branding} templates={templates} bloqueado={bloqueado} />
+            ) : null}
+
+            {tab === 'webhook' ? (
+              <Webhook estado={webhook} secretoUnaVez={webhookSecretOnce} bloqueado={bloqueado} />
+            ) : null}
+          </div>
+        </TabPanel>
+      </div>
+    </AppLayout>
+  )
+}
+
+/**
+ * El pie de guardar de una sección.
+ *
+ * Dice EN QUÉ sección está el botón. «Guardar» a secas, debajo de una pestaña,
+ * no contesta la pregunta que se hace quien ha tocado dos pestañas: ¿esto
+ * guarda lo de aquí o lo de todas?
+ */
+function Guardar({
+  procesando,
+  bloqueado,
+  nota,
+}: {
+  procesando: boolean
+  bloqueado: boolean
+  nota: string
+}) {
+  const { t } = useI18n()
+
+  if (bloqueado) {
+    return (
+      <FormActions note={t('settings.index.readOnly')}>
+        <span />
+      </FormActions>
+    )
+  }
+
+  return (
+    <FormActions note={nota}>
+      <Button type="submit" weight="primary" disabled={procesando}>
+        {procesando ? t('common.states.saving') : t('settings.index.save')}
+      </Button>
+    </FormActions>
+  )
+}
+
+/* ── Dinero ─────────────────────────────────────────────────────────────── */
+
+function SeccionDinero({
+  settings,
+  feeBases,
+  commissionBases,
+  bloqueado,
+}: {
+  settings: Settings
+  feeBases: string[]
+  commissionBases: string[]
+  bloqueado: boolean
+}) {
+  const { t } = useI18n()
+
+  /*
+   * Un `useForm` por sección, con SOLO los campos de esa sección.
+   *
+   * No es una comodidad: es la otra mitad de «lo que ve es lo que guarda». Con
+   * un formulario único, pulsar «Guardar» en Dinero mandaría también lo que
+   * hubiera escrito sin guardar en Contacto — invisible para quien pulsa.
+   */
+  const form = useForm({
+    section: 'money',
+    dispatch_fee_base: settings.dispatch_fee_base,
+    default_carrier_dispatch_fee_bps: settings.default_carrier_dispatch_fee_bps,
+    default_dispatcher_commission_bps: settings.default_dispatcher_commission_bps,
+    dispatcher_commission_basis: settings.dispatcher_commission_basis,
+    default_payment_terms_days: settings.default_payment_terms_days,
+  })
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); form.patch('/settings', { preserveScroll: true }) }}>
+      <Card>
+        <CardHeader title={t('settings.money.title')} note={t('settings.money.note')} />
+
+        <FieldGrid>
+          <SelectInput
+            label={t('settings.money.feeBase')}
+            hint={t(`settings.feeBase.${form.data.dispatch_fee_base}`)}
+            error={form.errors.dispatch_fee_base}
+            disabled={bloqueado}
+            value={form.data.dispatch_fee_base}
+            onChange={(e) => form.setData('dispatch_fee_base', e.target.value)}
+          >
+            {feeBases.map((b) => (
+              <option key={b} value={b}>{t(`settings.feeBaseLabel.${b}`)}</option>
+            ))}
+          </SelectInput>
+
+          <SelectInput
+            label={t('settings.money.commissionBasis')}
+            error={form.errors.dispatcher_commission_basis}
+            disabled={bloqueado}
+            value={form.data.dispatcher_commission_basis}
+            onChange={(e) => form.setData('dispatcher_commission_basis', e.target.value)}
+          >
+            {commissionBases.map((b) => (
+              <option key={b} value={b}>{t(`settings.commissionBasis.${b}`)}</option>
+            ))}
+          </SelectInput>
+
+          <TextInput
+            type="number"
+            min={0}
+            max={100}
+            step={0.25}
             label={t('settings.money.dispatchFee')}
             hint={t('settings.money.dispatchFeeHint')}
-            bps={form.data.default_carrier_dispatch_fee_bps}
-            onChange={(v) => form.setData('default_carrier_dispatch_fee_bps', v)}
             error={form.errors.default_carrier_dispatch_fee_bps}
             disabled={bloqueado}
+            value={form.data.default_carrier_dispatch_fee_bps / 100}
+            onChange={(e) => form.setData(
+              'default_carrier_dispatch_fee_bps',
+              e.target.value === '' ? 0 : Math.round(Number(e.target.value) * 100),
+            )}
           />
 
-          <Porcentaje
+          <TextInput
+            type="number"
+            min={0}
+            max={100}
+            step={0.25}
             label={t('settings.money.commission')}
             hint={t('settings.money.commissionHint')}
-            bps={form.data.default_dispatcher_commission_bps}
-            onChange={(v) => form.setData('default_dispatcher_commission_bps', v)}
             error={form.errors.default_dispatcher_commission_bps}
             disabled={bloqueado}
+            value={form.data.default_dispatcher_commission_bps / 100}
+            onChange={(e) => form.setData(
+              'default_dispatcher_commission_bps',
+              e.target.value === '' ? 0 : Math.round(Number(e.target.value) * 100),
+            )}
           />
 
-          <Campo label={t('settings.money.commissionBasis')} error={form.errors.dispatcher_commission_basis}>
-            <select
-              disabled={bloqueado}
-              value={form.data.dispatcher_commission_basis}
-              onChange={(e) => form.setData('dispatcher_commission_basis', e.target.value)}
-              className={CAMPO}
-            >
-              {commissionBases.map((b) => (
-                <option key={b} value={b}>{t(`settings.commissionBasis.${b}`)}</option>
-              ))}
-            </select>
-          </Campo>
-
-          <Numero
-            label={t('settings.money.paymentTerms')}
-            value={form.data.default_payment_terms_days}
-            onChange={(v) => form.setData('default_payment_terms_days', v)}
-            error={form.errors.default_payment_terms_days}
-            disabled={bloqueado}
+          <TextInput
+            type="number"
             min={0}
             max={365}
-          />
-        </Seccion>
-
-        <Seccion titulo={t('settings.numbering.title')} nota={t('settings.numbering.note')}>
-          <Campo label={t('settings.numbering.loadPrefix')} error={form.errors.load_number_prefix}>
-            <input
-              type="text"
-              disabled={bloqueado}
-              maxLength={12}
-              value={form.data.load_number_prefix}
-              onChange={(e) => form.setData('load_number_prefix', e.target.value.toUpperCase())}
-              className={CAMPO}
-            />
-          </Campo>
-          <Campo label={t('settings.numbering.invoicePrefix')} error={form.errors.invoice_number_prefix}>
-            <input
-              type="text"
-              disabled={bloqueado}
-              maxLength={12}
-              value={form.data.invoice_number_prefix}
-              onChange={(e) => form.setData('invoice_number_prefix', e.target.value.toUpperCase())}
-              className={CAMPO}
-            />
-          </Campo>
-
-          {/* Los contadores se enseñan y NO se editan: bajarlos repetiría
-              números de factura ya emitidos, y dos facturas con el mismo número
-              es un problema contable, no una molestia. */}
-          <p className="sm:col-span-2 text-xs text-steel-600">
-            {t('settings.numbering.counters', {
-              load: String(readOnly.loadNextSequence),
-              invoice: String(readOnly.invoiceNextSequence),
-            })}
-          </p>
-        </Seccion>
-
-        <Seccion titulo={t('settings.ops.title')}>
-          <Numero
-            label={t('settings.ops.docWarning')}
-            hint={t('settings.ops.docWarningHint')}
-            value={form.data.document_expiration_warning_days}
-            onChange={(v) => form.setData('document_expiration_warning_days', v)}
-            error={form.errors.document_expiration_warning_days}
+            label={t('settings.money.paymentTerms')}
+            error={form.errors.default_payment_terms_days}
             disabled={bloqueado}
+            value={form.data.default_payment_terms_days}
+            onChange={(e) => form.setData(
+              'default_payment_terms_days',
+              e.target.value === '' ? 0 : Number(e.target.value),
+            )}
+          />
+        </FieldGrid>
+
+        <Guardar procesando={form.processing} bloqueado={bloqueado} nota={t('settings.money.saveNote')} />
+      </Card>
+    </form>
+  )
+}
+
+/* ── Numeración ─────────────────────────────────────────────────────────── */
+
+function SeccionNumeracion({
+  settings,
+  readOnly,
+  bloqueado,
+}: {
+  settings: Settings
+  readOnly: Props['readOnly']
+  bloqueado: boolean
+}) {
+  const { t } = useI18n()
+
+  const form = useForm({
+    section: 'numbering',
+    load_number_prefix: settings.load_number_prefix,
+    invoice_number_prefix: settings.invoice_number_prefix,
+  })
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); form.patch('/settings', { preserveScroll: true }) }}>
+      <Card>
+        <CardHeader title={t('settings.numbering.title')} note={t('settings.numbering.note')} />
+
+        <FieldGrid>
+          <TextInput
+            label={t('settings.numbering.loadPrefix')}
+            error={form.errors.load_number_prefix}
+            disabled={bloqueado}
+            maxLength={12}
+            value={form.data.load_number_prefix}
+            onChange={(e) => form.setData('load_number_prefix', e.target.value.toUpperCase())}
+          />
+          <TextInput
+            label={t('settings.numbering.invoicePrefix')}
+            error={form.errors.invoice_number_prefix}
+            disabled={bloqueado}
+            maxLength={12}
+            value={form.data.invoice_number_prefix}
+            onChange={(e) => form.setData('invoice_number_prefix', e.target.value.toUpperCase())}
+          />
+
+          {/* Los contadores se ENSEÑAN y no se editan: bajarlos repetiría
+              números de factura ya emitidos, y dos facturas con el mismo número
+              es un problema contable, no una molestia. Van como dato y no como
+              campo desactivado, que invita a pulsarlo. */}
+          <ReadOnly
+            label={t('settings.numbering.nextLoad')}
+            value={String(readOnly.loadNextSequence)}
+          />
+          <ReadOnly
+            label={t('settings.numbering.nextInvoice')}
+            value={String(readOnly.invoiceNextSequence)}
+            hint={t('settings.numbering.countersHint')}
+          />
+        </FieldGrid>
+
+        <Guardar procesando={form.processing} bloqueado={bloqueado} nota={t('settings.numbering.saveNote')} />
+      </Card>
+    </form>
+  )
+}
+
+/* ── Operación ──────────────────────────────────────────────────────────── */
+
+function SeccionOperacion({
+  settings,
+  revalidation,
+  readOnly,
+  bloqueado,
+}: {
+  settings: Settings
+  revalidation: Props['revalidation']
+  readOnly: Props['readOnly']
+  bloqueado: boolean
+}) {
+  const { t } = useI18n()
+
+  const form = useForm({
+    section: 'ops',
+    document_expiration_warning_days: settings.document_expiration_warning_days,
+    fmcsa_reverification_days: settings.fmcsa_reverification_days,
+    allow_dispatcher_resource_assignment: settings.allow_dispatcher_resource_assignment,
+    require_oversize_admin_validation: settings.require_oversize_admin_validation,
+    public_tracking_enabled: settings.public_tracking_enabled,
+    public_tracking_token_ttl_hours: settings.public_tracking_token_ttl_hours,
+  })
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); form.patch('/settings', { preserveScroll: true }) }}>
+      <Card>
+        <CardHeader title={t('settings.ops.title')} />
+
+        <FieldGrid>
+          <TextInput
+            type="number"
             min={1}
             max={365}
-          />
-          <div className="flex flex-col gap-1">
-            <Numero
-              label={t('settings.ops.fmcsaDays')}
-              value={form.data.fmcsa_reverification_days}
-              onChange={(v) => form.setData('fmcsa_reverification_days', v)}
-              error={form.errors.fmcsa_reverification_days}
-              disabled={bloqueado}
-              min={1}
-              max={365}
-            />
-
-            {/* Las DOS cosas por separado, y no un semáforo: que haya proveedor
-                conectado no garantiza que el planificador esté corriendo. */}
-            {revalidation.providerLive ? (
-              <p className="text-xs text-steel-600">
-                {revalidation.lastVerifiedAt === null
-                  ? t('settings.ops.fmcsaNeverRun')
-                  : t('settings.ops.fmcsaLastRun', { date: revalidation.lastVerifiedAt })}
-              </p>
-            ) : (
-              <p className="rounded border-l-4 border-warning-300 bg-warning-50 px-2 py-1.5 text-xs text-carbon">
-                {t('settings.ops.fmcsaNotConnected', { count: String(revalidation.dueCount) })}
-              </p>
-            )}
-          </div>
-          <Numero
-            label={t('settings.ops.trackingTtl')}
-            value={form.data.public_tracking_token_ttl_hours}
-            onChange={(v) => form.setData('public_tracking_token_ttl_hours', v)}
-            error={form.errors.public_tracking_token_ttl_hours}
+            label={t('settings.ops.docWarning')}
+            hint={t('settings.ops.docWarningHint')}
+            error={form.errors.document_expiration_warning_days}
             disabled={bloqueado}
+            value={form.data.document_expiration_warning_days}
+            onChange={(e) => form.setData(
+              'document_expiration_warning_days',
+              e.target.value === '' ? 1 : Number(e.target.value),
+            )}
+          />
+
+          <TextInput
+            type="number"
             min={1}
             max={720}
+            label={t('settings.ops.trackingTtl')}
+            error={form.errors.public_tracking_token_ttl_hours}
+            disabled={bloqueado}
+            value={form.data.public_tracking_token_ttl_hours}
+            onChange={(e) => form.setData(
+              'public_tracking_token_ttl_hours',
+              e.target.value === '' ? 1 : Number(e.target.value),
+            )}
           />
 
-          <div className="sm:col-span-2 flex flex-col gap-2">
-            <Casilla
-              label={t('settings.ops.dispatcherAssign')}
-              hint={t('settings.ops.dispatcherAssignHint')}
-              checked={form.data.allow_dispatcher_resource_assignment}
-              onChange={(v) => form.setData('allow_dispatcher_resource_assignment', v)}
-              disabled={bloqueado}
-            />
-            {/*
-              El texto de ayuda dice QUÉ HACE, y no es adorno: este interruptor
-              estuvo inerte desde el primer día. Se encendía, la persona creía
-              tener un segundo par de ojos sobre las cargas sobredimensionadas,
-              y el despacho se comportaba igual. Decir en voz alta lo que activa
-              es parte de que vuelva a ser creíble.
-            */}
-            <Casilla
-              label={t('settings.ops.oversizeAdmin')}
-              hint={t('settings.ops.oversizeAdminHint')}
-              checked={form.data.require_oversize_admin_validation}
-              onChange={(v) => form.setData('require_oversize_admin_validation', v)}
-              disabled={bloqueado}
-            />
-            <Casilla
-              label={t('settings.ops.publicTracking')}
-              checked={form.data.public_tracking_enabled}
-              onChange={(v) => form.setData('public_tracking_enabled', v)}
-              disabled={bloqueado}
-            />
-          </div>
-        </Seccion>
+          <Wide>
+            <div className="flex flex-col gap-2">
+              <TextInput
+                type="number"
+                min={1}
+                max={365}
+                label={t('settings.ops.fmcsaDays')}
+                error={form.errors.fmcsa_reverification_days}
+                disabled={bloqueado}
+                value={form.data.fmcsa_reverification_days}
+                onChange={(e) => form.setData(
+                  'fmcsa_reverification_days',
+                  e.target.value === '' ? 1 : Number(e.target.value),
+                )}
+              />
 
-        <Seccion titulo={t('settings.contact.title')} nota={t('settings.contact.note')}>
-          <Campo label={t('settings.contact.phone')} error={form.errors.contact_phone}>
-            <input type="tel" disabled={bloqueado} maxLength={32} value={form.data.contact_phone ?? ''}
-              onChange={(e) => form.setData('contact_phone', e.target.value)} className={CAMPO} />
-          </Campo>
-          <Campo label={t('settings.contact.email')} error={form.errors.contact_email}>
-            <input type="email" disabled={bloqueado} maxLength={255} value={form.data.contact_email ?? ''}
-              onChange={(e) => form.setData('contact_email', e.target.value)} className={CAMPO} />
-          </Campo>
-          <Campo label={t('settings.contact.support')} error={form.errors.support_email}>
-            <input type="email" disabled={bloqueado} maxLength={255} value={form.data.support_email ?? ''}
-              onChange={(e) => form.setData('support_email', e.target.value)} className={CAMPO} />
-          </Campo>
-          <Campo label={t('settings.contact.line1')} error={form.errors.address_line1}>
-            <input type="text" disabled={bloqueado} maxLength={200} value={form.data.address_line1 ?? ''}
-              onChange={(e) => form.setData('address_line1', e.target.value)} className={CAMPO} />
-          </Campo>
-          <Campo label={t('settings.contact.line2')} error={form.errors.address_line2}>
-            <input type="text" disabled={bloqueado} maxLength={200} value={form.data.address_line2 ?? ''}
-              onChange={(e) => form.setData('address_line2', e.target.value)} className={CAMPO} />
-          </Campo>
-          <Campo label={t('settings.contact.city')} error={form.errors.address_city}>
-            <input type="text" disabled={bloqueado} maxLength={120} value={form.data.address_city ?? ''}
-              onChange={(e) => form.setData('address_city', e.target.value)} className={CAMPO} />
-          </Campo>
+              {/* Las DOS cosas por separado, y no un semáforo: que haya
+                  proveedor conectado no garantiza que el planificador esté
+                  corriendo. */}
+              {revalidation.providerLive ? (
+                <p className="text-xs text-steel-600">
+                  {revalidation.lastVerifiedAt === null
+                    ? t('settings.ops.fmcsaNeverRun')
+                    : t('settings.ops.fmcsaLastRun', { date: revalidation.lastVerifiedAt })}
+                </p>
+              ) : (
+                <p className="rounded border-l-4 border-warning-300 bg-warning-50 px-3 py-2 text-xs text-carbon">
+                  {t('settings.ops.fmcsaNotConnected', { count: String(revalidation.dueCount) })}
+                </p>
+              )}
+            </div>
+          </Wide>
+
+          <Wide>
+            <div className="flex flex-col gap-3 border-t border-steel-100 pt-4">
+              <Checkbox
+                label={t('settings.ops.dispatcherAssign')}
+                hint={t('settings.ops.dispatcherAssignHint')}
+                checked={form.data.allow_dispatcher_resource_assignment}
+                onChange={(v) => form.setData('allow_dispatcher_resource_assignment', v)}
+                disabled={bloqueado}
+              />
+              {/*
+                El texto de ayuda dice QUÉ HACE, y no es adorno: este interruptor
+                estuvo inerte desde el primer día. Se encendía, la persona creía
+                tener un segundo par de ojos sobre las cargas sobredimensionadas,
+                y el despacho se comportaba igual.
+              */}
+              <Checkbox
+                label={t('settings.ops.oversizeAdmin')}
+                hint={t('settings.ops.oversizeAdminHint')}
+                checked={form.data.require_oversize_admin_validation}
+                onChange={(v) => form.setData('require_oversize_admin_validation', v)}
+                disabled={bloqueado}
+              />
+              <Checkbox
+                label={t('settings.ops.publicTracking')}
+                checked={form.data.public_tracking_enabled}
+                onChange={(v) => form.setData('public_tracking_enabled', v)}
+                disabled={bloqueado}
+              />
+            </div>
+          </Wide>
+
+          {/* La retención se enseña y no se edita: cambiarla tiene
+              consecuencias legales y no debería ser un campo más de un
+              formulario. */}
+          <Wide>
+            <Note>
+              {t('settings.retention.note', {
+                months: String(readOnly.operationalActiveMonths),
+                purge: String(readOnly.operationalPurgeYears),
+                financial: String(readOnly.financialRetentionYears),
+              })}
+            </Note>
+          </Wide>
+        </FieldGrid>
+
+        <Guardar procesando={form.processing} bloqueado={bloqueado} nota={t('settings.ops.saveNote')} />
+      </Card>
+    </form>
+  )
+}
+
+/* ── Contacto público ───────────────────────────────────────────────────── */
+
+function SeccionContacto({ settings, bloqueado }: { settings: Settings; bloqueado: boolean }) {
+  const { t } = useI18n()
+
+  const form = useForm({
+    section: 'contact',
+    contact_phone: settings.contact_phone ?? '',
+    contact_email: settings.contact_email ?? '',
+    support_email: settings.support_email ?? '',
+    address_line1: settings.address_line1 ?? '',
+    address_line2: settings.address_line2 ?? '',
+    address_city: settings.address_city ?? '',
+    address_country: settings.address_country,
+    address_state: settings.address_state ?? '',
+    address_postal_code: settings.address_postal_code ?? '',
+  })
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); form.patch('/settings', { preserveScroll: true }) }}>
+      <Card>
+        <CardHeader title={t('settings.contact.title')} note={t('settings.contact.note')} />
+
+        <FieldGrid>
+          <TextInput
+            type="tel"
+            maxLength={32}
+            label={t('settings.contact.phone')}
+            error={form.errors.contact_phone}
+            disabled={bloqueado}
+            value={form.data.contact_phone}
+            onChange={(e) => form.setData('contact_phone', e.target.value)}
+          />
+          <TextInput
+            type="email"
+            maxLength={255}
+            label={t('settings.contact.email')}
+            error={form.errors.contact_email}
+            disabled={bloqueado}
+            value={form.data.contact_email}
+            onChange={(e) => form.setData('contact_email', e.target.value)}
+          />
+          <TextInput
+            type="email"
+            maxLength={255}
+            label={t('settings.contact.support')}
+            error={form.errors.support_email}
+            disabled={bloqueado}
+            value={form.data.support_email}
+            onChange={(e) => form.setData('support_email', e.target.value)}
+          />
+          <TextInput
+            maxLength={12}
+            label={t('settings.contact.postal')}
+            error={form.errors.address_postal_code}
+            disabled={bloqueado}
+            value={form.data.address_postal_code}
+            onChange={(e) => form.setData('address_postal_code', e.target.value)}
+          />
+          <TextInput
+            maxLength={200}
+            label={t('settings.contact.line1')}
+            error={form.errors.address_line1}
+            disabled={bloqueado}
+            value={form.data.address_line1}
+            onChange={(e) => form.setData('address_line1', e.target.value)}
+          />
+          <TextInput
+            maxLength={200}
+            label={t('settings.contact.line2')}
+            error={form.errors.address_line2}
+            disabled={bloqueado}
+            value={form.data.address_line2}
+            onChange={(e) => form.setData('address_line2', e.target.value)}
+          />
+          <TextInput
+            maxLength={120}
+            label={t('settings.contact.city')}
+            error={form.errors.address_city}
+            disabled={bloqueado}
+            value={form.data.address_city}
+            onChange={(e) => form.setData('address_city', e.target.value)}
+          />
 
           <CountryStateFields
             country={form.data.address_country}
-            state={form.data.address_state ?? ''}
+            state={form.data.address_state}
             onChange={(next) => {
               form.setData((d) => ({ ...d, address_country: next.country, address_state: next.state }))
             }}
@@ -355,46 +707,11 @@ export default function SettingsIndex({ settings, subscription = null, revalidat
             stateError={form.errors.address_state}
             disabled={bloqueado}
           />
+        </FieldGrid>
 
-          <Campo label={t('settings.contact.postal')} error={form.errors.address_postal_code}>
-            <input type="text" disabled={bloqueado} maxLength={12} value={form.data.address_postal_code ?? ''}
-              onChange={(e) => form.setData('address_postal_code', e.target.value)} className={CAMPO} />
-          </Campo>
-        </Seccion>
-
-        {/* La retención se enseña y no se edita: cambiarla tiene consecuencias
-            legales y no debería ser un campo más de un formulario. */}
-        <div className="rounded border border-steel-200 bg-steel-50 p-4 text-xs text-steel-700">
-          {t('settings.retention.note', {
-            months: String(readOnly.operationalActiveMonths),
-            purge: String(readOnly.operationalPurgeYears),
-            financial: String(readOnly.financialRetentionYears),
-          })}
-        </div>
-
-        {can.update ? (
-          <div>
-            <button
-              type="submit"
-              disabled={form.processing}
-              className="rounded bg-safety-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-safety-700 disabled:opacity-50"
-            >
-              {form.processing ? t('common.states.saving') : t('settings.index.save')}
-            </button>
-          </div>
-        ) : null}
-      </form>
-
-      {/* Va en SU PROPIO formulario y no dentro del de arriba: lleva un fichero,
-          y mezclarlo obligaría a mandar el formulario entero como multipart cada
-          vez que alguien cambia un plazo de pago. */}
-      <Marca branding={branding} templates={templates} bloqueado={bloqueado} />
-
-      {/* También en su propio formulario: el secreto es de ESCRITURA y no viaja
-          a esta pantalla, así que mandarlo con el resto de ajustes lo borraría
-          en cada guardado. */}
-      <Webhook estado={webhook} secretoUnaVez={webhookSecretOnce} bloqueado={bloqueado} />
-    </AppLayout>
+        <Guardar procesando={form.processing} bloqueado={bloqueado} nota={t('settings.contact.saveNote')} />
+      </Card>
+    </form>
   )
 }
 
@@ -421,50 +738,6 @@ function Campo({
       {hint && ! error ? <span className="text-xs text-steel-600">{hint}</span> : null}
       {error ? <span role="alert" className="text-sm text-danger-700">{error}</span> : null}
     </label>
-  )
-}
-
-/** Porcentaje en pantalla, puntos básicos por dentro. */
-function Porcentaje({
-  label, hint, bps, onChange, error, disabled,
-}: {
-  label: string; hint?: string; bps: number
-  onChange: (v: number) => void; error?: string; disabled: boolean
-}) {
-  return (
-    <Campo label={label} hint={hint} error={error}>
-      <input
-        type="number"
-        min={0}
-        max={100}
-        step={0.25}
-        disabled={disabled}
-        value={bps / 100}
-        onChange={(e) => onChange(e.target.value === '' ? 0 : Math.round(Number(e.target.value) * 100))}
-        className={CAMPO}
-      />
-    </Campo>
-  )
-}
-
-function Numero({
-  label, hint, value, onChange, error, disabled, min, max,
-}: {
-  label: string; hint?: string; value: number
-  onChange: (v: number) => void; error?: string; disabled: boolean; min: number; max: number
-}) {
-  return (
-    <Campo label={label} hint={hint} error={error}>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        disabled={disabled}
-        value={value}
-        onChange={(e) => onChange(e.target.value === '' ? min : Number(e.target.value))}
-        className={CAMPO}
-      />
-    </Campo>
   )
 }
 

@@ -105,6 +105,9 @@
   --color-warning-800: #854D0E;
 
   --color-danger-50: #FEF2F2;
+  /* Anillo de foco de un campo con error. Mismo papel que navy-100 en un campo
+     correcto: suficiente para verse, insuficiente para competir con el borde. */
+  --color-danger-100: #FEE2E2;
   --color-danger-300: #FCA5A5;
   --color-danger-500: #DC2626;
   --color-danger-600: #C81E1E;

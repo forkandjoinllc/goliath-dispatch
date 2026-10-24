@@ -2,7 +2,8 @@
     "index": {
         "title": "Ajustes de la empresa",
         "subtitle": "La política con la que nacen las cargas y las facturas nuevas. Cambiarla no reescribe nada de lo que ya existe.",
-        "save": "Guardar ajustes"
+        "save": "Guardar ajustes",
+        "readOnly": "Puede ver estos ajustes, pero no cambiarlos."
     },
     "money": {
         "title": "Dinero",
@@ -13,7 +14,8 @@
         "commission": "Comisión del despachador por defecto",
         "commissionHint": "Lo que gana el despachador. Se puede cambiar por persona.",
         "commissionBasis": "La comisión se calcula sobre",
-        "paymentTerms": "Plazo de pago por defecto (días)"
+        "paymentTerms": "Plazo de pago por defecto (días)",
+        "saveNote": "Rige para las cargas que se despachen de ahora en adelante."
     },
     "feeBaseLabel": {
         "commissionable_base": "La base comisionable",
@@ -33,7 +35,11 @@
         "note": "Solo los prefijos. Mayúsculas, dígitos y guiones.",
         "loadPrefix": "Prefijo del número de carga",
         "invoicePrefix": "Prefijo del número de factura",
-        "counters": "Próximo número de carga: {load}. Próximo número de factura: {invoice}. Los contadores no se editan aquí — bajar uno repetiría un número de factura que ya salió."
+        "counters": "Próximo número de carga: {load}. Próximo número de factura: {invoice}. Los contadores no se editan aquí — bajar uno repetiría un número de factura que ya salió.",
+        "saveNote": "Solo cambia el prefijo. Los contadores no.",
+        "nextLoad": "Próximo número de carga",
+        "nextInvoice": "Próximo número de factura",
+        "countersHint": "Los contadores no se editan: bajar uno repetiría un número de factura ya emitido."
     },
     "ops": {
         "title": "Operación",
@@ -48,7 +54,8 @@
         "publicTracking": "Los enlaces públicos de rastreo están activos",
         "fmcsaNotConnected": "No hay proveedor de FMCSA conectado, así que no se está revalidando a nadie — este número todavía no gobierna nada. {count} transportista(s) llevan más del plazo. Hay que configurar las credenciales de FMCSA en el servidor.",
         "fmcsaLastRun": "Última revalidación: {date}.",
-        "fmcsaNeverRun": "Hay proveedor conectado, pero todavía no se ha revalidado a nadie. Conviene comprobar que el planificador esté corriendo."
+        "fmcsaNeverRun": "Hay proveedor conectado, pero todavía no se ha revalidado a nadie. Conviene comprobar que el planificador esté corriendo.",
+        "saveNote": "Tiene efecto en el siguiente barrido."
     },
     "contact": {
         "title": "Datos públicos de contacto",
@@ -59,7 +66,8 @@
         "line1": "Dirección",
         "line2": "Dirección, línea 2",
         "city": "Ciudad",
-        "postal": "Código postal"
+        "postal": "Código postal",
+        "saveNote": "Esto es lo que enseña su sitio público."
     },
     "retention": {
         "note": "Retención: los registros están activos {months} meses, se purgan {purge} años después de archivarse, y los financieros se conservan {financial} años. Cambiar la retención tiene consecuencias legales y no se edita aquí — pídalo a propósito."
@@ -142,5 +150,13 @@
             "private_address": "Esa dirección está en una red interna, de loopback o de enlace local. Los webhooks solo pueden mandarse a direcciones públicas.",
             "incomplete": "Hacen falta una URL de destino y un secreto antes de encenderlo."
         }
+    },
+    "tabs": {
+        "money": "Dinero",
+        "numbering": "Numeración",
+        "ops": "Operación",
+        "contact": "Contacto público",
+        "brand": "Marca",
+        "webhook": "Webhook"
     }
 }

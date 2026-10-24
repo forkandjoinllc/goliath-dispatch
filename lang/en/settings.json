@@ -2,7 +2,8 @@
     "index": {
         "title": "Company settings",
         "subtitle": "The policy new loads and invoices are born with. Changing it never rewrites what already exists.",
-        "save": "Save settings"
+        "save": "Save settings",
+        "readOnly": "You can view these settings but not change them."
     },
     "money": {
         "title": "Money",
@@ -13,7 +14,8 @@
         "commission": "Default dispatcher commission",
         "commissionHint": "What the dispatcher earns. Can be overridden per dispatcher.",
         "commissionBasis": "Commission is calculated on",
-        "paymentTerms": "Default payment terms (days)"
+        "paymentTerms": "Default payment terms (days)",
+        "saveNote": "Applies to loads dispatched from now on."
     },
     "feeBaseLabel": {
         "commissionable_base": "The commissionable base",
@@ -33,7 +35,11 @@
         "note": "Prefixes only. Uppercase letters, digits and dashes.",
         "loadPrefix": "Load number prefix",
         "invoicePrefix": "Invoice number prefix",
-        "counters": "Next load number: {load}. Next invoice number: {invoice}. Counters cannot be edited here — moving one backwards would repeat an invoice number that has already gone out."
+        "counters": "Next load number: {load}. Next invoice number: {invoice}. Counters cannot be edited here — moving one backwards would repeat an invoice number that has already gone out.",
+        "saveNote": "Only the prefix changes. The counters do not.",
+        "nextLoad": "Next load number",
+        "nextInvoice": "Next invoice number",
+        "countersHint": "Counters are not editable: lowering one would repeat an invoice number already issued."
     },
     "ops": {
         "title": "Operations",
@@ -48,7 +54,8 @@
         "publicTracking": "Public tracking links are enabled",
         "fmcsaNotConnected": "No FMCSA provider is connected, so nothing is being re-verified — this number is not in effect yet. {count} carrier(s) are past the interval. Connect FMCSA credentials on the server to start.",
         "fmcsaLastRun": "Last re-verification: {date}.",
-        "fmcsaNeverRun": "A provider is connected, but nothing has been re-verified yet. Check that the scheduler is running."
+        "fmcsaNeverRun": "A provider is connected, but nothing has been re-verified yet. Check that the scheduler is running.",
+        "saveNote": "Takes effect on the next sweep."
     },
     "contact": {
         "title": "Public contact details",
@@ -59,7 +66,8 @@
         "line1": "Address",
         "line2": "Address line 2",
         "city": "City",
-        "postal": "Postal code"
+        "postal": "Postal code",
+        "saveNote": "This is what your public site shows."
     },
     "retention": {
         "note": "Retention: records stay active for {months} months, are purged {purge} years after archiving, and financial records are kept {financial} years. Changing retention has legal consequences and is not editable here — ask for it deliberately."
@@ -142,5 +150,13 @@
             "private_address": "That address is on an internal, loopback or link-local network. Webhooks can only be sent to public addresses.",
             "incomplete": "A destination URL and a secret are both required before turning this on."
         }
+    },
+    "tabs": {
+        "money": "Money",
+        "numbering": "Numbering",
+        "ops": "Operations",
+        "contact": "Public contact",
+        "brand": "Branding",
+        "webhook": "Webhook"
     }
 }

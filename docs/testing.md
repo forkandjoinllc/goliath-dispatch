@@ -4559,3 +4559,60 @@ se saltarían las otras tres.
 de auditoría y la bolsa `flash` compartida —que viaja en las props de TODAS las
 páginas—. Los tres tienen su guarda. Y «vacío conserva» en vez de «vacío borra»,
 porque el campo llega vacío en cada guardado por diseño.
+
+---
+
+## Lote 48 — la piel del panel y el menú de Ajustes
+
+**La lección que no se aprendía se convirtió en herramienta.** Por séptima vez
+—lotes 42, 43, 44, 45, 46, 47 y este— un sabotaje siguió en verde porque una
+guarda buscaba una cadena en TODO el fichero mientras el fichero tenía varios
+sitios capaces de romper la regla. Esta vez eran cuatro componentes de campo con
+`aria-invalid`: quitárselo a uno dejaba la cadena puesta por los otros tres.
+
+Escribir la lección no bastó: se repitió el lote siguiente a escribirla, y dos
+veces. Lo que faltaba no era recordarla sino tener a mano la herramienta que la
+cumple. Ahora existe `Source::cuerpo($fuente, $firma)`, que recorta el bloque de
+una función y LANZA si no cuadra, en vez de devolver medio fichero —medio
+fichero es otra vez una aguja que casa por donde no debe—.
+
+Y al escribirla apareció el fallo que la habría hecho inútil: la primera llave
+después de la firma no es el cuerpo cuando los parámetros vienen
+desestructurados, que es lo normal en un componente de React. Contando desde ahí
+el bloque «cerraba» en la lista de parámetros y la guarda se quedaba mirando seis
+nombres de propiedades. Se casan primero los paréntesis.
+
+**La regla, escrita donde se lee:** buscar en el fichero entero solo vale cuando
+el fichero tiene UN sitio capaz de romper la regla. Con dos, se parte.
+
+**Partir una pantalla en pestañas parte también su validación.** Con un único
+bloque de reglas, guardar «Contacto» —donde todo es opcional— fallaba por los
+`required` de «Dinero»: campos que quien guarda no tiene delante ni forma de
+ver. El menú horizontal no era un cambio de aspecto; era un cambio de contrato.
+
+**Y trajo una comprobación que antes no cabía:** ninguna columna puede estar en
+dos secciones. Con un solo bloque la pregunta no existía. Partido, si una
+columna estuviera en dos pestañas, el último que guardara ganaría sin que
+ninguna de las dos pantallas lo dijera.
+
+**Un estado de pantalla que sobrevive a un `back()` tiene que estar en la URL.**
+La pestaña en `useState` se pierde al guardar, al recargar y al compartir el
+enlace. Las tres se arreglan con un parámetro. Y la pestaña pedida se valida en
+el SERVIDOR: comprobarla en el cliente deja que `?tab=loquesea` pinte una
+pantalla sin ninguna sección abierta.
+
+**Un error en una pestaña cerrada es un error invisible.** La pantalla dice que
+algo falló y no dice dónde. El punto rojo en la pestaña es la mitad; la otra
+mitad es leer los errores de la PÁGINA y no del formulario de turno, porque la
+respuesta llega cuando ese formulario puede estar ya desmontado.
+
+**Mandar la petición no es lo mismo que poder escribirla.** El guardado de una
+sección recibe, sin inmutarse, campos de las otras tres: `validate()` devuelve
+solo lo que validó y el resto se cae. La prueba lo manda a propósito, porque una
+defensa que nadie ataca no se sabe si está.
+
+**Cambiar la piel pone la letra pequeña donde se lee.** Los mensajes de
+validación de Ajustes llevaban el nombre de la columna en inglés dentro de una
+frase en español —«El campo load number prefix no tiene un formato válido»— desde
+siempre. Nadie lo había visto porque el mensaje aparecía lejos de su campo.
+Rediseñar una pantalla es, entre otras cosas, volver a leerla.

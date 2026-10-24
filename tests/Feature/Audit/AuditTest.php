@@ -55,24 +55,21 @@ function rastro(string $tenantId, array $overrides = []): string
  * este fichero a que el otro esté cargado, y ejecutar este solo —que es lo que
  * se hace al depurar— fallaría con «función no definida».
  */
+/**
+ * La sección de DINERO de los ajustes, que es la que esta prueba cambia.
+ *
+ * Desde el lote 48 cada pestaña de Ajustes se guarda sola y `update()` exige
+ * saber cuál. Mandarlo todo junto ya no existe como operación.
+ */
 function ajustesParaAuditoria(array $overrides = []): array
 {
     return array_merge([
+        'section' => 'money',
         'dispatch_fee_base' => 'commissionable_base',
         'default_carrier_dispatch_fee_bps' => 1200,
         'default_dispatcher_commission_bps' => 2000,
         'dispatcher_commission_basis' => 'dispatch_fee_amount',
         'default_payment_terms_days' => 15,
-        'load_number_prefix' => 'FJ',
-        'invoice_number_prefix' => 'FAC',
-        'document_expiration_warning_days' => 20,
-        'fmcsa_reverification_days' => 7,
-        'allow_dispatcher_resource_assignment' => false,
-        'require_oversize_admin_validation' => true,
-        'public_tracking_enabled' => true,
-        'public_tracking_token_ttl_hours' => 72,
-        'address_country' => 'US',
-        'address_state' => 'TX',
     ], $overrides);
 }
 

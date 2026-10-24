@@ -120,7 +120,110 @@ final class TenantSettingController
             'can' => [
                 'update' => $checker->can($actor, 'tenant:settings:update', null, $policy)->allowed,
             ],
+
+            'tabs' => self::PESTANAS,
+            /*
+             * La pestaña abierta sale de la URL y se comprueba AQUÍ.
+             *
+             * Comprobarla en el cliente dejaría que `?tab=loquesea` pintara una
+             * pantalla sin ninguna sección: ni la que se pidió, porque no
+             * existe, ni la primera, porque nadie la eligió. Un parámetro que no
+             * se reconoce cae a la primera pestaña, que es la respuesta honesta
+             * a «no sé qué me has pedido».
+             */
+            'tab' => in_array((string) $request->query('tab'), self::PESTANAS, true)
+                ? (string) $request->query('tab')
+                : self::PESTANAS[0],
         ]);
+    }
+
+    /**
+     * Las pestañas de Ajustes, en el orden en que se pintan.
+     *
+     * Cuatro se guardan por `update()` con sus reglas en `secciones()`. Las dos
+     * últimas tienen endpoint propio y por buenas razones: la marca lleva un
+     * fichero —mezclarla obligaría a mandar el formulario entero como multipart
+     * cada vez que alguien cambia un plazo de pago— y el webhook lleva un
+     * secreto de escritura que no viaja a la pantalla.
+     *
+     * Están declaradas aquí y no en el componente para que un guardián pueda
+     * comprobar que CADA pestaña tiene forma de guardarse. Una pestaña con
+     * botón y sin destino es la promesa más barata de hacer y la más cara de
+     * descubrir.
+     */
+    public const PESTANAS = ['money', 'numbering', 'ops', 'contact', 'brand', 'webhook'];
+
+    /** Las pestañas que no pasan por `update()`, y a dónde mandan. */
+    public const PESTANAS_PROPIAS = [
+        'brand' => 'settings.branding',
+        'webhook' => 'settings.webhook',
+    ];
+
+    /**
+     * Las secciones de Ajustes, y qué columnas gobierna cada una.
+     *
+     * ## Por qué existe esta tabla, y no un solo bloque de reglas
+     *
+     * La pantalla pasó a un menú horizontal con UN botón de guardar por
+     * pestaña, que es lo que hace que «lo que ve es lo que guarda» sea verdad.
+     * Con un único bloque de reglas, guardar «Contacto» mandaría solo los
+     * campos de contacto contra unas reglas que exigen `required` en los de
+     * dinero, y el guardado fallaría por campos que quien guarda no tiene
+     * delante — ni forma de ver.
+     *
+     * Partir las reglas por sección arregla eso, y de paso cierra una puerta: el
+     * guardado de una sección NO puede escribir columnas de otra, porque
+     * `validate()` devuelve solo las claves que validó. Lo que llegue de más en
+     * la petición se cae aquí.
+     *
+     * Las secciones de esta tabla son las MISMAS pestañas que pinta la
+     * pantalla, y hay un guardián que lo comprueba: una pestaña sin reglas es un
+     * botón de guardar que no guarda nada.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function secciones(): array
+    {
+        return [
+            'money' => [
+                'dispatch_fee_base' => ['required', Rule::in(array_map(
+                    static fn (FeeBase $b): string => $b->value, FeeBase::cases()
+                ))],
+                'default_carrier_dispatch_fee_bps' => ['required', 'integer', 'min:0', 'max:10000'],
+                'default_dispatcher_commission_bps' => ['required', 'integer', 'min:0', 'max:10000'],
+                'dispatcher_commission_basis' => ['required', Rule::in(array_map(
+                    static fn (CommissionBasis $b): string => $b->value, CommissionBasis::cases()
+                ))],
+                'default_payment_terms_days' => ['required', 'integer', 'min:0', 'max:365'],
+            ],
+
+            // Numeración: solo el prefijo. Ver la cabecera de la clase.
+            'numbering' => [
+                'load_number_prefix' => ['required', 'string', 'max:12', 'regex:/^[A-Z0-9-]+$/'],
+                'invoice_number_prefix' => ['required', 'string', 'max:12', 'regex:/^[A-Z0-9-]+$/'],
+            ],
+
+            'ops' => [
+                'document_expiration_warning_days' => ['required', 'integer', 'min:1', 'max:365'],
+                'fmcsa_reverification_days' => ['required', 'integer', 'min:1', 'max:365'],
+                'allow_dispatcher_resource_assignment' => ['required', 'boolean'],
+                'require_oversize_admin_validation' => ['required', 'boolean'],
+                'public_tracking_enabled' => ['required', 'boolean'],
+                'public_tracking_token_ttl_hours' => ['required', 'integer', 'min:1', 'max:720'],
+            ],
+
+            'contact' => [
+                'contact_phone' => ['nullable', 'string', 'max:32'],
+                'contact_email' => ['nullable', 'email:rfc', 'max:255'],
+                'support_email' => ['nullable', 'email:rfc', 'max:255'],
+                'address_line1' => ['nullable', 'string', 'max:200'],
+                'address_line2' => ['nullable', 'string', 'max:200'],
+                'address_city' => ['nullable', 'string', 'max:120'],
+                'address_country' => ['nullable', 'string', 'size:2'],
+                'address_state' => ['nullable', 'string', 'max:3'],
+                'address_postal_code' => ['nullable', 'string', 'max:12'],
+            ],
+        ];
     }
 
     public function update(Request $request, CurrentActor $current, PermissionChecker $checker): RedirectResponse
@@ -128,49 +231,35 @@ final class TenantSettingController
         $actor = $current->require();
         $checker->authorize($actor, 'tenant:settings:update', null, $current->policy());
 
-        $data = $request->validate([
-            // Dinero
-            'dispatch_fee_base' => ['required', Rule::in(array_map(
-                static fn (FeeBase $b): string => $b->value, FeeBase::cases()
-            ))],
-            'default_carrier_dispatch_fee_bps' => ['required', 'integer', 'min:0', 'max:10000'],
-            'default_dispatcher_commission_bps' => ['required', 'integer', 'min:0', 'max:10000'],
-            'dispatcher_commission_basis' => ['required', Rule::in(array_map(
-                static fn (CommissionBasis $b): string => $b->value, CommissionBasis::cases()
-            ))],
-            'default_payment_terms_days' => ['required', 'integer', 'min:0', 'max:365'],
+        $secciones = self::secciones();
 
-            // Numeración: solo el prefijo. Ver la cabecera de la clase.
-            'load_number_prefix' => ['required', 'string', 'max:12', 'regex:/^[A-Z0-9-]+$/'],
-            'invoice_number_prefix' => ['required', 'string', 'max:12', 'regex:/^[A-Z0-9-]+$/'],
+        /*
+         * Qué sección se está guardando.
+         *
+         * Sin valor por omisión: una petición sin sección es una petición que no
+         * se sabe qué quiere escribir, y adivinarlo —por ejemplo guardando
+         * todo— convertiría un error del cliente en una escritura silenciosa de
+         * columnas que nadie tenía delante.
+         */
+        $seccion = (string) $request->validate([
+            'section' => ['required', Rule::in(array_keys($secciones))],
+        ])['section'];
 
-            // Operación
-            'document_expiration_warning_days' => ['required', 'integer', 'min:1', 'max:365'],
-            'fmcsa_reverification_days' => ['required', 'integer', 'min:1', 'max:365'],
-            'allow_dispatcher_resource_assignment' => ['required', 'boolean'],
-            'require_oversize_admin_validation' => ['required', 'boolean'],
-            'public_tracking_enabled' => ['required', 'boolean'],
-            'public_tracking_token_ttl_hours' => ['required', 'integer', 'min:1', 'max:720'],
-
-            // Contacto público
-            'contact_phone' => ['nullable', 'string', 'max:32'],
-            'contact_email' => ['nullable', 'email:rfc', 'max:255'],
-            'support_email' => ['nullable', 'email:rfc', 'max:255'],
-            'address_line1' => ['nullable', 'string', 'max:200'],
-            'address_line2' => ['nullable', 'string', 'max:200'],
-            'address_city' => ['nullable', 'string', 'max:120'],
-            'address_country' => ['nullable', 'string', 'size:2'],
-            'address_state' => ['nullable', 'string', 'max:3'],
-            'address_postal_code' => ['nullable', 'string', 'max:12'],
-        ]);
-
-        $pais = $data['address_country'] ?? Regions::DEFAULT_COUNTRY;
+        $data = $request->validate($secciones[$seccion]);
 
         // El estado tiene que ser de ese país. La misma regla que en el resto de
         // direcciones: un desplegable sin comprobación en el servidor es una
         // cortesía, no una garantía.
-        if (! Regions::isSubdivisionOf($pais, $data['address_state'] ?? null)) {
-            return back()->withErrors(['address_state' => __('validation.state')])->withInput();
+        //
+        // Solo en su sección: en las otras no hay país ni estado que comprobar,
+        // y leer `$data['address_country']` ahí daría siempre el valor por
+        // omisión y compararía contra un estado que no se ha mandado.
+        if ($seccion === 'contact') {
+            $pais = $data['address_country'] ?? Regions::DEFAULT_COUNTRY;
+
+            if (! Regions::isSubdivisionOf($pais, $data['address_state'] ?? null)) {
+                return back()->withErrors(['address_state' => __('validation.state')])->withInput();
+            }
         }
 
         $antes = $this->row((string) $actor->tenantId);
@@ -194,6 +283,9 @@ final class TenantSettingController
             after: $this->auditable((object) [...(array) $antes, ...$data]),
         );
 
+        // `back()` vuelve a la URL de origen, que lleva `?tab=<seccion>`: por eso
+        // guardar no devuelve a quien guardó a la primera pestaña. Ver
+        // resources/js/components/Ui/Tabs.tsx.
         return back()->with('success', __('settings.flash.saved'));
     }
 

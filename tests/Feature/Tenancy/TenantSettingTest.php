@@ -24,28 +24,80 @@ afterEach(function () {
 });
 
 /**
- * @param  array<string, mixed>  $overrides
- * @return array<string, mixed>
+ * Los ajustes repartidos por SECCIÓN.
+ *
+ * Desde el lote 48 la pantalla es un menú horizontal con un botón de guardar
+ * por pestaña, y `update()` valida solo la sección que se le diga. Mandarlo
+ * todo junto ya no existe como operación, así que estas pruebas tampoco lo
+ * hacen: guardan sección por sección, igual que la pantalla.
+ *
+ * @param  array<string, mixed>  $overrides  por nombre de campo, da igual la sección
+ * @return array<string, array<string, mixed>>
  */
-function ajustes(array $overrides = []): array
+function ajustesPorSeccion(array $overrides = []): array
 {
-    return array_merge([
-        'dispatch_fee_base' => 'commissionable_base',
-        'default_carrier_dispatch_fee_bps' => 1200,
-        'default_dispatcher_commission_bps' => 2000,
-        'dispatcher_commission_basis' => 'dispatch_fee_amount',
-        'default_payment_terms_days' => 15,
-        'load_number_prefix' => 'FJ',
-        'invoice_number_prefix' => 'FAC',
-        'document_expiration_warning_days' => 20,
-        'fmcsa_reverification_days' => 7,
-        'allow_dispatcher_resource_assignment' => false,
-        'require_oversize_admin_validation' => true,
-        'public_tracking_enabled' => true,
-        'public_tracking_token_ttl_hours' => 72,
-        'address_country' => 'US',
-        'address_state' => 'TX',
-    ], $overrides);
+    $secciones = [
+        'money' => [
+            'dispatch_fee_base' => 'commissionable_base',
+            'default_carrier_dispatch_fee_bps' => 1200,
+            'default_dispatcher_commission_bps' => 2000,
+            'dispatcher_commission_basis' => 'dispatch_fee_amount',
+            'default_payment_terms_days' => 15,
+        ],
+        'numbering' => [
+            'load_number_prefix' => 'FJ',
+            'invoice_number_prefix' => 'FAC',
+        ],
+        'ops' => [
+            'document_expiration_warning_days' => 20,
+            'fmcsa_reverification_days' => 7,
+            'allow_dispatcher_resource_assignment' => false,
+            'require_oversize_admin_validation' => true,
+            'public_tracking_enabled' => true,
+            'public_tracking_token_ttl_hours' => 72,
+        ],
+        'contact' => [
+            'address_country' => 'US',
+            'address_state' => 'TX',
+        ],
+    ];
+
+    foreach ($overrides as $campo => $valor) {
+        foreach ($secciones as $nombre => $campos) {
+            if (array_key_exists($campo, $campos)) {
+                $secciones[$nombre][$campo] = $valor;
+
+                continue 2;
+            }
+        }
+
+        throw new InvalidArgumentException("El campo {$campo} no está en ninguna sección.");
+    }
+
+    return $secciones;
+}
+
+/** Una sección sola, lista para mandar. */
+function ajustes(string $seccion, array $overrides = []): array
+{
+    return ['section' => $seccion, ...ajustesPorSeccion($overrides)[$seccion]];
+}
+
+/**
+ * Las cuatro secciones, una detrás de otra, como quien recorre las pestañas.
+ *
+ * Cada una AFIRMA que no trajo errores. Sin eso, un guardado que empezara a
+ * fallar en validación dejaría estas pruebas en verde midiendo valores por
+ * omisión que nadie guardó — que es exactamente lo que pasó al partir la
+ * pantalla en secciones y lo que destapó la suite.
+ */
+function guardaTodo(object $test, array $overrides = []): void
+{
+    foreach (ajustesPorSeccion($overrides) as $seccion => $campos) {
+        $test->patch('/settings', ['section' => $seccion, ...$campos])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+    }
 }
 
 /* ── Lo que este lote arregla ──────────────────────────────────────────── */
@@ -53,7 +105,7 @@ function ajustes(array $overrides = []): array
 it('una carga nueva nace con la POLÍTICA de la empresa', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->patch('/settings', ajustes())->assertRedirect()->assertSessionHasNoErrors();
+    guardaTodo($this);
 
     $this->post('/loads', [
         'customer_id' => $this->scenario->customer->id,
@@ -75,7 +127,7 @@ it('una carga nueva nace con la POLÍTICA de la empresa', function () {
 
 it('una factura nueva vence según el plazo de la empresa', function () {
     signIn($this->scenario, Role::Admin);
-    $this->patch('/settings', ajustes())->assertRedirect();
+    guardaTodo($this);
 
     DB::table('loads')->where('id', $this->scenario->load->id)->update([
         'carrier_id' => $this->scenario->assignedCarrier->id,
@@ -105,9 +157,7 @@ it('una factura nueva vence según el plazo de la empresa', function () {
 it('guarda y devuelve lo guardado', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->patch('/settings', ajustes(['default_payment_terms_days' => 45]))
-        ->assertRedirect()
-        ->assertSessionHasNoErrors();
+    guardaTodo($this, ['default_payment_terms_days' => 45]);
 
     $this->get('/settings')
         ->assertOk()
@@ -119,14 +169,14 @@ it('guarda y devuelve lo guardado', function () {
 it('no acepta un porcentaje por encima del cien por cien', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->patch('/settings', ajustes(['default_carrier_dispatch_fee_bps' => 10001]))
+    $this->patch('/settings', ajustes('money', ['default_carrier_dispatch_fee_bps' => 10001]))
         ->assertSessionHasErrors('default_carrier_dispatch_fee_bps');
 });
 
 it('no acepta un prefijo con minúsculas ni espacios', function () {
     signIn($this->scenario, Role::Admin);
 
-    $this->patch('/settings', ajustes(['load_number_prefix' => 'fj 1']))
+    $this->patch('/settings', ajustes('numbering', ['load_number_prefix' => 'fj 1']))
         ->assertSessionHasErrors('load_number_prefix');
 });
 
@@ -134,7 +184,7 @@ it('el estado tiene que ser del país elegido', function () {
     signIn($this->scenario, Role::Admin);
 
     // TX no es de Canadá.
-    $this->patch('/settings', ajustes(['address_country' => 'CA', 'address_state' => 'TX']))
+    $this->patch('/settings', ajustes('contact', ['address_country' => 'CA', 'address_state' => 'TX']))
         ->assertSessionHasErrors('address_state');
 });
 
@@ -144,7 +194,7 @@ it('cambiar la política NO reescribe lo ya creado', function () {
     $antes = (int) DB::table('loads')->where('id', $this->scenario->load->id)
         ->value('carrier_dispatch_fee_bps');
 
-    $this->patch('/settings', ajustes(['default_carrier_dispatch_fee_bps' => 9999]))
+    $this->patch('/settings', ajustes('money', ['default_carrier_dispatch_fee_bps' => 9999]))
         ->assertRedirect();
 
     // Lo que se acordó en una carga es suyo y no lo mueve un ajuste posterior.
@@ -161,7 +211,7 @@ it('contabilidad mira pero no toca', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('can.update', false));
 
-    $this->patch('/settings', ajustes())->assertRedirect()->assertSessionHas('error');
+    $this->patch('/settings', ajustes('money'))->assertRedirect()->assertSessionHas('error');
 });
 
 it('el despachador los ve pero no los cambia', function () {
@@ -174,5 +224,5 @@ it('el despachador los ve pero no los cambia', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('can.update', false));
 
-    $this->patch('/settings', ajustes())->assertRedirect()->assertSessionHas('error');
+    $this->patch('/settings', ajustes('money'))->assertRedirect()->assertSessionHas('error');
 });
